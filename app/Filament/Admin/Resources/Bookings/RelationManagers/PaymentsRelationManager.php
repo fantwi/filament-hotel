@@ -114,8 +114,10 @@ class PaymentsRelationManager extends RelationManager
             //     ]),
             // ]);
     }
-    // public function canCreate(): bool
-    // {
-    //     return true;
-    // }
+
+    // Only Admins and Accountants can create payments
+    public function canCreate(): bool
+    {
+        return auth()->user()?->hasAnyRole(['admin', 'accountant']);
+    }
 }

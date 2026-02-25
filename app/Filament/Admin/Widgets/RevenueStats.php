@@ -49,4 +49,10 @@ class RevenueStats extends StatsOverviewWidget
                 ->color('gray'),
         ];
     }
+
+    // Only Admins and Accountants can view Revenue Stats Widget
+    public static function canView(): bool
+    {
+        return auth()->user()?->hasAnyRole(['admin', 'accountant']);
+    }
 }

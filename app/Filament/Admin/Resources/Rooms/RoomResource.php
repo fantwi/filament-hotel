@@ -24,6 +24,41 @@ class RoomResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'room_number';
 
+    // Admins and receptionists can view Rooms in the navigation
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+    }
+
+    // Admins and receptionists can view rooms
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+    }
+
+    public static function canView($record): bool
+    {
+        return auth()->user()?->hasRole('admin');
+    }
+
+    // Only admins can create rooms
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasRole('admin');
+    }
+
+    // Only admins can edit rooms
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->hasRole('admin');
+    }
+
+    // Only admins can delete rooms
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasRole('admin');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return RoomForm::configure($schema);

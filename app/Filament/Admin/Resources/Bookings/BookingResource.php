@@ -25,6 +25,33 @@ class BookingResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'guest_id';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+    }
+
+    public static function canEdit($record): bool
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+        
+        return $record->status === 'pending';
+    }
+
+    // Only admins can delete bookings
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasRole('admin');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return BookingForm::configure($schema);
@@ -57,4 +84,5 @@ class BookingResource extends Resource
             'edit' => EditBooking::route('/{record}/edit'),
         ];
     }
+
 }

@@ -24,6 +24,18 @@ class PaymentResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'booking_id';
 
+    // Hide from sidebar if not admin or accountant
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->hasAnyRole(['admin', 'accountant']);
+    }
+
+    // Block direct URL access if not admin or accountant
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(['admin', 'accountant']);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return PaymentForm::configure($schema);
@@ -55,4 +67,5 @@ class PaymentResource extends Resource
             'edit' => EditPayment::route('/{record}/edit'),
         ];
     }
+
 }

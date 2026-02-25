@@ -24,6 +24,16 @@ class GuestResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'first_name';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return GuestForm::configure($schema);
