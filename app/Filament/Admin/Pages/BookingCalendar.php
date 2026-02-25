@@ -7,7 +7,12 @@ use Filament\Pages\Page;
 class BookingCalendar extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar';
-    protected string $view = 'filament.admin.pages.booking-calendar';
     protected static ?string $navigationLabel = 'Booking Calendar';
-    protected static ?int $navigationSort = 3;
+    protected static ?string $title = 'Booking Calendar';
+    protected string $view = 'filament.admin.pages.booking-calendar';
+
+    // protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar';
+    // protected string $view = 'filament.admin.pages.booking-calendar';
+    // protected static ?string $navigationLabel = 'Booking Calendar';
+    // protected static ?int $navigationSort = 3;
 }
