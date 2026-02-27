@@ -68,38 +68,78 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
     <script>
-        function bookingCalendar() {
-            return {
-                open: false,
-                booking: {},
+    function bookingCalendar() {
+        return {
+            open: false,
+            booking: {},
 
-                initCalendar() {
-                    const calendar = new FullCalendar.Calendar(
-                        document.getElementById('calendar'),
-                        {
-                            initialView: 'dayGridMonth',
-                            events: '/admin/calendar-events',
+            initCalendar() {
+                const calendar = new FullCalendar.Calendar(
+                    document.getElementById('calendar'),
+                    {
+                        initialView: 'dayGridMonth',
+                        events: '/admin/calendar-events',
 
-                            eventClick: (info) => {
-                                this.booking = {
-                                    title: info.event.title,
-                                    room: info.event.extendedProps.room,
-                                    check_in: info.event.extendedProps.check_in,
-                                    check_out: info.event.extendedProps.check_out,
-                                    total_price: info.event.extendedProps.total_price,
-                                    balance: info.event.extendedProps.balance,
-                                    status: info.event.extendedProps.status,
-                                    booking_id: info.event.extendedProps.booking_id,
-                                };
+                        editable: true,
+                        eventDurationEditable: true,
 
-                                this.open = true;
+                        eventDrop: (info) => {
+                            this.handleReschedule(info);
+                        },
+
+                        eventResize: (info) => {
+                            this.handleReschedule(info);
+                        },
+
+                        /*
+                        eventDidMount: (info) => {
+                            if (info.event.extendedProps.status !== 'pending') {
+                                info.event.setProp('editable', false);
                             }
-                        }
-                    );
+                        }*/
 
-                    calendar.render();
+                    }
+                );
+
+                calendar.render();
+            },
+
+            handleReschedule(info) {
+
+                const bookingId = info.event.extendedProps.booking_id;
+                const newStart = info.event.startStr;
+                let newEnd = info.event.end;
+
+                if (newEnd) {
+                    newEnd = new Date(newEnd);
+                    newEnd.setDate(newEnd.getDate() - 1);
+                    newEnd = newEnd.toISOString().split('T')[0];
                 }
+
+                fetch(`/admin/bookings/${bookingId}/reschedule`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        check_in: newStart,
+                        check_out: newEnd,
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert(data.message);
+                        info.revert();
+                    }
+                })
+                .catch(() => {
+                    alert('Error updating booking');
+                    info.revert();
+                });
             }
         }
+    }
     </script>
 </x-filament::page>

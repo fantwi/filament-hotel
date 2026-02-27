@@ -30,12 +30,21 @@ class BookingsTable
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('check_in')
+                    ->label('Check In')
                     ->date()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('check_out')
+                    ->label('Check Out')
                     ->date()
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('nights')
+                    ->label('Nights')
+                    ->state(fn ($record) => 
+                        \Carbon\Carbon::parse($record->check_in)
+                            ->diffInDays($record->check_out)
+                    ),
 
                 Tables\Columns\TextColumn::make('total_price')
                     ->label('Total Price')

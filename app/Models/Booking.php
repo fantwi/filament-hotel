@@ -63,7 +63,7 @@ class Booking extends Model
         // Calculate total price on create/update
         static::saving(function ($booking) {
 
-            if ($booking->check_in && $booking->check_out && $booking->room) {
+            if ($booking->check_in && $booking->check_out) {
 
                 $days = Carbon::parse($booking->check_in)
                     ->diffInDays(Carbon::parse($booking->check_out));

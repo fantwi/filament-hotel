@@ -91,6 +91,7 @@ class BookingForm
                 DatePicker::make('check_in')
                     ->reactive()
                     ->required()
+                    ->native(false)
                     ->afterStateUpdated(function ($get, $set) {
 
                         $roomId = $get('room_id');
@@ -112,6 +113,7 @@ class BookingForm
                 DatePicker::make('check_out')
                     ->reactive()
                     ->required()
+                    ->native(false)
                     ->afterStateUpdated(function ($get, $set) {
 
                         $roomId = $get('room_id');
