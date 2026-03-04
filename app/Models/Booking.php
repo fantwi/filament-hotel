@@ -9,7 +9,7 @@ use App\Models\Payment;
 
 class Booking extends Model
 {
-    // 
+    //
     use HasFactory;
 
     protected $fillable = [
@@ -70,7 +70,7 @@ class Booking extends Model
 
                 $price = $booking->room->roomType->price_per_night;
 
-                $booking->total_price = max($days, 1) * $price;
+                $booking->total_price = max($days,1) * $price;
             }
         });
 

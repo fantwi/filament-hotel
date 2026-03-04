@@ -21,7 +21,8 @@ class BookingForm
                 //
                 Select::make('guest_id')
                     ->relationship('guest', 'first_name')
-                    ->searchable()
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->full_name)
+                    ->searchable(['first_name', 'last_name'])
                     ->required(),
 
                 Select::make('room_id')

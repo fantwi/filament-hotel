@@ -3,11 +3,15 @@
 namespace App\Filament\Admin\Resources\Bookings\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Notifications\Notification;
 
 class BookingsTable
 {
@@ -16,65 +20,131 @@ class BookingsTable
         return $table
             ->columns([
                 //
-                Tables\Columns\TextColumn::make('id')
+                TextColumn::make('id')
                     ->label('Booking ID')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('guest.full_name')
+                TextColumn::make('guest.full_name')
                     ->label('Guest')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('room.room_number')
+                TextColumn::make('room.room_number')
                     ->label('Room')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('check_in')
+                TextColumn::make('check_in')
                     ->label('Check In')
                     ->date()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('check_out')
+                TextColumn::make('check_out')
                     ->label('Check Out')
                     ->date()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('nights')
+                TextColumn::make('nights')
                     ->label('Nights')
-                    ->state(fn ($record) => 
+                    ->state(fn ($record) =>
                         \Carbon\Carbon::parse($record->check_in)
                             ->diffInDays($record->check_out)
                     ),
 
-                Tables\Columns\TextColumn::make('total_price')
+                TextColumn::make('total_price')
                     ->label('Total Price')
                     ->money('GHS')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('total_paid')
+                TextColumn::make('total_paid')
                     ->label('Total Paid')
                     ->money('GHS')
                     ->color('success'),
 
-                Tables\Columns\TextColumn::make('balance')
+                TextColumn::make('balance')
                     ->label('Balance')
                     ->money('GHS')
                     ->color(fn ($record) => $record->balance > 0 ? 'danger' : 'success'),
 
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge()
-                    ->colors([
-                        'warning' => 'pending',
-                        'primary' => 'checked_in',
-                        'success' => 'checked_out',
-                    ]),
+                    ->color(fn (String $state): string => match ($state) {
+                        'pending'  => 'warning',
+                        'checked_in' => 'success',
+                        'checked_out' => 'gray',
+                    })
+                    // ->colors([
+                    //     'warning' => 'pending',
+                    //     'primary' => 'checked_in',
+                    //     'success' => 'checked_out',
+                    // ]),
+
+
+
+                // TextColumn::make('status')
+                //     ->badge()
+                //     ->color(fn (String $state): string => match ($state) {                        arning
+                //         'pending'  => 'warning',
+                //         'checked_in' => 'success',
+                //         'checked_out' => 'gray',
+                //     })
             ])
             ->filters([
                 //
             ])
             ->recordActions([
                 ViewAction::make(),
-                EditAction::make(),
+                EditAction::make()
+                    ->visible(fn ($record) => $record->status === 'pending'),
+                
+                Action::make('check_in')
+                    ->label('Check In')
+                    ->color('success')
+                    ->icon('heroicon-o-arrow-right-on-rectangle')
+                    ->visible(fn ($record) => $record->status === 'pending')
+                    ->action(function ($record) {
+                        $record->update([
+                            'status' => 'checked_in',
+                        ]);
+
+                        $record->room->update([
+                            'status' => 'occupied',
+                        ]);
+                    }),
+
+                Action::make('check_out')
+                    ->label('Check Out')
+                    ->icon('heroicon-o-arrow-left-on-rectangle')
+                    ->color('danger')
+                    ->visible(fn ($record) => $record->status === 'checked_in')
+                    ->disabled(fn ($record) => $record->balance > 0)
+                    ->tooltip(fn ($record) => $record->balance > 0 
+                        ? 'Guest still has an unpaid balance'
+                        : null)
+                    ->action(function ($record) {
+
+                        if ($record->balance > 0) {
+                            Notification::make()
+                                ->title('Outstanding Balance')
+                                ->body('Guest must settle payment before checkout.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $record->update([
+                            'status' => 'checked_out',
+                        ]);
+
+                        $record->room->update([
+                            'status' => 'available',
+                        ]);
+
+                        Notification::make()
+                            ->title('Guest Checked Out')
+                            ->success()
+                            ->send();
+                    }),    
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -83,3 +153,4 @@ class BookingsTable
             ]);
     }
 }
+ 
