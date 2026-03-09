@@ -12,6 +12,11 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Notifications\Notification;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use App\Models\Payment;
+use Spatie\Activitylog\Models\Activity;
+
 
 class BookingsTable
 {
@@ -109,6 +114,11 @@ class BookingsTable
                         $record->room->update([
                             'status' => 'occupied',
                         ]);
+
+                        activity()
+                            ->causedBy(auth()->user())
+                            ->performedOn($record)
+                            ->log('Guest checked in');
                     }),
 
                 Action::make('check_out')
@@ -129,6 +139,11 @@ class BookingsTable
                                 ->danger()
                                 ->send();
 
+                            activity()
+                                ->causedBy(auth()->user())
+                                ->performedOn($record)
+                                ->log('Guest checked out');
+
                             return;
                         }
 
@@ -144,7 +159,53 @@ class BookingsTable
                             ->title('Guest Checked Out')
                             ->success()
                             ->send();
-                    }),    
+                    }), 
+                    
+                Action::make('pay')
+                    ->label('Pay')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->balance > 0)
+                    ->form([
+
+                        TextInput::make('amount')
+                            ->numeric()
+                            ->required()
+                            ->minValue(1)
+                            ->maxValue(fn ($record) => $record->balance),
+
+                        Select::make('method')
+                            ->options([
+                                'cash' => 'Cash',
+                                'momo' => 'Mobile Money',
+                                'card' => 'Card',
+                            ])
+                            ->required(),
+
+                        TextInput::make('transaction_reference')
+                            ->label('Reference')
+                            ->placeholder('Optional'),
+
+                    ])
+                    ->action(function ($record, array $data) {
+
+                        Payment::create([
+                            'booking_id' => $record->id,
+                            'amount' => $data['amount'],
+                            'method' => $data['method'],
+                            'transaction_reference' => $data['transaction_reference'] ?? null,
+                        ]);
+
+                        Notification::make()
+                            ->title('Payment Recorded')
+                            ->success()
+                            ->send();
+
+                        activity()
+                            ->causedBy(auth()->user())
+                            ->performedOn($record)
+                            ->log('Payment received: GHS '.$data['amount']);
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

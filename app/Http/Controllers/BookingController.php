@@ -9,6 +9,28 @@ use Illuminate\Http\Request;
 class BookingController extends Controller
 {
     //
+    public function timelineUpdate(Request $request, Booking $booking)
+    {
+        if ($booking->status !== 'pending') {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Only pending bookings can move'
+            ]);
+
+        }
+
+        $booking->update([
+            'room_id' => $request->room_id,
+            'check_in' => $request->check_in,
+            'check_out' => $request->check_out
+        ]);
+
+        return response()->json([
+            'success' => true
+        ]);
+    }
+    
     public function reschedule(Request $request, Booking $booking)
     {
         // Only allow pending bookings to move

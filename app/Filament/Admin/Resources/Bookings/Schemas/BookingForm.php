@@ -25,6 +25,10 @@ class BookingForm
                     ->searchable(['first_name', 'last_name'])
                     ->required(),
 
+                // Select::make('room_type_id')
+                //     ->relationship('roomType', 'name')
+                //     ->required(),
+                
                 Select::make('room_id')
                     ->relationship(
                         name: 'room', 

@@ -6,11 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Carbon\Carbon;
 use App\Models\Payment;
+use App\Models\Guest;
+use App\Models\Room;
+use App\Services\RoomAssignmentService;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Booking extends Model
 {
     //
     use HasFactory;
+    use LogsActivity;
 
     protected $fillable = [
         'guest_id',
@@ -39,7 +45,7 @@ class Booking extends Model
 
     public function payments()
     {
-        return $this->hasMany(\App\Models\Payment::class);
+        return $this->hasMany(Payment::class);
     }
 
     public function getTotalPaidAttribute()
@@ -49,7 +55,9 @@ class Booking extends Model
 
     public function getBalanceAttribute()
     {
-        return $this->total_price - $this->total_paid;
+        $paid = $this->payments()->sum('amount');
+
+        return $this->total_price - $paid;
     }
 
     /*
@@ -74,6 +82,23 @@ class Booking extends Model
             }
         });
 
+        static::creating(function ($booking) {
+
+            if (!$booking->room_id && $booking->room_type_id) {
+
+                $room = RoomAssignmentService::assignRoom(
+                    $booking->room_type_id,
+                    $booking->check_in,
+                    $booking->check_out
+                );
+
+                if ($room) {
+                    $booking->room_id = $room->id;
+                }
+            }
+
+        });
+
         // Mark room as occupied when booking is created
         static::created(function ($booking) {
             $booking->room->update(['status' => 'occupied']);
@@ -85,5 +110,13 @@ class Booking extends Model
                 $booking->room->update(['status' => 'available']);
             }
         });
+    }
+
+    protected function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->useLogName('booking')
+            ->logOnlyDirty();
     }
 }

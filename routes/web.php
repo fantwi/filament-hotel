@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Models\Booking;
+use App\Models\Room;
+use App\Http\Controllers\BookingController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -43,8 +45,54 @@ Route::middleware(['auth'])->get('/admin/calendar-events', function () {
 
 Route::middleware(['auth'])->post(
     '/admin/bookings/{booking}/reschedule',
-    [\App\Http\Controllers\BookingController::class, 'reschedule']
+    [BookingController::class, 'reschedule']
 );
+
+Route::get('/admin/timeline-rooms', function () {
+
+    return Room::all()->map(fn($room) => [
+
+        'id' => $room->id,
+        'title' => 'Room '.$room->room_number
+
+    ]);
+
+});
+
+Route::get('/admin/timeline-bookings', function () {
+
+    return Booking::with('guest')->get()->map(function ($booking) {
+
+        return [
+
+            'id' => $booking->id,
+
+            'resourceId' => $booking->room_id,
+
+            'title' => $booking->guest->full_name,
+
+            'start' => $booking->check_in,
+
+            'end' => $booking->check_out,
+
+            'color' => match($booking->status) {
+
+            'pending' => '#f59e0b',
+            'checked_in' => '#10b981',
+            'checked_out' => '#6b7280',
+
+            }
+
+        ];
+
+    });
+
+});
+
+Route::post(
+    '/admin/bookings/{booking}/timeline-update',
+    [BookingController::class,'timelineUpdate']
+)->middleware('auth');
 
 // Route::middleware(['auth'])->group(function () {
 
