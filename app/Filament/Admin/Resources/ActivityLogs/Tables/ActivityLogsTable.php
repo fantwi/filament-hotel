@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\ActivityLogs\Tables;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
+use Filament\Actions\ExportAction;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
@@ -14,8 +15,9 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
-use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction as ExcelExportAction;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use App\Filament\Exports\ActivityLogExporter;
 use App\Models\User;
 
 class ActivityLogsTable
@@ -24,76 +26,59 @@ class ActivityLogsTable
     {
         return $table
             ->columns([
-                //
-                BadgeColumn::make('description')
-                    ->label('Activity')
-                    ->colors([
-                        'success' => 'created',
-                        'warning' => 'updated',
-                        'danger' => 'deleted',
-                    ])
-                    ->icons([
-                        'heroicon-o-plus-circle' => 'created',
-                        'heroicon-o-pencil' => 'updated',
-                        'heroicon-o-trash' => 'deleted',
-                    ]),
+                TextColumn::make('id')
+                    ->label('Log ID')
+                    ->sortable(),
 
                 TextColumn::make('causer.name')
-                    ->label('User'),
+                    ->label('User')
+                    ->searchable(),
+
+                TextColumn::make('description')
+                    ->badge()
+                    ->color(fn ($state) => match ($state) {
+                        'created' => 'success',
+                        'updated' => 'warning',
+                        'deleted' => 'danger',
+                        default => 'gray',
+                    }),
 
                 TextColumn::make('subject_type')
                     ->label('Model')
                     ->formatStateUsing(fn ($state) => class_basename($state)),
 
                 TextColumn::make('created_at')
-                    ->dateTime()
-                    ->label('Time')
-                    ->sortable(),
-            ])
-            ->defaultSort('created_at', 'desc')
-            ->filters([
-                //
-                SelectFilter::make('causer_id')
-                    ->label('User')
-                    ->options(User::pluck('name', 'id'))
-                    ->searchable(),
+                    ->label('Date & Time')
+                    ->dateTime(),
 
-                SelectFilter::make('subject_type')
-                    ->label('Model')
+                TextColumn::make('properties.ip_address')
+                    ->label('IP Address'),
+            ])
+
+            ->filters([
+                Tables\Filters\SelectFilter::make('description')
                     ->options([
-                        'App\Models\Booking' => 'Booking',
-                        'App\Models\Payment' => 'Payment',
-                        'App\Models\Guest' => 'Guest',
+                        'created' => 'Created',
+                        'updated' => 'Updated',
+                        'deleted' => 'Deleted',
                     ]),
 
-                Filter::make('created_at')
-                    ->form([
-                        DatePicker::make('from')
-                            ->label('From'),
-
-                        DatePicker::make('until')
-                            ->label('Until'),
-                    ])
-                    ->query(function (Builder $query, array $data) {
-
-                        return $query
-                            ->when(
-                                $data['from'],
-                                fn (Builder $query, $date) => $query->whereDate('created_at', '>=', $date)
-                            )
-                            ->when(
-                                $data['until'],
-                                fn (Builder $query, $date) => $query->whereDate('created_at', '<=', $date)
-                            );
-                    }),
+                Tables\Filters\Filter::make('today')
+                    ->query(fn ($query) =>
+                        $query->whereDate('created_at', today())
+                    ),
             ])
-            ->headerActions([
+
+            ->recordActions([
+                ViewAction::make(),
+            ])
+
+            ->toolbarActions([
                 ExportAction::make()
-                    ->label('Export Logs')
-                    ->fileName(fn () => 'activity_logs_' . now()->format('Y_m_d_H_i')),
-            ])
-            ->recordActions([])
-            ->toolbarActions([])
-            ->bulkActions([]);
+                ->exporter(ActivityLogExporter::class)
+                    ->fileName(fn () =>
+                        'activity_logs_' . now()->format('Y-m-d_H-i-s')
+                    ),
+            ]);
     }
 }

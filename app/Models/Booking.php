@@ -60,6 +60,15 @@ class Booking extends Model
         return $this->total_price - $paid;
     }
 
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->useLogName('booking')
+            ->setDescriptionForEvent(fn(string $eventName) => "Booking {$eventName}");
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Boot Logic (Business Logic)
@@ -112,11 +121,11 @@ class Booking extends Model
         });
     }
 
-    protected function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logAll()
-            ->useLogName('booking')
-            ->logOnlyDirty();
-    }
+    // protected function getActivitylogOptions(): LogOptions
+    // {
+    //     return LogOptions::defaults()
+    //         ->logAll()
+    //         ->useLogName('booking')
+    //         ->logOnlyDirty();
+    // }
 }

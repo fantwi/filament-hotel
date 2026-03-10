@@ -116,9 +116,9 @@ class BookingsTable
                         ]);
 
                         activity()
+                            ->performedOn($booking)
                             ->causedBy(auth()->user())
-                            ->performedOn($record)
-                            ->log('Guest checked in');
+                            ->log("Checked in guest {$record->guest->full_name} to room {$record->room->room_number}");
                     }),
 
                 Action::make('check_out')
@@ -140,9 +140,9 @@ class BookingsTable
                                 ->send();
 
                             activity()
+                                ->performedOn($booking)
                                 ->causedBy(auth()->user())
-                                ->performedOn($record)
-                                ->log('Guest checked out');
+                                ->log("Checked out guest {$record->guest->full_name} from room {$record->room->room_number}");
 
                             return;
                         }
