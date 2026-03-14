@@ -4,7 +4,9 @@ namespace App\Filament\Admin\Resources\Bookings\RelationManagers;
 
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Actions\CreateAction;
+// use Filament\Tables\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\AssociateAction;
@@ -67,26 +69,32 @@ class PaymentsRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('amount')->money('GHS'),
+                TextColumn::make('amount')->money('GHS'),
                 
-                Tables\Columns\TextColumn::make('method'),
+                TextColumn::make('method'),
 
                 // TextColumn::make('payment_date')->date(),
                 
-                Tables\Columns\TextColumn::make('transaction_reference'),
+                TextColumn::make('transaction_reference'),
                 
-                Tables\Columns\TextColumn::make('created_at')->dateTime(),
+                TextColumn::make('created_at')->dateTime(),
             ])
             ->headerActions([
-                \Filament\Actions\CreateAction::make(), // This adds create button
+                CreateAction::make() // This adds create button
+                    ->after(function ($record) {
+                        activity()
+                            ->performedOn($record)
+                            ->causedBy(auth()->user())
+                            ->log('payment_added');
+                    }), 
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
-            ->headerActions([
-                \Filament\Actions\CreateAction::make(),
-            ])
+            // ->headerActions([
+            //     CreateAction::make(),
+            // ])
             ->emptyStateHeading(function (RelationManager $livewire) {
                 $booking = $livewire->getOwnerRecord();
                 return "Remaining Balance: GHS {$booking->balance}";

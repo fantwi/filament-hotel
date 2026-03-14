@@ -2,20 +2,22 @@
 
 namespace App\Filament\Admin\Resources\Bookings\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\Action;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+
+use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+
 use Filament\Notifications\Notification;
+
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
+
 use App\Models\Payment;
-use Spatie\Activitylog\Models\Activity;
+use App\Services\InvoiceService;
 
 
 class BookingsTable
@@ -51,17 +53,18 @@ class BookingsTable
                 TextColumn::make('nights')
                     ->label('Nights')
                     ->state(fn ($record) =>
-                        \Carbon\Carbon::parse($record->check_in)
-                            ->diffInDays($record->check_out)
+                        $record->check_in->diffInDays($record->check_out)
+                        // \Illuminate\Support\Carbon::parse($record->check_in)
+                        //     ->diffInDays($record->check_out)
                     ),
 
                 TextColumn::make('total_price')
-                    ->label('Total Price')
+                    ->label('Price')
                     ->money('GHS')
                     ->sortable(),
 
                 TextColumn::make('total_paid')
-                    ->label('Total Paid')
+                    ->label('Paid')
                     ->money('GHS')
                     ->color('success'),
 
@@ -72,26 +75,19 @@ class BookingsTable
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (String $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'pending'  => 'warning',
                         'checked_in' => 'success',
                         'checked_out' => 'gray',
-                    })
-                    // ->colors([
-                    //     'warning' => 'pending',
-                    //     'primary' => 'checked_in',
-                    //     'success' => 'checked_out',
-                    // ]),
+                    }),
 
-
-
-                // TextColumn::make('status')
-                //     ->badge()
-                //     ->color(fn (String $state): string => match ($state) {                        arning
-                //         'pending'  => 'warning',
-                //         'checked_in' => 'success',
-                //         'checked_out' => 'gray',
-                //     })
+                TextColumn::make('payment_status')
+                    ->badge()
+                    ->color(fn ($state) => match ($state) {
+                        'paid' => 'success',
+                        'partial' => 'warning',
+                        'unpaid' => 'danger',
+                    }),
             ])
             ->filters([
                 //
@@ -116,7 +112,7 @@ class BookingsTable
                         ]);
 
                         activity()
-                            ->performedOn($booking)
+                            ->performedOn($record)
                             ->causedBy(auth()->user())
                             ->log("Checked in guest {$record->guest->full_name} to room {$record->room->room_number}");
                     }),
@@ -126,46 +122,64 @@ class BookingsTable
                     ->icon('heroicon-o-arrow-left-on-rectangle')
                     ->color('danger')
                     ->visible(fn ($record) => $record->status === 'checked_in')
+                    ->requiresConfirmation()
                     ->disabled(fn ($record) => $record->balance > 0)
                     ->tooltip(fn ($record) => $record->balance > 0 
                         ? 'Guest still has an unpaid balance'
                         : null)
                     ->action(function ($record) {
 
+                        // Prevent checkout if balance exists
                         if ($record->balance > 0) {
                             Notification::make()
-                                ->title('Outstanding Balance')
-                                ->body('Guest must settle payment before checkout.')
+                                ->title('Checkout not allowed')
+                                ->body('Guest still has an outstanding balance.')
                                 ->danger()
                                 ->send();
-
-                            activity()
-                                ->performedOn($booking)
-                                ->causedBy(auth()->user())
-                                ->log("Checked out guest {$record->guest->full_name} from room {$record->room->room_number}");
 
                             return;
                         }
 
+                        // Update booking status
+                        $invoiceNumber = InvoiceService::generateInvoiceNumber();
+
                         $record->update([
                             'status' => 'checked_out',
+                            'invoice_number' => $invoiceNumber,
                         ]);
 
+                        // Update room room
                         $record->room->update([
                             'status' => 'available',
                         ]);
 
+                        // Log activity
+                        activity()
+                            ->performedOn($record)
+                            ->causedBy(auth()->user())
+                            ->log("Checked out guest {$record->guest->full_name} from room {$record->room->room_number}");
+
+                        // Success notification
                         Notification::make()
                             ->title('Guest Checked Out')
                             ->success()
                             ->send();
+
+                        // Generate invoice
+                        InvoiceService::generate($record);
+                        // return InvoiceService::generate($record);
+                        // return redirect()->to(
+                        //     asset('storage/invoices/invoice-booking-'.$record->id.'.pdf')
+                        // );
                     }), 
                     
                 Action::make('pay')
                     ->label('Pay')
                     ->icon('heroicon-o-banknotes')
                     ->color('success')
-                    ->visible(fn ($record) => $record->balance > 0)
+                    ->visible(fn ($record) => 
+                        $record->status !== 'checked_out' && $record->balance > 0
+                    )
                     ->form([
 
                         TextInput::make('amount')
@@ -196,16 +210,42 @@ class BookingsTable
                             'transaction_reference' => $data['transaction_reference'] ?? null,
                         ]);
 
-                        Notification::make()
-                            ->title('Payment Recorded')
-                            ->success()
-                            ->send();
-
                         activity()
                             ->causedBy(auth()->user())
                             ->performedOn($record)
                             ->log('Payment received: GHS '.$data['amount']);
-                    }),
+
+                        Notification::make()
+                            ->title('Payment Recorded')
+                            ->success()
+                            ->send();
+                    })
+                    ->successNotificationTitle('Payment Recorded')
+                    ->after(fn () => $this->dispatch('refresh')),
+                    // ->after(fn () => redirect(request()->header('Referer'))),
+
+                Action::make('invoice')
+                    ->label('Invoice')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('gray')
+                    ->visible(fn ($record) => 
+                        $record->status === 'checked_out' && $record->invoice_number
+                    )
+                    ->action(function ($record) {
+
+                        if (!$record->invoice_number) {
+
+                            $record->update([
+                                'invoice_number' => InvoiceService::generateInvoiceNumber()
+                            ]);
+
+                            InvoiceService::generate($record);
+                        }
+                    })
+                    ->url(fn ($record) =>
+                        asset('storage/invoices/'.$record->invoice_number.'.pdf')
+                    )
+                    ->openUrlInNewTab(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

@@ -27,6 +27,11 @@ class Booking extends Model
         'status',
     ];
 
+    protected $casts = [
+        'check_in' => 'date',
+        'check_out' => 'date',
+    ];
+
     /*
     |--------------------------------------------------------------------------
     | Relationships
@@ -65,8 +70,22 @@ class Booking extends Model
         return LogOptions::defaults()
             ->logAll()
             ->logOnlyDirty()
-            ->useLogName('booking')
+            ->dontSubmitEmptyLogs()
+            // ->useLogName('booking')
             ->setDescriptionForEvent(fn(string $eventName) => "Booking {$eventName}");
+    }
+
+    public function getPaymentStatusAttribute()
+    {
+        if ($this->balance <= 0) {
+            return 'paid';
+        }
+
+        if ($this->total_paid > 0) {
+            return 'partial';
+        }
+
+        return 'unpaid';
     }
 
     /*

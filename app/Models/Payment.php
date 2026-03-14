@@ -32,7 +32,7 @@ class Payment extends Model
             $booking = $payment->booking;
 
             if ($booking->balance <= 0) {
-                $booking->update(['status' => 'checked_out']);
+                // $booking->update(['status' => 'checked_out']);
             }
         });
     }

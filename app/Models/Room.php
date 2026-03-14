@@ -40,8 +40,9 @@ class Room extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logAll()
+            ->logOnly(['status'])     // log only status changes
             ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
             ->setDescriptionForEvent(fn(string $eventName) => "Room {$eventName}");
     }
 }

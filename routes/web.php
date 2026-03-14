@@ -94,6 +94,14 @@ Route::post(
     [BookingController::class,'timelineUpdate']
 )->middleware('auth');
 
+Route::get('/invoice/{invoice}', function ($invoice) {
+
+    $booking = Booking::where('invoice_number', $invoice)->firstOrFail();
+
+    return view('invoice.verify', compact('booking'));
+
+});
+
 // Route::middleware(['auth'])->group(function () {
 
 //     Route::get('/admin/calendar-events', function () {

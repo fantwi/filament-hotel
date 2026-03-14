@@ -4,6 +4,8 @@ namespace App\Filament\Admin\Resources\ActivityLogs\Schemas;
 
 use Filament\Schemas\Schema;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
+use App\Filament\Admin\Resources\ActivityLogs\ActivityLogResource;
 
 class ActivityLogInfolist
 {
@@ -21,20 +23,31 @@ class ActivityLogInfolist
                 TextEntry::make('subject_type')
                     ->label('Model'),
 
-                TextEntry::make('properties.old')
-                    ->label('Old Values')
-                    ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT)),
+                // TextEntry::make('properties.old')
+                //     ->label('Old Values')
+                //     ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT)),
 
-                TextEntry::make('properties.attributes')
-                    ->label('New Values')
-                    ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT)),
+                // TextEntry::make('properties.attributes')
+                //     ->label('New Values')
+                //     ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT)),
 
-                TextEntry::make('properties.ip_address')
-                    ->label('IP Address'),
+                // TextEntry::make('properties.ip_address')
+                //     ->label('IP Address'),
 
                 TextEntry::make('created_at')
                     ->label('Date & Time')
                     ->dateTime(),
+
+                TextEntry::make('changes')
+                    ->label('Changes')
+                    ->state(fn ($record) => ActivityLogResource::formatChanges($record))
+                    ->columnSpanFull(),
+
+                ViewEntry::make('changes')
+                    ->label('Changes')
+                    ->view('filament.activity-diff')
+                    ->state(fn ($record) => \App\Filament\Admin\Resources\ActivityLogs\ActivityLogResource::generateDiff($record))
+                    ->columnSpanFull(),
             ]);
     }
 }

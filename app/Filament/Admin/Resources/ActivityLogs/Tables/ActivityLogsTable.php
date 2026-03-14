@@ -40,7 +40,10 @@ class ActivityLogsTable
                         'created' => 'success',
                         'updated' => 'warning',
                         'deleted' => 'danger',
-                        default => 'gray',
+                        'checked_in' => 'primary',
+                        'checked_out' => 'gray',
+                        'payment_added' => 'success',
+                        default => 'secondary',
                     }),
 
                 TextColumn::make('subject_type')
@@ -51,8 +54,8 @@ class ActivityLogsTable
                     ->label('Date & Time')
                     ->dateTime(),
 
-                TextColumn::make('properties.ip_address')
-                    ->label('IP Address'),
+                // TextColumn::make('properties.ip_address')
+                //     ->label('IP Address'),
             ])
 
             ->filters([

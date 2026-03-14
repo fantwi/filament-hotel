@@ -16,8 +16,6 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ActivityLogResource extends Resource
 {
-    // use Spatie\Activitylog\Models\Activity;
-
     protected static ?string $model = Activity::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
@@ -56,5 +54,61 @@ class ActivityLogResource extends Resource
             // 'create' => CreateActivityLog::route('/create'),
             // 'edit' => EditActivityLog::route('/{record}/edit'),
         ];
+    }
+
+    public static function formatChanges($record): string
+    {
+        $old = $record->properties['old'] ?? [];
+        $new = $record->properties['attributes'] ?? [];
+
+        $output = '';
+
+        foreach ($new as $field => $value) {
+
+            $oldValue = $old[$field] ?? '—';
+            $newValue = $value;
+
+            if ($oldValue != $newValue) {
+
+                $output .= strtoupper($field) . "\n";
+                $output .= "Old: {$oldValue}\n";
+                $output .= "New: {$newValue}\n\n";
+            }
+        }
+
+        return $output ?: 'No changes recorded';
+    }
+
+    public static function generateDiff($record): string
+    {
+        $old = $record->properties['old'] ?? [];
+        $new = $record->properties['attributes'] ?? [];
+
+        $html = '';
+
+        foreach ($new as $field => $newValue) {
+
+            $oldValue = $old[$field] ?? null;
+
+            if ($oldValue != $newValue) {
+
+                $label = str_replace('_', ' ', ucfirst($field));
+
+                $html .= "
+                <div class='mb-4'>
+                    <div class='font-bold text-gray-700'>{$label}</div>
+
+                    <div class='bg-red-50 text-red-700 px-3 py-1 rounded'>
+                        - {$oldValue}
+                    </div>
+
+                    <div class='bg-green-50 text-green-700 px-3 py-1 rounded mt-1'>
+                        + {$newValue}
+                    </div>
+                </div>";
+            }
+        }
+
+        return $html ?: '<span class="text-gray-500">No changes recorded</span>';
     }
 }
