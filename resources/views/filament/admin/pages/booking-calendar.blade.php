@@ -17,7 +17,7 @@
             class="fixed inset-0 flex items-center justify-center z-50"
         >
             <div
-                class="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700"
+                class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 border border-gray-200"
                 @click.stop
             >
                 <h2 class="text-lg font-semibold mb-4">

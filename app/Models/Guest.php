@@ -21,6 +21,13 @@ class Guest extends Model
         'id_number',
     ];
 
+    // Relationships
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    // Methods
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";

@@ -32,7 +32,8 @@ class ActivityLogResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['causer', 'subject']);
+            ->with(['causer', 'subject'])
+            ->latest('created_at');
     }
 
     public static function table(Table $table): Table

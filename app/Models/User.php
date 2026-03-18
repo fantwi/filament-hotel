@@ -51,11 +51,35 @@ class User extends Authenticatable
         ];
     }
 
+    const STATUS_ONLINE = 'online';
+    const STATUS_OFFLINE = 'offline';
+    const STATUS_ON_LEAVE = 'on_leave';
+    const STATUS_SUSPENDED = 'suspended';
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
             ->logAll()
             ->logOnlyDirty()
             ->setDescriptionForEvent(fn(string $eventName) => "User {$eventName}");
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('super_admin');
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->hasRole('admin') 
+            || $this->hasRole('manager')
+            || $this->hasRole('receptionist')
+            || $this->hasRole('accountant')
+            || $this->status !== self::STATUS_SUSPENDED; // only allow access to users who are not suspended
     }
 }

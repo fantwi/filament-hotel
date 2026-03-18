@@ -4,7 +4,7 @@
 
 <table class="w-full border text-sm">
 
-<thead class="bg-gray-100 dark:bg-gray-800">
+<thead class="bg-gray-100">
 <tr>
 <th class="p-3 border">Room</th>
 

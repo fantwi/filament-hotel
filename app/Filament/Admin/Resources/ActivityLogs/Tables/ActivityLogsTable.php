@@ -52,7 +52,9 @@ class ActivityLogsTable
 
                 TextColumn::make('created_at')
                     ->label('Date & Time')
-                    ->dateTime(),
+                    // ->since()
+                    ->dateTime('M d, Y H:i')
+                    ->sortable(),
 
                 // TextColumn::make('properties.ip_address')
                 //     ->label('IP Address'),
