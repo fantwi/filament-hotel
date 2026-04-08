@@ -2,7 +2,6 @@
     <div x-data="bookingCalendar()" x-init="initCalendar()">
         <div id="calendar"></div>
 
-        <!-- Modal Backdrop -->
         <div
             x-show="open"
             x-transition.opacity
@@ -10,7 +9,6 @@
             @click="open = false"
         ></div>
 
-        <!-- Modal -->
         <div
             x-show="open"
             x-transition
@@ -79,7 +77,6 @@
                     {
                         initialView: 'dayGridMonth',
                         events: '/admin/calendar-events',
-
                         editable: true,
                         eventDurationEditable: true,
 
@@ -90,14 +87,6 @@
                         eventResize: (info) => {
                             this.handleReschedule(info);
                         },
-
-                        /*
-                        eventDidMount: (info) => {
-                            if (info.event.extendedProps.status !== 'pending') {
-                                info.event.setProp('editable', false);
-                            }
-                        }*/
-
                     }
                 );
 
@@ -105,7 +94,6 @@
             },
 
             handleReschedule(info) {
-
                 const bookingId = info.event.extendedProps.booking_id;
                 const newStart = info.event.startStr;
                 let newEnd = info.event.end;
@@ -127,17 +115,22 @@
                         check_out: newEnd,
                     })
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.success) {
-                        alert(data.message);
+                    .then(async response => {
+                        const data = await response.json().catch(() => ({
+                            success: false,
+                            message: 'Error updating booking.',
+                        }));
+
+                        if (!response.ok || !data.success) {
+                            throw new Error(data.message || 'Error updating booking.');
+                        }
+
+                        return data;
+                    })
+                    .catch(error => {
+                        alert(error.message || 'Error updating booking.');
                         info.revert();
-                    }
-                })
-                .catch(() => {
-                    alert('Error updating booking');
-                    info.revert();
-                });
+                    });
             }
         }
     }

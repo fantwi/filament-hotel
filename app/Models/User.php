@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Filament\Panel;
 use Spatie\Permission\Traits\HasRoles;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
@@ -26,6 +27,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'status',
+        'shift',
     ];
 
     /**
@@ -37,6 +41,15 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    protected static function booted()
+    {
+        static::saved(function ($user) {
+            if ($user->role) {
+                $user->syncRoles([$user->role]);
+            }
+        });
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -55,6 +68,10 @@ class User extends Authenticatable
     const STATUS_OFFLINE = 'offline';
     const STATUS_ON_LEAVE = 'on_leave';
     const STATUS_SUSPENDED = 'suspended';
+    const SHIFT_MORNING = 'morning';
+    const SHIFT_EVENING = 'evening';
+    const SHIFT_NIGHT = 'night';
+    const SHIFT_OFF_DUTY = 'off_duty';
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -76,10 +93,16 @@ class User extends Authenticatable
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->hasRole('admin') 
-            || $this->hasRole('manager')
-            || $this->hasRole('receptionist')
-            || $this->hasRole('accountant')
-            || $this->status !== self::STATUS_SUSPENDED; // only allow access to users who are not suspended
+        if ($this->status === self::STATUS_SUSPENDED) {
+            return false;
+        }
+
+        return $this->hasAnyRole([
+            'super_admin',
+            'admin',
+            'manager',
+            'receptionist',
+            'accountant',
+        ]);
     }
 }

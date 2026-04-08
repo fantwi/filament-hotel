@@ -21,6 +21,16 @@ class UserResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']);
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return UserForm::configure($schema);
@@ -56,11 +66,11 @@ class UserResource extends Resource
     {
         $user = auth()->user();
 
-        if ($record->hasRole('admin') && !$user->hasRole('super_admin')) {
+        if ($record->hasRole('admin') && ! $user->hasRole('super_admin')) {
             return false;
         }
 
-        if ($record->hasRole('super_admin') && !$user->hasRole('super_admin')) {
+        if ($record->hasRole('super_admin') && ! $user->hasRole('super_admin')) {
             return false;
         }
 
@@ -71,19 +81,19 @@ class UserResource extends Resource
     {
         $user = auth()->user();
 
-        if ($record->hasRole('admin') && !$user->hasRole('super_admin')) {
+        if ($record->hasRole('admin') && ! $user->hasRole('super_admin')) {
             return false;
         }
 
-        if ($record->hasRole('super_admin') && !$user->hasRole('super_admin')) {
+        if ($record->hasRole('super_admin') && ! $user->hasRole('super_admin')) {
             return false;
         }
 
         if ($record->id === auth()->id()) {
             return false;
         }
-    
-        if ($record->hasRole('admin') && !auth()->user()->hasRole('super_admin')) {
+
+        if ($record->hasRole('admin') && ! auth()->user()->hasRole('super_admin')) {
             return false;
         }
 
@@ -94,14 +104,13 @@ class UserResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        if (!auth()->user()->hasRole('super_admin')) {
+        if (! auth()->user()->hasRole('super_admin')) {
             $query->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'admin')
-                ->orWhere('name','super_admin');
+                    ->orWhere('name', 'super_admin');
             });
         }
 
         return $query;
     }
-
 }

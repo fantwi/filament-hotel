@@ -89,6 +89,7 @@ class BookingsTable
                         'unpaid' => 'danger',
                     }),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])
@@ -97,6 +98,11 @@ class BookingsTable
                 EditAction::make()
                     ->visible(fn ($record) => $record->status === 'pending'),
                 
+                Action::make('walkin')
+                    ->label('Walk-in Check-in')
+                    ->icon('heroicon-o-user-plus')
+                    ->url(fn () => url('/admin/bookings/create?walkin=1')),
+
                 Action::make('check_in')
                     ->label('Check In')
                     ->color('success')
@@ -220,8 +226,8 @@ class BookingsTable
                             ->success()
                             ->send();
                     })
-                    ->successNotificationTitle('Payment Recorded')
-                    ->after(fn () => $this->dispatch('refresh')),
+                    ->successNotificationTitle('Payment Recorded'),
+                    //->after(fn () => $this->dispatch('refresh')), // changed $this to $record
                     // ->after(fn () => redirect(request()->header('Referer'))),
 
                 Action::make('invoice')

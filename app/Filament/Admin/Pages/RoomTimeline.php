@@ -12,4 +12,9 @@ class RoomTimeline extends Page
     protected string $view = 'filament.admin.pages.room-timeline';
     protected static ?string $navigationLabel = 'Room Timeline';
     protected static ?string $title = 'Room Timeline Board';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
 }

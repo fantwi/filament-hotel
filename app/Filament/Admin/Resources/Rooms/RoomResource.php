@@ -28,6 +28,7 @@ class RoomResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+        // return false;
     }
 
     // Admins and receptionists can view rooms
@@ -89,5 +90,11 @@ class RoomResource extends Resource
             'view' => ViewRoom::route('/{record}'),
             'edit' => EditRoom::route('/{record}/edit'),
         ];
+    }
+
+    public function index()
+    {
+        $rooms = Room::where('status', 'available')->get();
+        return view('rooms.index', compact('rooms'));
     }
 }

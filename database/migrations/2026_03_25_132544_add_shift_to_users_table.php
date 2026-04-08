@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('bookings', function (Blueprint $table) {
-            $table->string('invoice_number')->nullable()->unique();
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('shift')->default('off_duty');
         });
     }
 
@@ -21,9 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('bookings', function (Blueprint $table) {
-            $table->dropUnique(['invoice_number']);
-            $table->dropColumn('invoice_number');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('shift');
         });
     }
 };

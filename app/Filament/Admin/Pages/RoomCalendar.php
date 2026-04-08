@@ -2,9 +2,9 @@
 
 namespace App\Filament\Admin\Pages;
 
-use Filament\Pages\Page;
-use App\Models\Room;
 use App\Models\Booking;
+use App\Models\Room;
+use Filament\Pages\Page;
 
 class RoomCalendar extends Page
 {
@@ -18,8 +18,8 @@ class RoomCalendar extends Page
 
     public function getEvents()
     {
-        $query = Booking::with(['guest','room.roomType'])
-            ->whereDate('check_out','>=',now()->subMonths(1));
+        $query = Booking::with(['guest', 'room.roomType'])
+            ->whereDate('check_out', '>=', now()->subMonths(1));
 
         if ($this->roomTypeFilter) {
             $query->whereHas('room', function ($q) {
@@ -28,23 +28,20 @@ class RoomCalendar extends Page
         }
 
         return $query->get()->map(function ($booking) {
-
             return [
                 'id' => $booking->id,
-                'title' => $booking->guest->full_name.' (Room '.$booking->room->room_number.')',
+                'title' => $booking->guest->full_name . ' (Room ' . $booking->room->room_number . ')',
                 'start' => $booking->check_in,
                 'end' => $booking->check_out,
                 'resourceId' => $booking->room_id,
-                'color' => match($booking->status) {
+                'color' => match ($booking->status) {
                     'pending' => '#f59e0b',
                     'checked_in' => '#22c55e',
                     'checked_out' => '#6b7280',
-                    default => '#3b82f6'
-                }
+                    default => '#3b82f6',
+                },
             ];
-
         });
-
     }
 
     public function getRooms()
@@ -56,51 +53,42 @@ class RoomCalendar extends Page
         }
 
         return $query->get()->map(function ($room) {
-
             return [
                 'id' => $room->id,
-                'title' => 'Room '.$room->room_number.' ('.$room->roomType->name.')',
+                'title' => 'Room ' . $room->room_number . ' (' . $room->roomType->name . ')',
             ];
-
         });
     }
 
     public function updatedRoomTypeFilter()
     {
-        $this->dispatch('refreshCalendar', [
-            'rooms' => $this->getRooms(),
-            'events' => $this->getEvents(),
-        ]);
+        $this->dispatchCalendarRefresh();
     }
 
     public function updatedRoomFilter()
     {
-        $this->dispatch('refreshCalendar', $this->getEvents());
+        $this->dispatchCalendarRefresh();
     }
 
     public function getOccupancyHeatmap()
     {
-        $rooms = \App\Models\Room::count();
-
+        $rooms = Room::count();
         $start = now()->startOfWeek();
         $end = now()->addWeeks(4);
-
         $heatmap = [];
 
         for ($date = $start; $date <= $end; $date->addDay()) {
-
-            $booked = \App\Models\Booking::whereDate('check_in', '<=', $date)
+            $booked = Booking::whereDate('check_in', '<=', $date)
                 ->whereDate('check_out', '>', $date)
                 ->count();
 
             $ratio = $rooms > 0 ? $booked / $rooms : 0;
-
-            $color = '#22c55e'; // green
+            $color = '#22c55e';
 
             if ($ratio >= 0.8) {
-                $color = '#ef4444'; // red
+                $color = '#ef4444';
             } elseif ($ratio >= 0.5) {
-                $color = '#f59e0b'; // yellow
+                $color = '#f59e0b';
             }
 
             $heatmap[] = [
@@ -120,5 +108,13 @@ class RoomCalendar extends Page
             $this->getEvents()->toArray(),
             $this->getOccupancyHeatmap()
         );
+    }
+
+    private function dispatchCalendarRefresh(): void
+    {
+        $this->dispatch('refreshCalendar', [
+            'rooms' => $this->getRooms(),
+            'events' => $this->getCalendarEvents(),
+        ]);
     }
 }

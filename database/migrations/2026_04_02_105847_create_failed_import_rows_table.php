@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('bookings', function (Blueprint $table) {
-            $table->string('invoice_number')->nullable()->unique();
+        Schema::create('failed_import_rows', function (Blueprint $table): void {
+            $table->id();
+            $table->json('data');
+            $table->foreignId('import_id')->constrained()->cascadeOnDelete();
+            $table->text('validation_error')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -21,9 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('bookings', function (Blueprint $table) {
-            $table->dropUnique(['invoice_number']);
-            $table->dropColumn('invoice_number');
-        });
+        Schema::dropIfExists('failed_import_rows');
     }
 };

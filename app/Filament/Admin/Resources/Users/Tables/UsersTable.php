@@ -51,6 +51,29 @@ class UsersTable
                         default => 'primary'
                     }),
 
+                Tables\Columns\TextColumn::make('role')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => str($state)->headline()),
+
+                // staff shift
+                Tables\Columns\TextColumn::make('shift')
+                    ->label('Shift')
+                    ->badge()
+                    ->icon(fn ($state) => match ($state) {
+                        'morning' => 'heroicon-o-sun',
+                        'evening' => 'heroicon-o-cloud',
+                        'night' => 'heroicon-o-moon',
+                        'off_duty' => 'heroicon-o-x-circle',
+                    })
+                    ->color(fn ($state) => match ($state) {
+                        'morning' => 'success',
+                        'evening' => 'warning',
+                        'night' => 'primary',
+                        'off_duty' => 'gray',
+                    })
+                    ->formatStateUsing(fn ($state) => str($state)->headline())
+                    ->sortable(),
+
                 // staff status
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
@@ -77,10 +100,16 @@ class UsersTable
                     ->sortable(),
             ])
             ->groups([
-                Group::make('roles.name')
-                ->label('Role')
-                ->collapsible() // make the group collapsible
-                ->formatStateUsing(fn ($state) => str($state)->headline()) // format the state using a headline
+                Group::make('role')
+                    ->label('Role')
+                    // ->defaultSort('role')
+                // Group::make('roles.name')
+                // ->label('Role')
+                // ->collapsible() // make the group collapsible
+                // ->getTitleFromRecordUsing(fn ($record) =>
+                //     str(optional($record->roles->first())->name ?? 'No Role')->headline()
+                // ) // get the title from the record using the role name
+                // ->formatStateUsing(fn ($state) => str($state)->headline()) // format the state using a headline
             ])
             ->filters([
                 //
@@ -102,7 +131,15 @@ class UsersTable
                         'offline' => 'Offline',
                         'on_leave' => 'On Leave',
                         'suspended' => 'Suspended',
-                    ])
+                    ]),
+
+                    SelectFilter::make('shift')
+                    ->options([
+                        'morning' => 'Morning Shift',
+                        'evening' => 'Evening Shift',
+                        'night' => 'Night Shift',
+                        'off_duty' => 'Off Duty',
+                    ]),
             ])
             ->recordActions([
                 EditAction::make(),

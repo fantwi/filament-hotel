@@ -23,6 +23,12 @@ class StaffStats extends StatsOverviewWidget
             Stat::make('On Leave', User::where('status','on_leave')->count()),
             Stat::make('Suspended', User::where('status','suspended')->count()),
 
+            // staff shift
+            Stat::make('Morning Shift', User::where('shift','morning')->count()),
+            Stat::make('Evening Shift', User::where('shift','evening')->count()),
+            Stat::make('Night Shift', User::where('shift','night')->count()),
+            Stat::make('Off Duty', User::where('shift','off_duty')->count()),
+
             // managers
             Stat::make('Managers', User::role('manager')->count())
                 ->icon('heroicon-o-briefcase')
