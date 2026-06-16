@@ -27,20 +27,33 @@ class RoomResource extends Resource
     // Admins and receptionists can view Rooms in the navigation
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+        return auth()->user()?->hasAnyRole([
+            'super_admin',
+            'admin',
+            'manager', 
+            'receptionist'
+        ]);
         // return false;
     }
 
     // Admins and receptionists can view rooms
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+        return auth()->user()?->hasAnyRole([
+            'super_admin',
+            'admin',
+            'receptionist'
+        ]);
     }
 
-    public static function canView($record): bool
-    {
-        return auth()->user()?->hasRole('admin');
-    }
+    // public static function canView($record): bool
+    // {
+    //     return auth()->user()?->hasAnyRole([
+    //         'super_admin',
+    //         'admin',
+    //         'receptionist',
+    //     ]);
+    // }
 
     // Only admins can create rooms
     public static function canCreate(): bool

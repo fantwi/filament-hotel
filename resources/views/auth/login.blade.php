@@ -1,4 +1,27 @@
-<x-guest-layout>
+<x-auth-layout>
+
+    @if(session('message'))
+
+        <div class="max-w-xl bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded-xl mb-6">
+
+            {{ session('message') }}
+
+        </div>
+
+    @endif
+
+    <div class="max-w-xl mb-6 text-center">
+
+        <h2 class="text-3xl font-bold">
+            Welcome Back
+        </h2>
+
+        <p class="text-gray-500 mt-2">
+            Sign in to continue
+        </p>
+
+    </div>
+
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
@@ -44,4 +67,4 @@
             </x-primary-button>
         </div>
     </form>
-</x-guest-layout>
+</x-auth-layout>

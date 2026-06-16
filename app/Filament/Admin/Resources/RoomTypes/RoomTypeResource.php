@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+// use Filament\Forms\Components\FileUpload;
 
 class RoomTypeResource extends Resource
 {
@@ -26,12 +27,20 @@ class RoomTypeResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->hasRole('admin');
+        return auth()->user()?->hasAnyRole([
+            'super_admin',
+            'admin',
+            'receptionist',
+        ]);
     }
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasRole('admin');
+        return auth()->user()?->hasAnyRole([
+            'super_admin',
+            'admin',
+            'receptionist',
+        ]);
     }
 
     public static function form(Schema $schema): Schema

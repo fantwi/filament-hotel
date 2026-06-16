@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Bookings\Tables;
 
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+// use Filament\Tables\Actions\Action;
 
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -13,6 +14,7 @@ use Filament\Actions\DeleteBulkAction;
 
 use Filament\Notifications\Notification;
 
+use Filament\Forms;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 
@@ -53,9 +55,8 @@ class BookingsTable
                 TextColumn::make('nights')
                     ->label('Nights')
                     ->state(fn ($record) =>
-                        $record->check_in->diffInDays($record->check_out)
-                        // \Illuminate\Support\Carbon::parse($record->check_in)
-                        //     ->diffInDays($record->check_out)
+                        \Carbon\Carbon::parse($record->check_in)
+                            ->diffInDays($record->check_out)
                     ),
 
                 TextColumn::make('total_price')
@@ -94,6 +95,162 @@ class BookingsTable
                 //
             ])
             ->recordActions([
+
+                Action::make('booking_action')
+
+                    ->label('Action')
+
+                    ->icon('heroicon-o-cog-6-tooth')
+
+                    ->form([
+
+                        Select::make('action')
+
+                            ->options(function ($record) {
+                                
+                                $actions = [
+
+                                'pay' =>
+                                    'Pay',
+
+                                'walk_in_check_in' =>
+                                    'Walk-in Check-in',
+
+                                'check_in' =>
+                                    'Check-in',
+
+                                'check_out' =>
+                                    'Check-out',
+
+                                'cancel' =>
+                                    'Cancel Booking',
+
+                                'mark_no_show' =>
+                                    'Mark No Show',
+
+                                'extend_stay' =>
+                                    'Extend Stay',
+
+                                'refund' =>
+                                    'Refund Payment',
+
+                                ];
+
+                                if (
+                                    $record->payment_status
+                                    !== 'paid'
+                                ) {
+                                    $actions['pay'] = 'Pay';
+                                }
+
+                                if (
+                                    $record->status
+                                    === 'confirmed'
+                                ) {
+                                    $actions['check_in']
+                                        = 'Check-in';
+                                }
+
+                                if (
+                                    $record->status
+                                    === 'checked_in'
+                                ) {
+                                    $actions['check_out']
+                                        = 'Check-out';
+                                }
+
+                                $actions['cancel']
+                                    = 'Cancel Booking';
+
+                                return $actions;
+
+                            })
+
+                            ->required()
+
+                    ])
+
+                    ->action(function (array $data, $record) {
+                        switch ($data['action']) {
+                            case 'pay':
+                                $record->update([
+                                    'payment_status' =>
+                                        'paid',
+                                ]);
+
+                                break;
+
+                            case 'walk_in_check_in':
+                                $record->update([
+                                    'status' =>
+                                        'checked_in',
+                                    'payment_status' =>
+                                        'paid',
+                                    'hold_status' =>
+                                        'confirmed',
+                                ]);
+
+                                break;
+
+                            case 'check_in':
+                                $record->update([
+                                    'status' =>
+                                        'checked_in',
+                                ]);
+
+                                break;
+
+                            case 'check_out':
+                                $record->update([
+                                    'status' =>
+                                        'checked_out',
+                                ]);
+
+                                break;
+
+                            case 'cancel':
+                                $record->update([
+                                    'status' =>
+                                        'cancelled',
+                                ]);
+
+                                break;
+
+                            case 'mark_no_show':
+                                $record->update([
+                                    'status' =>
+                                        'no_show',
+                                ]);
+
+                                break;
+
+                            case 'extend_stay':
+                                $record->update([
+                                    'check_out' =>
+                                        $record
+                                            ->check_out
+                                            ->addDay(),
+                                ]);
+
+                                break;
+
+                            case 'refund':
+                                $record->update([
+                                    'payment_status' =>
+                                        'refunded',
+                                ]);
+
+                                break;
+                        }
+
+                        Notification::make()
+                            ->title(
+                                'Booking updated successfully'
+                            )
+                            ->success()
+                            ->send();
+                    }),
+
                 ViewAction::make(),
                 EditAction::make()
                     ->visible(fn ($record) => $record->status === 'pending'),
@@ -107,7 +264,8 @@ class BookingsTable
                     ->label('Check In')
                     ->color('success')
                     ->icon('heroicon-o-arrow-right-on-rectangle')
-                    ->visible(fn ($record) => $record->status === 'pending')
+                    // ->visible(fn ($record) => $record->status === 'pending')
+                    ->visible(fn () => auth()->user()->hasRole('receptionist'))
                     ->action(function ($record) {
                         $record->update([
                             'status' => 'checked_in',
@@ -172,7 +330,7 @@ class BookingsTable
                             ->send();
 
                         // Generate invoice
-                        InvoiceService::generate($record);
+                        // InvoiceService::generate($record);
                         // return InvoiceService::generate($record);
                         // return redirect()->to(
                         //     asset('storage/invoices/invoice-booking-'.$record->id.'.pdf')
@@ -183,9 +341,10 @@ class BookingsTable
                     ->label('Pay')
                     ->icon('heroicon-o-banknotes')
                     ->color('success')
-                    ->visible(fn ($record) => 
-                        $record->status !== 'checked_out' && $record->balance > 0
-                    )
+                    // ->visible(fn ($record) => 
+                    //     $record->status !== 'checked_out' && $record->balance > 0
+                    // )
+                    ->visible(fn () => auth()->user()->hasRole('accountant'))
                     ->form([
 
                         TextInput::make('amount')
@@ -241,12 +400,14 @@ class BookingsTable
 
                         if (!$record->invoice_number) {
 
-                            $record->update([
-                                'invoice_number' => InvoiceService::generateInvoiceNumber()
-                            ]);
+                            $invoiceNumber = InvoiceService::generateInvoiceNumber();
 
-                            InvoiceService::generate($record);
+                            $record->update([
+                                'invoice_number' => $invoiceNumber
+                            ]);
                         }
+
+                        InvoiceService::generate($record);
                     })
                     ->url(fn ($record) =>
                         asset('storage/invoices/'.$record->invoice_number.'.pdf')

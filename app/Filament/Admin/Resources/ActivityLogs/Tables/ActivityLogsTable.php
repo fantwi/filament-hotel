@@ -32,6 +32,13 @@ class ActivityLogsTable
 
                 TextColumn::make('causer.name')
                     ->label('User')
+                    ->formatStateUsing(
+                        fn ($state, $record) =>
+                            $state
+                            ?? $record
+                                ->subject?->name
+                            ?? 'System'
+                    )
                     ->searchable(),
 
                 TextColumn::make('description')
@@ -43,12 +50,14 @@ class ActivityLogsTable
                         'checked_in' => 'primary',
                         'checked_out' => 'gray',
                         'payment_added' => 'success',
+                        'User logged in' => 'success',
+                        'User logged out' => 'danger',
                         default => 'secondary',
                     }),
 
-                TextColumn::make('subject_type')
-                    ->label('Model')
-                    ->formatStateUsing(fn ($state) => class_basename($state)),
+                // TextColumn::make('subject_type')
+                //     ->label('Model')
+                //     ->formatStateUsing(fn ($state) => class_basename($state)),
 
                 TextColumn::make('created_at')
                     ->label('Date & Time')

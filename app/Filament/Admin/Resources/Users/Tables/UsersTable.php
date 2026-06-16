@@ -9,6 +9,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Columns\TextColumn;
 use Spatie\Permission\Models\Role;
 
 class UsersTable
@@ -18,90 +19,110 @@ class UsersTable
         return $table
             ->columns([
                 //
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->label('Staff Name')
-                    ->searchable()
+                    ->searchable(['first_name', 'last_name', 'email'])
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('email')
+                TextColumn::make('email')
                     ->label('Email')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('roles.name')
+                // TextColumn::make('department_label')
+                //     ->label('Department')
+                //     ->badge()
+                //     // ->formatStateUsing(fn ($state) => str($state)->headline())
+                //     ->color(fn ($state) => match ($state) {
+                //         'super_admin' => 'danger',
+                //         'admin' => 'warning',
+                //         'reception' => 'success',
+                //         'housekeeping' => 'info',
+                //         'accounting' => 'secondary',
+                //         'management' => 'primary',
+                //         'guest' => 'gray',
+                //         default => 'gray',
+                //     })
+                //     ->sortable(),
+
+                // staff phone number
+                TextColumn::make('phone_number')
+                    ->label('Phone Number')
+                    ->searchable()
+                    ->sortable(),
+
+
+                TextColumn::make('role_name')
                     ->label('Role')
                     ->badge()
-                    ->formatStateUsing(fn ($state) => str($state)->headline()->toString())
-                    ->separator(',')
                     ->icon(fn ($state) => match ($state) {
-                        'super_admin' => 'heroicon-o-shield-check',
-                        'admin' => 'heroicon-o-shield-exclamation',
-                        'manager' => 'heroicon-o-briefcase',
-                        'receptionist' => 'heroicon-o-user',
-                        'housekeeping' => 'heroicon-o-sparkles',
-                        'accountant' => 'heroicon-o-banknotes',
+                        'Super Admin' => 'heroicon-o-shield-check',
+                        'Admin' => 'heroicon-o-shield-exclamation',
+                        'Manager' => 'heroicon-o-briefcase',
+                        'Receptionist' => 'heroicon-o-user',
+                        'Housekeeping' => 'heroicon-o-sparkles',
+                        'Accountant' => 'heroicon-o-banknotes',
                         default => 'heroicon-o-user-circle',
                     })
                     ->color(fn ($state) => match ($state) {
-                        'super_admin' => 'danger',
-                        'admin' => 'warning',
-                        'manager' => 'secondary',
-                        'receptionist' => 'success',
-                        'housekeeping' => 'info',
-                        'accountant' => 'gray',
+                        'Super Admin' => 'danger',
+                        'Admin' => 'warning',
+                        'Manager' => 'secondary',
+                        'Receptionist' => 'success',
+                        'Housekeeping' => 'info',
+                        'Accountant' => 'gray',
                         default => 'primary'
-                    }),
-
-                Tables\Columns\TextColumn::make('role')
-                    ->badge()
-                    ->formatStateUsing(fn ($state) => str($state)->headline()),
-
-                // staff shift
-                Tables\Columns\TextColumn::make('shift')
-                    ->label('Shift')
-                    ->badge()
-                    ->icon(fn ($state) => match ($state) {
-                        'morning' => 'heroicon-o-sun',
-                        'evening' => 'heroicon-o-cloud',
-                        'night' => 'heroicon-o-moon',
-                        'off_duty' => 'heroicon-o-x-circle',
                     })
-                    ->color(fn ($state) => match ($state) {
-                        'morning' => 'success',
-                        'evening' => 'warning',
-                        'night' => 'primary',
-                        'off_duty' => 'gray',
-                    })
-                    ->formatStateUsing(fn ($state) => str($state)->headline())
                     ->sortable(),
 
-                // staff status
-                Tables\Columns\TextColumn::make('status')
-                    ->label('Status')
-                    ->sortable()
-                    ->badge()
-                    ->icon(fn ($state) => match ($state) {
-                        'online' => 'heroicon-o-check-circle',
-                        'offline' => 'heroicon-o-exclamation-circle',
-                        'on_leave' => 'heroicon-o-clock',
-                        'suspended' => 'heroicon-o-x-circle',
-                    })
-                    ->color(fn ($state) => match ($state) {
-                        'online' => 'success',
-                        'offline' => 'danger',
-                        'on_leave' => 'warning',
-                        'suspended' => 'info',
-                        default => 'gray',
-                    })
-                    ->formatStateUsing(fn ($state) => str($state)->headline()),
+                // staff shift
+                // TextColumn::make('shift')
+                //     ->label('Shift')
+                //     ->badge()
+                //     ->icon(fn ($state) => match ($state) {
+                //         'morning' => 'heroicon-o-sun',
+                //         'evening' => 'heroicon-o-cloud',
+                //         'night' => 'heroicon-o-moon',
+                //         'off_duty' => 'heroicon-o-x-circle',
+                //     })
+                //     ->color(fn ($state) => match ($state) {
+                //         'morning' => 'success',
+                //         'evening' => 'warning',
+                //         'night' => 'primary',
+                //         'off_duty' => 'gray',
+                //     })
+                //     ->formatStateUsing(fn ($state) => str($state)->headline())
+                //     ->sortable(),
 
-                Tables\Columns\TextColumn::make('created_at')
+                // staff status
+                // TextColumn::make('status')
+                //     ->label('Status')
+                //     ->sortable()
+                //     ->badge()
+                //     ->icon(fn ($state) => match ($state) {
+                //         'online' => 'heroicon-o-check-circle',
+                //         'offline' => 'heroicon-o-exclamation-circle',
+                //         'on_leave' => 'heroicon-o-clock',
+                //         'suspended' => 'heroicon-o-x-circle',
+                //     })
+                //     ->color(fn ($state) => match ($state) {
+                //         'online' => 'success',
+                //         'offline' => 'danger',
+                //         'on_leave' => 'warning',
+                //         'suspended' => 'info',
+                //         default => 'gray',
+                //     })
+                //     ->formatStateUsing(fn ($state) => str($state)->headline()),
+
+                TextColumn::make('created_at')
                     ->label('Created')
                     ->dateTime()
                     ->sortable(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->groups([
-                Group::make('role')
-                    ->label('Role')
+                Group::make('department')
+                    ->label('Department')
+                    ->collapsible(),
                     // ->defaultSort('role')
                 // Group::make('roles.name')
                 // ->label('Role')
@@ -113,17 +134,20 @@ class UsersTable
             ])
             ->filters([
                 //
-                SelectFilter::make('role')
-                    ->label('Role')
-                    ->options(
-                        Role::pluck('name', 'name')
-                            ->map(fn ($role) => str($role)->headline())
-                    )
-                    ->query(function ($query, $data) {
-                        if (!empty($data['value'])) {
-                            $query->role($data['value']);
-                        }
-                    }),
+                SelectFilter::make('department')
+                    ->options(\App\Models\User::getDepartments()),
+
+                // SelectFilter::make('role')
+                //     ->label('Role')
+                //     ->options(
+                //         Role::pluck('name', 'name')
+                //             ->map(fn ($role) => str($role)->headline())
+                //     )
+                //     ->query(function ($query, $data) {
+                //         if (!empty($data['value'])) {
+                //             $query->role($data['value']);
+                //         }
+                //     }),
 
                 SelectFilter::make('status')
                     ->options([
@@ -149,6 +173,6 @@ class UsersTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultGroup('roles.name');
+            ->defaultGroup('department');
     }
 }

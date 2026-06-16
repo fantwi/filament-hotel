@@ -23,12 +23,18 @@ class UserResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->hasAnyRole(['super_admin', 'admin']);
+        return auth()->user()?->hasAnyRole([
+            'super_admin', 
+            'admin',
+        ]);
     }
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasAnyRole(['super_admin', 'admin']);
+        return auth()->user()->hasAnyRole([
+            'super_admin', 
+            'admin'
+        ]);
     }
 
     public static function form(Schema $schema): Schema

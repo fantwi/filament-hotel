@@ -19,16 +19,26 @@ class BookingForm
         return $schema
             ->components([
                 Select::make('guest_id')
-                    ->relationship('guest', 'first_name')
+                    ->relationship('user', 'name')
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->full_name)
                     ->searchable(['first_name', 'last_name'])
                     ->required(),
 
+                // Select::make('guest_id')
+                //     ->relationship('guest', 'first_name')
+                //     ->getOptionLabelFromRecordUsing(fn ($record) => $record->full_name)
+                //     ->searchable(['first_name', 'last_name'])
+                //     ->required(),
+
                 Select::make('room_id')
-                    ->relationship(
-                        name: 'room',
-                        titleAttribute: 'room_number',
-                        modifyQueryUsing: fn ($query) => $query->where('status', '!=', 'maintenance')
+                    // ->relationship(
+                    //     name: 'room',
+                    //     titleAttribute: 'room_number',
+                    //     modifyQueryUsing: fn ($query) => $query->where('status', '!=', 'maintenance')
+                    // )
+                    ->relationship('room', 'room_number')
+                    ->default(
+                        request('room_id')
                     )
                     ->searchable()
                     ->reactive()
@@ -168,7 +178,7 @@ class BookingForm
                         $nights = \Carbon\Carbon::parse($checkIn)
                             ->diffInDays($checkOut);
                 
-                        $price = $room->roomType->price * max($nights, 1);
+                        $price = $room->roomType->price_per_night * max($nights, 1);
                 
                         $set('total_price', $price);
                     }),

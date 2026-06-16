@@ -4,20 +4,36 @@ namespace App\Filament\Admin\Resources\Users\Schemas;
 
 use Filament\Forms;
 use Filament\Schemas\Schema;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Spatie\Permission\Models\Role;
+use App\Models\User;
 
 class UserForm
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema->schema([
-            Forms\Components\TextInput::make('name')
+        return $schema->components([
+            TextInput::make('first_name')
                 ->required(),
 
-            Forms\Components\TextInput::make('email')
+            TextInput::make('last_name')
+                ->required(),
+
+            TextInput::make('email')
                 ->email()
                 ->required(),
 
-            Forms\Components\TextInput::make('password')
+            TextInput::make('phone_number')
+                ->required(),
+
+            Select::make('department')
+                ->options(User::getDepartments())
+                ->required(),
+                // ->dehydrated()
+                // ->native(false),
+
+            TextInput::make('password')
                 ->password()
                 ->required(fn (string $operation): bool => $operation === 'create')
                 ->dehydrated(fn ($state): bool => filled($state))
@@ -25,33 +41,37 @@ class UserForm
                 ->label(fn (string $operation): string => $operation === 'edit' ? 'New Password' : 'Password')
                 ->helperText('Leave blank to keep the current password.'),
 
-            Forms\Components\Select::make('roles')
-                ->relationship('roles', 'name')
-                ->multiple()
-                ->preload()
-                ->options(function () {
-                    $roles = \Spatie\Permission\Models\Role::pluck('name', 'name');
+            // Select::make('roles')
+            //     ->relationship('roles', 'name')
+            //     ->multiple()
+            //     ->preload()
+            //     ->options(function () {
+            //         $roles = \Spatie\Permission\Models\Role::pluck('name', 'name');
 
-                    if (! auth()->user()->hasRole('super_admin')) {
-                        $roles = $roles->except(['admin', 'super_admin']);
-                    }
+            //         if (! auth()->user()->hasRole('super_admin')) {
+            //             $roles = $roles->except(['admin', 'super_admin']);
+            //         }
 
-                    return $roles;
-                }),
+            //         return $roles;
+            //     }),
 
-            Forms\Components\Select::make('role')
-                ->label('Role')
-                ->options([
-                    'super_admin' => 'Super Admin',
-                    'admin' => 'Admin',
-                    'manager' => 'Manager',
-                    'receptionist' => 'Receptionist',
-                    'housekeeping' => 'Housekeeping',
-                    'accountant' => 'Accountant',
-                ])
-                ->required(),
+            // Select::make('roles')
+            //     ->label('Role')
+            //     // ->relationship('roles', 'name')
+            //     ->required()
+            //     ->multiple(false)
+            //     ->preload()
+            //     ->options([
+            //         'super_admin' => 'Super Admin',
+            //         'admin' => 'Admin',
+            //         'manager' => 'Manager',
+            //         'receptionist' => 'Receptionist',
+            //         'housekeeping' => 'Housekeeping',
+            //         'accountant' => 'Accountant',
+            //     ])
+            //     ->required(),
 
-            Forms\Components\Select::make('status')
+            Select::make('status')
                 ->label('Staff Status')
                 ->options([
                     'online' => 'Online',
@@ -62,7 +82,7 @@ class UserForm
                 ->default('online')
                 ->required(),
 
-            Forms\Components\Select::make('shift')
+            Select::make('shift')
                 ->label('Work Shift')
                 ->options([
                     'morning' => 'Morning Shift',

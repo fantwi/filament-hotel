@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use App\Models\ConferenceBooking;
 
 class Payment extends Model
 {
@@ -15,8 +16,11 @@ class Payment extends Model
 
     protected $fillable = [
         'booking_id',
+        'conference_booking_id',
+        'guest_id',
         'amount',
         'method',
+        'payment_status',
         // 'payment_date',
         'transaction_reference',
     ];
@@ -26,14 +30,45 @@ class Payment extends Model
         return $this->belongsTo(Booking::class);
     }
 
+    public function conferenceBooking()
+    {
+        return $this->belongsTo(
+            ConferenceBooking::class
+        );
+    }
+
     protected static function booted()
     {
         static::created(function ($payment) {
-            $booking = $payment->booking;
+            $booking = $payment->booking ?? $payment->conferenceBooking;
 
-            if ($booking->balance <= 0) {
-                // $booking->update(['status' => 'checked_out']);
+            if (!$booking) {
+                return 0;
             }
+            // if ($booking->balance <= 0) {
+            //     // $booking->update(['status' => 'checked_out']);
+            // }
+            
+            activity()
+                ->causedBy(auth()->user() ?? $payment->booking->guest?->user)
+                ->performedOn($payment)
+                ->log('Payment created');
+
+            return $booking->balance ?? 0;
+
+        });
+
+        static::updated(function ($payment) {
+            activity()
+                ->causedBy(
+                    auth()->user() ?? $payment->booking->guest?->user
+                )
+                ->performedOn(
+                    $payment
+                )
+                ->log(
+                    'Payment updated'
+                );
         });
     }
 

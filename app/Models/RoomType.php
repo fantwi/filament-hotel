@@ -16,9 +16,22 @@ class RoomType extends Model
     protected $fillable = [
         'name',
         'price_per_night',
+        'image',
         'capacity',
         'description',
     ];
+
+    public function rooms()
+    {
+        return $this->hasMany(Room::class);
+    }
+
+    public function facilities()
+    {
+        return $this->belongsToMany(
+            Facility::class
+        );
+    }
 
     public function getActivitylogOptions(): LogOptions
     {

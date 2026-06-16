@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use App\Models\Payment;
 
 class Booking extends Model
 {
@@ -18,21 +19,35 @@ class Booking extends Model
     protected $fillable = [
         'guest_id',
         'room_id',
+
         'check_in',
         'check_out',
+        
+        'check_in_time',
+        'check_out_time',
+        
         'total_price',
-        'status',
+        'payment_status',
+        
+        'hold_until',
+        'hold_status',
         'invoice_number',
     ];
 
     protected $casts = [
-        'check_in' => 'date',
-        'check_out' => 'date',
+        'check_in' => 'datetime',
+        'check_out' => 'datetime',
+        'hold_until' => 'datetime',
     ];
 
     public function guest()
     {
         return $this->belongsTo(Guest::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'guest_id');
     }
 
     public function room()
@@ -119,11 +134,21 @@ class Booking extends Model
 
         static::created(function ($booking) {
             static::syncRoomStatus($booking->room_id);
+
+            activity()
+                ->causedBy(auth()->user() ?? $booking->guest?->user)
+                ->performedOn($booking)
+                ->log('Booking created');
         });
 
         static::updated(function ($booking) {
             if ($booking->wasChanged('room_id')) {
                 static::syncRoomStatus($booking->getOriginal('room_id'));
+                
+                activity()
+                    ->causedBy(auth()->user() ?? $booking->guest?->user)
+                    ->performedOn($booking)
+                    ->log('Booking updated');
             }
 
             static::syncRoomStatus($booking->room_id);

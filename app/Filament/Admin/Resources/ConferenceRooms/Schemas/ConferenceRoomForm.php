@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Filament\Admin\Resources\ConferenceRooms\Schemas;
+
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Schemas\Schema;
+
+class ConferenceRoomForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        // return $schema
+        //     ->components([
+        //         //
+        //     ]);
+
+        return $schema
+            ->components([
+
+                TextInput::make('name')
+                    ->required(),
+
+                Textarea::make('description'),
+
+                TextInput::make('capacity')
+                    ->numeric()
+                    ->required(),
+
+                TextInput::make('price_per_hour')
+                    ->numeric()
+                    ->prefix('GHS'),
+
+                CheckboxList::make('facilities')
+                    ->relationship('facilities', 'name')
+                    ->columns(2)
+                    ->searchable(),
+
+                FileUpload::make('image')
+                    ->directory('conference-rooms'),
+
+                Toggle::make('is_available'),
+
+            ]);
+    }
+}

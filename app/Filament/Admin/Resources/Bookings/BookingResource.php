@@ -27,12 +27,24 @@ class BookingResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+        return auth()->user()?->hasAnyRole([
+            'super_admin',
+            'admin',
+            'manager',
+            'accountant',
+            'receptionist'
+        ]);
     }
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+        return auth()->user()->hasAnyRole([
+            'super_admin',
+            'admin', 
+            'manager',
+            'accountant',
+            'receptionist'
+        ]);
     }
 
     public static function canEdit($record): bool

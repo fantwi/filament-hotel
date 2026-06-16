@@ -27,13 +27,22 @@ class PaymentResource extends Resource
     // Hide from sidebar if not admin or accountant
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'accountant']);
+        return auth()->user()?->hasAnyRole([
+            'super_admin',
+            'admin', 
+            'accountant'
+        ]);
     }
 
     // Block direct URL access if not admin or accountant
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'accountant']);
+        return auth()->user()?->hasAnyRole([
+            'super_admin',
+            'admin',
+            // 'manager',
+            'accountant'
+        ]);
     }
 
     public static function form(Schema $schema): Schema

@@ -8,6 +8,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use App\Models\ActivityLog;
+use App\Models\User;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -26,9 +28,29 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        $request->session()->regenerate();
+        $request->session()->regenerate(); // regenerate the session
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // return redirect()->intended(route('dashboard', absolute: false));
+
+        ActivityLog::create([
+           'user_id' => auth()->id(),
+           'model' => User::class,
+           'model_id' => auth()->id(),
+           'action' => 'Logged in',
+        //    'subject_id' => $booking->id,
+        ]);
+
+        $user = auth()->user(); // get the authenticated user
+
+        if ($user->isStaff()) {
+            return redirect('/admin'); // filament panel
+        }
+
+        if ($user->isGuest()) {
+            return redirect('/dashboard'); // guest dashboard
+        }
+
+        return redirect('/');
     }
 
     /**
@@ -41,6 +63,14 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+
+        ActivityLog::create([
+            'user_id'=>auth()->id(),
+            'model' => User::class,
+            'model_id' => auth()->id(),
+            'action'=>'Logged out',
+            // 'subject_id' => $booking->id,
+        ]);
 
         return redirect('/');
     }

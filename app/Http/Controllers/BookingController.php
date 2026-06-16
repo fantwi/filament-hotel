@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\Room;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,6 +11,68 @@ use Illuminate\Validation\Rule;
 
 class BookingController extends Controller
 {
+    public function create(Request $request)
+    {
+        $room = Room::findOrFail(
+            $request->room_id
+        );
+
+        return view(
+            'bookings.create',
+            compact('room')
+        );
+    }
+
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'room_id'=>'required',
+            'check_in'=>'required|date',
+            'check_out'=>'required|date',
+        ]);
+
+        $booked = Booking::where('room_id', $request->room_id)
+            ->where(function($query) use($request) {
+                $query->whereBetween('check_in', [
+                    $request->check_in,
+                    $request->check_out
+                ]);
+            })
+            ->exists();
+
+        if($booked){
+            return back()
+            ->withErrors(
+                ['Room no longer available']
+            );
+        }
+
+        Booking::create([
+            'guest_id' =>
+                auth()->user()->guest->id,
+
+            'room_id' =>
+                $request->room_id,
+
+            'check_in' =>
+                $request->check_in,
+
+            'check_out' =>
+                $request->check_out,
+
+            'hold_status' => 'confirmed',
+        ]);
+
+
+        return redirect()
+            ->route('dashboard')
+            ->with(
+                'success',
+                'Booking created successfully'
+            );
+    }
+
     public function calendarEvents(): JsonResponse
     {
         $this->authorizeBookingAccess();

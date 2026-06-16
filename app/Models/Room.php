@@ -21,14 +21,13 @@ class Room extends Model
         'status',
     ];
 
-    public function roomType()
-    {
-        /*
+    /*
         |--------------------------------------------------------------------------
         | Relationships
         |--------------------------------------------------------------------------
-        */
-
+    */
+    public function roomType()
+    {
         return $this->belongsTo(RoomType::class);
     }
 

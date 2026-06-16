@@ -29,6 +29,14 @@ class ActivityLogResource extends Resource
     //     return ActivityLogForm::configure($schema);
     // }
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            'super_admin', 
+            'admin'
+        ]);
+    }
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()

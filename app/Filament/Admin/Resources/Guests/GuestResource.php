@@ -26,12 +26,21 @@ class GuestResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+        return auth()->user()?->hasAnyRole([
+            'super_admin',
+            'admin', 
+            'receptionist'
+        ]);
     }
 
+    // Check if user can view guests
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'receptionist']);
+        return auth()->user()?->hasAnyRole([
+            'super_admin',
+            'admin',
+            'receptionist'
+        ]);
     }
 
     public static function form(Schema $schema): Schema
@@ -64,5 +73,10 @@ class GuestResource extends Resource
             'view' => ViewGuest::route('/{record}'),
             'edit' => EditGuest::route('/{record}/edit'),
         ];
+    }
+
+    protected function afterCreate(): void
+    {
+        $this->record->assignRole('guest');
     }
 }

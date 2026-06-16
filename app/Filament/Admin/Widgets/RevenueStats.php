@@ -2,13 +2,13 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use Filament\Widgets\StatsOverviewWidget;
+use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use App\Models\Payment;
 use App\Models\Booking;
 use Carbon\Carbon;
 
-class RevenueStats extends StatsOverviewWidget
+class RevenueStats extends BaseWidget
 {
     protected function getStats(): array
     {
@@ -44,15 +44,15 @@ class RevenueStats extends StatsOverviewWidget
                 ->description('Unpaid bookings')
                 ->color('danger'),
 
-            Stat::make('Total Bookings', $totalBookings)
-                ->description('All bookings')
-                ->color('gray'),
+            // Stat::make('Total Bookings', $totalBookings)
+            //     ->description('All bookings')
+            //     ->color('gray'),
         ];
     }
 
     // Only Admins and Accountants can view Revenue Stats Widget
     public static function canView(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'accountant']);
+        return auth()->user()->hasAnyRole(['super_admin', 'admin', 'accountant']);
     }
 }

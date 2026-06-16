@@ -142,6 +142,7 @@ class BookingWorkflowTest extends TestCase
         ]);
 
         $guest = Guest::create([
+            'user_id' => $user->id,
             'first_name' => 'Jane',
             'last_name' => 'Doe',
             'phone' => '233000000000',

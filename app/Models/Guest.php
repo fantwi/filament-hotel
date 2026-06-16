@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use App\Models\Booking;
+use App\Models\User;
 
 class Guest extends Model
 {
@@ -14,11 +16,13 @@ class Guest extends Model
     use LogsActivity;
     
     protected $fillable = [
+        'user_id',
         'first_name',
         'last_name',
-        'phone',
+        'phone_number',
         'email',
         'id_number',
+        'profile_photo',
     ];
 
     // Relationships
@@ -27,10 +31,20 @@ class Guest extends Model
         return $this->hasMany(Booking::class);
     }
 
-    // Methods
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    // Methods 
+    public function getNameAttribute()
+    {
+        return $this->first_name . ' ' . $this->last_name;
+    }
+
     public function getFullNameAttribute()
     {
-        return "{$this->first_name} {$this->last_name}";
+        return $this->first_name . ' ' . $this->last_name;
     }
 
     public function getActivitylogOptions(): LogOptions

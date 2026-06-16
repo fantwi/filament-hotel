@@ -16,21 +16,35 @@ class GuestsTable
         return $table
             ->columns([
                 //
-                Tables\Columns\TextColumn::make('first_name')
-                    ->searchable()
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('first_name')
+                //     ->searchable()
+                //     ->sortable(),
 
-                Tables\Columns\TextColumn::make('last_name')
-                    ->searchable()
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('last_name')
+                //     ->searchable()
+                //     ->sortable(),
 
-                Tables\Columns\TextColumn::make('phone')
+                Tables\Columns\TextColumn::make('full_name')
+                    ->label('Guest')
+                    ->searchable(['first_name', 'last_name', 'email'])
+                    ->sortable()
+                    ->getStateUsing(fn ($record) =>
+                        $record->first_name . ' ' . $record->last_name
+                    ),
+
+                Tables\Columns\TextColumn::make('phone_number')
+                    ->label('Phone Number')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('email')
+                    ->label('Email')
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])
