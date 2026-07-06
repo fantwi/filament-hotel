@@ -434,6 +434,10 @@ Route::get(
     'conference.invoice'
 );
 
+Route::get('/restaurant', function () {
+    return view('restaurant.index');
+})->name('restaurant');
+
 Route::middleware('auth')->get('/dashboard', function () {
 
     $user = auth()->user();
@@ -1525,6 +1529,32 @@ Route::post('/booking/pay', function (Request $request) {
     return redirect($data['data']['authorization_url']);
 
 })->name('booking.pay');
+
+Route::middleware('auth')->get(
+
+    '/booking/{booking}/pay',
+
+    function (Booking $booking) {
+
+        // Prevent payment if already paid
+        if ($booking->payment_status === 'paid') {
+            return redirect()
+                ->route('payments')
+                ->with('error', 'This booking has already been paid.');
+        }
+
+        // Prevent payment if hold expired
+        if ($booking->hold_status === 'expired') {
+            return redirect()
+                ->route('payments')
+                ->with('error', 'This booking has expired.');
+        }
+
+        // Redirect to your existing booking payment page
+        return redirect()->route('booking.payment', $booking);
+    }
+
+)->name('booking.pay.action');
 
 Route::post(
 
