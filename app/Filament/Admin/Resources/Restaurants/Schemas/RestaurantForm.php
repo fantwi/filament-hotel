@@ -3,18 +3,17 @@
 namespace App\Filament\Admin\Resources\Restaurants\Schemas;
 
 use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\Toggle;
+//use Filament\Forms\Components\Section;
 
 class RestaurantForm
 {
-    // public static function configure(Schema $schema): Schema
-    // {
-    //     return $schema
-    //         ->components([
-    //             //
-    //         ]);
-    // }
-
-    public static function schema(Schema $schema): Schema {
+    public static function configure(Schema $schema): Schema {
 
         return $schema
 
@@ -32,8 +31,11 @@ class RestaurantForm
                             ->required(),
 
                         FileUpload::make('hero_image')
+                            ->label('Hero Image')
                             ->image()
-                            ->directory('restaurants'),
+                            ->disk('public')
+                            ->directory('restaurants')
+                            ->visibility('public'),
 
                         TextInput::make('phone'),
 

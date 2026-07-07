@@ -441,7 +441,7 @@ Route::get(
 
 Route::get('/restaurant', function () {
 
-    $restaurant = Restaurant::first();
+    $restaurant = Restaurant::with('tables')->first();
 
     return view(
         'restaurant.index',

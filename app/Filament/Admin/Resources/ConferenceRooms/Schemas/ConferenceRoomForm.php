@@ -40,7 +40,11 @@ class ConferenceRoomForm
                     ->searchable(),
 
                 FileUpload::make('image')
-                    ->directory('conference-rooms'),
+                    ->label('Image')
+                    ->image()
+                    ->disk('public')
+                    ->directory('conference-rooms')
+                    ->visibility('public'),
 
                 Toggle::make('is_available'),
 

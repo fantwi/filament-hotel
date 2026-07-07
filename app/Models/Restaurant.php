@@ -39,4 +39,11 @@ class Restaurant extends Model
         'is_open',
 
     ];
+
+    public function tables()
+    {
+        return $this->hasMany(
+            RestaurantTable::class
+        );
+    }
 }

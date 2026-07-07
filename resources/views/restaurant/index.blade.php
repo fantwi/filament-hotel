@@ -2,10 +2,6 @@
 
 <section class="relative">
 
-    <!-- <img
-        src="{{ asset('images/restaurant-banner.jpg') }}"
-        class="w-full h-[500px] object-cover"
-    > -->
     <img
         src="{{ asset('storage/' . $restaurant->hero_image) }}"
         class="w-full h-[500px] object-cover"
@@ -78,14 +74,14 @@
             <div>
                 <strong>Cuisine:</strong>
 
-                African • Continental • Chinese • Italian
+                {{ $restaurant->cuisine }}
 
             </div>
 
             <div>
                 <strong>Dress Code:</strong>
 
-                Smart Casual
+                {{ $restaurant->dress_code }}
 
             </div>
 
@@ -148,6 +144,42 @@
             <!-- Repeat for more dishes -->
 
         </div>
+
+    </div>
+
+</section>
+
+<section class="max-w-7xl mx-auto py-16">
+
+    <h2 class="text-3xl font-bold mb-8">
+        Our Restaurant Tables
+    </h2>
+
+    <div class="grid md:grid-cols-3 gap-6">
+
+        @foreach($restaurant->tables as $table)
+
+            <div class="bg-white shadow rounded-xl p-6">
+
+                <h3 class="text-xl font-bold">
+                    {{ $table->table_number }}
+                </h3>
+
+                <p>
+                    Capacity: {{ $table->capacity }}
+                </p>
+
+                <p>
+                    Location: {{ $table->location }}
+                </p>
+
+                <span class="inline-block mt-3 px-3 py-1 rounded-full bg-green-100 text-green-700">
+                    {{ ucfirst($table->status) }}
+                </span>
+
+            </div>
+
+        @endforeach
 
     </div>
 
