@@ -2,9 +2,14 @@
 
 <section class="relative">
 
-    <img
+    <!-- <img
         src="{{ asset('images/restaurant-banner.jpg') }}"
         class="w-full h-[500px] object-cover"
+    > -->
+    <img
+        src="{{ asset('storage/' . $restaurant->hero_image) }}"
+        class="w-full h-[500px] object-cover"
+        alt="{{ $restaurant->name }}"
     >
 
     <div
@@ -17,11 +22,11 @@
     >
 
         <h1 class="text-5xl font-bold mb-4">
-            Restaurant
+            {{ $restaurant->name }}
         </h1>
 
         <p class="text-xl">
-            Fine Dining • Local & International Cuisine
+            {{ $restaurant->description }} • Local & International Cuisine
         </p>
 
     </div>
@@ -57,17 +62,17 @@
 
             <div>
                 <strong>Opening:</strong>
-                6:00 AM
+                {{ \Carbon\Carbon::parse($restaurant->opening_time)->format('g:i A') }}
             </div>
 
             <div>
                 <strong>Closing:</strong>
-                11:00 PM
+                {{ \Carbon\Carbon::parse($restaurant->closing_time)->format('g:i A') }}
             </div>
 
             <div>
                 <strong>Capacity:</strong>
-                120 Guests
+                {{ $restaurant->capacity }} Guests
             </div>
 
             <div>

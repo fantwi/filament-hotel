@@ -18,6 +18,7 @@ use App\Models\Guest;
 use App\Models\ConferenceRoom;
 use App\Models\ConferenceBooking;
 use App\Models\ContactMessage;
+use App\Models\Restaurant;
 use App\Services\InvoiceService;
 use Carbon\CarbonPeriod;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -434,8 +435,19 @@ Route::get(
     'conference.invoice'
 );
 
+// Route::get('/restaurant', function () {
+//     return view('restaurant.index');
+// })->name('restaurant');
+
 Route::get('/restaurant', function () {
-    return view('restaurant.index');
+
+    $restaurant = Restaurant::first();
+
+    return view(
+        'restaurant.index',
+        compact('restaurant')
+    );
+
 })->name('restaurant');
 
 Route::middleware('auth')->get('/dashboard', function () {
