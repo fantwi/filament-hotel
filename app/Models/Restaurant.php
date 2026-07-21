@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\RestaurantTable;
 
 class Restaurant extends Model
 {
@@ -40,10 +41,19 @@ class Restaurant extends Model
 
     ];
 
+    // Relationships
     public function tables()
     {
         return $this->hasMany(
             RestaurantTable::class
         );
     }
+
+    public function reservations()
+    {
+        return $this->hasMany(
+            RestaurantReservation::class
+        );
+    }
+    // End Relationships
 }

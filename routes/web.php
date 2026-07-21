@@ -1,7 +1,8 @@
 <?php
 
 use App\Http\Controllers\BookingController;
-use App\Http\Controllers\ProfileController;
+// use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RestaurantReservationController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
@@ -19,16 +20,17 @@ use App\Models\ConferenceRoom;
 use App\Models\ConferenceBooking;
 use App\Models\ContactMessage;
 use App\Models\Restaurant;
+use App\Models\RestaurantReservation;
 use App\Services\InvoiceService;
 use Carbon\CarbonPeriod;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-Route::get('/', function () {
-    // $roomTypes = RoomType::all();
-    $roomTypes = RoomType::with('facilities')->get();
+// Route::get('/', function () {
+//     // $roomTypes = RoomType::all();
+//     $roomTypes = RoomType::with('facilities')->get();
 
-    return view('welcome', compact('roomTypes'));
-})->name('home');
+//     return view('dashboard', compact('roomTypes'));
+// })->name('home');
 
 // Route::get('/dashboard', function () {
 
@@ -182,7 +184,7 @@ Route::middleware('auth')->group(function () {
                     'total_price' => $total,
                     'status' => 'pending',
                     'payment_status' => 'pending',
-                    'hold_until' => now()->addMinutes(10),
+                    'hold_until' => now()->addMinutes(15),
                 ]);
 
                 if ($booking->payment_status === 'pending'
@@ -449,6 +451,249 @@ Route::get('/restaurant', function () {
     );
 
 })->name('restaurant');
+
+Route::get(
+    '/restaurant/reserve',
+    [RestaurantReservationController::class, 'create']
+)->name('restaurant.reserve');
+
+Route::post(
+    '/restaurant/reserve',
+    [RestaurantReservationController::class, 'store']
+)->name('restaurant.reserve.store');
+
+Route::get(
+
+    '/restaurant/reservations/{reservation}/payment',
+
+    function (
+
+        RestaurantReservation $reservation
+
+    ) {
+
+        if (
+
+            $reservation->hold_status == 'expired'
+
+        ) {
+
+            abort(403);
+
+        }
+
+        if (
+
+            $reservation->hold_until
+
+            &&
+
+            now()->greaterThan(
+
+                $reservation->hold_until
+
+            )
+
+        ) {
+
+            $reservation->update([
+
+                'hold_status' => 'expired',
+
+                'status' => 'cancelled',
+
+                'payment_status' => 'cancelled',
+
+            ]);
+
+            abort(403);
+
+        }
+
+        $reservation->table->update([
+                'status' => 'available',
+            ]);
+
+        if(
+
+    $reservation->hold_status == 'expired'
+
+    ){
+
+        return back()->with(
+
+            'error',
+
+            'Reservation expired.'
+
+        );
+
+    }
+
+        return view(
+
+            'restaurant.payment',
+
+            compact('reservation')
+
+        );
+
+    }
+
+)->name('restaurant.payment');
+
+Route::post(
+    '/restaurant/reservations/{reservation}/pay',
+    function (RestaurantReservation $reservation) {
+
+        if ($reservation->payment_status === 'completed') {
+
+            return back()->with(
+                'error',
+                'Reservation has already been paid.'
+            );
+        }
+
+        if ($reservation->hold_status === 'expired') {
+
+            return back()->with(
+                'error',
+                'Reservation has expired.'
+            );
+        }
+
+        $response = Http::withToken(
+            config('services.paystack.secretKey')
+        )
+        ->post(
+            'https://api.paystack.co/transaction/initialize',
+            [
+
+                'email' => auth()->user()->email,
+
+                'amount' => $reservation->reservation_fee * 100,
+
+                'reference' => 'REST_' . uniqid(),
+
+                'callback_url' => route(
+                    'restaurant.verify',
+                    $reservation
+                ),
+
+            ]
+        )
+        ->json();
+
+        if (
+            ! isset(
+                $response['data']['authorization_url']
+            )
+        ) {
+
+            return back()->with(
+                'error',
+                'Unable to initialize payment.'
+            );
+
+        }
+
+        return redirect(
+            $response['data']['authorization_url']
+        );
+
+    }
+)->middleware('auth')
+ ->name('restaurant.pay');
+
+Route::get(
+    '/restaurant/reservations/{reservation}/verify',
+    function (RestaurantReservation $reservation) {
+
+        $reference = request('reference');
+
+        if (! $reference) {
+
+            return redirect()
+                ->route(
+                    'restaurant.payment',
+                    $reservation
+                )
+                ->with(
+                    'error',
+                    'Missing payment reference.'
+                );
+        }
+
+        $response = Http::withToken(
+            config('services.paystack.secretKey')
+        )
+        ->get(
+            "https://api.paystack.co/transaction/verify/{$reference}"
+        )
+        ->json();
+
+        if (
+            ! isset($response['data']) ||
+            $response['data']['status'] !== 'success'
+        ) {
+
+            return redirect()
+                ->route(
+                    'restaurant.payment',
+                    $reservation
+                )
+                ->with(
+                    'error',
+                    'Payment verification failed.'
+                );
+        }
+
+        $reservation->update([
+
+            'payment_status' => 'completed',
+
+            'status' => 'confirmed',
+
+            'hold_status' => 'confirmed',
+
+            'hold_until' => null,
+
+            'transaction_reference' => $reference,
+
+        ]);
+
+        $reservation->table()->update([
+
+            'status' => 'reserved',
+
+        ]);
+
+        Payment::create([
+
+            'restaurant_reservation_id' => $reservation->id,
+
+            'guest_id' => $reservation->guest_id,
+
+            'amount' => $reservation->reservation_fee,
+
+            'method' => 'paystack',
+
+            'payment_status' => 'completed',
+
+            'transaction_reference' => $reference,
+
+        ]);
+
+        return redirect()
+            ->route('dashboard')
+            ->with(
+                'success',
+                'Restaurant reservation confirmed.'
+            );
+
+    }
+)->middleware('auth')
+ ->name('restaurant.verify');
 
 Route::middleware('auth')->get('/dashboard', function () {
 
@@ -817,12 +1062,8 @@ Route::middleware('auth')
         //     ]
         // );
     }
-
 )
-
-->name(
-    'profile'
-);
+->name('profile');
 
 // Route::post(
 
@@ -1268,9 +1509,7 @@ Route::post(
 
 )
 ->middleware('auth')
-->name(
-    'profile.update'
-);
+->name('profile.update');
 
 Route::post(
 
@@ -1351,9 +1590,12 @@ Route::post(
 );
 
 Route::middleware('auth')->group(function () {
-    // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Route::get('/profile', [ProfileController::class, 'edit'])
+    //     ->name('profile.edit');
+    // Route::patch('/profile', [ProfileController::class, 'update'])
+    //     ->name('profile.update');
+    // Route::delete('/profile', [ProfileController::class, 'destroy'])
+    //     ->name('profile.destroy');
 
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/calendar-events', [BookingController::class, 'calendarEvents'])
@@ -1439,11 +1681,11 @@ Route::middleware('auth')->group(function () {
 });
 
 // Route::get('/rooms', [RoomController::class, 'index']);
-Route::get('/rooms', function () {
-    $rooms = Room::where('status', 'available')->get();
+// Route::get('/rooms', function () {
+//     $rooms = Room::where('status', 'available')->get();
 
-    return view('rooms.index', compact('rooms'));
-});
+//     return view('rooms.index', compact('rooms'));
+// });
 
 Route::get('/rooms', function () {
 
@@ -1735,7 +1977,7 @@ Route::get('/payment/callback', function (Request $request) {
         //             'confirmed',
 
         //         'hold_until' =>
-        //             now()->addMinutes(10),
+        //             now()->addMinutes(15),
 
         //         'total_price' =>
         //             session('booking.total'),
@@ -1949,7 +2191,7 @@ Route::post('/book', function () {
                 'unpaid',
 
             'hold_until' =>
-                now()->addMinutes(10),
+                now()->addMinutes(15),
 
             'total_price' =>
                 session('booking.total'),
@@ -2166,7 +2408,7 @@ Route::middleware('auth')->group(function () {
         }
 
         // $holdExpiresAt =
-        //     now()->addMinutes(10);
+        //     now()->addMinutes(15);
 
         // $booking =
         //     Booking::create([
@@ -2204,7 +2446,7 @@ Route::middleware('auth')->group(function () {
         //     ]);
 
         $holdUntil =
-            now()->addMinutes(10);
+            now()->addMinutes(15);
 
         $user = auth()->user();
 

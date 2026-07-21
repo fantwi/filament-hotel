@@ -1,5 +1,15 @@
 <x-guest-layout>
 
+@if(session('success'))
+
+    <div class="mb-6 rounded-lg bg-green-100 p-4 text-green-700">
+
+        {{ session('success') }}
+
+    </div>
+
+@endif
+
 <section class="relative">
 
     <img
@@ -25,7 +35,23 @@
             {{ $restaurant->description }} • Local & International Cuisine
         </p>
 
+        <p>
+        <a
+            href="{{ route('restaurant.reserve') }}"
+            class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+        >
+            Reserve a Table
+        </a>
+        </p>
+
     </div>
+
+    <!-- <a
+        href="{{ route('restaurant.reserve') }}"
+        class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+    >
+        Reserve a Table
+    </a> -->
 
 </section>
 
@@ -272,7 +298,7 @@
 
         <div class="mt-10 flex justify-center gap-5">
 
-            <a
+            <!-- <a
                 href="/restaurant/reservations"
                 class="bg-blue-600
                 text-white
@@ -282,6 +308,13 @@
 
                 Reserve a Table
 
+            </a> -->
+
+            <a
+                href="{{ route('restaurant.reserve') }}"
+                class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            >
+                Reserve a Table
             </a>
 
             <a

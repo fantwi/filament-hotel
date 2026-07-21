@@ -24,10 +24,19 @@ class RestaurantTable extends Model
 
     ];
 
-    public function restaurant()
+    // relationships
+    // public function restaurant()
+    // {
+    //     return $this->belongsTo(
+    //         Restaurant::class
+    //     );
+    // }
+
+    public function reservations()
     {
-        return $this->belongsTo(
-            Restaurant::class
+        return $this->hasMany(
+            RestaurantReservation::class
         );
     }
+    // end relationships
 }

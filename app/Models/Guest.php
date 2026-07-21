@@ -36,6 +36,14 @@ class Guest extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function restaurantReservations()
+    {
+        return $this->hasMany(
+            RestaurantReservation::class
+        );
+    }
+    // End Relationships
+
     // Methods 
     public function getNameAttribute()
     {

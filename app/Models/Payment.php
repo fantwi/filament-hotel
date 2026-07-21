@@ -17,6 +17,7 @@ class Payment extends Model
     protected $fillable = [
         'booking_id',
         'conference_booking_id',
+        'restaurant_reservation_id',
         'guest_id',
         'amount',
         'method',
@@ -34,6 +35,13 @@ class Payment extends Model
     {
         return $this->belongsTo(
             ConferenceBooking::class
+        );
+    }
+
+    public function restaurantReservation()
+    {
+        return $this->belongsTo(
+            RestaurantReservation::class
         );
     }
 
