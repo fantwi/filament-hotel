@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\RestaurantReservationCreated;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\RestaurantReservation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
 class RestaurantReservationController extends Controller
@@ -153,6 +155,15 @@ class RestaurantReservationController extends Controller
             'hold_until' => now()->addMinutes(15),
 
         ]);
+
+        activity()
+            ->performedOn($reservation)
+            ->causedBy(auth()->user())
+            ->event('created')
+            ->log('Restaurant reservation created.');
+
+        Mail::to($reservation->guest_email)
+            ->send(new RestaurantReservationCreated($reservation));
 
         return redirect()
             ->route('restaurant.payment', $reservation)

@@ -8,6 +8,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use App\Models\Booking;
 use App\Models\User;
+use App\Models\RestaurantReservation;
 
 class Guest extends Model
 {

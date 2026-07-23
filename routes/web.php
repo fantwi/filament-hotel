@@ -3,6 +3,8 @@
 use App\Http\Controllers\BookingController;
 // use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RestaurantReservationController;
+use App\Http\Controllers\RestaurantCartController;
+use App\Http\Controllers\RestaurantCheckoutController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
@@ -21,7 +23,10 @@ use App\Models\ConferenceBooking;
 use App\Models\ContactMessage;
 use App\Models\Restaurant;
 use App\Models\RestaurantReservation;
+use App\Models\MenuCategory;
+use App\Models\MenuItem;
 use App\Services\InvoiceService;
+use App\Mail\RestaurantPaymentReceived;
 use Carbon\CarbonPeriod;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -444,18 +449,71 @@ Route::get(
 Route::get('/restaurant', function () {
 
     $restaurant = Restaurant::with('tables')->first();
+    $categories = MenuCategory::query()
+        ->with(['menuItems' => fn ($query) => $query
+            ->where('is_available', true)
+            ->orderBy('sort_order')])
+        ->where('is_active', true)
+        ->orderBy('sort_order')
+        ->get();
+    $featuredItems = MenuItem::query()
+        ->where('is_available', true)
+        ->where('is_featured', true)
+        ->orderBy('sort_order')
+        ->limit(4)
+        ->get();
 
     return view(
         'restaurant.index',
-        compact('restaurant')
+        compact('restaurant', 'categories', 'featuredItems')
     );
 
 })->name('restaurant');
+
+Route::get('/restaurant/menu', function () {
+    $restaurant = Restaurant::first();
+
+    $categories = MenuCategory::query()
+        ->with(['menuItems' => fn ($query) => $query
+            ->where('is_available', true)
+            ->orderBy('sort_order')])
+        ->where('is_active', true)
+        ->orderBy('sort_order')
+        ->get();
+
+    $featuredItems = MenuItem::query()
+        ->where('is_available', true)
+        ->where('is_featured', true)
+        ->orderBy('sort_order')
+        ->limit(4)
+        ->get();
+
+    return view('restaurant.menu', compact('restaurant', 'categories', 'featuredItems'));
+})->name('restaurant.menu');
+
+Route::post('/cart/add/{item}', [RestaurantCartController::class, 'add'])->name('cart.add');
+Route::get('/cart', [RestaurantCartController::class, 'index'])->name('cart.index');
+Route::post('/cart/update/{item}', [RestaurantCartController::class, 'update'])->name('cart.update');
+Route::delete('/cart/remove/{item}', [RestaurantCartController::class, 'remove'])->name('cart.remove');
+Route::get('/restaurant/checkout', [RestaurantCheckoutController::class, 'index'])->name('restaurant.checkout');
+Route::post('/restaurant/checkout', [RestaurantCheckoutController::class, 'store'])->name('restaurant.checkout.store');
 
 Route::get(
     '/restaurant/reserve',
     [RestaurantReservationController::class, 'create']
 )->name('restaurant.reserve');
+
+Route::get(
+    '/restaurant/reservations/{reservation}/print',
+    function (RestaurantReservation $reservation) {
+        abort_unless(
+            auth()->user()?->hasAnyRole(['admin', 'receptionist']),
+            403
+        );
+
+        return view('restaurant.print', compact('reservation'));
+    }
+)->middleware('auth')->name('restaurant.reservations.print');
 
 Route::post(
     '/restaurant/reserve',
@@ -662,6 +720,15 @@ Route::get(
 
         ]);
 
+        activity()
+            ->performedOn($reservation)
+            ->causedBy(auth()->user())
+            ->event('payment')
+            ->log('Restaurant reservation paid.');
+
+        Mail::to($reservation->guest_email)
+            ->send(new RestaurantPaymentReceived($reservation));
+
         $reservation->table()->update([
 
             'status' => 'reserved',
@@ -740,6 +807,7 @@ Route::middleware('auth')->get('/dashboard', function () {
 
     $hotelBookings = collect();
     $conferenceBookings = collect();
+    $restaurantReservations = collect();
 
     // hotel bookings
     if ($guest) {
@@ -765,31 +833,57 @@ Route::middleware('auth')->get('/dashboard', function () {
             ->get();
     }
 
-    $totalBookings = $hotelBookings->count() + $conferenceBookings->count();
+    // restaurant reservations
+    if ($guest) {
+        $restaurantReservations = RestaurantReservation::with([
+                'restaurant',
+                'table',
+                'payments',
+            ])
+            ->where('guest_id', $guest->id)
+            ->latest()
+            ->get();
+    }
+
+    // RESTAURANT RESERVATIONS
+    $totalRestaurantReservations = $restaurantReservations->count();
+
+
+    $totalBookings = $hotelBookings->count() + $conferenceBookings->count() + $restaurantReservations->count();
 
     $totalConfirmedBookings =
 
         $hotelBookings->where('status', 'confirmed')->count()
         +
-        $conferenceBookings->where('status', 'confirmed')->count();
+        $conferenceBookings->where('status', 'confirmed')->count()
+        +
+        $restaurantReservations->where('status', 'confirmed')->count();
 
     $totalSpent =
         // HOTEL BOOKINGS
         $hotelBookings->where('payment_status', 'paid')->sum('total_price')
         +
         // CONFERENCE BOOKINGS
-        $conferenceBookings->where('payment_status', 'paid')->sum('total_price');
+        $conferenceBookings->where('payment_status', 'paid')->sum('total_price')
+        +
+        // RESTAURANT RESERVATIONS
+        $restaurantReservations->where('status', 'confirmed')->count();
 
     $outstandingBalance =
-    // HOTEL BOOKINGS
-    $hotelBookings->filter(function ($booking) {
-            return $booking->payment_status === 'pending' && $booking->hold_status !== 'expired';
-        })->sum('total_price')
-    +
-    // CONFERENCE BOOKINGS
-    $conferenceBookings->filter(function ($booking) {
-            return $booking->payment_status === 'pending';
-        })->sum('total_price');
+        // HOTEL BOOKINGS
+        $hotelBookings->filter(function ($booking) {
+                return $booking->payment_status === 'pending' && $booking->hold_status !== 'expired';
+            })->sum('total_price')
+        +
+        // CONFERENCE BOOKINGS
+        $conferenceBookings->filter(function ($booking) {
+                return $booking->payment_status === 'pending';
+            })->sum('total_price')
+        +
+        // RESTAURANT RESERVATIONS
+        $restaurantReservations->filter(function ($reservation) {
+                return $reservation->status === 'confirmed';
+            })->sum('total_amount');
 
     // $upcoming = $hotelBookings->where('check_in', '>=', now());
     // $past = $hotelBookings->where('check_out', '<', now());
@@ -810,11 +904,21 @@ Route::middleware('auth')->get('/dashboard', function () {
         return $booking->check_out < now();
     });
 
+    $upcomingRestaurantReservations =
+        $restaurantReservations->filter(function ($reservation) {
+            return $reservation->reservation_date >= today();
+        });
+
+    $pastRestaurantReservations =
+        $restaurantReservations->filter(function ($reservation) {
+            return $reservation->reservation_date < today();
+        });
+
     return view(
         'dashboard',
-        compact('hotelBookings', 'conferenceBookings', 'upcomingHotelBookings', 
-            'pastHotelBookings', 'upcomingConferenceBookings', 'pastConferenceBookings', 
-            'totalBookings', 'totalConfirmedBookings', 'totalSpent', 'outstandingBalance'));
+        compact('hotelBookings', 'conferenceBookings', 'restaurantReservations', 'upcomingHotelBookings', 
+            'pastHotelBookings', 'upcomingConferenceBookings', 'pastConferenceBookings', 'upcomingRestaurantReservations', 'pastRestaurantReservations', 
+            'totalBookings', 'totalConfirmedBookings', 'totalSpent', 'outstandingBalance', 'totalRestaurantReservations'));
 
 })->name('dashboard');
 

@@ -234,13 +234,24 @@
             </div>
         </div>
 
-        <!-- Total Hotel Room Bookings -->
+        <!-- Total Conference Room Bookings -->
         <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border hover:shadow-md transition flex items-center gap-4">
             <div class="text-2xl">📅</div>
             <div>
                 <p class="text-gray-500 dark:text-gray-300 text-sm">Conference Room Bookings</p>
                 <h2 class="text-2xl font-bold text-blue-800 dark:text-white">
                     {{ $conferenceBookings->count() }}
+                </h2>
+            </div>
+        </div>
+
+        <!-- Total Restaurant Reservations -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border hover:shadow-md transition flex items-center gap-4">
+            <div class="text-2xl">📅</div>
+            <div>
+                <p class="text-gray-500 dark:text-gray-300 text-sm">Restaurant Reservations</p>
+                <h2  class="text-2xl font-bold text-blue-800 dark:text-white"> 
+                    {{ $totalRestaurantReservations }}
                 </h2>
             </div>
         </div>
@@ -285,562 +296,839 @@
 
 <!-- 📋 BOOKINGS LIST -->
 <!-- <div class="max-w-7xl mx-auto py-6 px-4"> -->
-<div class="bg-white rounded-2xl shadow p-6 mt-8">
+<!-- <div class="bg-white rounded-2xl shadow p-6 mt-8"> -->
 <!-- <div class="max-w-7xl mx-auto py-6 px-4 border-4 border-red-500 bg-yellow-100"> -->
+
+<div
+    x-data="{ tab: 'hotel' }"
+    class="bg-white rounded-2xl shadow p-6 mt-8"
+>
 
     <h2 class="text-2xl font-bold mb-6">My Bookings</h2>
 
-    <h3 class="text-xl font-semibold text-blue-700 mb-4">Hotel Bookings</h3>
-    @forelse(
-        $hotelBookings->where('status', 'confirmed')
-        as $booking
-    )
+    <!-- <h2 class="text-2xl font-bold mb-6">My Bookings</h2> -->
 
-    <div
-        class="border
-        rounded-xl
-        p-5
-        mb-4"
-    >
+    <div class="flex flex-wrap gap-3 mb-8">
 
-        <div
-            class="flex
-            justify-between
-            items-start"
+        <button
+            @click="tab='hotel'"
+            :class="tab == 'hotel'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700'"
+            class="px-5 py-2 rounded-lg transition"
         >
-
-            <div>
-
-                <h4
-                    class="font-bold
-                    text-lg"
-                >
-
-                    {{
-                        $booking
-                            ->room
-                            ?->roomType
-                            ?->name
-                    }}
-
-                </h4>
-
-                <p
-                    class="text-gray-600"
-                >
-
-                    Check In:
-
-                    {{
-                        \Carbon\Carbon::parse(
-                            $booking
-                                ->check_in
-                        )
-                        ->format(
-                            'M d, Y'
-                        )
-                    }}
-
-                </p>
-
-                <p
-                    class="text-gray-600"
-                >
-
-                    Check Out:
-
-                    {{
-                        \Carbon\Carbon::parse(
-                            $booking
-                                ->check_out
-                        )
-                        ->format(
-                            'M d, Y'
-                        )
-                    }}
-
-                </p>
-
-                <p
-                    class="font-semibold"
-                >
-
-                    GHS
-                    {{
-
-                        number_format(
-
-                            $booking
-                                ->total_price,
-
-                            2
-                        )
-                    }}
-
-                </p>
-
-                @if(
-                    $booking
-                        ->payment_status
-                    === 'pending'
-
-                    &&
-
-                    $booking
-                        ->hold_status
-                    !== 'expired'
-                )
-
-                <a
-
-                    href="{{
-                        route(
-                            'booking.payment',
-                            $booking->id
-                        )
-                    }}"
-
-                    class="inline-block
-                    mt-3
-                    bg-red-600
-                    text-white
-                    px-4 py-2
-                    rounded-lg
-                    hover:bg-red-700"
-
-                >
-
-                    Complete Payment
-
-                </a>
-
-                @endif
-
-                <form
-
-                    method="POST"
-
-                    action="{{
-                        route(
-                            'booking.cancel',
-                            $booking->id
-                        )
-                    }}"
-
-                    class="mt-3"
-                >
-
-                    @csrf
-
-                    <button
-
-                        onclick="
-                            return confirm(
-                                'Cancel booking?'
-                            )
-                        "
-
-                        class="bg-gray-600
-                        text-white
-                        px-4 py-2
-                        rounded-lg"
-
-                    >
-
-                        Cancel Booking
-
-                    </button>
-
-                </form>
-
-                <a
-
-                    href="{{
-                        route(
-                            'booking.invoice',
-                            $booking->id
-                        )
-                    }}"
-
-                    class="inline-block
-                    mt-3
-                    bg-blue-600
-                    text-white
-                    px-4 py-2
-                    rounded-lg"
-
-                >
-
-                    Download Invoice
-
-                </a>
-
-            </div>
-
-            <!-- <span
-                class="bg-blue-100
-                text-blue-700
-                px-4 py-1
-                rounded-full
-                text-sm"
-            >
-
-                {{
-                    ucfirst(
-                        $booking
-                            ->status
-                    )
-                }}
-
-            </span> -->
-
-            <span
-
-                class="px-4
-                py-1
-                rounded-full
-                text-sm
-                font-semibold
-
-                @if(
-                    $booking->status
-                    === 'confirmed'
-                )
-
-                    bg-green-100
-                    text-green-700
-
-                @elseif(
-                    $booking->status
-                    === 'pending'
-                )
-
-                    bg-yellow-100
-                    text-yellow-700
-
-                @elseif(
-                    $booking->status
-                    === 'cancelled'
-                )
-
-                    bg-red-100
-                    text-red-700
-
-                @elseif(
-                    $booking->status
-                    === 'expired'
-                )
-
-                    bg-gray-100
-                    text-gray-700
-
-                @endif
-            "
-
-            >
-
-                {{
-                    ucfirst(
-                        $booking
-                            ->status
-                    )
-                }}
-
-            </span>
-
-        </div>
+            Hotel Room Bookings
+        </button>
+
+        <button
+            @click="tab='conference'"
+            :class="tab == 'conference'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700'"
+            class="px-5 py-2 rounded-lg transition"
+        >
+            Conference Room Bookings
+        </button>
+
+        <button
+            @click="tab='restaurant'"
+            :class="tab == 'restaurant'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700'"
+            class="px-5 py-2 rounded-lg transition"
+        >
+            Restaurant Reservations
+        </button>
 
     </div>
 
-    @empty
-
-    <p class="text-gray-500">
-
-        No hotel bookings found.
-
-    </p>
-
-    @endforelse
-
-    <h3
-        class="text-xl
-        font-semibold
-        text-purple-700
-        mt-10
-        mb-4"
-    >
-
-        Conference Room Bookings
-
-    </h3>
-    @forelse(
-        $conferenceBookings->where('status', 'confirmed')
-        as $booking
-    )
-
-    <div
-        class="border
-        rounded-xl
-        p-5
-        mb-4"
-    >
+    <div x-show="tab == 'hotel'">
+        <h3 class="text-xl font-semibold text-blue-700 mb-4">Hotel Bookings</h3>
+        @forelse(
+            $hotelBookings->where('status', 'confirmed')
+            as $booking
+        )
 
         <div
-            class="flex
-            justify-between
-            items-start"
+            class="border
+            rounded-xl
+            p-5
+            mb-4"
         >
 
-            <div>
+            <div
+                class="flex
+                justify-between
+                items-start"
+            >
 
-                <h4
-                    class="font-bold
-                    text-lg"
-                >
+                <div>
 
-                    {{
-                        $booking
-                            ->room
-                            ?->name
-                    }}
+                    <h4
+                        class="font-bold
+                        text-lg"
+                    >
 
-                </h4>
+                        {{
+                            $booking
+                                ->room
+                                ?->roomType
+                                ?->name
+                        }}
 
-                <p
-                    class="text-gray-600"
-                >
+                    </h4>
 
-                    Date:
+                    <p
+                        class="text-gray-600"
+                    >
 
-                    {{
-                        $booking
-                            ->booking_date
-                            ?->format(
+                        Check In:
+
+                        {{
+                            \Carbon\Carbon::parse(
+                                $booking
+                                    ->check_in
+                            )
+                            ->format(
                                 'M d, Y'
                             )
-                    }}
+                        }}
 
-                </p>
+                    </p>
 
-                <p
-                    class="text-gray-600"
-                >
+                    <p
+                        class="text-gray-600"
+                    >
 
-                    Time:
+                        Check Out:
 
-                    {{
-                        $booking
-                            ->start_time
-                    }}
-
-                    -
-
-                    {{
-                        $booking
-                            ->end_time
-                    }}
-
-                </p>
-
-                <p
-                    class="text-gray-600"
-                >
-
-                    Attendees:
-
-                    {{
-                        $booking
-                            ->attendees
-                    }}
-
-                </p>
-
-                <p
-                    class="font-semibold"
-                >
-
-                    GHS
-                    {{
-
-                        number_format(
-
-                            $booking
-                                ->total_price,
-
-                            2
-                        )
-                    }}
-                </p>
-
-                @if(
-                    $booking
-                        ->payment_status
-                    === 'pending'
-                )
-
-                <a
-
-                    href="{{
-                        route(
-                            'conference.payment',
-                            $booking->id
-                        )
-                    }}"
-
-                    class="inline-block
-                    mt-3
-                    bg-red-600
-                    text-white
-                    px-4 py-2
-                    rounded-lg
-                    hover:bg-red-700"
-
-                >
-
-                    Complete Payment
-
-                </a>
-
-                @endif
-
-                <form
-
-                    method="POST"
-
-                    action="{{
-                        route(
-                            'conference.cancel',
-                            $booking->id
-                        )
-                    }}"
-
-                    class="mt-3"
-                >
-
-                    @csrf
-
-                    <button
-
-                        onclick="
-                            return confirm(
-                                'Cancel booking?'
+                        {{
+                            \Carbon\Carbon::parse(
+                                $booking
+                                    ->check_out
                             )
-                        "
+                            ->format(
+                                'M d, Y'
+                            )
+                        }}
 
-                        class="bg-gray-600
+                    </p>
+
+                    <p
+                        class="font-semibold"
+                    >
+
+                        GHS
+                        {{
+
+                            number_format(
+
+                                $booking
+                                    ->total_price,
+
+                                2
+                            )
+                        }}
+
+                    </p>
+
+                    @if(
+                        $booking
+                            ->payment_status
+                        === 'pending'
+
+                        &&
+
+                        $booking
+                            ->hold_status
+                        !== 'expired'
+                    )
+
+                    <a
+
+                        href="{{
+                            route(
+                                'booking.payment',
+                                $booking->id
+                            )
+                        }}"
+
+                        class="inline-block
+                        mt-3
+                        bg-red-600
+                        text-white
+                        px-4 py-2
+                        rounded-lg
+                        hover:bg-red-700"
+
+                    >
+
+                        Complete Payment
+
+                    </a>
+
+                    @endif
+
+                    <form
+
+                        method="POST"
+
+                        action="{{
+                            route(
+                                'booking.cancel',
+                                $booking->id
+                            )
+                        }}"
+
+                        class="mt-3"
+                    >
+
+                        @csrf
+
+                        <button
+
+                            onclick="
+                                return confirm(
+                                    'Cancel booking?'
+                                )
+                            "
+
+                            class="bg-gray-600
+                            text-white
+                            px-4 py-2
+                            rounded-lg"
+
+                        >
+
+                            Cancel Booking
+
+                        </button>
+
+                    </form>
+
+                    <a
+
+                        href="{{
+                            route(
+                                'booking.invoice',
+                                $booking->id
+                            )
+                        }}"
+
+                        class="inline-block
+                        mt-3
+                        bg-blue-600
                         text-white
                         px-4 py-2
                         rounded-lg"
 
                     >
 
-                        Cancel Booking
+                        Download Invoice
 
-                    </button>
+                    </a>
 
-                </form>
+                </div>
 
-                <a
+                <!-- <span
+                    class="bg-blue-100
+                    text-blue-700
+                    px-4 py-1
+                    rounded-full
+                    text-sm"
+                >
 
-                    href="{{
-                        route(
-                            'conference.invoice',
-                            $booking->id
+                    {{
+                        ucfirst(
+                            $booking
+                                ->status
                         )
-                    }}"
+                    }}
 
-                    class="inline-block
-                    mt-3
-                    bg-blue-600
-                    text-white
-                    px-4 py-2
-                    rounded-lg"
+                </span> -->
+
+                <span
+
+                    class="px-4
+                    py-1
+                    rounded-full
+                    text-sm
+                    font-semibold
+
+                    @if(
+                        $booking->status
+                        === 'confirmed'
+                    )
+
+                        bg-green-100
+                        text-green-700
+
+                    @elseif(
+                        $booking->status
+                        === 'pending'
+                    )
+
+                        bg-yellow-100
+                        text-yellow-700
+
+                    @elseif(
+                        $booking->status
+                        === 'cancelled'
+                    )
+
+                        bg-red-100
+                        text-red-700
+
+                    @elseif(
+                        $booking->status
+                        === 'expired'
+                    )
+
+                        bg-gray-100
+                        text-gray-700
+
+                    @endif
+                "
 
                 >
 
-                    Download Invoice
+                    {{
+                        ucfirst(
+                            $booking
+                                ->status
+                        )
+                    }}
 
-                </a>
-
+                </span>
 
             </div>
 
-            <!-- <span
-                class="bg-purple-100
-                text-purple-700
-                px-4 py-1
-                rounded-full
-                text-sm"
+        </div>
+
+        @empty
+
+        <p class="text-gray-500">
+
+            No hotel bookings found.
+
+        </p>
+
+        @endforelse
+    </div>
+
+    <div x-show="tab == 'conference'">
+        <h3
+            class="text-xl
+            font-semibold
+            text-purple-700
+            mt-10
+            mb-4"
+        >
+
+            Conference Room Bookings
+
+        </h3>
+        @forelse(
+            $conferenceBookings->where('status', 'confirmed')
+            as $booking
+        )
+
+        <div
+            class="border
+            rounded-xl
+            p-5
+            mb-4"
+        >
+
+            <div
+                class="flex
+                justify-between
+                items-start"
             >
 
-                {{
-                    ucfirst(
+                <div>
+
+                    <h4
+                        class="font-bold
+                        text-lg"
+                    >
+
+                        {{
+                            $booking
+                                ->room
+                                ?->name
+                        }}
+
+                    </h4>
+
+                    <p
+                        class="text-gray-600"
+                    >
+
+                        Date:
+
+                        {{
+                            $booking
+                                ->booking_date
+                                ?->format(
+                                    'M d, Y'
+                                )
+                        }}
+
+                    </p>
+
+                    <p
+                        class="text-gray-600"
+                    >
+
+                        Time:
+
+                        {{
+                            $booking
+                                ->start_time
+                        }}
+
+                        -
+
+                        {{
+                            $booking
+                                ->end_time
+                        }}
+
+                    </p>
+
+                    <p
+                        class="text-gray-600"
+                    >
+
+                        Attendees:
+
+                        {{
+                            $booking
+                                ->attendees
+                        }}
+
+                    </p>
+
+                    <p
+                        class="font-semibold"
+                    >
+
+                        GHS
+                        {{
+
+                            number_format(
+
+                                $booking
+                                    ->total_price,
+
+                                2
+                            )
+                        }}
+                    </p>
+
+                    @if(
                         $booking
-                            ->status
+                            ->payment_status
+                        === 'pending'
                     )
-                }}
 
-            </span> -->
+                    <a
 
-            <span
+                        href="{{
+                            route(
+                                'conference.payment',
+                                $booking->id
+                            )
+                        }}"
 
-                class="px-4
-                py-1
-                rounded-full
-                text-sm
-                font-semibold
+                        class="inline-block
+                        mt-3
+                        bg-red-600
+                        text-white
+                        px-4 py-2
+                        rounded-lg
+                        hover:bg-red-700"
 
-                @if(
-                    $booking->status
-                    === 'confirmed'
-                )
+                    >
 
-                    bg-green-100
-                    text-green-700
+                        Complete Payment
 
-                @elseif(
-                    $booking->status
-                    === 'pending'
-                )
+                    </a>
 
-                    bg-yellow-100
-                    text-yellow-700
+                    @endif
 
-                @elseif(
-                    $booking->status
-                    === 'cancelled'
-                )
+                    <form
 
-                    bg-red-100
-                    text-red-700
+                        method="POST"
 
-                @endif
-            "
+                        action="{{
+                            route(
+                                'conference.cancel',
+                                $booking->id
+                            )
+                        }}"
 
-            >
+                        class="mt-3"
+                    >
 
-                {{
-                    ucfirst(
-                        $booking
-                            ->status
+                        @csrf
+
+                        <button
+
+                            onclick="
+                                return confirm(
+                                    'Cancel booking?'
+                                )
+                            "
+
+                            class="bg-gray-600
+                            text-white
+                            px-4 py-2
+                            rounded-lg"
+
+                        >
+
+                            Cancel Booking
+
+                        </button>
+
+                    </form>
+
+                    <a
+
+                        href="{{
+                            route(
+                                'conference.invoice',
+                                $booking->id
+                            )
+                        }}"
+
+                        class="inline-block
+                        mt-3
+                        bg-blue-600
+                        text-white
+                        px-4 py-2
+                        rounded-lg"
+
+                    >
+
+                        Download Invoice
+
+                    </a>
+
+
+                </div>
+
+                <!-- <span
+                    class="bg-purple-100
+                    text-purple-700
+                    px-4 py-1
+                    rounded-full
+                    text-sm"
+                >
+
+                    {{
+                        ucfirst(
+                            $booking
+                                ->status
+                        )
+                    }}
+
+                </span> -->
+
+                <span
+
+                    class="px-4
+                    py-1
+                    rounded-full
+                    text-sm
+                    font-semibold
+
+                    @if(
+                        $booking->status
+                        === 'confirmed'
                     )
-                }}
 
-            </span>
+                        bg-green-100
+                        text-green-700
+
+                    @elseif(
+                        $booking->status
+                        === 'pending'
+                    )
+
+                        bg-yellow-100
+                        text-yellow-700
+
+                    @elseif(
+                        $booking->status
+                        === 'cancelled'
+                    )
+
+                        bg-red-100
+                        text-red-700
+
+                    @endif
+                "
+
+                >
+
+                    {{
+                        ucfirst(
+                            $booking
+                                ->status
+                        )
+                    }}
+
+                </span>
+
+            </div>
 
         </div>
 
+        @empty
+
+        <p class="text-gray-500">
+
+            No conference bookings found.
+
+        </p>
+
+        @endforelse
+
     </div>
 
-    @empty
+    <div x-show="tab == 'restaurant'">
 
-    <p class="text-gray-500">
+        <h3 class="text-xl font-semibold text-green-700 mb-4">
 
-        No conference bookings found.
+            Restaurant Reservations
 
-    </p>
+        </h3>
 
-    @endforelse
+        <table class="min-w-full">
+
+            <thead>
+
+                <tr>
+
+                    <th>Date</th>
+
+                    <th>Time</th>
+
+                    <th>Restaurant</th>
+
+                    <th>Table</th>
+
+                    <th>Status</th>
+
+                    <th>Payment</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+                @forelse($restaurantReservations as $reservation)
+
+                    <div class="border rounded-xl p-5 mb-4">
+
+                        <div class="flex justify-between items-start">
+
+                            <div>
+
+                                <h4 class="font-bold text-lg">
+
+                                    {{ $reservation->restaurant->name }}
+
+                                </h4>
+
+                                <p>
+
+                                    Table:
+
+                                    {{ $reservation->table->table_number }}
+
+                                </p>
+
+                                <p>
+
+                                    Date:
+
+                                    {{ $reservation->reservation_date->format('M d, Y') }}
+
+                                </p>
+
+                                <p>
+
+                                    Time:
+
+                                    {{ \Carbon\Carbon::parse($reservation->reservation_time)->format('g:i A') }}
+
+                                </p>
+
+                                <p>
+
+                                    Reservation Fee:
+
+                                    GHS {{ number_format($reservation->reservation_fee,2) }}
+
+                                </p>
+
+                                @if(
+                                    $reservation->payment_status != 'completed'
+                                    &&
+                                    $reservation->hold_status != 'expired'
+                                )
+
+                                    <a
+                                        href="{{ route('restaurant.payment',$reservation) }}"
+                                        class="inline-block mt-3 bg-red-600 text-white px-4 py-2 rounded-lg"
+                                    >
+
+                                        Complete Payment
+
+                                    </a>
+
+                                @endif
+
+                                <a
+                                    href="{{ route('restaurant.reservations.show', $reservation) }}"
+                                    class="text-blue-600 font-medium hover:underline"
+                                >
+                                    View
+                                </a>
+
+                                @if($reservation->status === 'pending')
+
+                                    <form
+                                        action="{{ route('restaurant.reservations.cancel', $reservation) }}"
+                                        method="POST"
+                                    >
+                                        @csrf
+                                        @method('PATCH')
+
+                                        <button
+                                            class="text-red-600 font-medium hover:underline"
+                                        >
+                                            Cancel
+                                        </button>
+
+                                    </form>
+
+                                @endif
+
+                            </div>
+
+                            @php
+
+                                $statusColor = match($reservation->status){
+
+                                    'confirmed' => 'bg-green-100 text-green-700',
+
+                                    'pending' => 'bg-yellow-100 text-yellow-700',
+
+                                    'cancelled' => 'bg-red-100 text-red-700',
+
+                                    default => 'bg-gray-100 text-gray-700',
+
+                                };
+
+                            @endphp
+
+                            <span class="px-4 py-1 rounded-full {{ $statusColor }}">
+
+                                {{ ucfirst($reservation->status) }}
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                @empty
+
+                    <p class="text-gray-500">
+
+                        No restaurant reservations found.
+
+                    </p>
+
+                @endforelse
+
+                <!-- @forelse($restaurantReservations as $reservation)
+
+                    <tr>
+
+                        <td>
+
+                            {{ $reservation->reservation_date->format('d M Y') }}
+
+                        </td>
+
+                        <td>
+
+                            {{ \Carbon\Carbon::parse($reservation->reservation_time)->format('g:i A') }}
+
+                        </td>
+
+                        <td>
+
+                            {{ $reservation->restaurant->name }}
+
+                        </td>
+
+                        <td>
+
+                            {{ $reservation->table->table_number }}
+
+                        </td>
+
+                        <td>
+
+                            <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-700">
+
+                                {{ ucfirst($reservation->status) }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            {{ ucfirst($reservation->payment_status) }}
+
+                        </td>
+
+                        <td>
+ -->
+                            <!-- Actions -->
+<!-- 
+                        </td>
+
+                    </tr>
+
+                @empty
+
+                    <tr>
+
+                        <td colspan="7">
+
+                            No restaurant reservations.
+
+                        </td>
+
+                    </tr>
+
+                @endforelse -->
+
+            </tbody>
+        </table>
+
+    </div>
 
     <!-- @forelse ($bookings as $booking) -->
 

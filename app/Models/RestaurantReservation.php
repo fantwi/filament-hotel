@@ -3,10 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class RestaurantReservation extends Model
 {
-    //
+    use LogsActivity;
+
+    protected static $logName = 'Restaurant Reservation';
     protected $fillable = [
 
         'restaurant_id',
@@ -56,6 +60,24 @@ class RestaurantReservation extends Model
         'hold_until' => 'datetime',
 
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'restaurant_id',
+                'restaurant_table_id',
+                'guest_id',
+                'status',
+                'payment_status',
+                'hold_status',
+                'reservation_date',
+                'reservation_time',
+                'reservation_fee',
+            ])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     // relationships
     public function guest()

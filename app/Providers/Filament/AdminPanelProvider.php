@@ -44,6 +44,9 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
                 // FilamentInfoWidget::class,
+                \App\Filament\Admin\Widgets\HotelStatistics::class,
+                \App\Filament\Admin\Widgets\MonthlyRevenueChart::class,
+                \App\Filament\Admin\Widgets\BookingTrendChart::class,
                 \App\Filament\Admin\Widgets\RevenueStats::class,
                 \App\Filament\Admin\Widgets\StaffStats::class,
             ])

@@ -18,6 +18,14 @@
             Restaurant
         </a>
 
+        <a href="{{ route('restaurant.menu') }}" class="text-gray-600 hover:text-blue-600">
+            Menu
+        </a>
+
+        <a href="{{ route('cart.index') }}" class="text-gray-600 hover:text-blue-600">
+            Cart ({{ count(session('cart', [])) }})
+        </a>
+
         <a href="/contact" class="text-gray-600">
             Contact
         </a>

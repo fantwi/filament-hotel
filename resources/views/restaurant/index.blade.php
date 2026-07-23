@@ -117,6 +117,56 @@
 
 </section>
 
+<section class="max-w-7xl mx-auto py-16">
+    <h2 class="text-4xl font-bold mb-10">Featured Meals</h2>
+
+    <div class="grid gap-8 md:grid-cols-4">
+        @forelse ($featuredItems as $item)
+            <div class="overflow-hidden rounded-xl bg-white shadow">
+                @if ($item->image)
+                    <img src="{{ asset('storage/'.$item->image) }}" class="h-56 w-full object-cover" alt="{{ $item->name }}">
+                @endif
+                <div class="p-6">
+                    <h3 class="text-xl font-bold">{{ $item->name }}</h3>
+                    <p class="mt-2 text-gray-600">{{ $item->description }}</p>
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="text-lg font-bold">GHS {{ number_format($item->price, 2) }}</span>
+                        <span class="text-sm text-gray-500">{{ $item->preparation_time }} mins</span>
+                    </div>
+                </div>
+            </div>
+        @empty
+            <p class="text-gray-500">Featured meals will be available soon.</p>
+        @endforelse
+    </div>
+</section>
+
+@foreach ($categories as $category)
+    @if ($category->menuItems->isNotEmpty())
+        <section class="max-w-7xl mx-auto py-12">
+            <h2 class="text-3xl font-bold mb-6">{{ $category->name }}</h2>
+
+            <div class="grid gap-8 md:grid-cols-3">
+                @foreach ($category->menuItems as $item)
+                    <div class="overflow-hidden rounded-xl bg-white shadow">
+                        @if ($item->image)
+                            <img src="{{ asset('storage/'.$item->image) }}" class="h-56 w-full object-cover" alt="{{ $item->name }}">
+                        @endif
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold">{{ $item->name }}</h3>
+                            <p class="mt-2 text-gray-600">{{ $item->description }}</p>
+                            <div class="mt-4 flex items-center justify-between">
+                                <span class="text-lg font-bold">GHS {{ number_format($item->price, 2) }}</span>
+                                <span class="text-sm text-gray-500">{{ $item->preparation_time }} mins</span>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
+@endforeach
+
 <section class="bg-gray-100 py-16">
 
     <div class="max-w-7xl mx-auto">
@@ -318,14 +368,14 @@
             </a>
 
             <a
-                href="/restaurant/menu"
+                href="{{ route('restaurant.menu') }}"
                 class="bg-green-600
                 text-white
                 px-8 py-4
                 rounded-lg"
             >
 
-                Order Food
+                View Full Menu
 
             </a>
 
