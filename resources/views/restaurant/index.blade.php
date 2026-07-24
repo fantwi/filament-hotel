@@ -185,6 +185,14 @@
                     <span class="inline-block mt-3 px-3 py-1 rounded-full bg-green-100 text-green-700">
                         {{ ucfirst($table->status) }}
                     </span>
+
+                    @if ($table->status === 'available')
+                        <a href="{{ route('restaurant.reserve', ['table' => $table->id]) }}" class="mt-5 block rounded-lg bg-indigo-600 px-4 py-2.5 text-center font-semibold text-white transition hover:bg-indigo-700">
+                            Reserve This Table
+                        </a>
+                    @else
+                        <p class="mt-5 text-sm font-medium text-gray-500">This table is currently unavailable.</p>
+                    @endif
                 </div>
 
             </div>

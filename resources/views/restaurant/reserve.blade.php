@@ -27,7 +27,7 @@
                     <select id="restaurant_table_id" name="restaurant_table_id" class="mt-2 w-full rounded-lg border-gray-300 p-3" required>
                         <option value="">Select a table</option>
                         @foreach ($tables as $table)
-                            <option value="{{ $table->id }}" @selected(old('restaurant_table_id') == $table->id)>{{ $table->table_number }} — seats {{ $table->capacity }}{{ $table->location ? ' (' . $table->location . ')' : '' }}</option>
+                            <option value="{{ $table->id }}" @selected(old('restaurant_table_id', request('table')) == $table->id)>{{ $table->table_number }} — seats {{ $table->capacity }}{{ $table->location ? ' (' . $table->location . ')' : '' }}</option>
                         @endforeach
                     </select>
                 </div>
