@@ -37,6 +37,26 @@ class RestaurantForm
                             ->directory('restaurants')
                             ->visibility('public'),
 
+                        FileUpload::make('gallery')
+                            ->label('Gallery Images')
+                            ->image()
+                            ->multiple()
+                            ->disk('public')
+                            ->directory('restaurants/gallery')
+                            ->visibility('public')
+                            ->imageEditor()
+                            ->reorderable()
+                            ->appendFiles()
+                            ->maxFiles(12)
+                            ->maxSize(5120)
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                            ])
+                            ->helperText('Upload up to 12 JPG, PNG, or WebP images. Maximum size: 5 MB each.')
+                            ->columnSpanFull(),
+
                         TextInput::make('phone'),
 
                         TextInput::make('email')

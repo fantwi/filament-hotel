@@ -15,6 +15,8 @@ class Restaurant extends Model
 
         'hero_image',
 
+        'gallery',
+
         'phone',
 
         'email',
@@ -39,6 +41,10 @@ class Restaurant extends Model
 
         'is_open',
 
+    ];
+
+    protected $casts = [
+        'gallery' => 'array',
     ];
 
     // Relationships
