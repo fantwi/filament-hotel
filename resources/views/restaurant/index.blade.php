@@ -57,62 +57,33 @@
 
 <section class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-16 lg:px-8">
 
-    <div class="grid gap-8 md:grid-cols-2 md:gap-12">
-
+    <div class="grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
         <div>
-
-            <h2 class="text-3xl font-bold mb-6">
-                About Our Restaurant
-            </h2>
-
-            <p class="text-gray-600 leading-8">
-
-                Experience world-class dining prepared
-                by our professional chefs.
-
-                We serve local Ghanaian dishes,
-                continental cuisine,
-                desserts,
-                cocktails
-                and beverages.
-
+            <p class="text-sm font-semibold uppercase tracking-widest text-indigo-600">Our Story</p>
+            <h2 class="mt-3 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">About Our Restaurant</h2>
+            <p class="mt-6 max-w-xl text-base leading-8 text-gray-600 sm:text-lg">
+                {{ $restaurant->description ?: 'Experience world-class dining prepared by our professional chefs, with local Ghanaian favourites, continental cuisine, desserts, cocktails, and beverages.' }}
             </p>
-
+            <a href="{{ route('restaurant.reserve') }}" class="mt-8 inline-flex rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700">Reserve a Table</a>
         </div>
 
-        <div class="space-y-4">
-
-            <div>
-                <strong>Opening:</strong>
-                {{ \Carbon\Carbon::parse($restaurant->opening_time)->format('g:i A') }}
+        <div class="rounded-2xl bg-gradient-to-br from-indigo-950 to-slate-900 p-5 text-white shadow-xl sm:p-8">
+            <div class="flex items-center justify-between border-b border-white/15 pb-5">
+                <div>
+                    <p class="text-sm font-medium text-indigo-200">Plan your visit</p>
+                    <h3 class="mt-1 text-2xl font-bold">Restaurant Details</h3>
+                </div>
+                <span class="rounded-full bg-emerald-400/15 px-3 py-1 text-sm font-semibold text-emerald-200">{{ $restaurant->is_open ? 'Open' : 'Closed' }}</span>
             </div>
 
-            <div>
-                <strong>Closing:</strong>
-                {{ \Carbon\Carbon::parse($restaurant->closing_time)->format('g:i A') }}
-            </div>
-
-            <div>
-                <strong>Capacity:</strong>
-                {{ $restaurant->capacity }} Guests
-            </div>
-
-            <div>
-                <strong>Cuisine:</strong>
-
-                {{ $restaurant->cuisine }}
-
-            </div>
-
-            <div>
-                <strong>Dress Code:</strong>
-
-                {{ $restaurant->dress_code }}
-
-            </div>
-
+            <dl class="mt-6 grid gap-4 sm:grid-cols-2">
+                <div class="rounded-xl bg-white/10 p-4"><dt class="text-sm text-indigo-200">Opening time</dt><dd class="mt-1 text-lg font-semibold">{{ $restaurant->opening_time ? \Carbon\Carbon::parse($restaurant->opening_time)->format('g:i A') : 'Contact us' }}</dd></div>
+                <div class="rounded-xl bg-white/10 p-4"><dt class="text-sm text-indigo-200">Closing time</dt><dd class="mt-1 text-lg font-semibold">{{ $restaurant->closing_time ? \Carbon\Carbon::parse($restaurant->closing_time)->format('g:i A') : 'Contact us' }}</dd></div>
+                <div class="rounded-xl bg-white/10 p-4"><dt class="text-sm text-indigo-200">Dining capacity</dt><dd class="mt-1 text-lg font-semibold">{{ $restaurant->capacity ?: '—' }} guests</dd></div>
+                <div class="rounded-xl bg-white/10 p-4"><dt class="text-sm text-indigo-200">Cuisine</dt><dd class="mt-1 text-lg font-semibold">{{ $restaurant->cuisine ?: 'Chef’s selection' }}</dd></div>
+                <div class="rounded-xl bg-white/10 p-4 sm:col-span-2"><dt class="text-sm text-indigo-200">Dress code</dt><dd class="mt-1 text-lg font-semibold">{{ $restaurant->dress_code ?: 'Smart casual' }}</dd></div>
+            </dl>
         </div>
-
     </div>
 
 </section>
