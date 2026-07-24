@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" role="img" aria-label="Meal placeholder">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="560" fill="url(#background)"/>
+  <circle cx="400" cy="280" r="150" fill="#fff7ed"/>
+  <circle cx="400" cy="280" r="112" fill="#fdba74"/>
+  <path d="M330 275c35-66 93-55 137-4-36 62-91 70-137 4Z" fill="#15803d"/>
+  <text x="400" y="495" text-anchor="middle" fill="#fff7ed" font-family="Arial, sans-serif" font-size="34" font-weight="700">Featured meal</text>
+</svg>

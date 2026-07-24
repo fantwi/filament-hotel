@@ -123,9 +123,12 @@
     <div class="grid gap-8 md:grid-cols-4">
         @forelse ($featuredItems as $item)
             <div class="overflow-hidden rounded-xl bg-white shadow">
-                @if ($item->image)
-                    <img src="{{ asset('storage/'.$item->image) }}" class="h-56 w-full object-cover" alt="{{ $item->name }}">
-                @endif
+                <img
+                    src="{{ $item->image ? asset('storage/'.$item->image) : asset('images/meal-placeholder.svg') }}"
+                    class="h-56 w-full object-cover"
+                    alt="{{ $item->name }}"
+                    loading="lazy"
+                >
                 <div class="p-6">
                     <h3 class="text-xl font-bold">{{ $item->name }}</h3>
                     <p class="mt-2 text-gray-600">{{ $item->description }}</p>
@@ -145,64 +148,6 @@
             View Full Menu
         </a>
     </div>
-</section>
-
-<section class="bg-gray-100 py-16">
-
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        <h2
-            class="text-3xl
-            font-bold
-            text-center
-            mb-10"
-        >
-
-            Featured Dishes
-
-        </h2>
-
-        <div
-            class="grid
-            md:grid-cols-3
-            gap-8"
-        >
-
-            <!-- Dish 1 -->
-
-            <div class="bg-white rounded-xl shadow">
-
-                <img
-                    src="{{ asset('images/tilapia.jpg') }}"
-                    class="rounded-t-xl h-56 w-full object-cover"
-                >
-
-                <div class="p-5">
-
-                    <h3 class="font-bold">
-                        Grilled Tilapia
-                    </h3>
-
-                    <p class="text-gray-500">
-                        Served with banku.
-                    </p>
-
-                    <div class="mt-4 font-bold">
-
-                        GHS 120
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <!-- Repeat for more dishes -->
-
-        </div>
-
-    </div>
-
 </section>
 
 <section class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-16 lg:px-8">
