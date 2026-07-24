@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
+use App\Models\User;
+use Filament\Notifications\Notification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -77,13 +79,13 @@ class RestaurantOrderPaymentController extends Controller
                 ->with('error', 'Payment verification failed. No payment was recorded.');
         }
 
-        DB::transaction(function () use ($order, $reference): void {
+        $paymentRecorded = DB::transaction(function () use ($order, $reference): bool {
             $order = RestaurantOrder::query()
                 ->lockForUpdate()
                 ->findOrFail($order->id);
 
             if ($order->payment_status === 'completed') {
-                return;
+                return false;
             }
 
             $order->update([
@@ -91,6 +93,7 @@ class RestaurantOrderPaymentController extends Controller
                 'status' => 'confirmed',
                 'payment_method' => 'paystack',
                 'paid_at' => now(),
+                'confirmed_at' => now(),
             ]);
 
             Payment::firstOrCreate(
@@ -103,7 +106,20 @@ class RestaurantOrderPaymentController extends Controller
                     'payment_status' => 'completed',
                 ]
             );
+
+            return true;
         });
+
+        if ($paymentRecorded) {
+            User::permission('manage kitchen orders')->each(function (User $kitchenUser) use ($order): void {
+                Notification::make()
+                    ->title('New paid restaurant order')
+                    ->body("Order {$order->order_number} is ready for kitchen preparation.")
+                    ->icon('heroicon-o-shopping-bag')
+                    ->success()
+                    ->sendToDatabase($kitchenUser);
+            });
+        }
 
         return redirect()->route('restaurant.orders.confirmation', $order)
             ->with('success', 'Payment received. Your order has been sent to the kitchen.');

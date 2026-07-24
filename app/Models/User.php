@@ -228,6 +228,7 @@ class User extends Authenticatable
         'housekeeping' => 'Housekeeping',
         'accounting' => 'Accounting',
         'management' => 'Management',
+        'kitchen' => 'Kitchen',
         'guest' => 'Guest',
     ];
 
@@ -238,6 +239,7 @@ class User extends Authenticatable
         'housekeeping' => 'housekeeper',
         'accounting' => 'accountant',
         'management' => 'manager',
+        'kitchen' => 'kitchen_staff',
         'guest' => 'guest',
     ];
 
@@ -266,6 +268,7 @@ class User extends Authenticatable
             'housekeeping' => 'Housekeeping',
             'accounting' => 'Accounting',
             'management' => 'Management',
+            'kitchen' => 'Kitchen',
             'guest' => 'Guest',
         ];
     }
@@ -346,6 +349,7 @@ class User extends Authenticatable
             'receptionist',
             'accountant',
             'housekeeping',
+            'kitchen_staff',
         ]);
     }
 
@@ -364,6 +368,7 @@ class User extends Authenticatable
             'receptionist',
             'accountant',
             'housekeeping',
+            'kitchen_staff',
         ]);
     }
 
@@ -385,6 +390,7 @@ class User extends Authenticatable
             'receptionist',
             'accountant',
             'housekeeping',
+            'kitchen_staff',
             // 'security',
         ]);
     }

@@ -1393,6 +1393,19 @@
                         </div>
                     </div>
 
+                    @php
+                        $guestStatusMessage = match ($order->status) {
+                            'pending' => 'Your order is awaiting payment or confirmation.',
+                            'confirmed' => 'Your order has been received by the restaurant.',
+                            'preparing' => 'The kitchen is preparing your order.',
+                            'ready' => 'Your order is ready.',
+                            'served' => 'Your order has been served.',
+                            'cancelled' => 'This order was cancelled.',
+                            default => 'Order status unavailable.',
+                        };
+                    @endphp
+                    <p class="mt-2 text-sm text-gray-600">{{ $guestStatusMessage }}</p>
+
                     <div class="mt-5 space-y-3 border-t pt-4">
                         @foreach ($order->items as $orderItem)
                             <div class="flex items-center justify-between gap-4 border-b pb-3 last:border-b-0">

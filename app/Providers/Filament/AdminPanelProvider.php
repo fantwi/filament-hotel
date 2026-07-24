@@ -31,6 +31,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login() //newly added by FAA
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
             // ->viteTheme('resources/css/app.css') // FAA added this
             ->colors([
                 'primary' => Color::Amber,
@@ -47,6 +49,8 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Admin\Widgets\HotelStatistics::class,
                 \App\Filament\Admin\Widgets\MonthlyRevenueChart::class,
                 \App\Filament\Admin\Widgets\BookingTrendChart::class,
+                \App\Filament\Admin\Widgets\KitchenOrderStats::class,
+                \App\Filament\Admin\Widgets\KitchenOrderQueue::class,
                 \App\Filament\Admin\Widgets\RestaurantOrderStats::class,
                 \App\Filament\Admin\Widgets\RestaurantRevenueChart::class,
                 \App\Filament\Admin\Widgets\RestaurantOrderStatusChart::class,

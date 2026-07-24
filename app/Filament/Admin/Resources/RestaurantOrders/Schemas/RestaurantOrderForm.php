@@ -32,6 +32,13 @@ class RestaurantOrderForm
                     Textarea::make('notes')->columnSpanFull(),
                 ])
                 ->columns(2),
+            Section::make('Kitchen Management')
+                ->schema([
+                    Textarea::make('kitchen_notes')
+                        ->label('Kitchen Notes')
+                        ->rows(4)
+                        ->columnSpanFull(),
+                ]),
         ]);
     }
 }

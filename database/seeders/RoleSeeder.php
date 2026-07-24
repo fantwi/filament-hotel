@@ -21,6 +21,7 @@ class RoleSeeder extends Seeder
             'receptionist',
             'housekeeping',
             'accountant',
+            'kitchen_staff',
         ];
         foreach ($roles as $role) {
             Role::firstOrCreate(['name' => $role]);

@@ -25,6 +25,11 @@ class RestaurantOrderResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'order_number';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('manage kitchen orders') ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return RestaurantOrderForm::configure($schema);
