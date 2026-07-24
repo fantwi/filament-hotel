@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RolesAndPermissionsSeeder::class,
             RestaurantSeeder::class,
+            RestaurantFacilitySeeder::class,
             RestaurantTableSeeder::class,
             MenuCategorySeeder::class,
             MenuItemSeeder::class,

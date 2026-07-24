@@ -201,6 +201,8 @@
 
 </section>
 
+{{-- Static facilities retained only as a reference; management now happens in Filament. --}}
+{{--
 <section class="py-16">
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -240,6 +242,27 @@
     </div>
 
 </section>
+--}}
+
+@if ($restaurant?->facilities->isNotEmpty())
+    <section class="bg-gray-50 py-8 sm:py-16">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl text-center">
+                <p class="text-sm font-semibold uppercase tracking-widest text-indigo-600">Amenities</p>
+                <h2 class="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">Restaurant Facilities</h2>
+            </div>
+
+            <div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                @foreach ($restaurant->facilities as $facility)
+                    <div class="rounded-xl bg-white p-5 text-center shadow-sm ring-1 ring-gray-950/5">
+                        <div class="text-2xl" aria-hidden="true">{{ $facility->icon ?: '✓' }}</div>
+                        <p class="mt-3 font-semibold text-gray-900">{{ $facility->name }}</p>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+@endif
 
 @if ($restaurant && filled($restaurant->gallery) && is_array($restaurant->gallery))
     <section

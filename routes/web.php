@@ -454,6 +454,7 @@ Route::get('/restaurant', function () {
 
     $restaurant = Restaurant::with([
         'tables' => fn ($query) => $query->orderBy('table_number')->limit(3),
+        'facilities',
     ])->first();
     $categories = MenuCategory::query()
         ->with(['menuItems' => fn ($query) => $query

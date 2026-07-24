@@ -61,5 +61,10 @@ class Restaurant extends Model
             RestaurantReservation::class
         );
     }
+
+    public function facilities()
+    {
+        return $this->belongsToMany(Facility::class)->withTimestamps();
+    }
     // End Relationships
 }

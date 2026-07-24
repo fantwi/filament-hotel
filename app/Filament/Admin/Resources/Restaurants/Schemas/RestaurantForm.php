@@ -9,6 +9,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\CheckboxList;
 //use Filament\Forms\Components\Section;
 
 class RestaurantForm
@@ -78,6 +79,12 @@ class RestaurantForm
                         TextInput::make('cuisine'),
 
                         Toggle::make('is_open'),
+
+                        CheckboxList::make('facilities')
+                            ->relationship('facilities', 'name')
+                            ->columns(2)
+                            ->searchable()
+                            ->columnSpanFull(),
 
                     ])
 
