@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\RestaurantOrder;
+use App\Models\RestaurantTable;
 use App\Services\RestaurantCartService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,24 @@ class RestaurantCheckoutController extends Controller
 
     public function store(Request $request, RestaurantCartService $cart): RedirectResponse
     {
+        $tableId = session('restaurant_order.table_id');
+        $table = null;
+
+        if ($tableId) {
+            $table = RestaurantTable::query()
+                ->whereKey($tableId)
+                ->where('qr_ordering_enabled', true)
+                ->whereNotIn('status', ['maintenance', 'cleaning'])
+                ->first();
+
+            if (! $table) {
+                session()->forget(['restaurant_order.table_id', 'restaurant_order.table_number', 'restaurant_order.restaurant_id', 'restaurant_order.channel']);
+
+                return redirect()->route('cart.index')
+                    ->with('error', 'The selected restaurant table is no longer available for QR ordering.');
+            }
+        }
+
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -39,9 +58,11 @@ class RestaurantCheckoutController extends Controller
         $totals = $cart->totals();
         $guest = auth()->user()?->guest;
 
-        $order = DB::transaction(function () use ($items, $totals, $data, $guest) {
+        $order = DB::transaction(function () use ($items, $totals, $data, $guest, $table) {
             $order = RestaurantOrder::create([
                 'guest_id' => $guest?->id,
+                'restaurant_table_id' => $table?->id,
+                'ordering_channel' => $table ? session('restaurant_order.channel', 'qr') : 'web',
                 'order_number' => 'FOOD-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
                 'customer_email' => $data['email'],
                 ...$totals,

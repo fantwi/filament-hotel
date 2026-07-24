@@ -2,6 +2,18 @@
     <div class="mx-auto max-w-5xl px-6 py-12">
         <h1 class="mb-8 text-4xl font-bold">Your Cart</h1>
 
+        @if (session()->has('restaurant_order.table_id'))
+            <div class="mb-6 rounded-xl border border-green-200 bg-green-50 p-5">
+                <p class="font-semibold text-green-800">Dine-in Order</p>
+                <p class="text-green-700">Table: {{ session('restaurant_order.table_number') }}</p>
+            </div>
+        @else
+            <div class="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
+                <p class="font-semibold text-blue-800">Standard Restaurant Order</p>
+                <p class="text-blue-700">No restaurant table is attached to this cart.</p>
+            </div>
+        @endif
+
         @if (session('success'))
             <div class="mb-6 rounded-lg bg-green-100 p-4 text-green-700">{{ session('success') }}</div>
         @endif

@@ -6,6 +6,8 @@ use App\Http\Controllers\RestaurantReservationController;
 use App\Http\Controllers\RestaurantCartController;
 use App\Http\Controllers\RestaurantCheckoutController;
 use App\Http\Controllers\RestaurantOrderPaymentController;
+use App\Http\Controllers\RestaurantTableOrderController;
+use App\Http\Controllers\RestaurantTableQrController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
@@ -492,6 +494,14 @@ Route::get('/restaurant/menu', function () {
 
     return view('restaurant.menu', compact('restaurant', 'categories', 'featuredItems'));
 })->name('restaurant.menu');
+
+Route::get('/table/{table:qr_token}/menu', [RestaurantTableOrderController::class, 'menu'])
+    ->middleware('throttle:60,1')
+    ->name('restaurant.table.menu');
+Route::post('/restaurant/table-session/leave', [RestaurantTableOrderController::class, 'leaveTable'])
+    ->name('restaurant.table.leave');
+Route::middleware('auth')->get('/admin/restaurant-tables/{table}/qr', [RestaurantTableQrController::class, 'print'])
+    ->name('restaurant.tables.qr.print');
 
 Route::post('/cart/add/{item}', [RestaurantCartController::class, 'add'])->name('cart.add');
 Route::get('/cart', [RestaurantCartController::class, 'index'])->name('cart.index');

@@ -25,7 +25,7 @@ class KitchenOrderQueue extends TableWidget
             ->poll('10s')
             ->query(
                 RestaurantOrder::kitchenQueue()
-                    ->with(['guest', 'items.menuItem', 'reservation.table', 'preparedBy'])
+                    ->with(['guest', 'items.menuItem', 'reservation.table', 'table', 'preparedBy'])
                     ->orderByRaw("CASE status WHEN 'ready' THEN 1 WHEN 'preparing' THEN 2 WHEN 'confirmed' THEN 3 ELSE 4 END")
                     ->oldest('created_at'),
             )
@@ -37,7 +37,20 @@ class KitchenOrderQueue extends TableWidget
                         ->map(fn ($item): string => $item->quantity . '× ' . ($item->menuItem?->name ?? 'Deleted item'))
                         ->implode(', '))
                     ->wrap(),
-                TextColumn::make('reservation.table.table_number')->label('Table')->placeholder('Takeaway / No Table')->badge(),
+                TextColumn::make('table_display')
+                    ->label('Table')
+                    ->state(fn (RestaurantOrder $record): string => $record->table?->table_number ?? $record->reservation?->table?->table_number ?? 'No Table')
+                    ->badge()
+                    ->color(fn (RestaurantOrder $record): string => $record->restaurant_table_id ? 'success' : 'gray'),
+                TextColumn::make('ordering_channel')
+                    ->label('Channel')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'qr' => 'Table QR', 'web' => 'Website', 'staff' => 'Staff', default => ucfirst($state),
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'qr' => 'success', 'web' => 'info', 'staff' => 'warning', default => 'gray',
+                    }),
                 TextColumn::make('status')->badge()->color(fn (string $state): string => match ($state) {
                     'confirmed' => 'info', 'preparing' => 'warning', 'ready' => 'success', default => 'gray',
                 }),

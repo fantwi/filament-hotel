@@ -12,6 +12,8 @@ class RestaurantOrder extends Model
     protected $fillable = [
         'guest_id',
         'restaurant_reservation_id',
+        'restaurant_table_id',
+        'ordering_channel',
         'order_number',
         'customer_email',
         'transaction_reference',
@@ -60,6 +62,11 @@ class RestaurantOrder extends Model
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(RestaurantReservation::class, 'restaurant_reservation_id');
+    }
+
+    public function table(): BelongsTo
+    {
+        return $this->belongsTo(RestaurantTable::class, 'restaurant_table_id');
     }
 
     public function payments(): HasMany

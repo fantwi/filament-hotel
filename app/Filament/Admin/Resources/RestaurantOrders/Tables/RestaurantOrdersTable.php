@@ -29,6 +29,11 @@ class RestaurantOrdersTable
             ->columns([
                 TextColumn::make('order_number')->label('Order')->searchable()->sortable(),
                 TextColumn::make('guest.email')->label('Guest')->placeholder('Walk-in Guest')->searchable(),
+                TextColumn::make('table.table_number')->label('Table')->placeholder('No Table')->badge()->searchable()->sortable(),
+                TextColumn::make('ordering_channel')->label('Order Channel')->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'qr' => 'Table QR', 'web' => 'Website', 'staff' => 'Staff Entry', default => ucfirst($state),
+                    }),
                 TextColumn::make('items_count')->label('Items')->counts('items')->badge(),
                 TextColumn::make('total')
                     ->money('GHS')
