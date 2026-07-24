@@ -34,12 +34,13 @@ use App\Mail\RestaurantPaymentReceived;
 use Carbon\CarbonPeriod;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-// Route::get('/', function () {
-//     // $roomTypes = RoomType::all();
-//     $roomTypes = RoomType::with('facilities')->get();
+Route::get('/', function () {
+    $roomTypes = RoomType::query()->with('facilities')->take(3)->get();
+    $conferenceRooms = ConferenceRoom::query()->where('is_available', true)->take(3)->get();
+    $restaurant = Restaurant::first();
 
-//     return view('dashboard', compact('roomTypes'));
-// })->name('home');
+    return view('index', compact('roomTypes', 'conferenceRooms', 'restaurant'));
+})->name('home');
 
 // Route::get('/dashboard', function () {
 
