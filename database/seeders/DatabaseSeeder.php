@@ -23,6 +23,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call([
+            RoleSeeder::class,
+            PermissionSeeder::class,
             RestaurantSeeder::class,
             RestaurantTableSeeder::class,
             MenuCategorySeeder::class,

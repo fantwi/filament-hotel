@@ -9,6 +9,8 @@ use Spatie\Activitylog\LogOptions;
 use App\Models\Booking;
 use App\Models\User;
 use App\Models\RestaurantReservation;
+use App\Models\RestaurantOrder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Guest extends Model
 {
@@ -42,6 +44,11 @@ class Guest extends Model
         return $this->hasMany(
             RestaurantReservation::class
         );
+    }
+
+    public function restaurantOrders(): HasMany
+    {
+        return $this->hasMany(RestaurantOrder::class);
     }
     // End Relationships
 

@@ -1,5 +1,7 @@
 <x-guest-layout>
 
+<style>[x-cloak] { display: none !important; }</style>
+
 @php
     // ✅ Ensure bookings is always a collection
     $bookings = $bookings ?? collect();
@@ -234,6 +236,14 @@
             </div>
         </div>
 
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border hover:shadow-md transition flex items-center gap-4">
+            <div class="text-2xl">🍽️</div>
+            <div>
+                <p class="text-gray-500 dark:text-gray-300 text-sm">Restaurant Food Orders</p>
+                <h2 class="text-2xl font-bold text-orange-600 dark:text-white">{{ $totalRestaurantOrders ?? 0 }}</h2>
+            </div>
+        </div>
+
         <!-- Total Conference Room Bookings -->
         <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border hover:shadow-md transition flex items-center gap-4">
             <div class="text-2xl">📅</div>
@@ -338,6 +348,16 @@
             class="px-5 py-2 rounded-lg transition"
         >
             Restaurant Reservations
+        </button>
+
+        <button
+            @click="tab='restaurant-orders'"
+            :class="tab == 'restaurant-orders'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700'"
+            class="px-5 py-2 rounded-lg transition"
+        >
+            Restaurant Food Orders
         </button>
 
     </div>
@@ -1352,6 +1372,64 @@
         </div> -->
 
     <!-- @endforelse -->
+
+    <div x-show="tab == 'restaurant-orders'" x-cloak x-transition.opacity>
+        <div class="mb-6 flex items-center justify-between">
+            <h3 class="text-xl font-semibold text-orange-700">Restaurant Food Orders</h3>
+            <a href="{{ route('restaurant.menu') }}" class="rounded-lg bg-orange-600 px-4 py-2 text-white">Order Food</a>
+        </div>
+
+        <div class="space-y-4">
+            @forelse ($restaurantOrders as $order)
+                <div class="border rounded-xl p-5">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h4 class="font-bold">Order {{ $order->order_number }}</h4>
+                            <p class="text-sm text-gray-600">{{ $order->items->sum('quantity') }} item(s) · GHS {{ number_format($order->total, 2) }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p>Status: <strong>{{ ucfirst($order->status) }}</strong></p>
+                            <p>Payment: <strong>{{ ucfirst($order->payment_status) }}</strong></p>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 space-y-3 border-t pt-4">
+                        @foreach ($order->items as $orderItem)
+                            <div class="flex items-center justify-between gap-4 border-b pb-3 last:border-b-0">
+                                <div class="flex items-center gap-3">
+                                    @if ($orderItem->menuItem?->image)
+                                        <img src="{{ asset('storage/'.$orderItem->menuItem->image) }}" alt="{{ $orderItem->menuItem->name }}" class="h-12 w-12 rounded object-cover">
+                                    @endif
+                                    <div>
+                                        <p class="font-medium">{{ $orderItem->menuItem?->name ?? 'Deleted menu item' }}</p>
+                                        <p class="text-sm text-gray-500">Quantity: {{ $orderItem->quantity }} × GHS {{ number_format($orderItem->unit_price, 2) }}</p>
+                                    </div>
+                                </div>
+                                <strong>GHS {{ number_format($orderItem->total_price, 2) }}</strong>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="mt-4 grid gap-2 text-sm sm:grid-cols-4">
+                        <span>Subtotal: <strong>GHS {{ number_format($order->subtotal, 2) }}</strong></span>
+                        <span>Tax: <strong>GHS {{ number_format($order->tax, 2) }}</strong></span>
+                        <span>Service: <strong>GHS {{ number_format($order->service_charge, 2) }}</strong></span>
+                        <span>Total: <strong>GHS {{ number_format($order->total, 2) }}</strong></span>
+                    </div>
+
+                    @if ($order->payment_status !== 'completed')
+                        <a href="{{ route('restaurant.orders.confirmation', $order) }}" class="mt-4 inline-block rounded bg-blue-600 px-4 py-2 text-white">Complete Payment</a>
+                    @endif
+
+                    @if ($order->transaction_reference)
+                        <p class="mt-3 break-all text-xs text-gray-500">Reference: {{ $order->transaction_reference }}</p>
+                    @endif
+                </div>
+            @empty
+                <p class="text-gray-500">No food orders found.</p>
+            @endforelse
+        </div>
+    </div>
 
 </div>
 

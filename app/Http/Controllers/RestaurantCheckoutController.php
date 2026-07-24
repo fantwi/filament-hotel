@@ -27,6 +27,7 @@ class RestaurantCheckoutController extends Controller
     public function store(Request $request, RestaurantCartService $cart): RedirectResponse
     {
         $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
         $items = $cart->items();
@@ -42,6 +43,7 @@ class RestaurantCheckoutController extends Controller
             $order = RestaurantOrder::create([
                 'guest_id' => $guest?->id,
                 'order_number' => 'FOOD-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
+                'customer_email' => $data['email'],
                 ...$totals,
                 'notes' => $data['notes'] ?? null,
             ]);
@@ -59,8 +61,9 @@ class RestaurantCheckoutController extends Controller
         });
 
         session()->forget('cart');
+        session()->push('restaurant_order_ids', $order->id);
 
-        return redirect()->route('restaurant.menu')
-            ->with('success', "Order {$order->order_number} has been received. Payment will be requested next.");
+        return redirect()->route('restaurant.orders.confirmation', $order)
+            ->with('success', "Order {$order->order_number} has been received. Complete payment to send it to the kitchen.");
     }
 }

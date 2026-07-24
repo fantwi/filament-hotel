@@ -12,6 +12,10 @@ class RestaurantOrder extends Model
         'guest_id',
         'restaurant_reservation_id',
         'order_number',
+        'customer_email',
+        'transaction_reference',
+        'payment_method',
+        'paid_at',
         'subtotal',
         'tax',
         'service_charge',
@@ -26,6 +30,7 @@ class RestaurantOrder extends Model
         'tax' => 'decimal:2',
         'service_charge' => 'decimal:2',
         'total' => 'decimal:2',
+        'paid_at' => 'datetime',
     ];
 
     public function items(): HasMany
@@ -41,5 +46,10 @@ class RestaurantOrder extends Model
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(RestaurantReservation::class, 'restaurant_reservation_id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
     }
 }

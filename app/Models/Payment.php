@@ -18,6 +18,7 @@ class Payment extends Model
         'booking_id',
         'conference_booking_id',
         'restaurant_reservation_id',
+        'restaurant_order_id',
         'guest_id',
         'amount',
         'method',
@@ -45,31 +46,38 @@ class Payment extends Model
         );
     }
 
+    public function restaurantOrder()
+    {
+        return $this->belongsTo(RestaurantOrder::class);
+    }
+
     protected static function booted()
     {
         static::created(function ($payment) {
-            $booking = $payment->booking ?? $payment->conferenceBooking;
+            $booking = $payment->booking
+                ?? $payment->conferenceBooking
+                ?? $payment->restaurantReservation
+                ?? $payment->restaurantOrder;
 
-            if (!$booking) {
-                return 0;
+            if (! $booking) {
+                return;
             }
-            // if ($booking->balance <= 0) {
-            //     // $booking->update(['status' => 'checked_out']);
-            // }
-            
+
             activity()
-                ->causedBy(auth()->user() ?? $payment->booking->guest?->user)
+                ->causedBy(auth()->user() ?? $booking->guest?->user)
                 ->performedOn($payment)
                 ->log('Payment created');
-
-            return $booking->balance ?? 0;
-
         });
 
         static::updated(function ($payment) {
+            $booking = $payment->booking
+                ?? $payment->conferenceBooking
+                ?? $payment->restaurantReservation
+                ?? $payment->restaurantOrder;
+
             activity()
                 ->causedBy(
-                    auth()->user() ?? $payment->booking->guest?->user
+                    auth()->user() ?? $booking?->guest?->user
                 )
                 ->performedOn(
                     $payment

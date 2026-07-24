@@ -47,6 +47,10 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Admin\Widgets\HotelStatistics::class,
                 \App\Filament\Admin\Widgets\MonthlyRevenueChart::class,
                 \App\Filament\Admin\Widgets\BookingTrendChart::class,
+                \App\Filament\Admin\Widgets\RestaurantOrderStats::class,
+                \App\Filament\Admin\Widgets\RestaurantRevenueChart::class,
+                \App\Filament\Admin\Widgets\RestaurantOrderStatusChart::class,
+                \App\Filament\Admin\Widgets\BestSellingMenuItems::class,
                 \App\Filament\Admin\Widgets\RevenueStats::class,
                 \App\Filament\Admin\Widgets\StaffStats::class,
             ])
