@@ -160,23 +160,32 @@
 
         @foreach($restaurant->tables as $table)
 
-            <div class="bg-white shadow rounded-xl p-6">
+            <div class="overflow-hidden rounded-xl bg-white shadow">
+                <img
+                    src="{{ $table->image ? asset('storage/'.$table->image) : asset('images/table-placeholder.svg') }}"
+                    class="h-48 w-full object-cover"
+                    alt="{{ $table->table_number }}"
+                    loading="lazy"
+                >
 
-                <h3 class="text-xl font-bold">
-                    {{ $table->table_number }}
-                </h3>
+                <div class="p-6">
 
-                <p>
-                    Capacity: {{ $table->capacity }}
-                </p>
+                    <h3 class="text-xl font-bold">
+                        {{ $table->table_number }}
+                    </h3>
 
-                <p>
-                    Location: {{ $table->location }}
-                </p>
+                    <p>
+                        Capacity: {{ $table->capacity }}
+                    </p>
 
-                <span class="inline-block mt-3 px-3 py-1 rounded-full bg-green-100 text-green-700">
-                    {{ ucfirst($table->status) }}
-                </span>
+                    <p>
+                        Location: {{ $table->location }}
+                    </p>
+
+                    <span class="inline-block mt-3 px-3 py-1 rounded-full bg-green-100 text-green-700">
+                        {{ ucfirst($table->status) }}
+                    </span>
+                </div>
 
             </div>
 

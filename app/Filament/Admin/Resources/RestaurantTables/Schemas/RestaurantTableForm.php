@@ -6,6 +6,7 @@ use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 
@@ -74,6 +75,15 @@ class RestaurantTableForm
                         Textarea::make('description')
 
                             ->rows(3),
+
+                        FileUpload::make('image')
+                            ->label('Table Image')
+                            ->image()
+                            ->disk('public')
+                            ->directory('restaurant-tables')
+                            ->visibility('public')
+                            ->imageEditor()
+                            ->columnSpanFull(),
 
                         Toggle::make('qr_ordering_enabled')
                             ->label('Enable QR Ordering')

@@ -23,6 +23,8 @@ class RestaurantTable extends Model
 
         'description',
 
+        'image',
+
         'qr_code',
         'qr_token',
         'qr_ordering_enabled',

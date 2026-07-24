@@ -12,6 +12,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Str;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ImageColumn;
 
 class RestaurantTablesTable
 {
@@ -19,6 +20,7 @@ class RestaurantTablesTable
     {
         return $table
             ->columns([
+                ImageColumn::make('image')->disk('public')->square(),
                 TextColumn::make('table_number'),
                 TextColumn::make('restaurant.name'),
                 TextColumn::make('capacity'),

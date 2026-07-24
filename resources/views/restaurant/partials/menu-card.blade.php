@@ -1,7 +1,10 @@
 <article class="overflow-hidden rounded-xl bg-white shadow" x-show="matches(@js($item->name.' '.$item->description))" x-transition>
-    @if ($item->image)
-        <img src="{{ asset('storage/'.$item->image) }}" class="h-56 w-full object-cover" alt="{{ $item->name }}">
-    @endif
+    <img
+        src="{{ $item->image ? asset('storage/'.$item->image) : asset('images/meal-placeholder.svg') }}"
+        class="h-56 w-full object-cover"
+        alt="{{ $item->name }}"
+        loading="lazy"
+    >
 
     <div class="p-6">
         <h3 class="text-xl font-bold">{{ $item->name }}</h3>

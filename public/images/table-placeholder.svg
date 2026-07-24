@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" role="img" aria-label="Restaurant table placeholder">
+  <defs><linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0f766e"/><stop offset="100%" stop-color="#115e59"/></linearGradient></defs>
+  <rect width="800" height="480" fill="url(#background)"/>
+  <rect x="260" y="160" width="280" height="130" rx="18" fill="#fef3c7"/>
+  <path d="M310 290h40l-28 100h-32l20-100Zm140 0h40l20 100h-32l-28-100Z" fill="#78350f"/>
+  <circle cx="320" cy="130" r="36" fill="#fb923c"/><circle cx="400" cy="130" r="36" fill="#fb923c"/><circle cx="480" cy="130" r="36" fill="#fb923c"/>
+  <text x="400" y="440" text-anchor="middle" fill="#ccfbf1" font-family="Arial, sans-serif" font-size="32" font-weight="700">Restaurant table</text>
+</svg>
