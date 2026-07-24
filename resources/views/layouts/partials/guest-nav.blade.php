@@ -1,13 +1,31 @@
-<nav x-data="{ open: false, accountOpen: false }" class="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur">
+<nav x-data="{ open: false, accountOpen: false, roomsOpen: false, restaurantOpen: false, conferenceOpen: false, mobileRoomsOpen: false, mobileRestaurantOpen: false, mobileConferenceOpen: false }" class="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur">
     <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <a href="/" class="shrink-0 text-lg font-bold text-gray-900 sm:text-xl">My Hotel</a>
 
-        <div class="hidden items-center gap-4 text-sm font-medium text-gray-600 lg:flex">
-            <a href="/rooms" class="hover:text-blue-600">Rooms</a>
-            <a href="/conference-rooms" class="hover:text-blue-600">Conference Rooms</a>
-            <a href="/restaurant" class="hover:text-blue-600">Restaurant</a>
-            <a href="{{ route('restaurant.menu') }}" class="hover:text-blue-600">Menu</a>
-            <a href="{{ route('cart.index') }}" class="hover:text-blue-600">Cart ({{ count(session('cart', [])) }})</a>
+        <div class="hidden items-center gap-2 text-sm font-medium text-gray-600 lg:flex">
+            <div class="relative" @click.outside="roomsOpen = false">
+                <button type="button" @click="roomsOpen = !roomsOpen" class="inline-flex items-center gap-1 rounded-lg px-3 py-2 hover:bg-gray-100 hover:text-blue-600">Rooms <span aria-hidden="true">⌄</span></button>
+                <div x-show="roomsOpen" x-cloak x-transition class="absolute left-0 mt-2 w-52 overflow-hidden rounded-xl border bg-white py-1 shadow-lg">
+                    <a href="/rooms" class="block px-4 py-2.5 hover:bg-gray-50">Browse Rooms</a>
+                </div>
+            </div>
+            <div class="relative" @click.outside="restaurantOpen = false">
+                <button type="button" @click="restaurantOpen = !restaurantOpen" class="inline-flex items-center gap-1 rounded-lg px-3 py-2 hover:bg-gray-100 hover:text-blue-600">Restaurant <span aria-hidden="true">⌄</span></button>
+                <div x-show="restaurantOpen" x-cloak x-transition class="absolute left-0 mt-2 w-56 overflow-hidden rounded-xl border bg-white py-1 shadow-lg">
+                    <a href="{{ route('restaurant') }}" class="block px-4 py-2.5 hover:bg-gray-50">Restaurant Home</a>
+                    <a href="{{ route('restaurant.menu') }}" class="block px-4 py-2.5 hover:bg-gray-50">Menu</a>
+                    <a href="{{ route('restaurant.tables') }}" class="block px-4 py-2.5 hover:bg-gray-50">Restaurant Tables</a>
+                    <a href="{{ route('restaurant.gallery') }}" class="block px-4 py-2.5 hover:bg-gray-50">Gallery</a>
+                    <a href="{{ route('restaurant.reserve') }}" class="block px-4 py-2.5 hover:bg-gray-50">Reserve a Table</a>
+                    <a href="{{ route('cart.index') }}" class="block px-4 py-2.5 hover:bg-gray-50">Food Cart ({{ count(session('cart', [])) }})</a>
+                </div>
+            </div>
+            <div class="relative" @click.outside="conferenceOpen = false">
+                <button type="button" @click="conferenceOpen = !conferenceOpen" class="inline-flex items-center gap-1 rounded-lg px-3 py-2 hover:bg-gray-100 hover:text-blue-600">Conferences <span aria-hidden="true">⌄</span></button>
+                <div x-show="conferenceOpen" x-cloak x-transition class="absolute left-0 mt-2 w-56 overflow-hidden rounded-xl border bg-white py-1 shadow-lg">
+                    <a href="/conference-rooms" class="block px-4 py-2.5 hover:bg-gray-50">Conference Rooms</a>
+                </div>
+            </div>
             <a href="/contact" class="hover:text-blue-600">Contact</a>
         </div>
 
@@ -40,11 +58,20 @@
 
     <div id="guest-mobile-menu" x-show="open" x-cloak x-transition class="border-t border-gray-200 bg-white lg:hidden">
         <div class="space-y-1 px-4 py-3">
-            <a href="/rooms" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Rooms</a>
-            <a href="/conference-rooms" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Conference Rooms</a>
-            <a href="/restaurant" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Restaurant</a>
-            <a href="{{ route('restaurant.menu') }}" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Menu</a>
-            <a href="{{ route('cart.index') }}" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Cart ({{ count(session('cart', [])) }})</a>
+            <div class="rounded-lg">
+                <button type="button" @click="mobileRoomsOpen = !mobileRoomsOpen" class="flex w-full items-center justify-between px-3 py-3 text-sm font-medium hover:bg-gray-50">Rooms <span aria-hidden="true">⌄</span></button>
+                <div x-show="mobileRoomsOpen" x-cloak class="space-y-1 pb-2 pl-6"><a href="/rooms" class="block rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50">Browse Rooms</a></div>
+            </div>
+            <div class="rounded-lg">
+                <button type="button" @click="mobileRestaurantOpen = !mobileRestaurantOpen" class="flex w-full items-center justify-between px-3 py-3 text-sm font-medium hover:bg-gray-50">Restaurant <span aria-hidden="true">⌄</span></button>
+                <div x-show="mobileRestaurantOpen" x-cloak class="space-y-1 pb-2 pl-6 text-sm text-gray-600">
+                    <a href="{{ route('restaurant') }}" class="block rounded-lg px-3 py-2 hover:bg-gray-50">Restaurant Home</a><a href="{{ route('restaurant.menu') }}" class="block rounded-lg px-3 py-2 hover:bg-gray-50">Menu</a><a href="{{ route('restaurant.tables') }}" class="block rounded-lg px-3 py-2 hover:bg-gray-50">Restaurant Tables</a><a href="{{ route('restaurant.gallery') }}" class="block rounded-lg px-3 py-2 hover:bg-gray-50">Gallery</a><a href="{{ route('restaurant.reserve') }}" class="block rounded-lg px-3 py-2 hover:bg-gray-50">Reserve a Table</a><a href="{{ route('cart.index') }}" class="block rounded-lg px-3 py-2 hover:bg-gray-50">Food Cart ({{ count(session('cart', [])) }})</a>
+                </div>
+            </div>
+            <div class="rounded-lg">
+                <button type="button" @click="mobileConferenceOpen = !mobileConferenceOpen" class="flex w-full items-center justify-between px-3 py-3 text-sm font-medium hover:bg-gray-50">Conferences <span aria-hidden="true">⌄</span></button>
+                <div x-show="mobileConferenceOpen" x-cloak class="space-y-1 pb-2 pl-6"><a href="/conference-rooms" class="block rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50">Conference Rooms</a></div>
+            </div>
             <a href="/contact" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Contact</a>
             <div class="border-t pt-2">
                 @auth
