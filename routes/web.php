@@ -484,6 +484,12 @@ Route::get('/restaurant/tables', function () {
     return view('restaurant.tables', compact('restaurant'));
 })->name('restaurant.tables');
 
+Route::get('/restaurant/gallery', function () {
+    $restaurant = Restaurant::first();
+
+    return view('restaurant.gallery', compact('restaurant'));
+})->name('restaurant.gallery');
+
 Route::get('/restaurant/menu', function () {
     $restaurant = Restaurant::first();
 

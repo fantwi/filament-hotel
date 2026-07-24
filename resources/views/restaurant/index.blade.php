@@ -259,7 +259,7 @@
             </div>
 
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                @foreach ($restaurant->gallery as $image)
+                @foreach (array_slice($restaurant->gallery, 0, 3) as $image)
                     @php($imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($image))
                     <button
                         type="button"
@@ -271,6 +271,12 @@
                         <div class="absolute bottom-4 right-4 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-gray-800 opacity-0 transition group-hover:opacity-100">View Image</div>
                     </button>
                 @endforeach
+            </div>
+
+            <div class="mt-10 text-center">
+                <a href="{{ route('restaurant.gallery') }}" class="inline-flex items-center rounded-lg border border-orange-600 px-6 py-3 font-semibold text-orange-700 transition hover:bg-orange-50">
+                    View More Gallery Images
+                </a>
             </div>
         </div>
 
