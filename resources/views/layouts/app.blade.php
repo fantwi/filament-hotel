@@ -31,6 +31,8 @@
             <main>
                 {{ $slot }}
             </main>
+
+            @include('layouts.partials.public-footer')
         </div>
     </body>
 </html>

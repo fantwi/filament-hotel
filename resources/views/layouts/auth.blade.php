@@ -12,8 +12,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+<body class="flex min-h-screen flex-col bg-gray-100">
 
+<main class="flex flex-1 items-center justify-center px-4 py-8">
 <div class="w-full max-w-md">
 
     <!-- Logo -->
@@ -36,6 +37,9 @@
     </div>
 
 </div>
+</main>
+
+@include('layouts.partials.public-footer')
 
 </body>
 </html>
