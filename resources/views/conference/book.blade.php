@@ -1,6 +1,6 @@
 <x-guest-layout>
 
-<div class="max-w-xl mx-auto py-12">
+<div class="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
 
     <h1
         class="text-xl font-bold mb-8"
@@ -18,7 +18,7 @@
                 'conference.booking.store'
             )
         }}"
-        class="bg-white shadow rounded-xl p-8"
+        class="rounded-xl bg-white p-5 shadow sm:p-8"
     >
 
         @csrf

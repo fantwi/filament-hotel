@@ -40,7 +40,7 @@
     </div>
 
     <!-- CALENDAR -->
-    <div class="bg-white rounded-2xl shadow-sm border p-6">
+    <div class="overflow-x-auto rounded-2xl border bg-white p-3 shadow-sm sm:p-6">
 
         <div id="availability-calendar"></div>
 

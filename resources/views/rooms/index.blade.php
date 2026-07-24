@@ -1,6 +1,6 @@
 <x-guest-layout>
 
-<div class="max-w-7xl mx-auto py-12">
+<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
 
 <h2 class="text-3xl font-bold mb-8">
 Available Rooms Types
@@ -10,11 +10,11 @@ Available Rooms Types
 
 @foreach($roomTypes as $roomType)
 
-<div class="flex bg-white rounded-xl shadow overflow-hidden">
+<div class="flex flex-col overflow-hidden rounded-xl bg-white shadow sm:flex-row">
 
 <img
 src="{{ asset('storage/'.$roomType->image) }}"
-class="w-1/3 object-cover"
+class="h-48 w-full object-cover sm:h-auto sm:w-1/3"
 >
 
 <div class="p-6 flex-1">
@@ -59,9 +59,9 @@ class="w-1/3 object-cover"
 
 </div>
 
-<div class="flex justify-between items-center pt-4">
+<div class="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
 
-    <div class="flex gap-10">
+    <div class="flex flex-col gap-3 sm:flex-row sm:gap-4">
 
         <!-- VIEW ROOMS -->
         <a

@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <div class="mx-auto max-w-5xl px-6 py-12">
+    <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         <h1 class="mb-8 text-4xl font-bold">Your Cart</h1>
 
         @if (session()->has('restaurant_order.table_id'))

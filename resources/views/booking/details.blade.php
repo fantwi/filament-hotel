@@ -33,10 +33,10 @@
 <div
     x-data="bookingCalculator()"
     x-ref="booking"
-    class="min-h-screen bg-gray-50 py-12 px-4"
+    class="min-h-screen bg-gray-50 px-4 py-8 sm:py-12"
 >
 
-    <div class="max-w-6xl mx-auto grid lg:grid-cols-3 gap-10">
+    <div class="mx-auto grid max-w-6xl gap-6 lg:grid-cols-3 lg:gap-10">
 
         <!-- LEFT SIDE -->
         <div class="lg:col-span-2">
@@ -48,7 +48,7 @@
                     Hotel Reservation
                 </p>
 
-                <h1 class="text-4xl font-bold text-gray-900">
+                <h1 class="text-3xl font-bold text-gray-900 sm:text-4xl">
                     Complete Your Booking
                 </h1>
 
@@ -169,14 +169,14 @@
         <!-- RIGHT SIDE SUMMARY --> 
         <div>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-10">
+            <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm lg:sticky lg:top-10 sm:p-6">
 
                 <h3 class="text-xl font-bold mb-6">
                     Booking Summary
                 </h3>
 
                 <!-- ROOM -->
-                <div class="flex justify-between mb-4">
+                <div class="flex gap-4 justify-between mb-4">
 
                     <span class="text-gray-500">
                         Room Type
@@ -188,7 +188,7 @@
 
                 </div>
 
-                <div class="flex justify-between mb-4">
+                <div class="flex gap-4 justify-between mb-4">
 
                     <span class="text-gray-500">
                         Room Number
@@ -201,7 +201,7 @@
                 </div>
 
                 <!-- PRICE -->
-                <div class="flex justify-between mb-4">
+                <div class="flex gap-4 justify-between mb-4">
 
                     <span class="text-gray-500">
                         Price / Night
@@ -214,7 +214,7 @@
                 </div>
 
                 <!-- PRICE -->
-                <div class="flex justify-between mb-4">
+                <div class="flex gap-4 justify-between mb-4">
 
                     <span class="text-gray-500">
                         <!-- Number of Nights -->
@@ -229,7 +229,7 @@
                 </div>
 
                 <!-- SERVICE -->
-                <div class="flex justify-between mb-4">
+                <div class="flex gap-4 justify-between mb-4">
 
                     <span class="text-gray-500">
                         Service Fee
@@ -244,7 +244,7 @@
                 <hr class="my-5">
 
                 <!-- TOTAL -->
-                <div class="flex justify-between items-center">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 
                     <span class="text-lg font-bold">
                         Estimated Total

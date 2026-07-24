@@ -14,7 +14,7 @@
 
     <img
         src="{{ asset('storage/' . $restaurant->hero_image) }}"
-        class="w-full h-[500px] object-cover"
+        class="h-80 w-full object-cover sm:h-[500px]"
         alt="{{ $restaurant->name }}"
     >
 
@@ -27,11 +27,11 @@
         text-white"
     >
 
-        <h1 class="text-5xl font-bold mb-4">
+        <h1 class="mb-4 px-4 text-center text-3xl font-bold sm:text-5xl">
             {{ $restaurant->name }}
         </h1>
 
-        <p class="text-xl">
+        <p class="px-4 text-center text-base sm:text-xl">
             {{ $restaurant->description }} • Local & International Cuisine
         </p>
 
@@ -55,9 +55,9 @@
 
 </section>
 
-<section class="max-w-7xl mx-auto py-16">
+<section class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-16 lg:px-8">
 
-    <div class="grid md:grid-cols-2 gap-12">
+    <div class="grid gap-8 md:grid-cols-2 md:gap-12">
 
         <div>
 
@@ -117,7 +117,7 @@
 
 </section>
 
-<section class="max-w-7xl mx-auto py-16">
+<section class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-16 lg:px-8">
     <h2 class="text-4xl font-bold mb-10">Featured Meals</h2>
 
     <div class="grid gap-8 md:grid-cols-4">
@@ -149,7 +149,7 @@
 
 <section class="bg-gray-100 py-16">
 
-    <div class="max-w-7xl mx-auto">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
         <h2
             class="text-3xl
@@ -205,7 +205,7 @@
 
 </section>
 
-<section class="max-w-7xl mx-auto py-16">
+<section class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-16 lg:px-8">
 
     <h2 class="text-3xl font-bold mb-8">
         Our Restaurant Tables
@@ -243,7 +243,7 @@
 
 <section class="py-16">
 
-    <div class="max-w-7xl mx-auto">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
         <h2
             class="text-3xl
@@ -331,7 +331,7 @@
 
         </h2>
 
-        <div class="mt-10 flex justify-center gap-5">
+        <div class="mt-10 flex flex-col items-center justify-center gap-3 px-4 sm:flex-row sm:gap-5">
 
             <!-- <a
                 href="/restaurant/reservations"

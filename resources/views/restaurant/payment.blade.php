@@ -2,7 +2,7 @@
 
 @include('partials.guest-nav')
 
-<div class="max-w-4xl mx-auto py-16">
+<div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-16">
 
     <h1 class="text-3xl font-bold">
 

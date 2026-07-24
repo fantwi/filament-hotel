@@ -1,6 +1,6 @@
 <x-guest-layout>
 
-<div class="max-w-xl mx-auto py-12">
+<div class="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
 
     <h2
         class="text-2xl font-bold mb-6"
@@ -18,7 +18,7 @@
         p-5 mb-8"
     >
 
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
 

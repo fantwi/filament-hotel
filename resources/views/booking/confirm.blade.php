@@ -1,6 +1,6 @@
 <x-guest-layout>
 
-<div class="max-w-xl mx-auto py-12 text-center">
+<div class="mx-auto max-w-xl px-4 py-8 text-center sm:px-6 sm:py-12">
 
 <h1 class="text-3xl font-bold text-green-600 mb-4">
 Booking Confirmed 🎉

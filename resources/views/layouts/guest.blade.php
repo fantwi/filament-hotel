@@ -7,13 +7,13 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="font-sans antialiased bg-gray-100 text-gray-800">
+<body class="min-w-0 overflow-x-hidden bg-gray-100 font-sans text-gray-800 antialiased">
 
     <!-- NAVBAR -->
     @include('layouts.partials.guest-nav')
 
     <!-- PAGE CONTENT -->
-    <main class="pt-20">
+    <main class="min-w-0 pt-16 sm:pt-20">
         {{ $slot }}
     </main>
 

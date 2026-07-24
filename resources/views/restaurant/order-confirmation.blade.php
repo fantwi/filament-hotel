@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <div class="mx-auto max-w-2xl px-6 py-12">
+    <div class="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
         @if (session('success'))
             <div class="mb-6 rounded-lg bg-green-100 p-4 text-green-700">{{ session('success') }}</div>
         @endif
@@ -7,8 +7,8 @@
             <div class="mb-6 rounded-lg bg-red-100 p-4 text-red-700">{{ session('error') }}</div>
         @endif
 
-        <div class="rounded-xl bg-white p-8 shadow">
-            <h1 class="text-3xl font-bold">Order {{ $order->order_number }}</h1>
+        <div class="rounded-xl bg-white p-5 shadow sm:p-8">
+            <h1 class="break-words text-2xl font-bold sm:text-3xl">Order {{ $order->order_number }}</h1>
             <p class="mt-2 text-gray-600">Status: <strong>{{ ucfirst($order->status) }}</strong></p>
             <p class="mt-1 text-gray-600">Payment: <strong>{{ ucfirst($order->payment_status) }}</strong></p>
             <p class="mt-6 text-2xl font-bold">Total: GHS {{ number_format($order->total, 2) }}</p>

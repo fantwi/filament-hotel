@@ -1,8 +1,8 @@
 <x-guest-layout>
 
-<div class="max-w-xl mx-auto py-20 text-center">
+<div class="mx-auto max-w-xl px-4 py-12 text-center sm:px-6 sm:py-20">
 
-    <div class="bg-red-50 border border-red-200 rounded-2xl p-10">
+    <div class="rounded-2xl border border-red-200 bg-red-50 p-6 sm:p-10">
 
         <h1 class="text-3xl font-bold text-red-700 mb-4">
             Reservation Expired

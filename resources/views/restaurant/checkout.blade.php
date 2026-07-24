@@ -1,8 +1,8 @@
 <x-guest-layout>
-    <div class="mx-auto max-w-3xl px-6 py-12">
+    <div class="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         <h1 class="mb-8 text-4xl font-bold">Checkout</h1>
 
-        <form action="{{ route('restaurant.checkout.store') }}" method="POST" class="rounded-xl bg-white p-6 shadow">
+        <form action="{{ route('restaurant.checkout.store') }}" method="POST" class="rounded-xl bg-white p-5 shadow sm:p-6">
             @csrf
             <h2 class="mb-4 text-xl font-bold">Order summary</h2>
             <div class="space-y-2">

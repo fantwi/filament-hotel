@@ -1,6 +1,6 @@
 <x-guest-layout>
 
-<div class="max-w-2xl mx-auto py-12">
+<div class="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
 
     <h2 class="text-xl font-bold mb-4">
         Book Room {{ $room->room_number }}
@@ -26,7 +26,7 @@
     <form
         method="POST"
         action="{{ route('booking.store') }}"
-        class="bg-white shadow rounded-xl p-8"
+        class="rounded-xl bg-white p-5 shadow sm:p-8"
         >
 
         @csrf

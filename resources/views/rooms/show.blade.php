@@ -1,13 +1,13 @@
 <x-guest-layout>
 
-<div class="max-w-5xl mx-auto py-12">
+<div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
 
 <img
 src="{{ asset('storage/'.$type->image) }}"
-class="rounded-xl mb-8 w-full h-96 object-cover"
+class="mb-8 h-56 w-full rounded-xl object-cover sm:h-96"
 >
 
-<h1 class="text-4xl font-bold mb-4">
+<h1 class="mb-4 text-3xl font-bold sm:text-4xl">
 {{ $type->name }}
 </h1>
 

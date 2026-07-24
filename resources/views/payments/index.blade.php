@@ -1,6 +1,6 @@
 <x-guest-layout>
 
-<div class="max-w-5xl mx-auto py-12">
+<div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
 
     <h2 class="text-3xl font-bold mb-8">
         Outstanding Payments
@@ -10,7 +10,7 @@
 
         <div class="bg-white rounded-xl shadow p-6 mb-5">
 
-            <div class="flex justify-between items-center">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
                 <div>
 
@@ -35,7 +35,7 @@
 
                 </div>
 
-                <div class="text-right">
+                <div class="text-left sm:text-right">
 
                     <p class="font-bold text-xl mb-3">
                         GHS
