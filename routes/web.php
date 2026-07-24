@@ -452,7 +452,9 @@ Route::get(
 
 Route::get('/restaurant', function () {
 
-    $restaurant = Restaurant::with('tables')->first();
+    $restaurant = Restaurant::with([
+        'tables' => fn ($query) => $query->orderBy('table_number')->limit(3),
+    ])->first();
     $categories = MenuCategory::query()
         ->with(['menuItems' => fn ($query) => $query
             ->where('is_available', true)
@@ -473,6 +475,14 @@ Route::get('/restaurant', function () {
     );
 
 })->name('restaurant');
+
+Route::get('/restaurant/tables', function () {
+    $restaurant = Restaurant::with([
+        'tables' => fn ($query) => $query->orderBy('table_number'),
+    ])->first();
+
+    return view('restaurant.tables', compact('restaurant'));
+})->name('restaurant.tables');
 
 Route::get('/restaurant/menu', function () {
     $restaurant = Restaurant::first();

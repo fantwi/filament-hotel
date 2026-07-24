@@ -193,6 +193,12 @@
 
     </div>
 
+    <div class="mt-10 text-center">
+        <a href="{{ route('restaurant.tables') }}" class="inline-flex items-center rounded-lg border border-indigo-600 px-6 py-3 font-semibold text-indigo-700 transition hover:bg-indigo-50">
+            View All Restaurant Tables
+        </a>
+    </div>
+
 </section>
 
 <section class="py-16">
