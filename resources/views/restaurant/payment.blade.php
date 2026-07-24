@@ -1,7 +1,5 @@
 <x-guest-layout>
 
-@include('partials.guest-nav')
-
 <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-16">
 
     <h1 class="text-3xl font-bold">
@@ -96,3 +94,7 @@
     },1000);
 
     </script>
+
+</div>
+
+</x-guest-layout>

@@ -29,37 +29,37 @@ class RestaurantReservationController extends Controller
 
     public function store(Request $request)
     {
+        $restaurant = Restaurant::firstOrFail();
+
         $validated = $request->validate([
-
             'restaurant_table_id' => ['required', 'exists:restaurant_tables,id'],
-
             'guest_name' => ['required', 'max:255'],
-
             'guest_email' => ['required', 'email'],
-
             'guest_phone' => ['required'],
-
-            // 'reservation_date' => ['required', 'date'],
-
-            'reservation_date' => [
-                'required',
-                'date',
-                'after_or_equal:today',
-            ],
-
-            'reservation_time' => ['required'],
-
+            'guest_phone' => ['required', 'max:50'],
+            'reservation_date' => ['required', 'date', 'after_or_equal:today'],
+            'reservation_time' => ['required', 'date_format:H:i'],
             'number_of_guests' => ['required', 'integer', 'min:1'],
-
-            'reservation_fee' => $restaurant->reservation_fee,
-
-            'special_requests' => ['nullable'],
-
-            'duration_minutes' => 120,
-
+            'special_requests' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $restaurant = Restaurant::first();
+        $table = RestaurantTable::query()
+            ->whereKey($validated['restaurant_table_id'])
+            ->where('restaurant_id', $restaurant->id)
+            ->where('status', 'available')
+            ->first();
+
+        if (! $table) {
+            return back()->withInput()->withErrors([
+                'restaurant_table_id' => 'This table is no longer available for reservations.',
+            ]);
+        }
+
+        if ($validated['number_of_guests'] > $table->capacity) {
+            return back()->withInput()->withErrors([
+                'number_of_guests' => "This table seats up to {$table->capacity} guests.",
+            ]);
+        }
 
         $reservationStart = Carbon::parse(
             $validated['reservation_date'] . ' ' . $validated['reservation_time']
@@ -130,7 +130,9 @@ class RestaurantReservationController extends Controller
 
             'restaurant_id' => $restaurant->id,
 
-            'restaurant_table_id' => $validated['restaurant_table_id'],
+            'restaurant_table_id' => $table->id,
+
+            'guest_id' => auth()->user()?->guest?->id,
 
             'guest_name' => $validated['guest_name'],
 
@@ -145,6 +147,8 @@ class RestaurantReservationController extends Controller
             'number_of_guests' => $validated['number_of_guests'],
 
             'special_requests' => $validated['special_requests'] ?? null,
+
+            'duration_minutes' => 120,
 
             'status' => 'pending',
 
