@@ -136,6 +136,12 @@
                         <span class="text-lg font-bold">GHS {{ number_format($item->price, 2) }}</span>
                         <span class="text-sm text-gray-500">{{ $item->preparation_time }} mins</span>
                     </div>
+                    <form action="{{ route('cart.add', $item) }}" method="POST" class="mt-5">
+                        @csrf
+                        <button type="submit" class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700">
+                            Add to Cart
+                        </button>
+                    </form>
                 </div>
             </div>
         @empty
