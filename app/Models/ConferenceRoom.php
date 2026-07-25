@@ -20,10 +20,13 @@ class ConferenceRoom extends Model
         'location',
 
         'image',
+        'gallery',
 
         'is_available',
 
     ];
+
+    protected $casts = ['gallery' => 'array', 'is_available' => 'boolean'];
 
     public function bookings()
     {

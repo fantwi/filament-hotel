@@ -46,6 +46,17 @@ class ConferenceRoomForm
                     ->directory('conference-rooms')
                     ->visibility('public'),
 
+                FileUpload::make('gallery')
+                    ->label('Conference Room Gallery')
+                    ->image()
+                    ->multiple()
+                    ->reorderable()
+                    ->appendFiles()
+                    ->disk('public')
+                    ->directory('conference-rooms/gallery')
+                    ->visibility('public')
+                    ->columnSpanFull(),
+
                 Toggle::make('is_available'),
 
             ]);
