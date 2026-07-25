@@ -17,6 +17,11 @@ class LiveStaffDashboard extends Page
 
     public $staff;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public function mount()
     {
         $this->staff = User::with(['roles', 'activities'])
