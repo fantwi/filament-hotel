@@ -1,3 +1,5 @@
+@php($restaurantCartCount = collect(session('cart', []))->sum(fn (array $line) => max(1, (int) ($line['quantity'] ?? 1))))
+
 <nav x-data="{ open: false, accountOpen: false, roomsOpen: false, restaurantOpen: false, conferenceOpen: false, mobileRoomsOpen: false, mobileRestaurantOpen: false, mobileConferenceOpen: false }" class="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur">
     <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <a href="/" class="shrink-0 text-lg font-bold text-gray-900 sm:text-xl">My Hotel</a>
@@ -31,6 +33,10 @@
 
         <div class="hidden items-center gap-3 lg:flex">
             @auth
+                <a href="{{ route('cart.index') }}" class="relative inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-700 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="Restaurant cart{{ $restaurantCartCount ? ': ' . $restaurantCartCount . ' items' : '' }}">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13 5.4 5M7 13l-1.1 5.5A1 1 0 0 0 6.9 20h10.2M17 20a1 1 0 1 0 0 2 1 1 0 0 0-2Zm-10 0a1 1 0 1 0 0 2 1 1 0 0 0-2Z" /></svg>
+                    @if ($restaurantCartCount > 0)<span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-xs font-bold text-white">{{ $restaurantCartCount > 99 ? '99+' : $restaurantCartCount }}</span>@endif
+                </a>
                 <div class="relative">
                     <button type="button" @click="accountOpen = !accountOpen" class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium hover:bg-gray-100">
                         <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">{{ strtoupper(substr(auth()->user()?->first_name ?? 'G', 0, 1)) }}</span>
@@ -76,6 +82,7 @@
             <div class="border-t pt-2">
                 @auth
                     <a href="/dashboard" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Dashboard</a>
+                    <a href="{{ route('cart.index') }}" class="flex min-h-11 items-center justify-between rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50"><span>Restaurant cart</span><span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">{{ $restaurantCartCount }}</span></a>
                     <a href="/profile" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Profile</a>
                     <form method="POST" action="{{ route('logout') }}">@csrf<button class="block w-full rounded-lg px-3 py-3 text-left text-sm font-medium text-red-600 hover:bg-red-50">Logout</button></form>
                 @else
