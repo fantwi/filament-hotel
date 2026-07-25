@@ -29,7 +29,7 @@ class BookingForm
                     ->preload()
                     ->createOptionAction(fn (Action $action): Action => $action
                         ->label('Create walk-in guest account')
-                        ->visible(fn (): bool => auth()->user()?->hasAnyRole(['admin', 'manager', 'receptionist']) ?? false))
+                        ->visible(fn (): bool => auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'receptionist']) ?? false))
                     ->createOptionForm([
                         TextInput::make('first_name')->required()->maxLength(255),
                         TextInput::make('last_name')->required()->maxLength(255),
