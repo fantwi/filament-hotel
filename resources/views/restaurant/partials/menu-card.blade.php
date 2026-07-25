@@ -1,4 +1,4 @@
-<article class="overflow-hidden rounded-xl bg-white shadow" x-show="matches(@js($item->name.' '.$item->description))" x-transition>
+<article class="overflow-hidden rounded-2xl bg-white shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5" x-show="matches(@js($item->name.' '.$item->description))" x-transition>
     <img
         src="{{ $item->image ? asset('storage/'.$item->image) : asset('images/meal-placeholder.svg') }}"
         class="h-56 w-full object-cover"
@@ -17,8 +17,8 @@
 
         <form action="{{ route('cart.add', $item) }}" method="POST">
             @csrf
-            <button class="mt-6 w-full rounded-lg bg-blue-600 py-3 text-white transition hover:bg-blue-700">
-                Add to Cart
+            <button class="mt-6 flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700">
+                Add to cart
             </button>
         </form>
     </div>

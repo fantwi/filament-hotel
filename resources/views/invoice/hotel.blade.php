@@ -1,21 +1,2 @@
-<h1>Hotel Booking Invoice</h1>
-
-<p>
-Booking ID:
-{{ $booking->id }}
-</p>
-
-<p>
-Guest:
-{{ $booking->guest->name }}
-</p>
-
-<p>
-Amount:
-GHS {{ $booking->total_price }}
-</p>
-
-<p>
-Status:
-{{ $booking->status }}
-</p>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hotel Booking Invoice</title><style>body{margin:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#0f172a}.invoice{max-width:640px;margin:24px auto;background:#fff;padding:24px;border-radius:16px;box-sizing:border-box}.label{color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.08em}.value{font-weight:700;font-size:16px;margin:5px 0 18px}@media(max-width:640px){.invoice{margin:0;border-radius:0;min-height:100vh;padding:20px}}</style></head><body><main class="invoice"><p class="label">Hotel booking invoice</p><h1>Booking #{{ $booking->id }}</h1><p class="label">Guest</p><p class="value">{{ $booking->guest->name }}</p><p class="label">Amount</p><p class="value">GHS {{ number_format($booking->total_price, 2) }}</p><p class="label">Status</p><p class="value">{{ ucfirst($booking->status) }}</p></main></body></html>

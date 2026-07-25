@@ -1,18 +1,11 @@
 <x-guest-layout>
 
-<div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-16">
+<section class="px-4 py-10 sm:px-6 sm:py-14"><div class="mx-auto max-w-xl">
 
-    <h1 class="text-3xl font-bold">
-
-        Complete Reservation
-
-    </h1>
+    <div class="mb-7 text-center sm:text-left"><p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Secure checkout</p><h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-900">Complete reservation</h1></div>
 
     <div
-        class="bg-yellow-100
-        rounded-xl
-        p-6
-        mt-8"
+        class="rounded-2xl border border-yellow-200 bg-yellow-50 p-5"
     >
 
         Reservation expires in
@@ -33,13 +26,7 @@
 
         @csrf
 
-        <button
-            class="mt-8 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl"
-        >
-
-            Pay with Paystack
-
-        </button>
+        <button class="mt-6 flex min-h-12 w-full items-center justify-center rounded-xl bg-green-600 px-8 py-3 font-semibold text-white transition hover:bg-green-700">Pay securely with Paystack</button>
 
     </form>
 
@@ -95,6 +82,6 @@
 
     </script>
 
-</div>
+</div></section>
 
 </x-guest-layout>

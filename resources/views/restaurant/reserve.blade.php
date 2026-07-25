@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+    <div class="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14">
         <div class="mb-8">
             <p class="text-sm font-semibold uppercase tracking-widest text-indigo-600">Restaurant</p>
             <h1 class="mt-2 text-3xl font-bold sm:text-4xl">Reserve a Table</h1>
@@ -19,7 +19,7 @@
                 <a href="{{ route('restaurant') }}" class="mt-5 inline-flex rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white">Back to Restaurant</a>
             </div>
         @else
-            <form action="{{ route('restaurant.reserve.store') }}" method="POST" class="rounded-xl bg-white p-5 shadow sm:p-8">
+            <form action="{{ route('restaurant.reserve.store') }}" method="POST" class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
                 @csrf
 
                 <div>
@@ -42,7 +42,7 @@
                 </div>
 
                 <div class="mt-6"><label for="special_requests" class="font-semibold">Special Requests <span class="font-normal text-gray-500">(optional)</span></label><textarea id="special_requests" name="special_requests" rows="4" class="mt-2 w-full rounded-lg border-gray-300 p-3" placeholder="Accessibility needs, dietary requests, or celebrations">{{ old('special_requests') }}</textarea></div>
-                <button type="submit" class="mt-8 w-full rounded-lg bg-indigo-600 px-8 py-3 font-semibold text-white hover:bg-indigo-700 sm:w-auto">Continue to Payment</button>
+                <button type="submit" class="mt-8 flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-600 px-8 py-3 font-semibold text-white hover:bg-indigo-700 sm:w-auto">Continue to payment</button>
             </form>
         @endif
     </div>

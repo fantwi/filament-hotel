@@ -11,7 +11,7 @@
         @if ($restaurant?->tables->isNotEmpty())
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($restaurant->tables as $table)
-                    <article class="overflow-hidden rounded-xl bg-white shadow">
+                    <article class="overflow-hidden rounded-2xl bg-white shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5">
                         <img
                             src="{{ $table->image ? asset('storage/'.$table->image) : asset('images/table-placeholder.svg') }}"
                             class="h-52 w-full object-cover"
@@ -26,7 +26,7 @@
                             </dl>
                             <span class="mt-5 inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">{{ ucfirst($table->status) }}</span>
                             @if ($table->status === 'available')
-                                <a href="{{ route('restaurant.reserve', ['table' => $table->id]) }}" class="mt-5 block rounded-lg bg-indigo-600 px-4 py-2.5 text-center font-semibold text-white transition hover:bg-indigo-700">Reserve This Table</a>
+                                <a href="{{ route('restaurant.reserve', ['table' => $table->id]) }}" class="mt-5 flex min-h-12 items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-center font-semibold text-white transition hover:bg-indigo-700">Reserve this table</a>
                             @else
                                 <p class="mt-5 text-sm font-medium text-gray-500">This table is currently unavailable.</p>
                             @endif

@@ -1,6 +1,5 @@
 <x-guest-layout>
-    <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-        <h1 class="mb-8 text-4xl font-bold">Your Cart</h1>
+    <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14"><div class="mb-7"><p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Restaurant order</p><h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-900">Your cart</h1></div>
 
         @if (session()->has('restaurant_order.table_id'))
             <div class="mb-6 rounded-xl border border-green-200 bg-green-50 p-5">
@@ -28,7 +27,7 @@
             <div class="space-y-4">
                 @foreach ($cartItems as $line)
                     @php($item = $line['item'])
-                    <div class="flex flex-col gap-4 rounded-xl bg-white p-5 shadow sm:flex-row sm:items-center">
+                    <div class="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:flex-row sm:items-center">
                         @if ($item->image)
                             <img src="{{ asset('storage/'.$item->image) }}" class="h-20 w-20 rounded-lg object-cover" alt="{{ $item->name }}">
                         @endif
@@ -36,8 +35,8 @@
                         <form action="{{ route('cart.update', $item) }}" method="POST" class="flex items-center gap-2">
                             @csrf
                             <label class="sr-only" for="quantity-{{ $item->id }}">Quantity</label>
-                            <input id="quantity-{{ $item->id }}" name="quantity" type="number" min="1" max="99" value="{{ $line['quantity'] }}" class="w-20 rounded border-gray-300">
-                            <button class="rounded bg-gray-100 px-3 py-2">Update</button>
+                            <input id="quantity-{{ $item->id }}" name="quantity" type="number" min="1" max="99" value="{{ $line['quantity'] }}" class="min-h-11 w-20 rounded-xl border-gray-300 px-3">
+                            <button class="min-h-11 rounded-xl bg-gray-100 px-3 font-semibold">Update</button>
                         </form>
                         <strong>GHS {{ number_format($line['line_total'], 2) }}</strong>
                         <form action="{{ route('cart.remove', $item) }}" method="POST">@csrf @method('DELETE')<button class="text-red-600">Remove</button></form>
@@ -50,7 +49,7 @@
                 <div class="mt-2 flex justify-between"><span>Tax</span><span>GHS {{ number_format($totals['tax'], 2) }}</span></div>
                 <div class="mt-2 flex justify-between"><span>Service charge</span><span>GHS {{ number_format($totals['service_charge'], 2) }}</span></div>
                 <div class="mt-4 flex justify-between border-t pt-4 text-xl font-bold"><span>Total</span><span>GHS {{ number_format($totals['total'], 2) }}</span></div>
-                <a href="{{ route('restaurant.checkout') }}" class="mt-6 block rounded-lg bg-blue-600 py-3 text-center text-white">Checkout</a>
+                <a href="{{ route('restaurant.checkout') }}" class="mt-6 flex min-h-12 items-center justify-center rounded-xl bg-blue-600 py-3 text-center font-semibold text-white">Checkout</a>
             </div>
         @endif
     </div>

@@ -7,7 +7,7 @@
             <div class="mb-6 rounded-lg bg-red-100 p-4 text-red-700">{{ session('error') }}</div>
         @endif
 
-        <div class="rounded-xl bg-white p-5 shadow sm:p-8">
+        <div class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
             <h1 class="break-words text-2xl font-bold sm:text-3xl">Order {{ $order->order_number }}</h1>
             <p class="mt-2 text-gray-600">Status: <strong>{{ ucfirst($order->status) }}</strong></p>
             <p class="mt-1 text-gray-600">Payment: <strong>{{ ucfirst($order->payment_status) }}</strong></p>
@@ -16,7 +16,7 @@
             @if ($order->payment_status !== 'completed')
                 <form action="{{ route('restaurant.orders.pay', $order) }}" method="POST" class="mt-6">
                     @csrf
-                    <button class="w-full rounded-lg bg-blue-600 py-3 text-white">Pay with Paystack</button>
+                    <button class="flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white">Pay securely with Paystack</button>
                 </form>
             @else
                 <p class="mt-6 rounded-lg bg-blue-50 p-4 text-blue-700">The kitchen has received your order and will begin preparation shortly.</p>

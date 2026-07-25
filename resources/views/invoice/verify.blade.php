@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Invoice Verification</title>
+    <style>body{margin:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#0f172a}body>*{max-width:640px;margin-left:auto;margin-right:auto}h2{margin-top:0;padding-top:24px}@media(max-width:640px){body{padding:20px;box-sizing:border-box;background:#fff}}</style>
 </head>
 
 <body>

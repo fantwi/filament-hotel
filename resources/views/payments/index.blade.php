@@ -1,14 +1,12 @@
 <x-guest-layout>
 
-<div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+<section class="px-4 py-10 sm:px-6 sm:py-14"><div class="mx-auto max-w-5xl">
 
-    <h2 class="text-3xl font-bold mb-8">
-        Outstanding Payments
-    </h2>
+    <div class="mb-8"><p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Guest account</p><h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Outstanding payments</h1></div>
 
     @forelse($bookings as $booking)
 
-        <div class="bg-white rounded-xl shadow p-6 mb-5">
+        <div class="mb-5 rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-6">
 
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
@@ -53,7 +51,7 @@
 
                         <a
                             href="{{ route('booking.payment', $booking->id) }}"
-                            class="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 transition"
+                            class="inline-flex min-h-11 items-center justify-center rounded-xl bg-red-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
                         >
                             Complete Payment
                         </a>
@@ -126,6 +124,6 @@
 
     @endforelse
 
-</div>
+</div></section>
 
 </x-guest-layout>
