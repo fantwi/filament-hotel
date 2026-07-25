@@ -106,16 +106,12 @@ class BookingForm
                             }
 
                             $query = Booking::where('room_id', $value)
-                                // ->overlapping($checkIn, $checkOut);
-                                ->where(function ($q) use ($checkIn, $checkOut) {
-
-                                    $q->whereBetween('check_in', [$checkIn, $checkOut])
-                                      ->orWhereBetween('check_out', [$checkIn, $checkOut])
-                                      ->orWhere(function ($q2) use ($checkIn, $checkOut) {
-                                          $q2->where('check_in', '<=', $checkIn)
-                                             ->where('check_out', '>=', $checkOut);
-                                      });
-                                });
+                                ->whereNotIn('status', ['cancelled', 'no_show'])
+                                ->where(function ($activeBookingQuery) {
+                                    $activeBookingQuery->whereNull('hold_status')
+                                        ->orWhere('hold_status', '!=', 'expired');
+                                })
+                                ->overlapping($checkIn, $checkOut);
 
                             if ($record) {
                                 $query->where('id', '!=', $record->id);

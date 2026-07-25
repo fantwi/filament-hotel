@@ -16,10 +16,10 @@ class RestaurantReservationController extends Controller
     {
         $restaurant = Restaurant::first();
 
-        $tables = RestaurantTable::where(
-            'status',
-            'available'
-        )->orderBy('table_number')->get();
+        $tables = RestaurantTable::query()
+            ->whereNotIn('status', ['maintenance', 'cleaning'])
+            ->orderBy('table_number')
+            ->get();
 
         return view(
             'restaurant.reserve',
@@ -46,12 +46,12 @@ class RestaurantReservationController extends Controller
         $table = RestaurantTable::query()
             ->whereKey($validated['restaurant_table_id'])
             ->where('restaurant_id', $restaurant->id)
-            ->where('status', 'available')
+            ->whereNotIn('status', ['maintenance', 'cleaning'])
             ->first();
 
         if (! $table) {
             return back()->withInput()->withErrors([
-                'restaurant_table_id' => 'This table is no longer available for reservations.',
+                'restaurant_table_id' => 'This table is unavailable for reservations.',
             ]);
         }
 

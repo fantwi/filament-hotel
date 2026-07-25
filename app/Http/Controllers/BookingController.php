@@ -34,13 +34,16 @@ class BookingController extends Controller
             'check_out'=>'required|date',
         ]);
 
+        if (Carbon::parse($request->check_out)->lte(Carbon::parse($request->check_in))) {
+            return back()->withInput()->withErrors(['check_out' => 'Check-out must be after check-in.']);
+        }
+
         $booked = Booking::where('room_id', $request->room_id)
-            ->where(function($query) use($request) {
-                $query->whereBetween('check_in', [
-                    $request->check_in,
-                    $request->check_out
-                ]);
+            ->whereNotIn('status', ['cancelled', 'no_show'])
+            ->where(function ($query) {
+                $query->whereNull('hold_status')->orWhere('hold_status', '!=', 'expired');
             })
+            ->overlapping($request->check_in, $request->check_out)
             ->exists();
 
         if($booked){

@@ -132,6 +132,10 @@ Route::middleware('auth')->group(function () {
                         ->conference_room_id
                     );
 
+                if (! $room->is_available) {
+                    return back()->withInput()->withErrors(['conference_room_id' => 'This conference room is unavailable.']);
+                }
+
                 // Calculate hours
 
                 $start =
@@ -158,6 +162,23 @@ Route::middleware('auth')->group(function () {
                         ])
 
                         ->withInput();
+                }
+
+                $overlaps = ConferenceBooking::query()
+                    ->where('conference_room_id', $room->id)
+                    ->whereDate('booking_date', $request->booking_date)
+                    ->where(function ($query) {
+                        $query->whereIn('status', ['confirmed', 'checked_in'])
+                            ->orWhere(function ($pending) {
+                                $pending->where('status', 'pending')->where('hold_until', '>', now());
+                            });
+                    })
+                    ->where('start_time', '<', $request->end_time)
+                    ->where('end_time', '>', $request->start_time)
+                    ->exists();
+
+                if ($overlaps) {
+                    return back()->withInput()->withErrors(['start_time' => 'This conference room is already booked for the selected time slot.']);
                 }
 
                 $hours =

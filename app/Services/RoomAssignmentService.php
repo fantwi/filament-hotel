@@ -16,6 +16,11 @@ class RoomAssignmentService
 
         foreach ($rooms as $room) {
             $conflict = Booking::where('room_id', $room->id)
+                ->whereNotIn('status', ['cancelled', 'no_show'])
+                ->where(function ($query) {
+                    $query->whereNull('hold_status')
+                        ->orWhere('hold_status', '!=', 'expired');
+                })
                 ->overlapping($checkIn, $checkOut)
                 ->exists();
 
