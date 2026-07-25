@@ -32,6 +32,7 @@ class Booking extends Model
         'hold_until',
         'hold_status',
         'invoice_number',
+        'status',
     ];
 
     protected $casts = [
@@ -69,7 +70,7 @@ class Booking extends Model
 
     public function getTotalPaidAttribute()
     {
-        return $this->payments()->sum('amount');
+        return $this->payments()->whereNotIn('payment_status', ['refunded', 'failed'])->sum('amount');
     }
 
     public function getBalanceAttribute()
