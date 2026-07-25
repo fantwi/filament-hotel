@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\RestaurantOrders\Tables;
 
 use App\Models\RestaurantOrder;
+use App\Models\User;
 use App\Services\RestaurantKitchenService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -75,7 +76,8 @@ class RestaurantOrdersTable
                     ]),
                 SelectFilter::make('prepared_by')
                     ->label('Prepared By')
-                    ->relationship('preparedBy', 'name')
+                    ->relationship('preparedBy', 'first_name')
+                    ->getOptionLabelFromRecordUsing(fn (User $user): string => $user->name)
                     ->searchable()
                     ->preload(),
                 Filter::make('created_at')
