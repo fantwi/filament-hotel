@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <section class="bg-slate-950 py-14 text-white sm:py-20">
+    <section class="bg-[#161b48e6] py-14 text-white sm:py-20">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <p class="text-sm font-semibold uppercase tracking-[0.22em] text-amber-300">Contact</p>
             <h1 class="mt-3 max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">We would love to hear from you.</h1>

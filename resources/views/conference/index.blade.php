@@ -1,6 +1,6 @@
 <x-guest-layout>
     <section x-data="{ images: [], active: 0, open(images) { this.images = images; this.active = 0; document.body.classList.add('overflow-hidden') }, close() { this.images = []; document.body.classList.remove('overflow-hidden') }, previous() { this.active = (this.active + this.images.length - 1) % this.images.length }, next() { this.active = (this.active + 1) % this.images.length } }" @keydown.escape.window="close()" class="bg-slate-50">
-        <div class="bg-slate-950 px-4 pb-14 pt-10 text-white sm:px-6 sm:pb-20 sm:pt-14 lg:px-8">
+        <div class="bg-[#161b48e6] px-4 pb-14 pt-10 text-white sm:px-6 sm:pb-20 sm:pt-14 lg:px-8">
             <div class="mx-auto max-w-7xl"><p class="text-sm font-semibold uppercase tracking-[0.24em] text-amber-300">Meetings & events</p><div class="mt-3 flex flex-col gap-5 md:flex-row md:items-end md:justify-between"><div class="max-w-2xl"><h1 class="text-3xl font-bold tracking-tight sm:text-5xl">Conference spaces that work around your event.</h1><p class="mt-4 text-sm leading-6 text-slate-200 sm:text-base">Choose a flexible setting for team meetings, workshops, private events, and celebrations.</p></div><p class="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-slate-100">{{ $rooms->count() }} space{{ $rooms->count() === 1 ? '' : 's' }} available</p></div></div>
         </div>
 

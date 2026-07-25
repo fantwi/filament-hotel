@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <section class="relative isolate overflow-hidden bg-slate-950 py-20 text-white sm:py-28">
+    <section class="relative isolate overflow-hidden bg-[#161b48e6] py-20 text-white sm:py-28">
         <div class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.35),_transparent_42%),linear-gradient(135deg,_#0f172a,_#1e293b)]"></div>
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl">

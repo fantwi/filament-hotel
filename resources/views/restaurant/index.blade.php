@@ -91,7 +91,7 @@
 </section>
 --}}
 
-<section class="relative isolate min-h-[34rem] overflow-hidden bg-slate-950 sm:min-h-[38rem]">
+<section class="relative isolate min-h-[34rem] overflow-hidden bg-[#161b48e6] sm:min-h-[38rem]">
     @if ($restaurant->hero_image)
         <img src="{{ asset('storage/' . $restaurant->hero_image) }}" class="absolute inset-0 -z-20 h-full w-full object-cover" alt="{{ $restaurant->name }} dining space">
     @endif
