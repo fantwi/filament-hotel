@@ -4,7 +4,7 @@
     <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <a href="/" class="shrink-0 text-lg font-bold text-gray-900 sm:text-xl dark:text-white">My Hotel</a>
 
-        <div class="hidden items-center gap-2 text-sm font-medium text-gray-600 lg:flex">
+        <div class="hidden items-center gap-2 text-sm font-medium text-gray-600 dark:text-slate-100 lg:flex">
             <div class="relative" @click.outside="roomsOpen = false">
                 <button type="button" @click="roomsOpen = !roomsOpen" class="inline-flex items-center gap-1 rounded-lg px-3 py-2 hover:bg-gray-100 hover:text-blue-600">Rooms <span aria-hidden="true">⌄</span></button>
                 <div x-show="roomsOpen" x-cloak x-transition class="absolute left-0 mt-2 w-52 overflow-hidden rounded-xl border bg-white py-1 shadow-lg">
@@ -40,7 +40,7 @@
                 <div class="relative">
                     <button type="button" @click="accountOpen = !accountOpen" class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium hover:bg-gray-100">
                         <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">{{ strtoupper(substr(auth()->user()?->first_name ?? 'G', 0, 1)) }}</span>
-                        <span>{{ auth()->user()?->name }}</span>
+                        <span class="dark:text-slate-100">{{ auth()->user()?->name }}</span>
                     </button>
                     <div x-show="accountOpen" x-cloak @click.outside="accountOpen = false" class="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl border bg-white py-1 shadow-lg">
                         <a href="/dashboard" class="block px-4 py-2 text-sm hover:bg-gray-50">Dashboard</a>
