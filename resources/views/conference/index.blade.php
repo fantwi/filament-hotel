@@ -7,7 +7,7 @@
                 <p class="mt-3 text-sm leading-6 text-gray-600 sm:text-base">Find a flexible space for your next meeting, workshop, or private event.</p>
             </div>
 
-            <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
                 @forelse ($rooms as $room)
                     <article class="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5">
                         @if ($room->image)
