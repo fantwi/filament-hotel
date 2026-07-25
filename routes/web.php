@@ -1068,8 +1068,7 @@ Route::get(
         $totalRooms =
             $rooms->count();
 
-        $startDate =
-            now()->startOfMonth();
+        $startDate = today();
 
         $endDate =
             now()->addMonths(3)->endOfMonth();
@@ -1094,6 +1093,11 @@ Route::get(
 
                     }
                 )
+                ->whereNotIn('status', ['cancelled', 'no_show'])
+                ->where(function ($query) {
+                    $query->whereNull('hold_status')
+                        ->orWhere('hold_status', '!=', 'expired');
+                })
                 ->whereDate(
                     'check_in',
                     '<=',
@@ -1101,7 +1105,7 @@ Route::get(
                 )
                 ->whereDate(
                     'check_out',
-                    '>=',
+                    '>',
                     $date
                 )
                 ->count();

@@ -13,9 +13,14 @@
             const calendar = new Calendar(calendarEl, {
                 plugins: [dayGridPlugin, interactionPlugin],
                 initialView: 'dayGridMonth',
+                initialDate: '{{ today()->toDateString() }}',
+                validRange: { start: '{{ today()->toDateString() }}' },
                 height: 'auto',
                 events: @json($events),
-                dateClick: function (info) { window.location.href = '/booking/details?date=' + info.dateStr; },
+                dateClick: function (info) {
+                    if (info.date < new Date('{{ today()->toDateString() }}T00:00:00')) return;
+                    window.location.href = '/booking/details?date=' + info.dateStr;
+                },
             });
             calendar.render();
         });
