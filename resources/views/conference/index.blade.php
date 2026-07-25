@@ -9,13 +9,13 @@
 
             <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 @forelse ($rooms as $room)
-                    <article class="overflow-hidden rounded-2xl bg-white shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5">
+                    <article class="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5">
                         @if ($room->image)
                             <img src="{{ asset('storage/' . $room->image) }}" alt="{{ $room->name }}" class="h-52 w-full object-cover sm:h-56">
                         @else
                             <div class="flex h-52 items-center justify-center bg-slate-100 text-sm font-medium text-slate-500 sm:h-56">Conference room</div>
                         @endif
-                        <div class="p-5 sm:p-6">
+                        <div class="flex flex-1 flex-col p-5 sm:p-6">
                             <h2 class="text-xl font-bold text-gray-900">{{ $room->name }}</h2>
                             <p class="mt-2 line-clamp-3 text-sm leading-6 text-gray-600">{{ $room->description }}</p>
 
@@ -27,7 +27,7 @@
                             </div>
 
                             <div class="mt-5 border-t border-gray-100 pt-5"><p class="text-xs font-semibold uppercase tracking-wide text-gray-500">From</p><p class="mt-1 text-lg font-bold text-gray-900">GHS {{ number_format($room->price_per_hour, 2) }}<span class="text-sm font-normal text-gray-500"> / hour</span></p></div>
-                            <div class="mt-5 grid gap-3 sm:grid-cols-2"><a href="{{ route('conference.book', $room->id) }}" class="flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">Book room</a>@if (filled($room->gallery))<button type="button" @click="open(@js(collect($room->gallery)->map(fn ($image) => asset('storage/' . $image))->values()))" class="flex min-h-11 items-center justify-center rounded-xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100">Gallery</button>@endif</div>
+                            <div class="mt-auto grid gap-3 pt-5 {{ filled($room->gallery) ? 'sm:grid-cols-2' : '' }}"><a href="{{ route('conference.book', $room->id) }}" class="flex min-h-11 w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">Book room</a>@if (filled($room->gallery))<button type="button" @click="open(@js(collect($room->gallery)->map(fn ($image) => asset('storage/' . $image))->values()))" class="flex min-h-11 w-full items-center justify-center rounded-xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100">Gallery</button>@endif</div>
                             </div>
                         </div>
                     </article>
