@@ -7,13 +7,13 @@
         <div class="hidden items-center gap-2 text-sm font-medium text-gray-600 dark:text-slate-100 lg:flex">
             <div class="relative" @click.outside="roomsOpen = false">
                 <button type="button" @click="roomsOpen = !roomsOpen" class="inline-flex items-center gap-1 rounded-lg px-3 py-2 hover:bg-gray-100 hover:text-blue-600">Rooms <span aria-hidden="true">⌄</span></button>
-                <div x-show="roomsOpen" x-cloak x-transition class="absolute left-0 mt-2 w-52 overflow-hidden rounded-xl border bg-white py-1 shadow-lg">
+                <div x-show="roomsOpen" x-cloak x-transition class="absolute left-0 mt-2 w-52 overflow-hidden rounded-xl border bg-white py-1 text-gray-700 shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                     <a href="/rooms" class="block px-4 py-2.5 hover:bg-gray-50">Browse Rooms</a>
                 </div>
             </div>
             <div class="relative" @click.outside="restaurantOpen = false">
                 <button type="button" @click="restaurantOpen = !restaurantOpen" class="inline-flex items-center gap-1 rounded-lg px-3 py-2 hover:bg-gray-100 hover:text-blue-600">Restaurant <span aria-hidden="true">⌄</span></button>
-                <div x-show="restaurantOpen" x-cloak x-transition class="absolute left-0 mt-2 w-56 overflow-hidden rounded-xl border bg-white py-1 shadow-lg">
+                <div x-show="restaurantOpen" x-cloak x-transition class="absolute left-0 mt-2 w-56 overflow-hidden rounded-xl border bg-white py-1 text-gray-700 shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                     <a href="{{ route('restaurant') }}" class="block px-4 py-2.5 hover:bg-gray-50">Restaurant Home</a>
                     <a href="{{ route('restaurant.menu') }}" class="block px-4 py-2.5 hover:bg-gray-50">Menu</a>
                     <a href="{{ route('restaurant.tables') }}" class="block px-4 py-2.5 hover:bg-gray-50">Restaurant Tables</a>
@@ -24,7 +24,7 @@
             </div>
             <div class="relative" @click.outside="conferenceOpen = false">
                 <button type="button" @click="conferenceOpen = !conferenceOpen" class="inline-flex items-center gap-1 rounded-lg px-3 py-2 hover:bg-gray-100 hover:text-blue-600">Conferences <span aria-hidden="true">⌄</span></button>
-                <div x-show="conferenceOpen" x-cloak x-transition class="absolute left-0 mt-2 w-56 overflow-hidden rounded-xl border bg-white py-1 shadow-lg">
+                <div x-show="conferenceOpen" x-cloak x-transition class="absolute left-0 mt-2 w-56 overflow-hidden rounded-xl border bg-white py-1 text-gray-700 shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                     <a href="/conference-rooms" class="block px-4 py-2.5 hover:bg-gray-50">Conference Rooms</a>
                 </div>
             </div>
@@ -42,7 +42,7 @@
                         <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">{{ strtoupper(substr(auth()->user()?->first_name ?? 'G', 0, 1)) }}</span>
                         <span class="dark:text-slate-100">{{ auth()->user()?->name }}</span>
                     </button>
-                    <div x-show="accountOpen" x-cloak @click.outside="accountOpen = false" class="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl border bg-white py-1 shadow-lg">
+                    <div x-show="accountOpen" x-cloak @click.outside="accountOpen = false" class="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl border bg-white py-1 text-gray-700 shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                         <a href="/dashboard" class="block px-4 py-2 text-sm hover:bg-gray-50">Dashboard</a>
                         <a href="/payments" class="block px-4 py-2 text-sm hover:bg-gray-50">Payments</a>
                         <a href="/profile" class="block px-4 py-2 text-sm hover:bg-gray-50">Profile</a>
