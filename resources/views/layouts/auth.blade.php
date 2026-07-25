@@ -12,16 +12,16 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="flex min-h-screen flex-col bg-gray-100">
+<body class="flex min-h-screen flex-col bg-slate-50 text-gray-900">
 
-<main class="flex flex-1 items-center justify-center px-4 py-8">
+<main class="flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-10">
 <div class="w-full max-w-md">
 
     <!-- Logo -->
-    <div class="text-center mb-8">
+    <div class="mb-6 text-center sm:mb-8">
 
         <a href="/"
-           class="text-3xl font-bold text-blue-600">
+           class="inline-flex items-center gap-2 text-2xl font-bold text-blue-600 sm:text-3xl">
 
             🏨 My Hotel
 
@@ -30,7 +30,7 @@
     </div>
 
     <!-- Card -->
-    <div class="bg-white shadow-xl rounded-2xl p-8">
+    <div class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
 
         {{ $slot }}
 
