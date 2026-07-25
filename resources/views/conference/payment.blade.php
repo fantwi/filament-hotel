@@ -1,266 +1,66 @@
 <x-guest-layout>
-
-<div class="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
-
-    <h2
-        class="text-2xl font-bold mb-6"
-    >
-
-        Conference Payment
-
-    </h2>
-
-    <div
-        x-data="holdTimer()"
-        class="bg-yellow-50
-        border border-yellow-200
-        rounded-2xl
-        p-5 mb-8"
-    >
-
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
-            <div>
-
-                <p
-                    class="font-bold
-                    text-yellow-800"
-                >
-
-                    Conference Room
-                    Reserved Temporarily
-
-                </p>
-
-                <p
-                    class="text-sm
-                    text-yellow-700
-                    mt-1"
-                >
-
-                    Complete payment
-                    before timer expires.
-
-                </p>
-
+    <section class="px-4 py-10 sm:px-6 sm:py-14">
+        <div class="mx-auto w-full max-w-xl">
+            <div class="mb-7 text-center sm:text-left">
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Secure checkout</p>
+                <h1 class="mt-2 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Complete your payment</h1>
+                <p class="mt-2 text-sm leading-6 text-gray-600">Review your event details and complete payment before the hold expires.</p>
             </div>
 
-            <div
-                class="text-3xl
-                font-bold
-                text-yellow-800"
-
-                x-text="timeRemaining"
-            >
-
+            <div x-data="holdTimer()" class="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 sm:p-5">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-bold text-yellow-800 sm:text-base">Conference room reserved temporarily</p>
+                        <p class="mt-1 text-sm text-yellow-700">Complete payment before the timer expires.</p>
+                    </div>
+                    <div class="shrink-0 text-2xl font-bold tabular-nums text-yellow-800 sm:text-3xl" x-text="timeRemaining"></div>
+                </div>
             </div>
 
+            <div class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
+                <div class="border-b border-gray-100 pb-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Your event</p>
+                    <h2 class="mt-1 text-xl font-bold text-gray-900">{{ $booking->room->name }}</h2>
+                </div>
+                <dl class="mt-5 space-y-4 text-sm">
+                    <div class="flex items-start justify-between gap-4"><dt class="text-gray-500">Date</dt><dd class="text-right font-semibold text-gray-900">{{ $booking->booking_date->format('M d, Y') }}</dd></div>
+                    <div class="flex items-start justify-between gap-4"><dt class="text-gray-500">Time</dt><dd class="text-right font-semibold text-gray-900">{{ $booking->start_time }} – {{ $booking->end_time }}</dd></div>
+                    <div class="flex items-start justify-between gap-4"><dt class="text-gray-500">Attendees</dt><dd class="text-right font-semibold text-gray-900">{{ $booking->attendees }}</dd></div>
+                </dl>
+                <div class="mt-6 rounded-xl bg-slate-50 px-4 py-4"><p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total due</p><p class="mt-1 text-2xl font-bold text-gray-900">GHS {{ number_format($booking->total_price, 2) }}</p></div>
+
+                <form method="POST" action="{{ route('conference.pay', $booking->id) }}" class="mt-6">
+                    @csrf
+                    <button type="submit" class="flex min-h-12 w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2">Pay securely with Paystack</button>
+                </form>
+            </div>
         </div>
+    </section>
 
-    </div>
-
-    <div
-        class="bg-yellow-50
-        border border-yellow-200
-        rounded-xl
-        p-5 mb-6"
-    >
-
-        <h3
-            class="font-bold"
-        >
-
-            {{ $booking
-                ->room
-                ->name }}
-
-        </h3>
-
-        <p>
-
-            Date:
-            {{
-                $booking
-                ->booking_date
-                ->format('M d, Y')
-            }}
-
-        </p>
-
-        <p>
-
-            Time:
-            {{
-                $booking
-                ->start_time
-            }}
-            -
-            {{
-                $booking
-                ->end_time
-            }}
-
-        </p>
-
-        <p>
-
-            Attendees:
-            {{
-                $booking
-                ->attendees
-            }}
-
-        </p>
-
-        <p
-            class="text-xl
-            font-bold mt-4"
-        >
-
-            GHS
-            {{
-                number_format(
-                    $booking
-                        ->total_price,
-                    2
-                )
-            }}
-
-        </p>
-
-    </div>
-
-    <form
-        method="POST"
-        action="{{ route(
-            'conference.pay',
-            $booking->id
-        ) }}"
-    >
-
-        @csrf
-
-        <button
-            type="submit"
-            class="bg-green-600
-            text-white
-            px-6 py-3
-            rounded-lg
-            w-full
-            hover:bg-green-700
-            transition"
-        >
-
-            Pay with Paystack
-
-        </button>
-
-    </form>
-
-</div>
-
-<script>
-
-function holdTimer() {
-
-    return {
-
-        expiresAt:
-            "{{ optional(
-                $booking
-                ?->hold_until
-            )?->toIso8601String() }}",
-
-        timeRemaining:
-            '10:00',
-
-        interval:
-            null,
-
-        init() {
-
-            if (
-                !this.expiresAt
-            ) {
-
-                this.timeRemaining =
-                    'Expired';
-
-                return;
-            }
-
-            this.updateTimer();
-
-            this.interval =
-                setInterval(() => {
-
+    <script>
+        function holdTimer() {
+            return {
+                expiresAt: "{{ optional($booking?->hold_until)?->toIso8601String() }}",
+                timeRemaining: '10:00',
+                interval: null,
+                init() {
+                    if (!this.expiresAt) { this.timeRemaining = 'Expired'; return; }
                     this.updateTimer();
-
-                }, 1000);
-        },
-
-        updateTimer() {
-
-            const now =
-                new Date()
-                .getTime();
-
-            const expiry =
-                Date.parse(
-                    this.expiresAt
-                );
-
-            const diff =
-                expiry - now;
-
-            if (
-                diff <= 0
-            ) {
-
-                clearInterval(
-                    this.interval
-                );
-
-                this.timeRemaining =
-                    'Expired';
-
-                window.location.href =
-                    "{{ route(
-                        'conference.expired'
-                    ) }}";
-
-                return;
+                    this.interval = setInterval(() => this.updateTimer(), 1000);
+                },
+                updateTimer() {
+                    const diff = Date.parse(this.expiresAt) - new Date().getTime();
+                    if (diff <= 0) {
+                        clearInterval(this.interval);
+                        this.timeRemaining = 'Expired';
+                        window.location.href = "{{ route('conference.expired') }}";
+                        return;
+                    }
+                    const minutes = Math.floor(diff / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    this.timeRemaining = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                },
             }
-
-            const minutes =
-                Math.floor(
-                    diff /
-                    (1000 * 60)
-                );
-
-            const seconds =
-                Math.floor(
-
-                    (
-                        diff %
-                        (1000 * 60)
-                    ) / 1000
-                );
-
-            this.timeRemaining =
-
-                `${minutes}:${seconds
-
-                    .toString()
-
-                    .padStart(
-                        2,
-                        '0'
-                    )}`;
         }
-    }
-}
-
-</script>
-
+    </script>
 </x-guest-layout>

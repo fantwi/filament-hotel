@@ -1,137 +1,48 @@
 <x-guest-layout>
-
-<div class="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
-
-    <h1
-        class="text-xl font-bold mb-8"
-    >
-
-        Book
-        {{ $room->name }}
-
-    </h1>
-
-    <form
-        method="POST"
-        action="{{
-            route(
-                'conference.booking.store'
-            )
-        }}"
-        class="rounded-xl bg-white p-5 shadow sm:p-8"
-    >
-
-        @csrf
-
-        <input
-            type="hidden"
-            name="conference_room_id"
-            value="{{ $room->id }}"
-        >
-
-        <div class="mb-5">
-
-            <label class="font-semibold">
-
-                Booking Date
-
-            </label>
-
-            <input
-                type="date"
-                name="booking_date"
-                required
-                class="w-full border rounded-lg p-3 mt-2"
-            >
-
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-5">
-
-            <div>
-
-                <label class="font-semibold">
-
-                    Start Time
-
-                </label>
-
-                <input
-                    type="time"
-                    name="start_time"
-                    required
-                    class="w-full border rounded-lg p-3 mt-2"
-                >
-
+    <section class="px-4 py-10 sm:px-6 sm:py-14">
+        <div class="mx-auto w-full max-w-2xl">
+            <div class="mb-7 text-center sm:text-left">
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Conference reservation</p>
+                <h1 class="mt-2 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Book {{ $room->name }}</h1>
+                <p class="mt-2 text-sm leading-6 text-gray-600">Plan your event in a space for up to {{ $room->capacity }} attendees.</p>
             </div>
 
-            <div>
+            <form method="POST" action="{{ route('conference.booking.store') }}" class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
+                @csrf
+                <input type="hidden" name="conference_room_id" value="{{ $room->id }}">
 
-                <label class="font-semibold">
+                <div class="mb-6 rounded-xl bg-slate-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Hourly rate</p>
+                    <p class="mt-1 text-lg font-bold text-gray-900">GHS {{ number_format($room->price_per_hour, 2) }} <span class="text-sm font-normal text-gray-600">per hour</span></p>
+                </div>
 
-                    End Time
+                <div class="space-y-5">
+                    <div>
+                        <label for="booking_date" class="block text-sm font-semibold text-gray-800">Event date</label>
+                        <input id="booking_date" type="date" name="booking_date" value="{{ old('booking_date') }}" required class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div class="grid gap-5 sm:grid-cols-2">
+                        <div>
+                            <label for="start_time" class="block text-sm font-semibold text-gray-800">Start time</label>
+                            <input id="start_time" type="time" name="start_time" value="{{ old('start_time') }}" required class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="end_time" class="block text-sm font-semibold text-gray-800">End time</label>
+                            <input id="end_time" type="time" name="end_time" value="{{ old('end_time') }}" required class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="attendees" class="block text-sm font-semibold text-gray-800">Number of attendees</label>
+                        <input id="attendees" type="number" name="attendees" value="{{ old('attendees', 1) }}" min="1" max="{{ $room->capacity }}" required class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="special_requests" class="block text-sm font-semibold text-gray-800">Special requests <span class="font-normal text-gray-500">(optional)</span></label>
+                        <textarea id="special_requests" name="special_requests" rows="4" class="mt-2 block w-full rounded-xl border-gray-300 px-4 py-3 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ old('special_requests') }}</textarea>
+                    </div>
+                </div>
 
-                </label>
-
-                <input
-                    type="time"
-                    name="end_time"
-                    required
-                    class="w-full border rounded-lg p-3 mt-2"
-                >
-
-            </div>
-
+                <button type="submit" class="mt-7 flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">Continue to payment</button>
+            </form>
         </div>
-
-        <div class="mt-5">
-
-            <label class="font-semibold">
-
-                Number of Attendees
-
-            </label>
-
-            <input
-                type="number"
-                name="attendees"
-                min="1"
-                max="{{ $room->capacity }}"
-                required
-                class="w-full border rounded-lg p-3 mt-2"
-            >
-
-        </div>
-
-        <div class="mt-5">
-
-            <label class="font-semibold">
-
-                Special Requests
-
-            </label>
-
-            <textarea
-                name="special_requests"
-                rows="4"
-                class="w-full border rounded-lg p-3 mt-2"
-            ></textarea>
-
-        </div>
-
-        <button
-            class="bg-blue-600
-            text-white
-            px-6 py-3
-            rounded-lg mt-6 w-full"
-        >
-
-            Confirm Booking
-
-        </button>
-
-    </form>
-
-</div>
-
+    </section>
 </x-guest-layout>
