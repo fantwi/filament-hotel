@@ -1892,54 +1892,13 @@ Route::get('/rooms', function () {
 // Room type details
 Route::get('/rooms/{type}', function (RoomType $type) {
 
-    $availableRooms =
-        Room::where('room_type_id',$type->id)
-            // ->where('status','available')
-            // ->whereDoesntHave('bookings',function($q){
-            //     $q->whereDate('check_out','>=',today());
-            // })
-            ->whereDoesntHave(
-                'bookings',
-                // function ($query) {
-
-                //     $query->whereDate(
-                //         'check_in',
-                //         '<=',
-                //         today()
-                //     )
-                //     ->whereDate(
-                //         'check_out',
-                //         '>=',
-                //         today()
-                //     );
-
-                // }
-
-                function ($query) {
-
-                    $query->where(function ($q) {
-
-                        $q->where('hold_status', 'confirmed')
-
-                            ->orWhere(function ($hold) {
-
-                                $hold->where(
-                                        'hold_status',
-                                        'pending'
-                                    )
-                                    ->where(
-                                        'hold_until',
-                                        '>',
-                                        now()
-                                    );
-
-                        });
-
-                    });
-
-                }
-            )
-            ->count();
+    // A room is a selectable room type until a guest provides dates. Actual
+    // availability is resolved with an overlap query during date selection
+    // and booking, rather than hiding a room because it has any future stay.
+    $availableRooms = Room::query()
+        ->where('room_type_id', $type->id)
+        ->where('status', '!=', 'maintenance')
+        ->count();
 
     return view(
         'rooms.show',
@@ -2275,22 +2234,12 @@ Route::middleware('auth')->get(
     '/rooms/{type}/available',
     function (RoomType $type) {
 
-        $rooms = Room::where(
-                'room_type_id',
-                $type->id
-            )
-            ->whereDoesntHave(
-                'bookings',
-                function ($query) {
-
-                    $query->whereDate(
-                        'check_out',
-                        '>=',
-                        today()
-                    );
-
-                }
-            )
+        // Do not hide a physical room because it has a booking on another
+        // date. Date-range overlap validation happens when the guest enters
+        // their stay dates, where only the booked dates are rejected.
+        $rooms = Room::query()
+            ->where('room_type_id', $type->id)
+            ->where('status', '!=', 'maintenance')
             ->orderBy('room_number')
             ->get();
 
