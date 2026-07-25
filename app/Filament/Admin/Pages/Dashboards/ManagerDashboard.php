@@ -15,6 +15,7 @@ class ManagerDashboard extends Dashboard
     protected static string $routePath = 'manager-dashboard';
     protected static ?string $title = 'Manager Dashboard';
     protected static ?string $navigationLabel = 'Manager Dashboard';
+    protected static string|\UnitEnum|null $navigationGroup = 'Dashboards';
     protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool { return auth()->user()?->can('view manager dashboard') ?? false; }

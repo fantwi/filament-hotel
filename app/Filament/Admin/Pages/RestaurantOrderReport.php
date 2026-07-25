@@ -10,13 +10,13 @@ class RestaurantOrderReport extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar-square';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
+    protected static string|\UnitEnum|null $navigationGroup = 'Reports';
 
     protected static ?string $navigationLabel = 'Restaurant Reports';
 
     protected static ?string $title = 'Restaurant Order Report';
 
-    protected static ?int $navigationSort = 50;
+    protected static ?int $navigationSort = 40;
 
     protected string $view = 'filament.admin.pages.restaurant-order-report';
 

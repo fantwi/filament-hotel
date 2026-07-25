@@ -14,6 +14,7 @@ class SuperAdminDashboard extends Dashboard
     protected static string $routePath = 'super-admin-dashboard';
     protected static ?string $title = 'Super Admin Dashboard';
     protected static ?string $navigationLabel = 'Super Admin Dashboard';
+    protected static string|\UnitEnum|null $navigationGroup = 'Dashboards';
     protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool { return auth()->user()?->can('view super admin dashboard') ?? false; }

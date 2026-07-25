@@ -13,6 +13,7 @@ class AdminDashboard extends Dashboard
     protected static string $routePath = 'admin-dashboard';
     protected static ?string $title = 'Admin Dashboard';
     protected static ?string $navigationLabel = 'Admin Dashboard';
+    protected static string|\UnitEnum|null $navigationGroup = 'Dashboards';
     protected static ?int $navigationSort = 2;
 
     public static function canAccess(): bool { return auth()->user()?->can('view admin dashboard') ?? false; }

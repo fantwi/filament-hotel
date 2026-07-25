@@ -18,6 +18,9 @@ use Filament\Tables\Table;
 
 class GuestResource extends Resource
 {
+    protected static string|\UnitEnum|null $navigationGroup = 'Guest Management';
+
+    protected static ?int $navigationSort = 10;
     protected static ?string $model = Guest::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;

@@ -15,6 +15,8 @@ class OccupancyReport extends Page
 
     protected static ?string $navigationLabel = 'Occupancy Report';
 
+    protected static ?int $navigationSort = 10;
+
     protected string $view = 'filament.admin.pages.occupancy-report';
 
     public function report(): array

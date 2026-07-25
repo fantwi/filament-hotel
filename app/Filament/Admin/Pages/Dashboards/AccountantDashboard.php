@@ -13,6 +13,7 @@ class AccountantDashboard extends Dashboard
     protected static string $routePath = 'accountant-dashboard';
     protected static ?string $title = 'Accountant Dashboard';
     protected static ?string $navigationLabel = 'Accountant Dashboard';
+    protected static string|\UnitEnum|null $navigationGroup = 'Dashboards';
     protected static ?int $navigationSort = 3;
 
     public static function canAccess(): bool { return auth()->user()?->can('view accountant dashboard') ?? false; }

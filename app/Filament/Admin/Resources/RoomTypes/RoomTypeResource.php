@@ -26,6 +26,10 @@ class RoomTypeResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Accommodation';
+
+    protected static ?int $navigationSort = 10;
+
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->hasAnyRole([

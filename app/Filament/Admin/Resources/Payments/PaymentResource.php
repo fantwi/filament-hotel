@@ -24,6 +24,10 @@ class PaymentResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'booking_id';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+
+    protected static ?int $navigationSort = 10;
+
     // Hide from sidebar if not admin or accountant
     public static function shouldRegisterNavigation(): bool
     {

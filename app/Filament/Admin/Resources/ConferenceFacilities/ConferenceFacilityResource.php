@@ -23,6 +23,10 @@ class ConferenceFacilityResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Conference';
+
+    protected static ?int $navigationSort = 20;
+
     public static function form(Schema $schema): Schema
     {
         return ConferenceFacilityForm::configure($schema);

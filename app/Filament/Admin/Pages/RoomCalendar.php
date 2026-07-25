@@ -12,6 +12,8 @@ class RoomCalendar extends Page
     protected string $view = 'filament.admin.pages.room-calendar';
     protected static ?string $navigationLabel = 'Room Calendar';
     protected static ?string $title = 'Room Availability';
+    protected static string|\UnitEnum|null $navigationGroup = 'Accommodation';
+    protected static ?int $navigationSort = 40;
 
     public $roomFilter = null;
     public $roomTypeFilter = null;

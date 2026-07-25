@@ -27,6 +27,8 @@ class KitchenProductionResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
     protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
     protected static ?string $navigationLabel = 'Kitchen Production';
+
+    protected static ?int $navigationSort = 80;
     public static function canViewAny(): bool { return auth()->user()?->can('manage kitchen production') ?? false; }
     public static function form(Schema $schema): Schema { return $schema->components([Section::make('Kitchen Production Batch')->schema([
         Select::make('menu_item_id')->relationship('menuItem', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->where('tracks_kitchen_production', true))->searchable()->preload()->required(),

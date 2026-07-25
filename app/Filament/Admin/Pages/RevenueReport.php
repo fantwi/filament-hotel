@@ -16,6 +16,8 @@ class RevenueReport extends Page
 
     protected static ?string $navigationLabel = 'Revenue Report';
 
+    protected static ?int $navigationSort = 30;
+
     protected string $view = 'filament.admin.pages.revenue-report';
 
     public function report(): array

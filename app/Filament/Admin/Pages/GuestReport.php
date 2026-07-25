@@ -14,6 +14,8 @@ class GuestReport extends Page
 
     protected static ?string $navigationLabel = 'Guest Report';
 
+    protected static ?int $navigationSort = 20;
+
     protected string $view = 'filament.admin.pages.guest-report';
 
     public function report(): array

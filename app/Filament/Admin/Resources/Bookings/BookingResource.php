@@ -25,6 +25,10 @@ class BookingResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'guest_id';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Reservations';
+
+    protected static ?int $navigationSort = 10;
+
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->hasAnyRole([

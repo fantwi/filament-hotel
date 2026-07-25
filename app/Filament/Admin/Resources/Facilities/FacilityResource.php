@@ -23,6 +23,10 @@ class FacilityResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Accommodation';
+
+    protected static ?int $navigationSort = 30;
+
     public static function form(Schema $schema): Schema
     {
         return FacilityForm::configure($schema);

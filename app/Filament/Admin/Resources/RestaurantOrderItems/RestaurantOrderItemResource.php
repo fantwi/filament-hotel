@@ -23,6 +23,8 @@ class RestaurantOrderItemResource extends Resource
 
     protected static ?string $navigationLabel = 'Food Order Items';
 
+    protected static ?int $navigationSort = 70;
+
     public static function form(Schema $schema): Schema
     {
         return RestaurantOrderItemForm::configure($schema);

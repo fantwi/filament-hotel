@@ -23,6 +23,8 @@ class RestaurantOrderResource extends Resource
 
     protected static ?string $navigationLabel = 'Food Orders';
 
+    protected static ?int $navigationSort = 60;
+
     protected static ?string $recordTitleAttribute = 'order_number';
 
     public static function canViewAny(): bool

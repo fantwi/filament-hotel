@@ -17,6 +17,9 @@ use Illuminate\Database\Eloquent\Builder;
 
 class UserResource extends Resource
 {
+    protected static string|\UnitEnum|null $navigationGroup = 'System';
+
+    protected static ?int $navigationSort = 10;
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;

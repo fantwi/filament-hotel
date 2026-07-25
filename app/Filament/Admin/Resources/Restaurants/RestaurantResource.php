@@ -23,6 +23,10 @@ class RestaurantResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
+
+    protected static ?int $navigationSort = 10;
+
     public static function form(Schema $schema): Schema
     {
         return RestaurantForm::configure($schema);

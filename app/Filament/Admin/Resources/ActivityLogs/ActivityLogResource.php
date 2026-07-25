@@ -22,6 +22,10 @@ class ActivityLogResource extends Resource
 
     protected static ?string $navigationLabel = 'Activity Logs';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'System';
+
+    protected static ?int $navigationSort = 20;
+
     protected static ?string $pluralModelLabel = 'Activity Logs';
 
     // public static function form(Schema $schema): Schema
