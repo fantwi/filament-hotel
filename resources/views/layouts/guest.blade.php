@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ config('app.name') }}</title>
+    <script>if (localStorage.getItem('guest-theme') === 'dark' || (!localStorage.getItem('guest-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');</script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-w-0 overflow-x-hidden bg-gray-100 font-sans text-gray-800 antialiased">
+<body class="min-w-0 overflow-x-hidden bg-gray-100 font-sans text-gray-800 antialiased transition-colors dark:bg-slate-950 dark:text-slate-100">
 
     <!-- NAVBAR -->
     @include('layouts.partials.guest-nav')

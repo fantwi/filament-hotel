@@ -1,8 +1,8 @@
 @php($restaurantCartCount = collect(session('cart', []))->sum(fn (array $line) => max(1, (int) ($line['quantity'] ?? 1))))
 
-<nav x-data="{ open: false, accountOpen: false, roomsOpen: false, restaurantOpen: false, conferenceOpen: false, mobileRoomsOpen: false, mobileRestaurantOpen: false, mobileConferenceOpen: false }" class="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur">
+<nav x-data="{ open: false, accountOpen: false, roomsOpen: false, restaurantOpen: false, conferenceOpen: false, mobileRoomsOpen: false, mobileRestaurantOpen: false, mobileConferenceOpen: false, dark: document.documentElement.classList.contains('dark'), toggleTheme() { this.dark = !this.dark; document.documentElement.classList.toggle('dark', this.dark); localStorage.setItem('guest-theme', this.dark ? 'dark' : 'light') } }" class="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
     <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <a href="/" class="shrink-0 text-lg font-bold text-gray-900 sm:text-xl">My Hotel</a>
+        <a href="/" class="shrink-0 text-lg font-bold text-gray-900 sm:text-xl dark:text-white">My Hotel</a>
 
         <div class="hidden items-center gap-2 text-sm font-medium text-gray-600 lg:flex">
             <div class="relative" @click.outside="roomsOpen = false">
@@ -46,6 +46,7 @@
                         <a href="/dashboard" class="block px-4 py-2 text-sm hover:bg-gray-50">Dashboard</a>
                         <a href="/payments" class="block px-4 py-2 text-sm hover:bg-gray-50">Payments</a>
                         <a href="/profile" class="block px-4 py-2 text-sm hover:bg-gray-50">Profile</a>
+                        <button type="button" @click="toggleTheme()" class="flex w-full items-center justify-between px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-slate-800"><span>Appearance</span><span x-text="dark ? 'Dark mode' : 'Light mode'"></span></button>
                         <form method="POST" action="{{ route('logout') }}">@csrf<button class="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50">Logout</button></form>
                     </div>
                 </div>
@@ -84,6 +85,7 @@
                     <a href="/dashboard" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Dashboard</a>
                     <a href="{{ route('cart.index') }}" class="flex min-h-11 items-center justify-between rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50"><span>Restaurant cart</span><span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">{{ $restaurantCartCount }}</span></a>
                     <a href="/profile" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Profile</a>
+                    <button type="button" @click="toggleTheme()" class="flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-medium hover:bg-gray-50"><span>Appearance</span><span x-text="dark ? 'Dark mode' : 'Light mode'"></span></button>
                     <form method="POST" action="{{ route('logout') }}">@csrf<button class="block w-full rounded-lg px-3 py-3 text-left text-sm font-medium text-red-600 hover:bg-red-50">Logout</button></form>
                 @else
                     <div class="grid grid-cols-2 gap-3 px-3 py-2">
