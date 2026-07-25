@@ -8,7 +8,7 @@
     $user = auth()->user();
 @endphp
 
-<div class="max-w-7xl mx-auto py-6 px-4">
+<div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
 <!-- <div class="max-w-7xl mx-auto py-6 px-4 border-4 border-red-500 bg-yellow-100"> -->
 
     <!-- 🔴 Outstanding Balance Alert -->
@@ -32,11 +32,11 @@
     @auth
 
     <div
-        class="bg-white rounded-2xl shadow p-6 mb-8"
+        class="mb-8 rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-7"
     >
 
         <div
-            class="flex items-center gap-5"
+            class="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5"
         >
 
             <div
@@ -212,7 +212,7 @@
     @endif
 
     <!-- 📊 STATS GRID -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
         <!-- Total Bookings -->
         <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border hover:shadow-md transition flex items-center gap-4">
@@ -311,21 +311,21 @@
 
 <div
     x-data="{ tab: 'hotel' }"
-    class="bg-white rounded-2xl shadow p-6 mt-8"
+    class="mx-auto mt-8 max-w-7xl rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-7"
 >
 
     <h2 class="text-2xl font-bold mb-6">My Bookings</h2>
 
     <!-- <h2 class="text-2xl font-bold mb-6">My Bookings</h2> -->
 
-    <div class="flex flex-wrap gap-3 mb-8">
+    <div class="mb-8 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
 
         <button
             @click="tab='hotel'"
             :class="tab == 'hotel'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700'"
-            class="px-5 py-2 rounded-lg transition"
+            class="min-h-11 shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition"
         >
             Hotel Room Bookings
         </button>
@@ -335,7 +335,7 @@
             :class="tab == 'conference'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700'"
-            class="px-5 py-2 rounded-lg transition"
+            class="min-h-11 shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition"
         >
             Conference Room Bookings
         </button>
@@ -345,7 +345,7 @@
             :class="tab == 'restaurant'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700'"
-            class="px-5 py-2 rounded-lg transition"
+            class="min-h-11 shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition"
         >
             Restaurant Reservations
         </button>
@@ -355,7 +355,7 @@
             :class="tab == 'restaurant-orders'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700'"
-            class="px-5 py-2 rounded-lg transition"
+            class="min-h-11 shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition"
         >
             Restaurant Food Orders
         </button>

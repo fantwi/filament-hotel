@@ -7,8 +7,8 @@
                 <h1 class="mt-5 text-4xl font-bold tracking-tight sm:text-6xl">Stay comfortably. Dine memorably. Gather beautifully.</h1>
                 <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-200">Discover welcoming rooms, flexible conference spaces, and a restaurant made for memorable dining experiences.</p>
                 <div class="mt-9 flex flex-col gap-3 sm:flex-row">
-                    <a href="/rooms" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-amber-300">Explore Rooms</a>
-                    <a href="{{ route('restaurant') }}" class="inline-flex items-center justify-center rounded-lg border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20">Visit the Restaurant</a>
+                    <a href="/rooms" class="inline-flex min-h-12 items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-amber-300">Explore rooms</a>
+                    <a href="{{ route('restaurant') }}" class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20">Visit the restaurant</a>
                 </div>
             </div>
         </div>

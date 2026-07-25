@@ -40,15 +40,15 @@
                 <form method="POST" action="{{ route('contact') }}" class="mt-7 space-y-5">
                     @csrf
                     <div class="grid gap-5 sm:grid-cols-2">
-                        <div><label for="name" class="font-semibold text-gray-800">Your name</label><input id="name" type="text" name="name" value="{{ old('name') }}" class="mt-2 w-full rounded-lg border-gray-300 p-3" autocomplete="name" required></div>
-                        <div><label for="email" class="font-semibold text-gray-800">Email address</label><input id="email" type="email" name="email" value="{{ old('email') }}" class="mt-2 w-full rounded-lg border-gray-300 p-3" autocomplete="email" required></div>
+                        <div><label for="name" class="font-semibold text-gray-800">Your name</label><input id="name" type="text" name="name" value="{{ old('name') }}" class="mt-2 min-h-12 w-full rounded-xl border-gray-300 px-4 text-base" autocomplete="name" required></div>
+                        <div><label for="email" class="font-semibold text-gray-800">Email address</label><input id="email" type="email" name="email" value="{{ old('email') }}" class="mt-2 min-h-12 w-full rounded-xl border-gray-300 px-4 text-base" autocomplete="email" required></div>
                     </div>
                     <div class="grid gap-5 sm:grid-cols-2">
                         <div><label for="phone_number" class="font-semibold text-gray-800">Phone number <span class="font-normal text-gray-500">(optional)</span></label><input id="phone_number" type="tel" name="phone_number" value="{{ old('phone_number') }}" class="mt-2 w-full rounded-lg border-gray-300 p-3" autocomplete="tel"></div>
                         <div><label for="subject" class="font-semibold text-gray-800">Subject</label><input id="subject" type="text" name="subject" value="{{ old('subject') }}" class="mt-2 w-full rounded-lg border-gray-300 p-3" required></div>
                     </div>
                     <div><label for="message" class="font-semibold text-gray-800">How can we help?</label><textarea id="message" name="message" rows="6" class="mt-2 w-full rounded-lg border-gray-300 p-3" required>{{ old('message') }}</textarea></div>
-                    <button type="submit" class="w-full rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white transition hover:bg-indigo-700 sm:w-auto">Send Message</button>
+                    <button type="submit" class="flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">Send message</button>
                 </form>
             </div>
         </div>
