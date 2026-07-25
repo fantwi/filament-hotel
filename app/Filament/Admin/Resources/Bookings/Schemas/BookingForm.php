@@ -4,6 +4,8 @@ namespace App\Filament\Admin\Resources\Bookings\Schemas;
 
 use App\Models\Booking;
 use App\Models\Room;
+use App\Models\User;
+use Filament\Actions\Action;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -11,6 +13,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class BookingForm
 {
@@ -19,9 +23,37 @@ class BookingForm
         return $schema
             ->components([
                 Select::make('guest_id')
-                    ->relationship('user', 'name')
+                    ->relationship('guest', 'first_name')
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->full_name)
                     ->searchable(['first_name', 'last_name'])
+                    ->preload()
+                    ->createOptionAction(fn (Action $action): Action => $action
+                        ->label('Create walk-in guest account')
+                        ->visible(fn (): bool => auth()->user()?->hasAnyRole(['admin', 'manager', 'receptionist']) ?? false))
+                    ->createOptionForm([
+                        TextInput::make('first_name')->required()->maxLength(255),
+                        TextInput::make('last_name')->required()->maxLength(255),
+                        TextInput::make('email')->email()->required()->unique(User::class, 'email'),
+                        TextInput::make('phone_number')->tel()->maxLength(50),
+                        TextInput::make('id_number')->maxLength(100),
+                        TextInput::make('password')->password()->required()->minLength(8)->confirmed(),
+                        TextInput::make('password_confirmation')->password()->required()->dehydrated(false),
+                    ])
+                    ->createOptionUsing(function (array $data): int {
+                        return DB::transaction(function () use ($data): int {
+                            $user = User::create([
+                                'first_name' => $data['first_name'],
+                                'last_name' => $data['last_name'],
+                                'email' => $data['email'],
+                                'phone_number' => $data['phone_number'] ?? null,
+                                'id_number' => $data['id_number'] ?? null,
+                                'department' => 'guest',
+                                'password' => Hash::make($data['password']),
+                            ]);
+
+                            return $user->guest()->firstOrFail()->id;
+                        });
+                    })
                     ->required(),
 
                 // Select::make('guest_id')
