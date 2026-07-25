@@ -17,6 +17,10 @@ class MenuItem extends Model
         'image',
         'is_available',
         'is_featured',
+        'tracks_kitchen_production',
+        'production_unit',
+        'production_usage_per_sale',
+        'low_stock_threshold',
         'preparation_time',
         'sort_order',
     ];
@@ -25,6 +29,9 @@ class MenuItem extends Model
         'price' => 'decimal:2',
         'is_available' => 'boolean',
         'is_featured' => 'boolean',
+        'tracks_kitchen_production' => 'boolean',
+        'production_usage_per_sale' => 'decimal:3',
+        'low_stock_threshold' => 'decimal:3',
     ];
 
     public function category(): BelongsTo
@@ -36,4 +43,6 @@ class MenuItem extends Model
     {
         return $this->hasMany(RestaurantOrderItem::class);
     }
+
+    public function kitchenProductions(): HasMany { return $this->hasMany(KitchenProduction::class); }
 }

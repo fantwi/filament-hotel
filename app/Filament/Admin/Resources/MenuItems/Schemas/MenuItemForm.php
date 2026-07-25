@@ -56,6 +56,14 @@ class MenuItemForm
                         ->required(),
                 ])
                 ->columns(2),
+            Section::make('Kitchen Production Tracking')
+                ->description('Configure how this menu item is measured against kitchen production.')
+                ->schema([
+                    Toggle::make('tracks_kitchen_production')->label('Track Kitchen Production')->default(false)->live(),
+                    Select::make('production_unit')->options(['portion' => 'Portion', 'piece' => 'Piece', 'tray' => 'Tray', 'kilogram' => 'Kilogram', 'gram' => 'Gram', 'litre' => 'Litre', 'millilitre' => 'Millilitre', 'bottle' => 'Bottle'])->default('portion')->required()->visible(fn ($get): bool => (bool) $get('tracks_kitchen_production')),
+                    TextInput::make('production_usage_per_sale')->label('Production Amount Per Sale')->numeric()->minValue(0.001)->step(0.001)->default(1)->required()->visible(fn ($get): bool => (bool) $get('tracks_kitchen_production')),
+                    TextInput::make('low_stock_threshold')->label('Low-Stock Threshold')->numeric()->minValue(0)->step(0.001)->default(0)->required()->visible(fn ($get): bool => (bool) $get('tracks_kitchen_production')),
+                ])->columns(3),
         ]);
     }
 }

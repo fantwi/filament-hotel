@@ -20,7 +20,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view conference bookings', 'manage conference bookings',
             'view restaurant reservations', 'manage restaurant reservations', 'view restaurant orders', 'manage restaurant orders', 'manage restaurant menu',
             'view payments', 'manage payments', 'view financial reports', 'process refunds', 'view operational reports', 'view activity logs',
-            'manage kitchen orders', 'view kitchen dashboard',
+            'manage kitchen orders', 'view kitchen dashboard', 'manage kitchen production', 'view kitchen production reports',
         ];
 
         foreach ($permissions as $permission) {
@@ -36,17 +36,17 @@ class RolesAndPermissionsSeeder extends Seeder
             'view bookings', 'create bookings', 'update bookings', 'cancel bookings', 'check in guests', 'check out guests',
             'view conference bookings', 'manage conference bookings', 'view restaurant reservations', 'manage restaurant reservations',
             'view restaurant orders', 'manage restaurant orders', 'manage restaurant menu', 'view payments',
-            'view operational reports', 'view activity logs', 'manage kitchen orders', 'view kitchen dashboard',
+            'view operational reports', 'view activity logs', 'manage kitchen orders', 'view kitchen dashboard', 'manage kitchen production', 'view kitchen production reports',
         ]);
         $roles['accountant']->syncPermissions([
             'view accountant dashboard', 'view payments', 'manage payments', 'view financial reports', 'process refunds',
-            'view bookings', 'view conference bookings', 'view restaurant reservations', 'view restaurant orders',
+            'view bookings', 'view conference bookings', 'view restaurant reservations', 'view restaurant orders', 'view kitchen production reports',
         ]);
         $roles['manager']->syncPermissions([
             'view manager dashboard', 'view bookings', 'update bookings', 'view conference bookings', 'manage conference bookings',
             'view restaurant reservations', 'manage restaurant reservations', 'view restaurant orders', 'manage restaurant orders',
             'manage restaurant menu', 'view payments', 'view operational reports', 'view activity logs',
-            'manage kitchen orders', 'view kitchen dashboard',
+            'manage kitchen orders', 'view kitchen dashboard', 'manage kitchen production', 'view kitchen production reports',
         ]);
         $roles['receptionist']->syncPermissions([
             'view reception dashboard', 'view bookings', 'create bookings', 'update bookings', 'cancel bookings',

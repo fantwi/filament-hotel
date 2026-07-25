@@ -10,6 +10,9 @@ class RestaurantOrderItem extends Model
     protected $fillable = [
         'restaurant_order_id',
         'menu_item_id',
+        'item_name',
+        'production_unit',
+        'production_usage_per_sale',
         'quantity',
         'unit_price',
         'total_price',
@@ -19,6 +22,7 @@ class RestaurantOrderItem extends Model
         'quantity' => 'integer',
         'unit_price' => 'decimal:2',
         'total_price' => 'decimal:2',
+        'production_usage_per_sale' => 'decimal:3',
     ];
 
     public function order(): BelongsTo

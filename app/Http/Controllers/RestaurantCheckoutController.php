@@ -70,11 +70,16 @@ class RestaurantCheckoutController extends Controller
             ]);
 
             foreach ($items as $line) {
+                $menuItem = \App\Models\MenuItem::query()->whereKey($line['item']->id)->where('is_available', true)->firstOrFail();
+                $quantity = max(1, (int) $line['quantity']);
                 $order->items()->create([
-                    'menu_item_id' => $line['item']->id,
-                    'quantity' => $line['quantity'],
-                    'unit_price' => $line['item']->price,
-                    'total_price' => $line['line_total'],
+                    'menu_item_id' => $menuItem->id,
+                    'item_name' => $menuItem->name,
+                    'production_unit' => $menuItem->production_unit,
+                    'production_usage_per_sale' => $menuItem->production_usage_per_sale,
+                    'quantity' => $quantity,
+                    'unit_price' => $menuItem->price,
+                    'total_price' => $menuItem->price * $quantity,
                 ]);
             }
 
