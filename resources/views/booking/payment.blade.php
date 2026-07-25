@@ -1,10 +1,13 @@
 <x-guest-layout>
 
-<div class="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
+<section class="px-4 py-10 sm:px-6 sm:py-14">
+<div class="mx-auto w-full max-w-xl">
 
-<h2 class="text-2xl font-bold mb-6">
-Payment
-</h2>
+<div class="mb-7 text-center sm:text-left">
+    <p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Secure checkout</p>
+    <h1 class="mt-2 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Complete your payment</h1>
+    <p class="mt-2 text-sm leading-6 text-gray-600">Your room is temporarily held while you finish payment.</p>
+</div>
 
 <!-- <p class="text-red-500 mb-4">
     Hold Until:
@@ -37,7 +40,7 @@ Payment
 
 <div
     x-data="holdTimer()"
-    class="bg-yellow-50 border border-yellow-200 rounded-2xl p-5 mb-8"
+    class="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 sm:p-5"
 >
 
     <!-- Temporary debug info -->
@@ -60,11 +63,11 @@ Payment
 
     </div> -->
 
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gap-4">
 
         <div>
 
-            <p class="font-bold text-yellow-800">
+            <p class="text-sm font-bold text-yellow-800 sm:text-base">
                 Room Reserved Temporarily
             </p>
 
@@ -77,7 +80,7 @@ Payment
         </div>
 
         <div
-            class="text-3xl font-bold text-yellow-800"
+            class="shrink-0 text-2xl font-bold tabular-nums text-yellow-800 sm:text-3xl"
             x-text="timeRemaining"
         ></div>
 
@@ -85,9 +88,8 @@ Payment
 
 </div>
 
-<p class="mb-6 text-gray-600">
-Demo payment (Flutterwave comes later)
-</p>
+<div class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
+<p class="text-sm leading-6 text-gray-600">You will be redirected to Paystack to complete payment securely.</p>
 
 <!-- <form method="POST" action="/booking/payment">
 @csrf
@@ -98,19 +100,22 @@ Pay & Confirm Booking
 
 </form> -->
 
-<form method="POST" action="{{ route('booking.pay') }}">
+<form method="POST" action="{{ route('booking.pay') }}" class="mt-6">
     @csrf
 
-    <p class="mb-4 text-lg font-semibold">
-        Total: GHS {{ session('booking.total') }}
-    </p>
+    <div class="mb-5 rounded-xl bg-slate-50 px-4 py-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total due</p>
+        <p class="mt-1 text-2xl font-bold text-gray-900">GHS {{ number_format((float) session('booking.total', 0), 2) }}</p>
+    </div>
 
-    <button class="bg-green-600 text-white px-6 py-3 rounded w-full">
-        Pay with Paystack
+    <button class="flex min-h-12 w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2">
+        Pay securely with Paystack
     </button>
 </form>
 
 </div>
+</div>
+</section>
 
 <script>
 

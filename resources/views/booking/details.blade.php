@@ -33,7 +33,7 @@
 <div
     x-data="bookingCalculator()"
     x-ref="booking"
-    class="min-h-screen bg-gray-50 px-4 py-8 sm:py-12"
+    class="px-4 py-10 sm:px-6 sm:py-14"
 >
 
     <div class="mx-auto grid max-w-6xl gap-6 lg:grid-cols-3 lg:gap-10">
@@ -44,11 +44,11 @@
             <!-- HEADER -->
             <div class="mb-8">
 
-                <p class="text-blue-600 font-semibold mb-2">
+                <p class="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
                     Hotel Reservation
                 </p>
 
-                <h1 class="text-3xl font-bold text-gray-900 sm:text-4xl">
+                <h1 class="text-2xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                     Complete Your Booking
                 </h1>
 
@@ -69,7 +69,7 @@
             @endif
 
             <!-- FORM CARD -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-xl shadow-slate-200/70 sm:p-8">
 
                 <form method="POST" action="/booking/details">
 
@@ -92,7 +92,7 @@
                                 x-model="checkIn"
                                 value="{{ old('check_in') }}"
                                 required
-                                class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                class="min-h-12 w-full rounded-xl border border-gray-200 px-4 py-3 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition"
                             >
 
                         </div>
@@ -111,7 +111,7 @@
                                 x-model="checkOut"
                                 value="{{ old('check_out') }}"
                                 required
-                                class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                class="min-h-12 w-full rounded-xl border border-gray-200 px-4 py-3 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition"
                             >
 
                         </div>
@@ -130,7 +130,7 @@
                             name="guests"
                             value="{{ old('guests', 1) }}"
                             min="1"
-                            class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            class="min-h-12 w-full rounded-xl border border-gray-200 px-4 py-3 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition"
                         >
 
                     </div>
@@ -152,7 +152,7 @@
                     <!-- BUTTON -->
                     <button
                         type="submit"
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl transition shadow-sm"
+                        class="flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
 
                         Continue to Payment
