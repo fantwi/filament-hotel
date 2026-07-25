@@ -23,6 +23,12 @@ class FacilityForm
                     ->helperText(
                         'Optional icon name'
                     ),
+                Forms\Components\Toggle::make('is_published')
+                    ->label('Published for guests')
+                    ->helperText('Only you can see this facility in Filament until it is published.')
+                    ->onIcon('heroicon-m-eye')
+                    ->offIcon('heroicon-m-eye-slash')
+                    ->default(false),
             ]);
     }
 }

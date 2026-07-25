@@ -9,6 +9,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class MenuItemForm
 {
@@ -18,7 +19,7 @@ class MenuItemForm
             Section::make('Menu Item')
                 ->schema([
                     Select::make('menu_category_id')
-                        ->relationship('category', 'name')
+                        ->relationship('category', 'name', modifyQueryUsing: fn (Builder $query) => $query->visibleTo(auth()->user()))
                         ->searchable()
                         ->preload()
                         ->required(),
@@ -50,6 +51,12 @@ class MenuItemForm
                         ->image(),
                     Toggle::make('is_available')->default(true),
                     Toggle::make('is_featured')->default(false),
+                    Toggle::make('is_published')
+                        ->label('Published for guests')
+                        ->helperText('Only you can see this item in Filament until it is published.')
+                        ->onIcon('heroicon-m-eye')
+                        ->offIcon('heroicon-m-eye-slash')
+                        ->default(false),
                     TextInput::make('sort_order')
                         ->numeric()
                         ->default(0)

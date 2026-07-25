@@ -35,9 +35,9 @@ use Carbon\CarbonPeriod;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 Route::get('/', function () {
-    $roomTypes = RoomType::query()->with('facilities')->take(3)->get();
-    $conferenceRooms = ConferenceRoom::query()->where('is_available', true)->take(3)->get();
-    $restaurant = Restaurant::first();
+    $roomTypes = RoomType::query()->published()->with(['facilities' => fn ($query) => $query->published()])->take(3)->get();
+    $conferenceRooms = ConferenceRoom::query()->published()->with(['facilities' => fn ($query) => $query->published()])->where('is_available', true)->take(3)->get();
+    $restaurant = Restaurant::published()->first();
 
     return view('index', compact('roomTypes', 'conferenceRooms', 'restaurant'));
 })->name('home');
@@ -98,7 +98,7 @@ Route::post('/contact', function (Request $request) {
 Route::get('/conference-rooms', function () {
         // $rooms = ConferenceRoom::where('is_available', true)->get();
         
-        $rooms = ConferenceRoom::with('facilities')->where('is_available', true)->get();
+        $rooms = ConferenceRoom::published()->with(['facilities' => fn ($query) => $query->published()])->where('is_available', true)->get();
 
         return view('conference.index', compact('rooms'));
     })->name('conference.index');
@@ -107,6 +107,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/conference-room/{room}/book',
             function (ConferenceRoom $room) {
+                abort_unless($room->is_published, 404);
+
                 return view('conference.book', compact('room'));
             })->name('conference.book');
 
@@ -127,7 +129,7 @@ Route::middleware('auth')->group(function () {
 
                 $guest = auth()->user()->guest;
 
-                $room = ConferenceRoom::findOrFail(
+                $room = ConferenceRoom::published()->findOrFail(
                         $request
                         ->conference_room_id
                     );
@@ -474,18 +476,19 @@ Route::get(
 
 Route::get('/restaurant', function () {
 
-    $restaurant = Restaurant::with([
+    $restaurant = Restaurant::published()->with([
         'tables' => fn ($query) => $query->orderBy('table_number')->limit(3),
-        'facilities',
+        'facilities' => fn ($query) => $query->published(),
     ])->first();
-    $categories = MenuCategory::query()
+    $categories = MenuCategory::published()
         ->with(['menuItems' => fn ($query) => $query
+            ->published()
             ->where('is_available', true)
             ->orderBy('sort_order')])
         ->where('is_active', true)
         ->orderBy('sort_order')
         ->get();
-    $featuredItems = MenuItem::query()
+    $featuredItems = MenuItem::published()
         ->where('is_available', true)
         ->where('is_featured', true)
         ->orderBy('sort_order')
@@ -500,7 +503,7 @@ Route::get('/restaurant', function () {
 })->name('restaurant');
 
 Route::get('/restaurant/tables', function () {
-    $restaurant = Restaurant::with([
+    $restaurant = Restaurant::published()->with([
         'tables' => fn ($query) => $query->orderBy('table_number'),
     ])->first();
 
@@ -508,23 +511,24 @@ Route::get('/restaurant/tables', function () {
 })->name('restaurant.tables');
 
 Route::get('/restaurant/gallery', function () {
-    $restaurant = Restaurant::first();
+    $restaurant = Restaurant::published()->first();
 
     return view('restaurant.gallery', compact('restaurant'));
 })->name('restaurant.gallery');
 
 Route::get('/restaurant/menu', function () {
-    $restaurant = Restaurant::first();
+    $restaurant = Restaurant::published()->first();
 
-    $categories = MenuCategory::query()
+    $categories = MenuCategory::published()
         ->with(['menuItems' => fn ($query) => $query
+            ->published()
             ->where('is_available', true)
             ->orderBy('sort_order')])
         ->where('is_active', true)
         ->orderBy('sort_order')
         ->get();
 
-    $featuredItems = MenuItem::query()
+    $featuredItems = MenuItem::published()
         ->where('is_available', true)
         ->where('is_featured', true)
         ->orderBy('sort_order')
@@ -1027,6 +1031,8 @@ Route::get('/invoice/{booking}', function ($bookingId) {
 Route::get(
     '/rooms/{roomType}/calendar',
     function (\App\Models\RoomType $roomType) {
+
+        abort_unless($roomType->is_published, 404);
 
         $rooms =
             Room::where(
@@ -1884,7 +1890,7 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/rooms', function () {
 
-    $roomTypes=RoomType::all();
+    $roomTypes = RoomType::published()->get();
 
     return view(
         'rooms.index',
@@ -1895,6 +1901,10 @@ Route::get('/rooms', function () {
 
 // Room type details
 Route::get('/rooms/{type}', function (RoomType $type) {
+
+    abort_unless($type->is_published, 404);
+
+    $type->load(['facilities' => fn ($query) => $query->published()]);
 
     // A room is a selectable room type until a guest provides dates. Actual
     // availability is resolved with an overlap query during date selection
@@ -2237,6 +2247,8 @@ Route::get('/payment/callback', function (Request $request) {
 Route::middleware('auth')->get(
     '/rooms/{type}/available',
     function (RoomType $type) {
+
+        abort_unless($type->is_published, 404);
 
         // Do not hide a physical room because it has a booking on another
         // date. Date-range overlap validation happens when the guest enters

@@ -7,6 +7,8 @@ use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Toggle;
+use Illuminate\Database\Eloquent\Builder;
 
 class RoomTypeForm
 {
@@ -43,8 +45,14 @@ class RoomTypeForm
                 Textarea::make('description')
                     ->default(null)
                     ->columnSpanFull(),
+                Toggle::make('is_published')
+                    ->label('Published for guests')
+                    ->helperText('Only you can see this room type in Filament until it is published.')
+                    ->onIcon('heroicon-m-eye')
+                    ->offIcon('heroicon-m-eye-slash')
+                    ->default(false),
                 CheckboxList::make('facilities')
-                    ->relationship('facilities','name')
+                    ->relationship('facilities', 'name', modifyQueryUsing: fn (Builder $query) => $query->visibleTo(auth()->user()))
                     ->columns(2)
                     ->searchable(),
             ]);

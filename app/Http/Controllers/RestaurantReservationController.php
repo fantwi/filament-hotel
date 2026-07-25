@@ -14,7 +14,7 @@ class RestaurantReservationController extends Controller
 {
     public function create()
     {
-        $restaurant = Restaurant::first();
+        $restaurant = Restaurant::published()->first();
 
         $tables = RestaurantTable::query()
             ->whereNotIn('status', ['maintenance', 'cleaning'])
@@ -29,7 +29,7 @@ class RestaurantReservationController extends Controller
 
     public function store(Request $request)
     {
-        $restaurant = Restaurant::firstOrFail();
+        $restaurant = Restaurant::published()->firstOrFail();
 
         $validated = $request->validate([
             'restaurant_table_id' => ['required', 'exists:restaurant_tables,id'],

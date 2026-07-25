@@ -19,6 +19,7 @@ class MenuCategoriesTable
                 TextColumn::make('name')->searchable()->sortable(),
                 TextColumn::make('slug')->searchable(),
                 IconColumn::make('is_active')->boolean(),
+                IconColumn::make('is_published')->label('Published')->boolean(),
                 TextColumn::make('created_at')->dateTime()->sortable(),
             ])
             ->defaultSort('sort_order')

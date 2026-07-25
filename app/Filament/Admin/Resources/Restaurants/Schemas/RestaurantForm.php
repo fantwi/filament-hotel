@@ -10,6 +10,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\CheckboxList;
+use Illuminate\Database\Eloquent\Builder;
 //use Filament\Forms\Components\Section;
 
 class RestaurantForm
@@ -80,8 +81,15 @@ class RestaurantForm
 
                         Toggle::make('is_open'),
 
+                        Toggle::make('is_published')
+                            ->label('Published for guests')
+                            ->helperText('Only you can see this restaurant in Filament until it is published.')
+                            ->onIcon('heroicon-m-eye')
+                            ->offIcon('heroicon-m-eye-slash')
+                            ->default(false),
+
                         CheckboxList::make('facilities')
-                            ->relationship('facilities', 'name')
+                            ->relationship('facilities', 'name', modifyQueryUsing: fn (Builder $query) => $query->visibleTo(auth()->user()))
                             ->columns(2)
                             ->searchable()
                             ->columnSpanFull(),

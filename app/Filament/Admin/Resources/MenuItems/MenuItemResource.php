@@ -9,6 +9,7 @@ use App\Filament\Admin\Resources\MenuItems\Schemas\MenuItemForm;
 use App\Filament\Admin\Resources\MenuItems\Tables\MenuItemsTable;
 use App\Models\MenuItem;
 use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -33,6 +34,11 @@ class MenuItemResource extends Resource
     public static function table(Table $table): Table
     {
         return MenuItemsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->visibleTo(auth()->user());
     }
 
     public static function getRelations(): array

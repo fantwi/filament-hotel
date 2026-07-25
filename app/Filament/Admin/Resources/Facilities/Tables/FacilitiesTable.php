@@ -7,6 +7,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
 
 class FacilitiesTable
 {
@@ -22,6 +23,7 @@ class FacilitiesTable
                     ->label('Facility Name')
                     ->searchable()
                     ->sortable(),
+                IconColumn::make('is_published')->label('Published')->boolean(),
             ])
             ->filters([
                 //

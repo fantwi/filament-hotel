@@ -7,6 +7,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Table;
 
 class RoomTypesTable
@@ -23,6 +24,7 @@ class RoomTypesTable
                 TextColumn::make('capacity')
                     ->numeric()
                     ->sortable(),
+                IconColumn::make('is_published')->label('Published')->boolean(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

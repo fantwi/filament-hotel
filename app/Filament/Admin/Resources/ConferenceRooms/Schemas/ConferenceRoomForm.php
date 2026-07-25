@@ -8,6 +8,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class ConferenceRoomForm
 {
@@ -35,7 +36,7 @@ class ConferenceRoomForm
                     ->prefix('GHS'),
 
                 CheckboxList::make('facilities')
-                    ->relationship('facilities', 'name')
+                    ->relationship('facilities', 'name', modifyQueryUsing: fn (Builder $query) => $query->visibleTo(auth()->user()))
                     ->columns(2)
                     ->searchable(),
 
@@ -58,6 +59,13 @@ class ConferenceRoomForm
                     ->columnSpanFull(),
 
                 Toggle::make('is_available'),
+
+                Toggle::make('is_published')
+                    ->label('Published for guests')
+                    ->helperText('Only you can see this conference room in Filament until it is published.')
+                    ->onIcon('heroicon-m-eye')
+                    ->offIcon('heroicon-m-eye-slash')
+                    ->default(false),
 
             ]);
     }

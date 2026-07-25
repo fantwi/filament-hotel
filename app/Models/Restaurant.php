@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicationState;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\RestaurantTable;
 
 class Restaurant extends Model
 {
+    use HasPublicationState;
+
     protected $fillable = [
 
         'name',
@@ -40,11 +43,14 @@ class Restaurant extends Model
         'x',
 
         'is_open',
+        'is_published',
+        'created_by',
 
     ];
 
     protected $casts = [
         'gallery' => 'array',
+        'is_published' => 'boolean',
     ];
 
     // Relationships

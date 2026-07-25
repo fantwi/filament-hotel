@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicationState;
 use Illuminate\Database\Eloquent\Model;
 
 class ConferenceRoom extends Model
 {
+    use HasPublicationState;
+
     //
     protected $fillable = [
 
@@ -23,10 +26,12 @@ class ConferenceRoom extends Model
         'gallery',
 
         'is_available',
+        'is_published',
+        'created_by',
 
     ];
 
-    protected $casts = ['gallery' => 'array', 'is_available' => 'boolean'];
+    protected $casts = ['gallery' => 'array', 'is_available' => 'boolean', 'is_published' => 'boolean'];
 
     public function bookings()
     {

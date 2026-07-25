@@ -9,6 +9,7 @@ use App\Filament\Admin\Resources\Facilities\Schemas\FacilityForm;
 use App\Filament\Admin\Resources\Facilities\Tables\FacilitiesTable;
 use App\Models\Facility;
 use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -30,6 +31,11 @@ class FacilityResource extends Resource
     public static function table(Table $table): Table
     {
         return FacilitiesTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->visibleTo(auth()->user());
     }
 
     public static function getRelations(): array

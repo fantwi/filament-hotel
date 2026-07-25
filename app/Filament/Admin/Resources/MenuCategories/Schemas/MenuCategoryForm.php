@@ -36,6 +36,12 @@ class MenuCategoryForm
                     Toggle::make('is_active')
                         ->default(true)
                         ->required(),
+                    Toggle::make('is_published')
+                        ->label('Published for guests')
+                        ->helperText('Only you can see this category in Filament until it is published.')
+                        ->onIcon('heroicon-m-eye')
+                        ->offIcon('heroicon-m-eye-slash')
+                        ->default(false),
                 ])
                 ->columns(2),
         ]);

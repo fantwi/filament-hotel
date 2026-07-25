@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicationState;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -12,6 +13,7 @@ class RoomType extends Model
     //
     use HasFactory;
     use LogsActivity;
+    use HasPublicationState;
 
     protected $fillable = [
         'name',
@@ -20,9 +22,11 @@ class RoomType extends Model
         'gallery',
         'capacity',
         'description',
+        'is_published',
+        'created_by',
     ];
 
-    protected $casts = ['gallery' => 'array'];
+    protected $casts = ['gallery' => 'array', 'is_published' => 'boolean'];
 
     public function rooms()
     {

@@ -9,6 +9,7 @@ use App\Filament\Admin\Resources\ConferenceFacilities\Schemas\ConferenceFacility
 use App\Filament\Admin\Resources\ConferenceFacilities\Tables\ConferenceFacilitiesTable;
 use App\Models\ConferenceFacility;
 use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -30,6 +31,11 @@ class ConferenceFacilityResource extends Resource
     public static function table(Table $table): Table
     {
         return ConferenceFacilitiesTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->visibleTo(auth()->user());
     }
 
     public static function getRelations(): array

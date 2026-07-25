@@ -32,10 +32,14 @@ class RestaurantTableOrderController extends Controller
         ]);
 
         $restaurant = $table->restaurant;
-        $categories = MenuCategory::query()->with(['menuItems' => fn ($query) => $query
+
+        abort_unless($restaurant?->is_published, 404);
+
+        $categories = MenuCategory::published()->with(['menuItems' => fn ($query) => $query
+            ->published()
             ->where('is_available', true)->orderBy('sort_order')])
             ->where('is_active', true)->orderBy('sort_order')->get();
-        $featuredItems = MenuItem::query()->where('is_available', true)->where('is_featured', true)
+        $featuredItems = MenuItem::published()->where('is_available', true)->where('is_featured', true)
             ->orderBy('sort_order')->take(6)->get();
 
         return view('restaurant.menu', compact('restaurant', 'categories', 'featuredItems', 'table'));

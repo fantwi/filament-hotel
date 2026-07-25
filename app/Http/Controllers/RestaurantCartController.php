@@ -12,7 +12,7 @@ class RestaurantCartController extends Controller
 {
     public function add(MenuItem $item): RedirectResponse
     {
-        abort_unless($item->is_available, 422, 'This menu item is unavailable.');
+        abort_unless($item->is_published && $item->is_available, 422, 'This menu item is unavailable.');
 
         $cart = session('cart', []);
         $cart[$item->id]['quantity'] = min(99, ((int) ($cart[$item->id]['quantity'] ?? 0)) + 1);

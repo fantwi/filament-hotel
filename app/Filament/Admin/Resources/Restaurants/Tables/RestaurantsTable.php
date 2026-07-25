@@ -28,6 +28,7 @@ class RestaurantsTable
                 TextColumn::make('closing_time'),
 
                 IconColumn::make('is_open')->boolean(),
+                IconColumn::make('is_published')->label('Published')->boolean(),
             ])
             ->filters([
                 //

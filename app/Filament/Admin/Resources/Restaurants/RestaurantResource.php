@@ -9,6 +9,7 @@ use App\Filament\Admin\Resources\Restaurants\Schemas\RestaurantForm;
 use App\Filament\Admin\Resources\Restaurants\Tables\RestaurantsTable;
 use App\Models\Restaurant;
 use BackedEnum;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -30,6 +31,11 @@ class RestaurantResource extends Resource
     public static function table(Table $table): Table
     {
         return RestaurantsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->visibleTo(auth()->user());
     }
 
     public static function getRelations(): array
