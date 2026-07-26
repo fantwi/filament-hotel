@@ -16,9 +16,12 @@
             </div>
         </form>
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <div class="grid gap-4 md:grid-cols-2">
             <x-filament::section><p class="text-sm text-gray-500">Tracked items</p><p class="mt-1 text-2xl font-bold">{{ number_format($this->report['summary']['tracked_items']) }}</p></x-filament::section>
             <x-filament::section><p class="text-sm text-gray-500">Healthy stock</p><p class="mt-1 text-2xl font-bold text-success-600">{{ number_format($this->report['summary']['healthy_items']) }}</p></x-filament::section>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <x-filament::section><p class="text-sm text-gray-500">Low stock</p><p class="mt-1 text-2xl font-bold text-warning-600">{{ number_format($this->report['summary']['low_stock_items']) }}</p></x-filament::section>
             <x-filament::section><p class="text-sm text-gray-500">Negative variance</p><p class="mt-1 text-2xl font-bold text-danger-600">{{ number_format($this->report['summary']['negative_variance_items']) }}</p></x-filament::section>
             <x-filament::section><p class="text-sm text-gray-500">Food sales revenue</p><p class="mt-1 text-2xl font-bold">GHS {{ number_format($this->report['summary']['sales_revenue'], 2) }}</p></x-filament::section>
