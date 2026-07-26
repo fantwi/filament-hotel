@@ -83,7 +83,6 @@ class KitchenProductionResource extends Resource
                             ->label('4. Check the production date')
                             ->content('Use today or the correct past production date. Future production batches cannot be recorded.'),
                     ])
-                    ->visible(fn (): bool => request()->routeIs('filament.admin.resources.kitchen-productions.create'))
                     ->columnSpan(1),
             ]),
         ]);
