@@ -11,15 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Schema::table('payments', function (Blueprint $table) {
-        //     //
-        // });
-
-        DB::statement("
-            ALTER TABLE payments
-            MODIFY booking_id
-            BIGINT UNSIGNED NULL
-        ");
+        Schema::table('payments', function (Blueprint $table): void {
+            $table->foreignId('booking_id')->nullable()->change();
+        });
     }
 
     /**
@@ -27,14 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Schema::table('payments', function (Blueprint $table) {
-        //     //
-        // });
-
-        DB::statement("
-            ALTER TABLE payments
-            MODIFY booking_id
-            BIGINT UNSIGNED NOT NULL
-        ");
+        Schema::table('payments', function (Blueprint $table): void {
+            $table->foreignId('booking_id')->nullable(false)->change();
+        });
     }
 };

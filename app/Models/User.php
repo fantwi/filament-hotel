@@ -12,6 +12,7 @@ use Spatie\Permission\Traits\HasRoles;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use App\Models\Guest;
+use Spatie\Permission\Models\Role;
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -113,6 +114,8 @@ class User extends Authenticatable implements FilamentUser
                 self::DEPARTMENT_ROLE_MAP[
                     $user->department
                 ] ?? 'guest';
+
+            Role::findOrCreate($role, 'web');
 
             $user->syncRoles([
                 $role

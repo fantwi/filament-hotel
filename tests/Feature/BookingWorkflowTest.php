@@ -8,7 +8,6 @@ use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class BookingWorkflowTest extends TestCase
@@ -39,11 +38,10 @@ class BookingWorkflowTest extends TestCase
             ->assertOk()
             ->assertJson(['success' => true]);
 
-        $this->assertDatabaseHas('bookings', [
-            'id' => $booking->id,
-            'check_in' => '2026-05-12',
-            'check_out' => '2026-05-14',
-        ]);
+        $booking->refresh();
+
+        $this->assertSame('2026-05-12', $booking->check_in->toDateString());
+        $this->assertSame('2026-05-14', $booking->check_out->toDateString());
     }
 
     public function test_pending_booking_reschedule_is_rejected_when_dates_overlap(): void
@@ -114,14 +112,10 @@ class BookingWorkflowTest extends TestCase
 
     private function makeAdminUser(): User
     {
-        Role::findOrCreate('admin', 'web');
-
         $user = User::factory()->create([
-            'role' => 'admin',
+            'department' => 'admin',
             'status' => 'online',
         ]);
-
-        $user->assignRole('admin');
 
         return $user;
     }
@@ -141,14 +135,9 @@ class BookingWorkflowTest extends TestCase
             'status' => 'available',
         ]);
 
-        $guest = Guest::create([
-            'user_id' => $user->id,
-            'first_name' => 'Jane',
-            'last_name' => 'Doe',
-            'phone' => '233000000000',
-            'email' => 'jane@example.com',
-            'id_number' => 'ID-12345',
-        ]);
+        $guest = User::factory()->create([
+            'department' => 'guest',
+        ])->guest;
 
         return [$room, $guest];
     }

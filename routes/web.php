@@ -1604,6 +1604,18 @@ Route::post(
 
         $request->validate([
 
+            'first_name' =>
+
+                'required|string|max:255',
+
+            'last_name' =>
+
+                'required|string|max:255',
+
+            'email' =>
+
+                'required|string|email|max:255|unique:users,email,' . auth()->id(),
+
             'phone_number' =>
 
                 'nullable|string|max:255',
@@ -1667,11 +1679,31 @@ Route::post(
 
             $request->phone_number;
 
+        $emailChanged =
+            $user->email !== $request->email;
+
+        $user->first_name = $request->first_name;
+
+        $user->last_name = $request->last_name;
+
+        $user->email = $request->email;
+
+        if ($emailChanged) {
+
+            $user->email_verified_at = null;
+        }
+
         $user->phone_number =
             $phoneNumber;
 
 
         if ($guest) {
+
+            $guest->first_name = $request->first_name;
+
+            $guest->last_name = $request->last_name;
+
+            $guest->email = $request->email;
 
             $guest->phone_number =
                 $phoneNumber;
