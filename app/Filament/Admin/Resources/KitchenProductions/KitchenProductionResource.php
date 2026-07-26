@@ -105,10 +105,46 @@ class KitchenProductionResource extends Resource
             ]),
         ]);
     }
-    public static function table(Table $table): Table { return $table->columns([
-        TextColumn::make('batch_reference')->searchable()->copyable(), TextColumn::make('menuItem.name')->label('Menu Item')->searchable(),
-        TextColumn::make('production_date')->date()->sortable(), TextColumn::make('quantity_produced')->numeric(decimalPlaces: 3),
-        TextColumn::make('quantity_wasted')->numeric(decimalPlaces: 3), TextColumn::make('producer.name')->label('Produced By')->toggleable(),
-    ])->defaultSort('production_date', 'desc')->recordActions([EditAction::make(), DeleteAction::make()]); }
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('menuItem.name')
+                    ->label('Menu Item')
+                    ->searchable()
+                    ->weight('bold')
+                    ->description(fn (KitchenProduction $record): string => sprintf(
+                        '%s · %s · Produced %s · Waste %s',
+                        $record->batch_reference,
+                        $record->production_date->format('M d, Y'),
+                        number_format((float) $record->quantity_produced, 3),
+                        number_format((float) $record->quantity_wasted, 3),
+                    )),
+                TextColumn::make('batch_reference')
+                    ->label('Batch')
+                    ->searchable()
+                    ->copyable()
+                    ->visibleFrom('md'),
+                TextColumn::make('production_date')
+                    ->label('Production Date')
+                    ->date('M d, Y')
+                    ->sortable()
+                    ->visibleFrom('md'),
+                TextColumn::make('quantity_produced')
+                    ->label('Produced')
+                    ->numeric(decimalPlaces: 3)
+                    ->visibleFrom('md'),
+                TextColumn::make('quantity_wasted')
+                    ->label('Wasted')
+                    ->numeric(decimalPlaces: 3)
+                    ->visibleFrom('md'),
+                TextColumn::make('producer.name')
+                    ->label('Produced By')
+                    ->toggleable()
+                    ->visibleFrom('lg'),
+            ])
+            ->defaultSort('production_date', 'desc')
+            ->recordActions([EditAction::make(), DeleteAction::make()]);
+    }
     public static function getPages(): array { return ['index' => ListKitchenProductions::route('/'), 'create' => CreateKitchenProduction::route('/create'), 'edit' => EditKitchenProduction::route('/{record}/edit')]; }
 }
