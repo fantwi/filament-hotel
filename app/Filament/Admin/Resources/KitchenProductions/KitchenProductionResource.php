@@ -76,6 +76,9 @@ class KitchenProductionResource extends Resource
                         Placeholder::make('record_actual_quantity')
                             ->label('2. Record actual finished quantity')
                             ->content('Enter only food prepared in this batch, using the production unit configured for the selected menu item.'),
+                        Placeholder::make('production_units')
+                            ->label('Units of food produced')
+                            ->content('Use the menu item’s configured unit: portions for plated meals, pieces for individual items, trays for baked goods, kilograms or grams for weight, litres or millilitres for liquids, and bottles for bottled drinks.'),
                         Placeholder::make('record_waste')
                             ->label('3. Record waste separately')
                             ->content('Enter any spoiled, burnt, or discarded finished food. Waste cannot be greater than the produced quantity.'),
