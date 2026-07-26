@@ -61,12 +61,20 @@ class KitchenProductionResource extends Resource
                             ->helperText('Loaded from Menu Items. Enable “Track Kitchen Production” on a menu item to make it selectable here.')
                             ->required(),
                         DatePicker::make('production_date')->default(today())->maxDate(today())->required(),
-                        TextInput::make('quantity_produced')->numeric()->minValue(.001)->step(.001)->required(),
+                        TextInput::make('quantity_produced')
+                            ->label('Quantity Produced')
+                            ->numeric()
+                            ->minValue(.001)
+                            ->step(.001)
+                            ->helperText('Enter the finished quantity prepared in this batch.')
+                            ->required(),
                         TextInput::make('quantity_wasted')
+                            ->label('Quantity Wasted')
                             ->numeric()
                             ->minValue(0)
                             ->step(.001)
                             ->default(0)
+                            ->helperText('Enter 0 if there was no finished-food waste.')
                             ->rules([
                                 fn (callable $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get): void {
                                     $produced = $get('quantity_produced');
@@ -80,7 +88,7 @@ class KitchenProductionResource extends Resource
                         Textarea::make('notes')->rows(4)->columnSpanFull(),
                         Hidden::make('produced_by')->default(fn (): ?int => auth()->id()),
                     ])
-                    ->columns(2)
+                    ->columns(['default' => 1, 'sm' => 2])
                     ->columnSpan(['default' => 1, 'xl' => 2]),
                 Section::make('Production guide')
                     ->description('Use this checklist before saving a new batch.')
