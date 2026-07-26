@@ -14,7 +14,7 @@
 function payWithPaystack() {
 
     var handler = PaystackPop.setup({
-        key: "{{ config('services.paystack.key') }}",
+        key: "{{ config('services.paystack.publicKey') }}",
         email: "{{ auth()->user()->email }}",
         amount: {{ $booking->total_price * 100 }},
         callback: function(response) {

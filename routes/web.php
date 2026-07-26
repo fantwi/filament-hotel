@@ -2326,7 +2326,12 @@ Route::post('/book', function () {
 
         ]);
 
-    return redirect('/pay/'.$booking->id);
+    session([
+        'booking.id' => $booking->id,
+        'booking.total' => $booking->total_price,
+    ]);
+
+    return redirect()->route('booking.payment');
 
 });
 
@@ -2334,33 +2339,18 @@ Route::get('/pay/{booking}', function ($id) {
 
     $booking = \App\Models\Booking::findOrFail($id);
 
-    return view('payments.pay', compact('booking'));
-});
+    abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
+
+    session([
+        'booking.id' => $booking->id,
+        'booking.total' => $booking->total_price,
+    ]);
+
+    return redirect()->route('booking.payment');
+})->middleware('auth');
 
 Route::get('/payment-success/{booking}', function ($id) {
-
-    $booking = \App\Models\Booking::findOrFail($id);
-
-    Payment::create([
-        'booking_id' => $booking->id,
-        'amount' => $booking->total_price,
-        'method' => 'paystack',
-        'transaction_reference' => request('ref'),
-    ]);
-
-    $booking->update([
-        'status' => 'checked_in',
-    ]);
-
-    // Generate invoice
-    InvoiceService::generate($booking);
-
-    // Send email
-    Mail::to(auth()->user()->email)
-        ->send(new \App\Mail\InvoiceMail($booking));
-
-    return redirect('/dashboard')->with('success', 'Payment successful!');
-
+    abort(410, 'This legacy payment callback has been retired.');
 });
 
 Route::middleware('auth')->group(function () {
