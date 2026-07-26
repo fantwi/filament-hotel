@@ -37,7 +37,7 @@ class KitchenProductionResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Grid::make(['default' => 1, 'xl' => 3])->schema([
+            Grid::make(['default' => 1, 'lg' => 3])->schema([
                 Section::make('Kitchen Production Batch')
                     ->description('Record the finished food prepared by the kitchen.')
                     ->schema([
@@ -89,7 +89,7 @@ class KitchenProductionResource extends Resource
                         Hidden::make('produced_by')->default(fn (): ?int => auth()->id()),
                     ])
                     ->columns(['default' => 1, 'sm' => 2])
-                    ->columnSpan(['default' => 1, 'xl' => 2]),
+                    ->columnSpan(['default' => 1, 'lg' => 2]),
                 Section::make('Production guide')
                     ->description('Use this checklist before saving a new batch.')
                     ->schema([
