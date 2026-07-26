@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\KitchenProductions\Pages\CreateKitchenProductio
 use App\Filament\Admin\Resources\KitchenProductions\Pages\EditKitchenProduction;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\ListKitchenProductions;
 use App\Models\KitchenProduction;
+use App\Models\MenuItem;
 use BackedEnum;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
@@ -31,7 +32,25 @@ class KitchenProductionResource extends Resource
     protected static ?int $navigationSort = 80;
     public static function canViewAny(): bool { return auth()->user()?->can('manage kitchen production') ?? false; }
     public static function form(Schema $schema): Schema { return $schema->components([Section::make('Kitchen Production Batch')->schema([
-        Select::make('menu_item_id')->relationship('menuItem', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->where('tracks_kitchen_production', true))->searchable()->preload()->required(),
+        Select::make('menu_item_id')
+            ->label('Menu Item')
+            ->relationship(
+                'menuItem',
+                'name',
+                modifyQueryUsing: fn (Builder $query): Builder => $query
+                    ->with('category:id,name')
+                    ->where('tracks_kitchen_production', true)
+                    ->orderBy('name'),
+            )
+            ->getOptionLabelFromRecordUsing(
+                fn (MenuItem $item): string => $item->category
+                    ? "{$item->name} ({$item->category->name})"
+                    : $item->name,
+            )
+            ->searchable(['name', 'description'])
+            ->preload()
+            ->helperText('Loaded from Menu Items. Enable “Track Kitchen Production” on a menu item to make it selectable here.')
+            ->required(),
         DatePicker::make('production_date')->default(today())->maxDate(today())->required(),
         TextInput::make('quantity_produced')->numeric()->minValue(.001)->step(.001)->required(),
         TextInput::make('quantity_wasted')->numeric()->minValue(0)->step(.001)->default(0)->rules(['lte:quantity_produced'])->required(),
