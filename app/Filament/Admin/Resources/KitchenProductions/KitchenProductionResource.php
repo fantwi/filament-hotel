@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\KitchenProductions;
 
+use Closure;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\CreateKitchenProduction;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\EditKitchenProduction;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\ListKitchenProductions;
@@ -61,7 +62,21 @@ class KitchenProductionResource extends Resource
                             ->required(),
                         DatePicker::make('production_date')->default(today())->maxDate(today())->required(),
                         TextInput::make('quantity_produced')->numeric()->minValue(.001)->step(.001)->required(),
-                        TextInput::make('quantity_wasted')->numeric()->minValue(0)->step(.001)->default(0)->rules(['lte:quantity_produced'])->required(),
+                        TextInput::make('quantity_wasted')
+                            ->numeric()
+                            ->minValue(0)
+                            ->step(.001)
+                            ->default(0)
+                            ->rules([
+                                fn (callable $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get): void {
+                                    $produced = $get('quantity_produced');
+
+                                    if ($produced !== null && $produced !== '' && (float) $value > (float) $produced) {
+                                        $fail('Quantity wasted cannot be greater than quantity produced.');
+                                    }
+                                },
+                            ])
+                            ->required(),
                         Textarea::make('notes')->rows(4)->columnSpanFull(),
                         Hidden::make('produced_by')->default(fn (): ?int => auth()->id()),
                     ])
