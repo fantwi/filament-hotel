@@ -239,8 +239,10 @@ Route::middleware('auth')->group(function () {
 Route::get('/conference-booking/{booking}/payment',
     function (ConferenceBooking $booking) {
 
+        abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
+
         return view('conference.payment', compact('booking'));
-    })->name('conference.payment');
+    })->middleware('auth')->name('conference.payment');
 
 // Route::post('/conference-booking/{booking}/pay',
 //     function (ConferenceBooking $booking) {
@@ -270,10 +272,15 @@ Route::post('/conference-booking/{booking}/pay',
         ConferenceBooking $booking
     ) {
 
-        if (!$booking || $booking->payment_status === 'paid') {
+        abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
+
+        if ($booking->payment_status === 'paid' || $booking->hold_until?->isPast()) {
             return back()
-                ->with('error', 'Booking already paid.');
+                ->with('error', 'This booking is no longer available for payment.');
         }
+
+        $reference = 'CONF_' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(16));
+        $booking->update(['transaction_reference' => $reference]);
 
         $response = Http::withToken(config('services.paystack.secretKey'))
             ->post(
@@ -283,7 +290,9 @@ Route::post('/conference-booking/{booking}/pay',
 
                     'amount' => $booking->total_price * 100,
 
-                    'reference' => 'CONF_' . uniqid(),
+                    'reference' => $reference,
+
+                    'metadata' => ['conference_booking_id' => $booking->id],
 
                     'callback_url' =>
                         route('conference.verify', $booking->id),
@@ -296,21 +305,18 @@ Route::post('/conference-booking/{booking}/pay',
                 ->with('error', 'Payment initialization failed.');
         }
 
-        session([
-            'conference_payment_reference' =>
-                $response['data']['reference']
-        ]);
-
         return redirect(
             $response
                 ['data']
                 ['authorization_url']
         );
-})->name('conference.pay');
+})->middleware('auth')->name('conference.pay');
 
 Route::get('/conference-booking/{booking}/verify',
 
     function (ConferenceBooking $booking) {
+
+        abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
 
         $reference = request('reference');
 
@@ -337,7 +343,10 @@ Route::get('/conference-booking/{booking}/verify',
             )
             ->json();
 
-        if (!isset($response['data']) || $response['data']['status'] !== 'success') {
+        if (!isset($response['data']) || $response['data']['status'] !== 'success'
+            || $reference !== $booking->transaction_reference
+            || (int) $response['data']['amount'] !== (int) round($booking->total_price * 100)
+            || (int) data_get($response, 'data.metadata.conference_booking_id') !== $booking->id) {
             return redirect()
                 ->route(
                     'conference.payment',
@@ -349,31 +358,22 @@ Route::get('/conference-booking/{booking}/verify',
                 );
         }
 
-        // Update booking
-        $booking->update([
-            'payment_status' =>
-                'paid',
-            'status' =>
-                'confirmed',
-            'hold_until' =>
-                null,
-        ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($booking, $reference): void {
+            $booking = ConferenceBooking::query()->lockForUpdate()->findOrFail($booking->id);
 
-        // Save payment
-        Payment::create([
-            'booking_id' =>
-                null,
-            'conference_booking_id' =>
-                $booking->id,
-            'guest_id' =>
-                $booking->guest_id,
-            'amount' =>
-                $booking->total_price,
-            'method' =>
-                'paystack',
-            'status' =>
-                'completed',
-        ]);
+            if ($booking->payment_status === 'paid') {
+                return;
+            }
+
+            $booking->update(['payment_status' => 'paid', 'status' => 'confirmed', 'hold_until' => null]);
+            Payment::firstOrCreate(['transaction_reference' => $reference], [
+                'conference_booking_id' => $booking->id,
+                'guest_id' => $booking->guest_id,
+                'amount' => $booking->total_price,
+                'method' => 'paystack',
+                'payment_status' => 'completed',
+            ]);
+        });
 
         return redirect()
             ->route(
@@ -383,7 +383,7 @@ Route::get('/conference-booking/{booking}/verify',
                 'success',
                 'Conference booking confirmed.'
             );
-    })->name('conference.verify');
+    })->middleware('auth')->name('conference.verify');
 
 Route::get('/conference-booking/expired',
     function () {
@@ -626,10 +626,6 @@ Route::get(
 
         }
 
-        $reservation->table->update([
-                'status' => 'available',
-            ]);
-
         if(
 
     $reservation->hold_status == 'expired'
@@ -678,6 +674,15 @@ Route::post(
             );
         }
 
+        if ($reservation->hold_until?->isPast()) {
+            $reservation->update(['hold_status' => 'expired', 'status' => 'cancelled', 'payment_status' => 'cancelled']);
+
+            return back()->with('error', 'Reservation has expired.');
+        }
+
+        $reference = 'REST-' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(16));
+        $reservation->update(['transaction_reference' => $reference]);
+
         $response = Http::withToken(
             config('services.paystack.secretKey')
         )
@@ -685,11 +690,13 @@ Route::post(
             'https://api.paystack.co/transaction/initialize',
             [
 
-                'email' => auth()->user()->email,
+                'email' => $reservation->guest_email,
 
                 'amount' => $reservation->reservation_fee * 100,
 
-                'reference' => 'REST_' . uniqid(),
+                'reference' => $reference,
+
+                'metadata' => ['restaurant_reservation_id' => $reservation->id],
 
                 'callback_url' => route(
                     'restaurant.verify',
@@ -718,8 +725,7 @@ Route::post(
         );
 
     }
-)->middleware('auth')
- ->name('restaurant.pay');
+)->name('restaurant.pay');
 
 Route::get(
     '/restaurant/reservations/{reservation}/verify',
@@ -748,10 +754,10 @@ Route::get(
         )
         ->json();
 
-        if (
-            ! isset($response['data']) ||
-            $response['data']['status'] !== 'success'
-        ) {
+        if (! isset($response['data']) || $response['data']['status'] !== 'success'
+            || $reference !== $reservation->transaction_reference
+            || (int) $response['data']['amount'] !== (int) round($reservation->reservation_fee * 100)
+            || (int) data_get($response, 'data.metadata.restaurant_reservation_id') !== $reservation->id) {
 
             return redirect()
                 ->route(
@@ -764,19 +770,25 @@ Route::get(
                 );
         }
 
-        $reservation->update([
+        $paymentRecorded = \Illuminate\Support\Facades\DB::transaction(function () use ($reservation, $reference): bool {
+            $reservation = RestaurantReservation::query()->lockForUpdate()->findOrFail($reservation->id);
 
-            'payment_status' => 'completed',
+            if ($reservation->payment_status === 'completed') {
+                return false;
+            }
 
-            'status' => 'confirmed',
+            $reservation->update(['payment_status' => 'completed', 'status' => 'confirmed', 'hold_status' => 'confirmed', 'hold_until' => null]);
+            $reservation->table()->update(['status' => 'reserved']);
+            Payment::firstOrCreate(['transaction_reference' => $reference], [
+                'restaurant_reservation_id' => $reservation->id,
+                'guest_id' => $reservation->guest_id,
+                'amount' => $reservation->reservation_fee,
+                'method' => 'paystack',
+                'payment_status' => 'completed',
+            ]);
 
-            'hold_status' => 'confirmed',
-
-            'hold_until' => null,
-
-            'transaction_reference' => $reference,
-
-        ]);
+            return true;
+        });
 
         activity()
             ->performedOn($reservation)
@@ -787,38 +799,15 @@ Route::get(
         Mail::to($reservation->guest_email)
             ->send(new RestaurantPaymentReceived($reservation));
 
-        $reservation->table()->update([
-
-            'status' => 'reserved',
-
-        ]);
-
-        Payment::create([
-
-            'restaurant_reservation_id' => $reservation->id,
-
-            'guest_id' => $reservation->guest_id,
-
-            'amount' => $reservation->reservation_fee,
-
-            'method' => 'paystack',
-
-            'payment_status' => 'completed',
-
-            'transaction_reference' => $reference,
-
-        ]);
-
         return redirect()
-            ->route('dashboard')
+            ->route('restaurant.reserve')
             ->with(
                 'success',
                 'Restaurant reservation confirmed.'
             );
 
     }
-)->middleware('auth')
- ->name('restaurant.verify');
+)->name('restaurant.verify');
 
 Route::middleware('auth')->get('/dashboard', function () {
 
@@ -1929,22 +1918,35 @@ Route::get('/booking/expired', function () {
 
 Route::post('/booking/pay', function (Request $request) {
 
-    $email = auth()->user()->email;
-    $amount = session('booking.total') * 100; // pesewas
+    $booking = Booking::query()->findOrFail(session('booking.id'));
+
+    abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
+
+    if ($booking->hold_until?->isPast() || $booking->payments()->where('payment_status', 'paid')->exists()) {
+        return redirect()->route('booking.payment')->with('error', 'This booking is no longer available for payment.');
+    }
+
+    $reference = 'ROOM-' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(16));
+    $booking->update(['transaction_reference' => $reference]);
 
     $response = Http::withToken(config('services.paystack.secretKey'))
         ->post('https://api.paystack.co/transaction/initialize', [
-            'email' => $email,
-            'amount' => $amount,
+            'email' => auth()->user()->email,
+            'amount' => (int) round($booking->total_price * 100),
+            'reference' => $reference,
             'callback_url' => route('payment.callback'),
             'metadata' => [
-                'room_id' => session('booking.room_id'),
+                'booking_id' => $booking->id,
             ],
         ]);
 
     $data = $response->json();
 
-    return redirect($data['data']['authorization_url']);
+    if (! $response->successful() || ! isset($data['data']['authorization_url'])) {
+        return back()->with('error', 'Unable to initialize payment. Please try again.');
+    }
+
+    return redirect()->away($data['data']['authorization_url']);
 
 })->name('booking.pay');
 
@@ -2057,12 +2059,21 @@ Route::get('/payment/callback', function (Request $request) {
 
     $reference = $request->reference;
 
+    if (! $reference) {
+        return redirect('/rooms')->with('error', 'Missing payment reference.');
+    }
+
+    $booking = Booking::query()->where('transaction_reference', $reference)->firstOrFail();
+
     $response = Http::withToken(config('services.paystack.secretKey'))
         ->get("https://api.paystack.co/transaction/verify/{$reference}");
 
     $data = $response->json();
 
-    if ($data['data']['status'] === 'success') {
+    if (($data['data']['status'] ?? null) === 'success'
+        && ($data['data']['reference'] ?? null) === $reference
+        && (int) ($data['data']['amount'] ?? 0) === (int) round($booking->total_price * 100)
+        && (int) data_get($data, 'data.metadata.booking_id') === $booking->id) {
 
         // $booking = Booking::create([
         //     'user_id' => auth()->id(),
@@ -2073,17 +2084,6 @@ Route::get('/payment/callback', function (Request $request) {
         //     'hold_status' => 'confirmed',
         //     'payment_reference' => $reference,
         // ]);
-
-        $user = auth()->user();
-
-        if (! $user) {
-
-            return redirect('/login')
-                ->with(
-                    'message',
-                    'Please login first.'
-                );
-        }
 
         // $guest = $user->guest;
 
@@ -2110,12 +2110,6 @@ Route::get('/payment/callback', function (Request $request) {
 
         //         ]);
         // }
-
-        $guest =
-            Guest::where(
-                'user_id',
-                $user->id
-            )->first();
 
         // $booking = Booking::create([
 
@@ -2151,44 +2145,22 @@ Route::get('/payment/callback', function (Request $request) {
 
         //     ]);
 
-        $booking =
-            Booking::findOrFail(
-                session('booking.id')
-            );
+        \Illuminate\Support\Facades\DB::transaction(function () use ($booking, $reference): void {
+            $booking = Booking::query()->lockForUpdate()->findOrFail($booking->id);
 
-        $booking->update([
+            if ($booking->payments()->where('payment_status', 'paid')->exists()) {
+                return;
+            }
 
-            'hold_status' =>
-                'confirmed',
-
-            'payment_status' =>
-                'paid',
-
-            'transaction_reference' =>
-                $reference,
-
-            'hold_until' => null,
-
-        ]);
-
-        Payment::create([
-
-            'booking_id' =>
-                $booking->id,
-
-            'amount' =>
-                $booking->total_price,
-
-            'method' =>
-                'paystack',
-
-            'payment_status' =>
-                'paid',
-
-            'transaction_reference' =>
-                $reference,
-
-        ]);
+            $booking->update(['hold_status' => 'confirmed', 'payment_status' => 'paid', 'hold_until' => null]);
+            Payment::firstOrCreate(['transaction_reference' => $reference], [
+                'booking_id' => $booking->id,
+                'guest_id' => $booking->guest_id,
+                'amount' => $booking->total_price,
+                'method' => 'paystack',
+                'payment_status' => 'paid',
+            ]);
+        });
 
         session()->forget('booking');
 

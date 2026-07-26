@@ -28,6 +28,7 @@ class Booking extends Model
         
         'total_price',
         'payment_status',
+        'transaction_reference',
         
         'hold_until',
         'hold_status',

@@ -27,6 +27,8 @@ class ConferenceBooking extends Model
 
         'payment_status',
 
+        'transaction_reference',
+
         'hold_until',
 
     ];
