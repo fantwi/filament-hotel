@@ -23,7 +23,7 @@
                     <div class="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-cyan-300/25 to-amber-300/20 blur-2xl"></div>
                     <div class="relative grid gap-4 rounded-[2rem] border border-white/20 bg-white/10 p-5 shadow-2xl backdrop-blur sm:grid-cols-2 sm:p-6">
                         <div class="rounded-2xl bg-white p-5 text-slate-900 shadow-lg"><p class="text-sm font-semibold text-indigo-600">Stay</p><p class="mt-2 text-xl font-bold">Rest easy</p><p class="mt-2 text-sm leading-6 text-slate-500">Thoughtful rooms for business, family, and leisure stays.</p></div>
-                        <div class="rounded-2xl bg-amber-400 p-5 text-slate-950 shadow-lg sm:translate-y-8"><p class="text-sm font-semibold">Dine</p><p class="mt-2 text-xl font-bold">Taste more</p><p class="mt-2 text-sm leading-6 text-amber-950/80">Reserve a table or order the meals you love.</p></div>
+                        <div class="rounded-2xl bg-amber-400 p-5 text-slate-950 shadow-lg"><p class="text-sm font-semibold">Dine</p><p class="mt-2 text-xl font-bold">Taste more</p><p class="mt-2 text-sm leading-6 text-amber-950/80">Reserve a table or order the meals you love.</p></div>
                         <div class="rounded-2xl bg-cyan-300 p-5 text-slate-950 shadow-lg sm:col-span-2"><p class="text-sm font-semibold">Meet</p><p class="mt-1 text-xl font-bold">Bring people together</p><p class="mt-1 text-sm text-cyan-950/80">Flexible spaces for work, celebrations, and everything between.</p></div>
                     </div>
                 </div>
