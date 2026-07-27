@@ -37,7 +37,7 @@ class KitchenProductionResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Grid::make(['default' => 1, 'lg' => 3])->schema([
+            Grid::make(['default' => 1, 'lg' => 2])->schema([
                 Section::make('Kitchen Production Batch')
                     ->description('Record the finished food prepared by the kitchen.')
                     ->schema([
@@ -90,6 +90,80 @@ class KitchenProductionResource extends Resource
                     ])
                     ->columns(['default' => 1, 'sm' => 2])
                     ->columnSpan(['default' => 1, 'lg' => 2]),
+                // Section::make('Production guide')
+                //     ->description('Use this checklist before saving a new batch.')
+                //     ->schema([
+                //         Placeholder::make('select_menu_item')
+                //             ->label('1. Select the prepared menu item')
+                //             ->content('The list comes from Menu Items. If an item is missing, enable “Track Kitchen Production” on that menu item first.'),
+                //         Placeholder::make('record_actual_quantity')
+                //             ->label('2. Record actual finished quantity')
+                //             ->content('Enter only food prepared in this batch, using the production unit configured for the selected menu item.'),
+                //         Placeholder::make('production_units')
+                //             ->label('Units of food produced')
+                //             ->content('Use the menu item’s configured unit: portions for plated meals, pieces for individual items, trays for baked goods, kilograms or grams for weight, litres or millilitres for liquids, and bottles for bottled drinks.'),
+                //         Placeholder::make('record_waste')
+                //             ->label('3. Record waste separately')
+                //             ->content('Enter any spoiled, burnt, or discarded finished food. Waste cannot be greater than the produced quantity.'),
+                //         Placeholder::make('check_date')
+                //             ->label('4. Check the production date')
+                //             ->content('Use today or the correct past production date. Future production batches cannot be recorded.'),
+                //     ])
+                //     ->columnSpan(2),
+            ]),
+            Grid::make(['default' => 1, 'lg' => 2])->schema([
+                // Section::make('Kitchen Production Batch')
+                //     ->description('Record the finished food prepared by the kitchen.')
+                //     ->schema([
+                //         Select::make('menu_item_id')
+                //             ->label('Menu Item')
+                //             ->relationship(
+                //                 'menuItem',
+                //                 'name',
+                //                 modifyQueryUsing: fn (Builder $query): Builder => $query
+                //                     ->with('category:id,name')
+                //                     ->where('tracks_kitchen_production', true)
+                //                     ->orderBy('name'),
+                //             )
+                //             ->getOptionLabelFromRecordUsing(
+                //                 fn (MenuItem $item): string => $item->category
+                //                     ? "{$item->name} ({$item->category->name})"
+                //                     : $item->name,
+                //             )
+                //             ->searchable(['name', 'description'])
+                //             ->preload()
+                //             ->helperText('Loaded from Menu Items. Enable “Track Kitchen Production” on a menu item to make it selectable here.')
+                //             ->required(),
+                //         DatePicker::make('production_date')->default(today())->maxDate(today())->required(),
+                //         TextInput::make('quantity_produced')
+                //             ->label('Quantity Produced')
+                //             ->numeric()
+                //             ->minValue(.001)
+                //             ->step(.001)
+                //             ->helperText('Enter the finished quantity prepared in this batch.')
+                //             ->required(),
+                //         TextInput::make('quantity_wasted')
+                //             ->label('Quantity Wasted')
+                //             ->numeric()
+                //             ->minValue(0)
+                //             ->step(.001)
+                //             ->default(0)
+                //             ->helperText('Enter 0 if there was no finished-food waste.')
+                //             ->rules([
+                //                 fn (callable $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get): void {
+                //                     $produced = $get('quantity_produced');
+
+                //                     if ($produced !== null && $produced !== '' && (float) $value > (float) $produced) {
+                //                         $fail('Quantity wasted cannot be greater than quantity produced.');
+                //                     }
+                //                 },
+                //             ])
+                //             ->required(),
+                //         Textarea::make('notes')->rows(4)->columnSpanFull(),
+                //         Hidden::make('produced_by')->default(fn (): ?int => auth()->id()),
+                //     ])
+                //     ->columns(['default' => 1, 'sm' => 2])
+                //     ->columnSpan(['default' => 1, 'lg' => 2]),
                 Section::make('Production guide')
                     ->description('Use this checklist before saving a new batch.')
                     ->schema([
@@ -109,7 +183,7 @@ class KitchenProductionResource extends Resource
                             ->label('4. Check the production date')
                             ->content('Use today or the correct past production date. Future production batches cannot be recorded.'),
                     ])
-                    ->columnSpan(1),
+                    ->columnSpan(2),
             ]),
         ]);
     }
