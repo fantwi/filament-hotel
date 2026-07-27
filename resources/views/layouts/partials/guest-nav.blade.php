@@ -32,6 +32,12 @@
         </div>
 
         <div class="hidden items-center gap-3 lg:flex">
+            @guest
+                <button type="button" @click="toggleTheme()" class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-700 transition hover:bg-gray-100 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:text-slate-100 dark:hover:bg-slate-800" :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'" :title="dark ? 'Switch to light mode' : 'Switch to dark mode'">
+                    <svg x-show="!dark" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36-6.36-.71.71M6.35 17.65l-.71.71m12.72 0-.71-.71M6.35 6.35l-.71-.71M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                    <svg x-show="dark" x-cloak class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></svg>
+                </button>
+            @endguest
             @auth
                 <a href="{{ route('cart.index') }}" class="relative inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-700 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="Restaurant cart{{ $restaurantCartCount ? ': ' . $restaurantCartCount . ' items' : '' }}">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13 5.4 5M7 13l-1.1 5.5A1 1 0 0 0 6.9 20h10.2M17 20a1 1 0 1 0 0 2 1 1 0 0 0-2Zm-10 0a1 1 0 1 0 0 2 1 1 0 0 0-2Z" /></svg>
@@ -81,6 +87,9 @@
             </div>
             <a href="/contact" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Contact</a>
             <div class="border-t pt-2">
+                @guest
+                    <button type="button" @click="toggleTheme()" class="flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-800" :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"><span>Appearance</span><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-amber-200"><svg x-show="!dark" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.36-6.36-.71.71M6.35 17.65l-.71.71m12.72 0-.71-.71M6.35 6.35l-.71-.71M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg><svg x-show="dark" x-cloak class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></svg></span></button>
+                @endguest
                 @auth
                     <a href="/dashboard" class="block rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50">Dashboard</a>
                     <a href="{{ route('cart.index') }}" class="flex min-h-11 items-center justify-between rounded-lg px-3 py-3 text-sm font-medium hover:bg-gray-50"><span>Restaurant cart</span><span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">{{ $restaurantCartCount }}</span></a>
