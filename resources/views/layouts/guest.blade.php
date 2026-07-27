@@ -3,7 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ config('app.name') }}</title>
-    <script>if (localStorage.getItem('guest-theme') === 'dark' || (!localStorage.getItem('guest-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');</script>
+    <script>
+        (() => {
+            const savedTheme = localStorage.getItem('guest-theme');
+            const hour = new Date().getHours();
+            const scheduledTheme = hour >= 6 && hour < 18 ? 'light' : 'dark';
+            const theme = savedTheme ?? scheduledTheme;
+
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+        })();
+    </script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
