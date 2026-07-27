@@ -578,6 +578,18 @@ Route::post(
     [RestaurantReservationController::class, 'store']
 )->name('restaurant.reserve.store');
 
+Route::middleware('auth')->group(function () {
+    Route::get(
+        '/restaurant/reservations/{reservation}',
+        [RestaurantReservationController::class, 'show']
+    )->name('restaurant.reservations.show');
+
+    Route::patch(
+        '/restaurant/reservations/{reservation}/cancel',
+        [RestaurantReservationController::class, 'cancel']
+    )->name('restaurant.reservations.cancel');
+});
+
 Route::get(
 
     '/restaurant/reservations/{reservation}/payment',

@@ -12,6 +12,40 @@ use Carbon\Carbon;
 
 class RestaurantReservationController extends Controller
 {
+    public function show(RestaurantReservation $reservation)
+    {
+        $this->authorizeGuestAccess($reservation);
+
+        $reservation->load(['restaurant', 'table']);
+
+        return view('restaurant.reservation-show', compact('reservation'));
+    }
+
+    public function cancel(RestaurantReservation $reservation)
+    {
+        $this->authorizeGuestAccess($reservation);
+
+        if ($reservation->status !== 'pending' || $reservation->payment_status === 'completed') {
+            return back()->with('error', 'Only unpaid pending reservations can be cancelled.');
+        }
+
+        $reservation->update([
+            'status' => 'cancelled',
+            'payment_status' => 'cancelled',
+            'hold_status' => 'expired',
+        ]);
+
+        activity()
+            ->performedOn($reservation)
+            ->causedBy(auth()->user())
+            ->event('cancelled')
+            ->log('Restaurant reservation cancelled.');
+
+        return redirect()
+            ->route('dashboard')
+            ->with('success', 'Restaurant reservation cancelled.');
+    }
+
     public function create()
     {
         $restaurant = Restaurant::published()->first();
@@ -172,5 +206,18 @@ class RestaurantReservationController extends Controller
         return redirect()
             ->route('restaurant.payment', $reservation)
             ->with('success', 'Your reservation has been received.');
+    }
+
+    private function authorizeGuestAccess(RestaurantReservation $reservation): void
+    {
+        $user = auth()->user();
+
+        abort_unless(
+            $user && (
+                $user->hasAnyRole(['admin', 'receptionist', 'manager'])
+                || $reservation->guest_id === $user->guest?->id
+            ),
+            403
+        );
     }
 }
