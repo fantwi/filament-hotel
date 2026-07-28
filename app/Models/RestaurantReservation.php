@@ -35,6 +35,8 @@ class RestaurantReservation extends Model
 
         'transaction_reference',
 
+        'access_token',
+
         'status',
 
         'payment_status',

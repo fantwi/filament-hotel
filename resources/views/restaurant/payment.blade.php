@@ -21,7 +21,10 @@
 
     <form
         method="POST"
-        action="{{ route('restaurant.pay', $reservation) }}"
+        action="{{ route('restaurant.pay', [
+            'reservation' => $reservation,
+            'token' => $accessToken,
+        ]) }}"
     >
 
         @csrf

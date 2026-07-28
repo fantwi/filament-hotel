@@ -18,7 +18,7 @@ function payWithPaystack() {
         email: "{{ auth()->user()->email }}",
         amount: {{ $booking->total_price * 100 }},
         callback: function(response) {
-            window.location.href = "/payment-success/{{ $booking->id }}?ref=" + response.reference;
+            window.location.href = "{{ route('payment.callback') }}?reference=" + encodeURIComponent(response.reference);
         }
     });
 

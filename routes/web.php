@@ -93,7 +93,7 @@ Route::post('/contact', function (Request $request) {
 
         return back()->with('success', 'Message sent successfully.');
     }
-);
+)->middleware('throttle:5,1');
 
 Route::get('/conference-rooms', function () {
         // $rooms = ConferenceRoom::where('is_available', true)->get();
@@ -398,6 +398,8 @@ Route::post(
         App\Models\ConferenceBooking $booking
     ) {
 
+        abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
+
         if (
 
             $booking
@@ -437,7 +439,7 @@ Route::post(
             );
     }
 
-)->name(
+)->middleware('auth')->name(
     'conference.cancel'
 );
 
@@ -448,6 +450,8 @@ Route::get(
     function (
         App\Models\ConferenceBooking $booking
     ) {
+
+        abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
 
         $pdf =
             Pdf::loadView(
@@ -466,7 +470,7 @@ Route::get(
             );
     }
 
-)->name(
+)->middleware('auth')->name(
     'conference.invoice'
 );
 
@@ -590,15 +594,30 @@ Route::middleware('auth')->group(function () {
     )->name('restaurant.reservations.cancel');
 });
 
+$canAccessRestaurantReservation = static function (RestaurantReservation $reservation, ?string $token): bool {
+    if ($reservation->guest_id === auth()->user()?->guest?->id) {
+        return true;
+    }
+
+    return filled($token)
+        && filled($reservation->access_token)
+        && hash_equals($reservation->access_token, $token);
+};
+
 Route::get(
 
     '/restaurant/reservations/{reservation}/payment',
 
     function (
+        Request $request,
 
         RestaurantReservation $reservation
 
-    ) {
+    ) use ($canAccessRestaurantReservation) {
+
+        $accessToken = $request->query('token');
+
+        abort_unless($canAccessRestaurantReservation($reservation, $accessToken), 403);
 
         if (
 
@@ -658,7 +677,7 @@ Route::get(
 
             'restaurant.payment',
 
-            compact('reservation')
+            compact('reservation', 'accessToken')
 
         );
 
@@ -668,7 +687,11 @@ Route::get(
 
 Route::post(
     '/restaurant/reservations/{reservation}/pay',
-    function (RestaurantReservation $reservation) {
+    function (Request $request, RestaurantReservation $reservation) use ($canAccessRestaurantReservation) {
+
+        $accessToken = $request->query('token');
+
+        abort_unless($canAccessRestaurantReservation($reservation, $accessToken), 403);
 
         if ($reservation->payment_status === 'completed') {
 
@@ -710,10 +733,10 @@ Route::post(
 
                 'metadata' => ['restaurant_reservation_id' => $reservation->id],
 
-                'callback_url' => route(
-                    'restaurant.verify',
-                    $reservation
-                ),
+                'callback_url' => route('restaurant.verify', [
+                    'reservation' => $reservation,
+                    'token' => $accessToken,
+                ]),
 
             ]
         )
@@ -741,7 +764,11 @@ Route::post(
 
 Route::get(
     '/restaurant/reservations/{reservation}/verify',
-    function (RestaurantReservation $reservation) {
+    function (Request $request, RestaurantReservation $reservation) use ($canAccessRestaurantReservation) {
+
+        $accessToken = $request->query('token');
+
+        abort_unless($canAccessRestaurantReservation($reservation, $accessToken), 403);
 
         $reference = request('reference');
 
@@ -750,7 +777,10 @@ Route::get(
             return redirect()
                 ->route(
                     'restaurant.payment',
-                    $reservation
+                    [
+                        'reservation' => $reservation,
+                        'token' => $accessToken,
+                    ]
                 )
                 ->with(
                     'error',
@@ -774,7 +804,10 @@ Route::get(
             return redirect()
                 ->route(
                     'restaurant.payment',
-                    $reservation
+                    [
+                        'reservation' => $reservation,
+                        'token' => $accessToken,
+                    ]
                 )
                 ->with(
                     'error',
@@ -1992,13 +2025,15 @@ Route::post('/booking/pay', function (Request $request) {
 
     return redirect()->away($data['data']['authorization_url']);
 
-})->name('booking.pay');
+})->middleware('auth')->name('booking.pay');
 
 Route::middleware('auth')->get(
 
     '/booking/{booking}/pay',
 
     function (Booking $booking) {
+
+        abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
 
         // Prevent payment if already paid
         if ($booking->payment_status === 'paid') {
@@ -2027,6 +2062,8 @@ Route::post(
     function (
         App\Models\Booking $booking
     ) {
+
+        abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
 
         if (
 
@@ -2065,7 +2102,7 @@ Route::post(
             );
     }
 
-)->name(
+)->middleware('auth')->name(
     'booking.cancel'
 );
 
@@ -2076,6 +2113,8 @@ Route::get(
     function (
         App\Models\Booking $booking
     ) {
+
+        abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
 
         $pdf =
             Pdf::loadView(
@@ -2094,7 +2133,7 @@ Route::get(
             );
     }
 
-)->name(
+)->middleware('auth')->name(
     'booking.invoice'
 );
 
@@ -2289,6 +2328,8 @@ Route::get('/book/{room}', function ($roomId) {
 })->middleware('auth');
 
 Route::post('/book', function () {
+
+    abort(410, 'This legacy booking endpoint has been retired.');
 
     $user = auth()->user();
 
@@ -2859,6 +2900,8 @@ Route::middleware('auth')->group(function () {
 
 
     Route::get('/booking/confirm/{booking}', function (Booking $booking) {
+        abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
+
         return view('booking.confirm', compact('booking'));
     })->name('booking.confirm');
 });

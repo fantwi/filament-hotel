@@ -8,6 +8,7 @@ use App\Models\RestaurantTable;
 use App\Models\RestaurantReservation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class RestaurantReservationController extends Controller
@@ -192,6 +193,8 @@ class RestaurantReservationController extends Controller
 
             'hold_until' => now()->addMinutes(15),
 
+            'access_token' => Str::random(64),
+
         ]);
 
         activity()
@@ -204,7 +207,10 @@ class RestaurantReservationController extends Controller
             ->send(new RestaurantReservationCreated($reservation));
 
         return redirect()
-            ->route('restaurant.payment', $reservation)
+            ->route('restaurant.payment', [
+                'reservation' => $reservation,
+                'token' => $reservation->access_token,
+            ])
             ->with('success', 'Your reservation has been received.');
     }
 
