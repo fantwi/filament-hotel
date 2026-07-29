@@ -2,7 +2,6 @@
 
 namespace App\Filament\Exports;
 
-use App\Models\ActivityLog;
 use App\Models\Activity;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
@@ -34,18 +33,17 @@ class ActivityLogExporter extends Exporter
 
             ExportColumn::make('created_at')
                 ->label('Date & Time')
-                ->formatStateUsing(fn ($state) =>
-                    $state?->format('Y-m-d H:i:s')
+                ->formatStateUsing(fn ($state) => $state?->format('Y-m-d H:i:s')
                 ),
         ];
     }
 
     public static function getCompletedNotificationBody(Export $export): string
     {
-        $body = 'Your activity log export has completed and ' . Number::format($export->successful_rows) . ' ' . str('row')->plural($export->successful_rows) . ' exported.';
+        $body = 'Your activity log export has completed and '.Number::format($export->successful_rows).' '.str('row')->plural($export->successful_rows).' exported.';
 
         if ($failedRowsCount = $export->getFailedRowsCount()) {
-            $body .= ' ' . Number::format($failedRowsCount) . ' ' . str('row')->plural($failedRowsCount) . ' failed to export.';
+            $body .= ' '.Number::format($failedRowsCount).' '.str('row')->plural($failedRowsCount).' failed to export.';
         }
 
         return $body;

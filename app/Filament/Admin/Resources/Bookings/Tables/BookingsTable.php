@@ -2,30 +2,26 @@
 
 namespace App\Filament\Admin\Resources\Bookings\Tables;
 
-use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
+use App\Models\Booking;
+use App\Models\Payment;
 // use Filament\Tables\Actions\Action;
 
+use App\Services\InvoiceService;
+use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\ViewAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-
-use Filament\Notifications\Notification;
-
-use Filament\Forms;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Select;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
-use App\Models\Booking;
-
-use App\Models\Payment;
-use App\Services\InvoiceService;
-
 
 class BookingsTable
 {
@@ -59,9 +55,8 @@ class BookingsTable
 
                 TextColumn::make('nights')
                     ->label('Nights')
-                    ->state(fn ($record) =>
-                        \Carbon\Carbon::parse($record->check_in)
-                            ->diffInDays($record->check_out)
+                    ->state(fn ($record) => Carbon::parse($record->check_in)
+                        ->diffInDays($record->check_out)
                     ),
 
                 TextColumn::make('total_price')
@@ -82,7 +77,7 @@ class BookingsTable
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'pending'  => 'warning',
+                        'pending' => 'warning',
                         'checked_in' => 'success',
                         'checked_out' => 'gray',
                     }),
@@ -152,8 +147,12 @@ class BookingsTable
                         ->action(function (Booking $record, array $data): void {
                             DB::transaction(function () use ($record, $data): void {
                                 $record->refresh();
-                                if ($record->balance <= 0) { throw new \RuntimeException('This booking is already fully paid.'); }
-                                if ((float) $data['amount'] > (float) $record->balance) { throw new \RuntimeException('Payment cannot exceed the outstanding balance.'); }
+                                if ($record->balance <= 0) {
+                                    throw new \RuntimeException('This booking is already fully paid.');
+                                }
+                                if ((float) $data['amount'] > (float) $record->balance) {
+                                    throw new \RuntimeException('Payment cannot exceed the outstanding balance.');
+                                }
                                 Payment::create(['booking_id' => $record->id, 'guest_id' => $record->guest_id, 'amount' => $data['amount'], 'method' => $data['method'], 'payment_status' => 'paid', 'transaction_reference' => $data['transaction_reference'] ?? null]);
                             });
                             Notification::make()->title('Payment recorded')->success()->send();
@@ -163,16 +162,24 @@ class BookingsTable
                     //     ->label(function ($record) {
                     //         return "Pay ({$record->payment_status}, {$record->hold_status})";
                     //     }),
-                        // ->action(function ($record) {
-                            // Your existing pay logic here
-                        // }),
+                    // ->action(function ($record) {
+                    // Your existing pay logic here
+                    // }),
 
                     Action::make('walk_in')
                         ->label('Walk-in Check-in')
                         ->icon('heroicon-o-user-plus')->color('success')->requiresConfirmation()
                         ->visible(fn (Booking $record): bool => in_array($record->status, ['pending', 'confirmed'], true))
                         ->schema([Select::make('method')->options(['cash' => 'Cash', 'momo' => 'Mobile Money', 'card' => 'Card', 'bank_transfer' => 'Bank Transfer'])->default('cash')->required(), TextInput::make('transaction_reference')->maxLength(255)])
-                        ->action(function (Booking $record, array $data): void { DB::transaction(function () use ($record, $data): void { $record->refresh(); if ($record->balance > 0) { Payment::create(['booking_id' => $record->id, 'guest_id' => $record->guest_id, 'amount' => $record->balance, 'method' => $data['method'], 'payment_status' => 'paid', 'transaction_reference' => $data['transaction_reference'] ?? null]); } $record->update(['status' => 'checked_in', 'hold_status' => 'confirmed']); }); Notification::make()->title('Walk-in guest checked in')->success()->send(); }),
+                        ->action(function (Booking $record, array $data): void {
+                            DB::transaction(function () use ($record, $data): void {
+                                $record->refresh();
+                                if ($record->balance > 0) {
+                                    Payment::create(['booking_id' => $record->id, 'guest_id' => $record->guest_id, 'amount' => $record->balance, 'method' => $data['method'], 'payment_status' => 'paid', 'transaction_reference' => $data['transaction_reference'] ?? null]);
+                                } $record->update(['status' => 'checked_in', 'hold_status' => 'confirmed']);
+                            });
+                            Notification::make()->title('Walk-in guest checked in')->success()->send();
+                        }),
 
                     Action::make('check_in')
                         ->label('Check-In')
@@ -193,32 +200,52 @@ class BookingsTable
                         ->color('danger')
                         ->visible(fn (Booking $record): bool => in_array($record->status, ['pending', 'confirmed'], true))
                         ->requiresConfirmation()
-                        ->schema([\Filament\Forms\Components\Textarea::make('reason')->required()->maxLength(1000)])
-                        ->action(function (Booking $record, array $data): void { $record->update(['status' => 'cancelled']); activity()->performedOn($record)->causedBy(auth()->user())->withProperties(['reason' => $data['reason']])->log('Booking cancelled'); Notification::make()->title('Booking cancelled')->success()->send(); }),
+                        ->schema([Textarea::make('reason')->required()->maxLength(1000)])
+                        ->action(function (Booking $record, array $data): void {
+                            $record->update(['status' => 'cancelled']);
+                            activity()->performedOn($record)->causedBy(auth()->user())->withProperties(['reason' => $data['reason']])->log('Booking cancelled');
+                            Notification::make()->title('Booking cancelled')->success()->send();
+                        }),
 
                     Action::make('mark_no_show')
                         ->label('Mark No Show')
                         ->color('warning')->requiresConfirmation()
                         ->visible(fn (Booking $record): bool => in_array($record->status, ['pending', 'confirmed'], true) && $record->check_in->isPast())
-                        ->action(function (Booking $record): void { $record->update(['status' => 'no_show']); Notification::make()->title('Booking marked as no-show')->warning()->send(); }),
+                        ->action(function (Booking $record): void {
+                            $record->update(['status' => 'no_show']);
+                            Notification::make()->title('Booking marked as no-show')->warning()->send();
+                        }),
 
                     Action::make('extend_stay')
                         ->label('Extend Stay')
                         ->visible(fn (Booking $record): bool => $record->status === 'checked_in')
                         ->schema([DatePicker::make('check_out')->minDate(fn (Booking $record) => $record->check_out->addDay())->required()])
-                        ->action(function (Booking $record, array $data): void { $conflict = Booking::query()->where('room_id', $record->room_id)->whereKeyNot($record->id)->whereNotIn('status', ['cancelled', 'no_show'])->overlapping($record->check_in, $data['check_out'])->exists(); if ($conflict) { throw new \RuntimeException('The room is unavailable for the requested extension.'); } $record->update(['check_out' => $data['check_out']]); Notification::make()->title('Stay extended')->success()->send(); }),
+                        ->action(function (Booking $record, array $data): void {
+                            $conflict = Booking::query()->where('room_id', $record->room_id)->whereKeyNot($record->id)->whereNotIn('status', ['cancelled', 'no_show'])->overlapping($record->check_in, $data['check_out'])->exists();
+                            if ($conflict) {
+                                throw new \RuntimeException('The room is unavailable for the requested extension.');
+                            } $record->update(['check_out' => $data['check_out']]);
+                            Notification::make()->title('Stay extended')->success()->send();
+                        }),
 
                     Action::make('refund')
                         ->label('Refund Payment')
                         ->color('danger')->requiresConfirmation()
                         ->visible(fn (Booking $record): bool => $record->total_paid > 0 && ! in_array($record->status, ['checked_in', 'checked_out'], true))
-                        ->schema([\Filament\Forms\Components\Textarea::make('reason')->required()->maxLength(1000)])
-                        ->action(function (Booking $record, array $data): void { DB::transaction(function () use ($record, $data): void { $record->payments()->whereNotIn('payment_status', ['refunded', 'failed'])->update(['payment_status' => 'refunded']); $record->update(['status' => 'cancelled']); activity()->performedOn($record)->causedBy(auth()->user())->withProperties(['reason' => $data['reason']])->log('Booking payment refunded'); }); Notification::make()->title('Payment refunded and booking cancelled')->success()->send(); }),
+                        ->schema([Textarea::make('reason')->required()->maxLength(1000)])
+                        ->action(function (Booking $record, array $data): void {
+                            DB::transaction(function () use ($record, $data): void {
+                                $record->payments()->whereNotIn('payment_status', ['refunded', 'failed'])->update(['payment_status' => 'refunded']);
+                                $record->update(['status' => 'cancelled']);
+                                activity()->performedOn($record)->causedBy(auth()->user())->withProperties(['reason' => $data['reason']])->log('Booking payment refunded');
+                            });
+                            Notification::make()->title('Payment refunded and booking cancelled')->success()->send();
+                        }),
 
                 ])
-                ->label('Action')
-                ->icon('heroicon-o-chevron-down')
-                ->button(),
+                    ->label('Action')
+                    ->icon('heroicon-o-chevron-down')
+                    ->button(),
 
                 // Action::make('booking_action')
 
@@ -231,7 +258,7 @@ class BookingsTable
                 //         Select::make('action')
 
                 //             ->options(function ($record) {
-                                
+
                 //                 $actions = [
 
                 //                 'pay' =>
@@ -378,7 +405,7 @@ class BookingsTable
                 ViewAction::make(),
                 EditAction::make()
                     ->visible(fn ($record) => $record->status === 'pending'),
-                
+
                 // Action::make('walkin')
                 //     ->label('Walk-in Check-in')
                 //     ->icon('heroicon-o-user-plus')
@@ -412,7 +439,7 @@ class BookingsTable
                 //     ->visible(fn ($record) => $record->status === 'checked_in')
                 //     ->requiresConfirmation()
                 //     ->disabled(fn ($record) => $record->balance > 0)
-                //     ->tooltip(fn ($record) => $record->balance > 0 
+                //     ->tooltip(fn ($record) => $record->balance > 0
                 //         ? 'Guest still has an unpaid balance'
                 //         : null)
                 //     ->action(function ($record) {
@@ -459,13 +486,13 @@ class BookingsTable
                 //         // return redirect()->to(
                 //         //     asset('storage/invoices/invoice-booking-'.$record->id.'.pdf')
                 //         // );
-                //     }), 
-                    
+                //     }),
+
                 // Action::make('pay')
                 //     ->label('Pay')
                 //     ->icon('heroicon-o-banknotes')
                 //     ->color('success')
-                //     // ->visible(fn ($record) => 
+                //     // ->visible(fn ($record) =>
                 //     //     $record->status !== 'checked_out' && $record->balance > 0
                 //     // )
                 //     ->visible(fn () => auth()->user()->hasRole('accountant'))
@@ -517,7 +544,7 @@ class BookingsTable
                 //     ->label('Invoice')
                 //     ->icon('heroicon-o-document-arrow-down')
                 //     ->color('gray')
-                //     ->visible(fn ($record) => 
+                //     ->visible(fn ($record) =>
                 //         $record->status === 'checked_out' && $record->invoice_number
                 //     )
                 //     ->action(function ($record) {

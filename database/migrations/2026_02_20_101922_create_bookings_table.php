@@ -22,7 +22,7 @@ return new class extends Migration
                 'pending',
                 'checked_in',
                 'checked_out',
-                'cancelled'
+                'cancelled',
             ])->default('pending');
             $table->timestamps();
         });

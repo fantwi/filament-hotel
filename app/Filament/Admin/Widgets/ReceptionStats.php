@@ -11,7 +11,12 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 class ReceptionStats extends StatsOverviewWidget
 {
     protected int|string|array $columnSpan = 'full';
-    public static function canView(): bool { return auth()->user()?->can('view reception dashboard') ?? false; }
+
+    public static function canView(): bool
+    {
+        return auth()->user()?->can('view reception dashboard') ?? false;
+    }
+
     protected function getStats(): array
     {
         return [

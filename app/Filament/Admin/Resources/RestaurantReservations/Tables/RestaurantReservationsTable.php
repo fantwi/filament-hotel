@@ -5,9 +5,9 @@ namespace App\Filament\Admin\Resources\RestaurantReservations\Tables;
 use App\Mail\RestaurantReservationCancelled;
 use App\Mail\RestaurantReservationConfirmed;
 use App\Mail\RestaurantReservationRefunded;
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -78,27 +78,26 @@ class RestaurantReservationsTable
                     }),
 
                 TextColumn::make('created_at')
-                    ->since()
+                    ->since(),
             ])
             ->filters([
                 //
                 SelectFilter::make('status')
+                    ->options([
 
-                ->options([
+                        'pending' => 'Pending',
 
-                    'pending' => 'Pending',
+                        'confirmed' => 'Confirmed',
 
-                    'confirmed' => 'Confirmed',
+                        'checked_in' => 'Checked In',
 
-                    'checked_in' => 'Checked In',
+                        'completed' => 'Completed',
 
-                    'completed' => 'Completed',
+                        'cancelled' => 'Cancelled',
 
-                    'cancelled' => 'Cancelled',
+                        'no_show' => 'No Show',
 
-                    'no_show' => 'No Show',
-
-                ]),
+                    ]),
 
                 SelectFilter::make('payment_status')
 

@@ -34,7 +34,7 @@ class KitchenOrderQueue extends TableWidget
                 TextColumn::make('items_summary')
                     ->label('Items')
                     ->state(fn (RestaurantOrder $record): string => $record->items
-                        ->map(fn ($item): string => $item->quantity . '× ' . ($item->menuItem?->name ?? 'Deleted item'))
+                        ->map(fn ($item): string => $item->quantity.'× '.($item->menuItem?->name ?? 'Deleted item'))
                         ->implode(', '))
                     ->wrap(),
                 TextColumn::make('table_display')

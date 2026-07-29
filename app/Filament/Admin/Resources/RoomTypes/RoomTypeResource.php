@@ -11,11 +11,12 @@ use App\Filament\Admin\Resources\RoomTypes\Schemas\RoomTypeInfolist;
 use App\Filament\Admin\Resources\RoomTypes\Tables\RoomTypesTable;
 use App\Models\RoomType;
 use BackedEnum;
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
 // use Filament\Forms\Components\FileUpload;
 
 class RoomTypeResource extends Resource

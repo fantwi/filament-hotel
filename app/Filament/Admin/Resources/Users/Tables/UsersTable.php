@@ -2,14 +2,14 @@
 
 namespace App\Filament\Admin\Resources\Users\Tables;
 
+use App\Models\User;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Tables\Grouping\Group;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Grouping\Group;
+use Filament\Tables\Table;
 use Spatie\Permission\Models\Role;
 
 class UsersTable
@@ -49,7 +49,6 @@ class UsersTable
                     ->label('Phone Number')
                     ->searchable()
                     ->sortable(),
-
 
                 TextColumn::make('role_name')
                     ->label('Role')
@@ -123,7 +122,7 @@ class UsersTable
                 Group::make('department')
                     ->label('Department')
                     ->collapsible(),
-                    // ->defaultSort('role')
+                // ->defaultSort('role')
                 // Group::make('roles.name')
                 // ->label('Role')
                 // ->collapsible() // make the group collapsible
@@ -135,7 +134,7 @@ class UsersTable
             ->filters([
                 //
                 SelectFilter::make('department')
-                    ->options(\App\Models\User::getDepartments()),
+                    ->options(User::getDepartments()),
 
                 // SelectFilter::make('role')
                 //     ->label('Role')
@@ -157,7 +156,7 @@ class UsersTable
                         'suspended' => 'Suspended',
                     ]),
 
-                    SelectFilter::make('shift')
+                SelectFilter::make('shift')
                     ->options([
                         'morning' => 'Morning Shift',
                         'evening' => 'Evening Shift',

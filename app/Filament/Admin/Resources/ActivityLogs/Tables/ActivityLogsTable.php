@@ -2,23 +2,13 @@
 
 namespace App\Filament\Admin\Resources\ActivityLogs\Tables;
 
-use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\ViewAction;
-use Filament\Actions\ExportAction;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\Filter;
-use Filament\Forms\Components\DatePicker;
-use Filament\Tables\Columns\BadgeColumn;
-use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Builder;
-use pxlrbt\FilamentExcel\Actions\Tables\ExportAction as ExcelExportAction;
-use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 use App\Filament\Exports\ActivityLogExporter;
-use App\Models\User;
+use Filament\Actions\ExportAction;
+use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
 
 class ActivityLogsTable
 {
@@ -33,8 +23,7 @@ class ActivityLogsTable
                 TextColumn::make('causer.name')
                     ->label('User')
                     ->formatStateUsing(
-                        fn ($state, $record) =>
-                            $state
+                        fn ($state, $record) => $state
                             ?? $record
                                 ->subject?->name
                             ?? 'System'
@@ -70,16 +59,15 @@ class ActivityLogsTable
             ])
 
             ->filters([
-                Tables\Filters\SelectFilter::make('description')
+                SelectFilter::make('description')
                     ->options([
                         'created' => 'Created',
                         'updated' => 'Updated',
                         'deleted' => 'Deleted',
                     ]),
 
-                Tables\Filters\Filter::make('today')
-                    ->query(fn ($query) =>
-                        $query->whereDate('created_at', today())
+                Filter::make('today')
+                    ->query(fn ($query) => $query->whereDate('created_at', today())
                     ),
             ])
 
@@ -89,9 +77,8 @@ class ActivityLogsTable
 
             ->toolbarActions([
                 ExportAction::make()
-                ->exporter(ActivityLogExporter::class)
-                    ->fileName(fn () =>
-                        'activity_logs_' . now()->format('Y-m-d_H-i-s')
+                    ->exporter(ActivityLogExporter::class)
+                    ->fileName(fn () => 'activity_logs_'.now()->format('Y-m-d_H-i-s')
                     ),
             ]);
     }

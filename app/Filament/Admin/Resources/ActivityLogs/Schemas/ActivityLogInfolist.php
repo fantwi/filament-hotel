@@ -2,10 +2,10 @@
 
 namespace App\Filament\Admin\Resources\ActivityLogs\Schemas;
 
-use Filament\Schemas\Schema;
+use App\Filament\Admin\Resources\ActivityLogs\ActivityLogResource;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
-use App\Filament\Admin\Resources\ActivityLogs\ActivityLogResource;
+use Filament\Schemas\Schema;
 
 class ActivityLogInfolist
 {
@@ -46,7 +46,7 @@ class ActivityLogInfolist
                 ViewEntry::make('changes')
                     ->label('Changes')
                     ->view('filament.activity-diff')
-                    ->state(fn ($record) => \App\Filament\Admin\Resources\ActivityLogs\ActivityLogResource::generateDiff($record))
+                    ->state(fn ($record) => ActivityLogResource::generateDiff($record))
                     ->columnSpanFull(),
             ]);
     }

@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\ActivityLog;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
-use App\Models\ActivityLog;
-use App\Models\User;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -33,11 +33,11 @@ class AuthenticatedSessionController extends Controller
         // return redirect()->intended(route('dashboard', absolute: false));
 
         ActivityLog::create([
-           'user_id' => auth()->id(),
-           'model' => User::class,
-           'model_id' => auth()->id(),
-           'action' => 'Logged in',
-        //    'subject_id' => $booking->id,
+            'user_id' => auth()->id(),
+            'model' => User::class,
+            'model_id' => auth()->id(),
+            'action' => 'Logged in',
+            //    'subject_id' => $booking->id,
         ]);
 
         $user = auth()->user(); // get the authenticated user
@@ -65,10 +65,10 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         ActivityLog::create([
-            'user_id'=>auth()->id(),
+            'user_id' => auth()->id(),
             'model' => User::class,
             'model_id' => auth()->id(),
-            'action'=>'Logged out',
+            'action' => 'Logged out',
             // 'subject_id' => $booking->id,
         ]);
 

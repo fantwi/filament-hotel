@@ -2,12 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\RoomType;
-use App\Models\Booking;
-use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Room extends Model
 {
@@ -42,6 +40,6 @@ class Room extends Model
             ->logOnly(['status'])     // log only status changes
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn(string $eventName) => "Room {$eventName}");
+            ->setDescriptionForEvent(fn (string $eventName) => "Room {$eventName}");
     }
 }

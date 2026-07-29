@@ -2,17 +2,18 @@
 
 namespace App\Filament\Admin\Resources\RestaurantTables\Schemas;
 
-use Filament\Schemas\Schema;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 
 class RestaurantTableForm
 {
-    public static function configure(Schema $schema): Schema {
+    public static function configure(Schema $schema): Schema
+    {
 
         return $schema
 

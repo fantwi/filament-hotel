@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
 
             $table->unsignedBigInteger('conference_room_id');
-            
+
             $table->unsignedBigInteger('conference_facility_id');
-            
+
             $table->timestamps();
 
             // Short FK names

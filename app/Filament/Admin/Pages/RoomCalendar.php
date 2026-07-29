@@ -8,14 +8,20 @@ use Filament\Pages\Page;
 
 class RoomCalendar extends Page
 {
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-calendar';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar';
+
     protected string $view = 'filament.admin.pages.room-calendar';
+
     protected static ?string $navigationLabel = 'Room Calendar';
+
     protected static ?string $title = 'Room Availability';
+
     protected static string|\UnitEnum|null $navigationGroup = 'Accommodation';
+
     protected static ?int $navigationSort = 40;
 
     public $roomFilter = null;
+
     public $roomTypeFilter = null;
 
     public function getEvents()
@@ -32,7 +38,7 @@ class RoomCalendar extends Page
         return $query->get()->map(function ($booking) {
             return [
                 'id' => $booking->id,
-                'title' => $booking->guest->full_name . ' (Room ' . $booking->room->room_number . ')',
+                'title' => $booking->guest->full_name.' (Room '.$booking->room->room_number.')',
                 'start' => $booking->check_in,
                 'end' => $booking->check_out,
                 'resourceId' => $booking->room_id,
@@ -57,7 +63,7 @@ class RoomCalendar extends Page
         return $query->get()->map(function ($room) {
             return [
                 'id' => $room->id,
-                'title' => 'Room ' . $room->room_number . ' (' . $room->roomType->name . ')',
+                'title' => 'Room '.$room->room_number.' ('.$room->roomType->name.')',
             ];
         });
     }

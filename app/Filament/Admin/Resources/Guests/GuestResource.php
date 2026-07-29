@@ -21,6 +21,7 @@ class GuestResource extends Resource
     protected static string|\UnitEnum|null $navigationGroup = 'Guest Management';
 
     protected static ?int $navigationSort = 10;
+
     protected static ?string $model = Guest::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
@@ -31,8 +32,8 @@ class GuestResource extends Resource
     {
         return auth()->user()?->hasAnyRole([
             'super_admin',
-            'admin', 
-            'receptionist'
+            'admin',
+            'receptionist',
         ]);
     }
 
@@ -42,7 +43,7 @@ class GuestResource extends Resource
         return auth()->user()?->hasAnyRole([
             'super_admin',
             'admin',
-            'receptionist'
+            'receptionist',
         ]);
     }
 

@@ -12,9 +12,7 @@ class RestaurantReservationConfirmed extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public RestaurantReservation $reservation)
-    {
-    }
+    public function __construct(public RestaurantReservation $reservation) {}
 
     public function build(): static
     {

@@ -2,10 +2,10 @@
 
 namespace App\Filament\Admin\Resources\ContactMessages\Schemas;
 
-use Filament\Schemas\Schema;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Schema;
 
 class ContactMessageForm
 {
@@ -23,7 +23,7 @@ class ContactMessageForm
                     ->options([
                         'new' => 'New',
                         'resolved' => 'Resolved',
-                    ])
+                    ]),
             ]);
     }
 }

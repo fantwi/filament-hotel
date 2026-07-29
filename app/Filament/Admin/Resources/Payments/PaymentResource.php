@@ -33,8 +33,8 @@ class PaymentResource extends Resource
     {
         return auth()->user()?->hasAnyRole([
             'super_admin',
-            'admin', 
-            'accountant'
+            'admin',
+            'accountant',
         ]);
     }
 
@@ -45,7 +45,7 @@ class PaymentResource extends Resource
             'super_admin',
             'admin',
             // 'manager',
-            'accountant'
+            'accountant',
         ]);
     }
 
@@ -80,5 +80,4 @@ class PaymentResource extends Resource
             'edit' => EditPayment::route('/{record}/edit'),
         ];
     }
-
 }

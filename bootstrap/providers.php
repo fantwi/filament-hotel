@@ -1,8 +1,12 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\EventServiceProvider;
+use App\Providers\Filament\AdminPanelProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\EventServiceProvider::class,
-    App\Providers\Filament\AdminPanelProvider::class,
-    App\Providers\EventServiceProvider::class,
+    AppServiceProvider::class,
+    EventServiceProvider::class,
+    AdminPanelProvider::class,
+    EventServiceProvider::class,
 ];

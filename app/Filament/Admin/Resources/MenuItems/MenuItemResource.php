@@ -9,10 +9,10 @@ use App\Filament\Admin\Resources\MenuItems\Schemas\MenuItemForm;
 use App\Filament\Admin\Resources\MenuItems\Tables\MenuItemsTable;
 use App\Models\MenuItem;
 use BackedEnum;
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class MenuItemResource extends Resource
 {

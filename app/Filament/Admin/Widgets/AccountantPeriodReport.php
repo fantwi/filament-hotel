@@ -34,7 +34,7 @@ class AccountantPeriodReport extends StatsOverviewWidget
             ->whereBetween('created_at', [$from, now()])
             ->sum('amount');
 
-        return Stat::make($label, 'GHS ' . number_format($revenue, 2))
+        return Stat::make($label, 'GHS '.number_format($revenue, 2))
             ->description($description)
             ->icon('heroicon-o-banknotes')
             ->color($color);

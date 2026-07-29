@@ -25,13 +25,12 @@ class BookingController extends Controller
         );
     }
 
-
     public function store(Request $request)
     {
         $request->validate([
-            'room_id'=>'required',
-            'check_in'=>'required|date',
-            'check_out'=>'required|date',
+            'room_id' => 'required',
+            'check_in' => 'required|date',
+            'check_out' => 'required|date',
         ]);
 
         if (Carbon::parse($request->check_out)->lte(Carbon::parse($request->check_in))) {
@@ -46,29 +45,24 @@ class BookingController extends Controller
             ->overlapping($request->check_in, $request->check_out)
             ->exists();
 
-        if($booked){
+        if ($booked) {
             return back()
-            ->withErrors(
-                ['Room no longer available']
-            );
+                ->withErrors(
+                    ['Room no longer available']
+                );
         }
 
         Booking::create([
-            'guest_id' =>
-                auth()->user()->guest->id,
+            'guest_id' => auth()->user()->guest->id,
 
-            'room_id' =>
-                $request->room_id,
+            'room_id' => $request->room_id,
 
-            'check_in' =>
-                $request->check_in,
+            'check_in' => $request->check_in,
 
-            'check_out' =>
-                $request->check_out,
+            'check_out' => $request->check_out,
 
             'hold_status' => 'confirmed',
         ]);
-
 
         return redirect()
             ->route('dashboard')

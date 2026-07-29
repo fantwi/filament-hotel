@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Booking;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 
 class InvoiceService
@@ -15,7 +15,7 @@ class InvoiceService
 
         // Generate PDF
         $pdf = Pdf::loadView('pdf.invoice', [
-            'booking' => $booking
+            'booking' => $booking,
         ]);
 
         // Use invoice number as filename
@@ -28,7 +28,7 @@ class InvoiceService
         // );
 
         // Ensure invoices folder exists
-        if (!Storage::disk('public')->exists('invoices')) {
+        if (! Storage::disk('public')->exists('invoices')) {
             Storage::disk('public')->makeDirectory('invoices');
         }
 

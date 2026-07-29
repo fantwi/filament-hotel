@@ -50,5 +50,8 @@ class MenuItem extends Model
         return $this->hasMany(RestaurantOrderItem::class);
     }
 
-    public function kitchenProductions(): HasMany { return $this->hasMany(KitchenProduction::class); }
+    public function kitchenProductions(): HasMany
+    {
+        return $this->hasMany(KitchenProduction::class);
+    }
 }

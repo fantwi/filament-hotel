@@ -6,10 +6,10 @@ use App\Filament\Admin\Resources\Bookings\Pages\CreateBooking;
 use App\Filament\Admin\Resources\Bookings\Pages\EditBooking;
 use App\Filament\Admin\Resources\Bookings\Pages\ListBookings;
 use App\Filament\Admin\Resources\Bookings\Pages\ViewBooking;
+use App\Filament\Admin\Resources\Bookings\RelationManagers\PaymentsRelationManager;
 use App\Filament\Admin\Resources\Bookings\Schemas\BookingForm;
 use App\Filament\Admin\Resources\Bookings\Schemas\BookingInfolist;
 use App\Filament\Admin\Resources\Bookings\Tables\BookingsTable;
-use App\Filament\Admin\Resources\Bookings\RelationManagers\PaymentsRelationManager;
 use App\Models\Booking;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -36,7 +36,7 @@ class BookingResource extends Resource
             'admin',
             'manager',
             'accountant',
-            'receptionist'
+            'receptionist',
         ]);
     }
 
@@ -44,10 +44,10 @@ class BookingResource extends Resource
     {
         return auth()->user()->hasAnyRole([
             'super_admin',
-            'admin', 
+            'admin',
             'manager',
             'accountant',
-            'receptionist'
+            'receptionist',
         ]);
     }
 
@@ -58,7 +58,7 @@ class BookingResource extends Resource
         if ($user->hasRole('admin')) {
             return true;
         }
-        
+
         return $record->status === 'pending';
     }
 
@@ -100,5 +100,4 @@ class BookingResource extends Resource
             'edit' => EditBooking::route('/{record}/edit'),
         ];
     }
-
 }

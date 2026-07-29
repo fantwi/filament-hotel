@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Booking;
-use App\Models\Guest;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\User;

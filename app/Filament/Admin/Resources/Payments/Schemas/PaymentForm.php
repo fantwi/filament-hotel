@@ -2,9 +2,9 @@
 
 namespace App\Filament\Admin\Resources\Payments\Schemas;
 
-use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Schema;
 
 class PaymentForm
 {

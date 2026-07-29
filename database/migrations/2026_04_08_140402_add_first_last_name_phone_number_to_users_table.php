@@ -13,15 +13,15 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             //
-            if (!Schema::hasColumn('users', 'first_name')) {
+            if (! Schema::hasColumn('users', 'first_name')) {
                 $table->string('first_name')->after('id');
             }
 
-            if (!Schema::hasColumn('users', 'last_name')) {
+            if (! Schema::hasColumn('users', 'last_name')) {
                 $table->string('last_name')->after('first_name');
             }
 
-            if (!Schema::hasColumn('users', 'phone_number')) {
+            if (! Schema::hasColumn('users', 'phone_number')) {
                 $table->string('phone_number')->after('email')->nullable();
             }
         });
@@ -37,11 +37,11 @@ return new class extends Migration
             if (Schema::hasColumn('users', 'first_name')) {
                 $table->dropColumn('first_name');
             }
-        
+
             if (Schema::hasColumn('users', 'last_name')) {
                 $table->dropColumn('last_name');
             }
-        
+
             if (Schema::hasColumn('users', 'phone_number')) {
                 $table->dropColumn('phone_number');
             }

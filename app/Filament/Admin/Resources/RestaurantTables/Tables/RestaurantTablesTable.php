@@ -9,10 +9,10 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Str;
-use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Support\Str;
 
 class RestaurantTablesTable
 {
@@ -34,7 +34,7 @@ class RestaurantTablesTable
                         'cleaning' => 'info',
                         'maintenance' => 'gray',
                         default => 'secondary',
-                    })
+                    }),
             ])
             ->filters([
                 //

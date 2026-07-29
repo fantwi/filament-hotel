@@ -2,22 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
-use App\Models\Booking;
-use App\Models\User;
-use App\Models\RestaurantReservation;
-use App\Models\RestaurantOrder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Guest extends Model
 {
     //
-    use HasFactory; 
+    use HasFactory;
     use LogsActivity;
-    
+
     protected $fillable = [
         'user_id',
         'first_name',
@@ -52,15 +48,15 @@ class Guest extends Model
     }
     // End Relationships
 
-    // Methods 
+    // Methods
     public function getNameAttribute()
     {
-        return $this->first_name . ' ' . $this->last_name;
+        return $this->first_name.' '.$this->last_name;
     }
 
     public function getFullNameAttribute()
     {
-        return $this->first_name . ' ' . $this->last_name;
+        return $this->first_name.' '.$this->last_name;
     }
 
     public function getActivitylogOptions(): LogOptions
@@ -68,6 +64,6 @@ class Guest extends Model
         return LogOptions::defaults()
             ->logAll()
             ->logOnlyDirty()
-            ->setDescriptionForEvent(fn(string $eventName) => "Guest {$eventName}");
+            ->setDescriptionForEvent(fn (string $eventName) => "Guest {$eventName}");
     }
 }

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         //
-        Schema::table('activity_logs', function(Blueprint $table){
+        Schema::table('activity_logs', function (Blueprint $table) {
 
             $table->string('model')
                 ->nullable()
@@ -20,7 +20,7 @@ return new class extends Migration
 
         });
 
-        Schema::table('activity_logs', function(Blueprint $table){
+        Schema::table('activity_logs', function (Blueprint $table) {
 
             $table->string('record_id')
                 ->nullable()
@@ -28,7 +28,7 @@ return new class extends Migration
 
         });
 
-        Schema::table('activity_logs', function(Blueprint $table){
+        Schema::table('activity_logs', function (Blueprint $table) {
 
             $table->string('old_values')
                 ->nullable()
@@ -36,7 +36,7 @@ return new class extends Migration
 
         });
 
-        Schema::table('activity_logs', function(Blueprint $table){
+        Schema::table('activity_logs', function (Blueprint $table) {
 
             $table->string('new_values')
                 ->nullable()
@@ -44,7 +44,7 @@ return new class extends Migration
 
         });
 
-        Schema::table('activity_logs', function(Blueprint $table){
+        Schema::table('activity_logs', function (Blueprint $table) {
 
             $table->string('ip_address')
                 ->nullable()
@@ -59,7 +59,7 @@ return new class extends Migration
     public function down(): void
     {
         //
-        Schema::table('activity_logs', function(Blueprint $table){
+        Schema::table('activity_logs', function (Blueprint $table) {
 
             $table->string('model')
                 ->nullable(false)
@@ -67,7 +67,7 @@ return new class extends Migration
 
         });
 
-        Schema::table('activity_logs', function(Blueprint $table){
+        Schema::table('activity_logs', function (Blueprint $table) {
 
             $table->string('record_id')
                 ->nullable(false)
@@ -75,7 +75,7 @@ return new class extends Migration
 
         });
 
-        Schema::table('activity_logs', function(Blueprint $table){
+        Schema::table('activity_logs', function (Blueprint $table) {
 
             $table->string('old_values')
                 ->nullable(false)
@@ -83,7 +83,7 @@ return new class extends Migration
 
         });
 
-        Schema::table('activity_logs', function(Blueprint $table){
+        Schema::table('activity_logs', function (Blueprint $table) {
 
             $table->string('new_values')
                 ->nullable(false)
@@ -91,7 +91,7 @@ return new class extends Migration
 
         });
 
-        Schema::table('activity_logs', function(Blueprint $table){
+        Schema::table('activity_logs', function (Blueprint $table) {
 
             $table->string('ip_address')
                 ->nullable(false)

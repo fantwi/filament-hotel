@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Mail\RestaurantReservationCreated;
 use App\Models\Restaurant;
-use App\Models\RestaurantTable;
 use App\Models\RestaurantReservation;
+use App\Models\RestaurantTable;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class RestaurantReservationController extends Controller
 {
@@ -96,7 +96,7 @@ class RestaurantReservationController extends Controller
         }
 
         $reservationStart = Carbon::parse(
-            $validated['reservation_date'] . ' ' . $validated['reservation_time']
+            $validated['reservation_date'].' '.$validated['reservation_time']
         );
 
         $reservationEnd = $reservationStart
@@ -104,9 +104,9 @@ class RestaurantReservationController extends Controller
             ->addMinutes(120);
 
         $existingReservation = RestaurantReservation::where(
-                'restaurant_table_id',
-                $validated['restaurant_table_id']
-            )
+            'restaurant_table_id',
+            $validated['restaurant_table_id']
+        )
             ->whereDate(
                 'reservation_date',
                 $validated['reservation_date']
@@ -132,8 +132,8 @@ class RestaurantReservationController extends Controller
             ->first(function ($reservation) use ($reservationStart, $reservationEnd) {
 
                 $existingStart = Carbon::parse(
-                    $reservation->reservation_date->format('Y-m-d') .
-                    ' ' .
+                    $reservation->reservation_date->format('Y-m-d').
+                    ' '.
                     $reservation->reservation_time
                 );
 
@@ -145,20 +145,19 @@ class RestaurantReservationController extends Controller
                     && $reservationEnd > $existingStart;
             });
 
-            if ($existingReservation) {
+        if ($existingReservation) {
 
-                return back()
+            return back()
 
-                    ->withInput()
+                ->withInput()
 
-                    ->withErrors([
+                ->withErrors([
 
-                        'restaurant_table_id' =>
-                            'Sorry, this table is already reserved for the selected date and time.',
+                    'restaurant_table_id' => 'Sorry, this table is already reserved for the selected date and time.',
 
-                    ]);
+                ]);
 
-            }
+        }
 
         $reservation = RestaurantReservation::create([
 

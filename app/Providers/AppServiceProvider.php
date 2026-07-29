@@ -2,10 +2,10 @@
 
 namespace App\Providers;
 
+use App\Http\Responses\LogoutResponse as CustomLogoutResponse;
+use Filament\Http\Responses\Auth\Contracts\LogoutResponse;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Activitylog\Models\Activity;
-use Filament\Http\Responses\Auth\Contracts\LogoutResponse;
-use App\Http\Responses\LogoutResponse as CustomLogoutResponse;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot()/*: void*/
+    public function boot()/* : void */
     {
         //
         Activity::saving(function ($activity) {

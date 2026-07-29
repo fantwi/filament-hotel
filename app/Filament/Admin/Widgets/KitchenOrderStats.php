@@ -29,7 +29,7 @@ class KitchenOrderStats extends StatsOverviewWidget
                 ->description('Waiting to be served')->icon('heroicon-o-bell-alert')->color('success'),
             Stat::make('Served Today', RestaurantOrder::where('status', 'served')->whereDate('served_at', today())->count())
                 ->description('Completed service today')->icon('heroicon-o-check-circle')->color('gray'),
-            Stat::make('Average Preparation', number_format($averagePreparationMinutes, 0) . ' mins')
+            Stat::make('Average Preparation', number_format($averagePreparationMinutes, 0).' mins')
                 ->description('Preparing to ready')->icon('heroicon-o-chart-bar')->color('primary'),
         ];
     }

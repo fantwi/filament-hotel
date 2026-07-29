@@ -3,21 +3,22 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Filament\Panel;
-use Filament\Models\Contracts\FilamentUser;
-use Spatie\Permission\Traits\HasRoles;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
-use App\Models\Guest;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements FilamentUser
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
     use HasRoles;
     use LogsActivity;
 
@@ -77,7 +78,7 @@ class User extends Authenticatable implements FilamentUser
         //     if ($user->department === 'reception') {
         //         $user->assignRole('receptionist');
         //     }
-    
+
         //     if ($user->department === 'accounting') {
         //         $user->assignRole('accountant');
         //     }
@@ -85,7 +86,7 @@ class User extends Authenticatable implements FilamentUser
         //     if ($user->department === 'admin') {
         //         $user->assignRole('admin');
         //     }
-    
+
         //     if ($user->department === 'super_admin') {
         //         $user->assignRole('super_admin');
         //     }
@@ -93,7 +94,7 @@ class User extends Authenticatable implements FilamentUser
         //     if ($user->department === 'management') {
         //         $user->assignRole('manager');
         //     }
-    
+
         //     if ($user->department === 'housekeeping') {
         //         $user->assignRole('housekeeping');
         //     }
@@ -102,7 +103,7 @@ class User extends Authenticatable implements FilamentUser
         //         // $user->assignRole('guest');
         //         $user->assignRole('guest');
         //     }
-    
+
         //     // if ($user->department === 'finance') {
         //     //     $user->assignRole('accountant');
         //     // }
@@ -118,7 +119,7 @@ class User extends Authenticatable implements FilamentUser
             Role::findOrCreate($role, 'web');
 
             $user->syncRoles([
-                $role
+                $role,
             ]);
 
             activity()
@@ -132,30 +133,24 @@ class User extends Authenticatable implements FilamentUser
                 $user->department ===
                 'guest'
                 &&
-                !$user->guest()->exists()
+                ! $user->guest()->exists()
             ) {
 
                 $guest = Guest::create([
 
-                    'user_id' =>
-                        $user->id,
+                    'user_id' => $user->id,
 
-                    'first_name' =>
-                        $user->first_name
+                    'first_name' => $user->first_name
                         ?? 'Guest',
 
-                    'last_name' =>
-                        $user->last_name
+                    'last_name' => $user->last_name
                         ?? '',
 
-                    'email' =>
-                        $user->email,
+                    'email' => $user->email,
 
-                    'phone_number' =>
-                        $user->phone_number,
+                    'phone_number' => $user->phone_number,
 
-                    'id_number' =>
-                        $user->id_number,
+                    'id_number' => $user->id_number,
 
                 ]);
 
@@ -169,12 +164,12 @@ class User extends Authenticatable implements FilamentUser
         // static::updated(function ($user) {
 
         //     if ($user->isDirty('department')) {
-        
+
         //         // $role = self::DEPARTMENT_ROLE_MAP[$user->department] ?? 'guest';
-        
+
         //         $user->syncRoles([$role]);
         //     }
-        
+
         // });
 
         static::updated(function ($user) {
@@ -191,7 +186,7 @@ class User extends Authenticatable implements FilamentUser
                     ] ?? 'guest';
 
                 $user->syncRoles([
-                    $role
+                    $role,
                 ]);
             }
         });
@@ -217,12 +212,19 @@ class User extends Authenticatable implements FilamentUser
     }
 
     const STATUS_ONLINE = 'online';
+
     const STATUS_OFFLINE = 'offline';
+
     const STATUS_ON_LEAVE = 'on_leave';
+
     const STATUS_SUSPENDED = 'suspended';
+
     const SHIFT_MORNING = 'morning';
+
     const SHIFT_EVENING = 'evening';
+
     const SHIFT_NIGHT = 'night';
+
     const SHIFT_OFF_DUTY = 'off_duty';
 
     public const DEPARTMENTS = [
@@ -289,7 +291,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function getNameAttribute(): string
     {
-        return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? '')) ?: 'User';
+        return trim(($this->first_name ?? '').' '.($this->last_name ?? '')) ?: 'User';
     }
 
     public function getActivitylogOptions(): LogOptions
@@ -297,7 +299,7 @@ class User extends Authenticatable implements FilamentUser
         return LogOptions::defaults()
             ->logAll()
             ->logOnlyDirty()
-            ->setDescriptionForEvent(fn(string $eventName) => "User {$eventName}");
+            ->setDescriptionForEvent(fn (string $eventName) => "User {$eventName}");
     }
 
     public function getRoleAttribute()
@@ -346,7 +348,7 @@ class User extends Authenticatable implements FilamentUser
     public function isGuest(): bool
     {
         // If user has no staff role → treat as guest
-        return !$this->hasAnyRole([
+        return ! $this->hasAnyRole([
             'super_admin',
             'admin',
             'manager',
@@ -378,7 +380,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function activities()
     {
-        return $this->hasMany(\App\Models\ActivityLog::class);
+        return $this->hasMany(ActivityLog::class);
     }
 
     public function canAccessPanel(Panel $panel): bool

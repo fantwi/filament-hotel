@@ -2,10 +2,10 @@
 
 namespace App\Filament\Admin\Resources\Guests\Schemas;
 
+use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
-use App\Models\User;
 
 class GuestForm
 {
@@ -44,11 +44,11 @@ class GuestForm
 
                 Select::make('department')
                     // ->default('Guest')
-                    ->options(\App\Models\User::getGuestDepartment())
+                    ->options(User::getGuestDepartment())
                     ->required(),
-                    // ->dehydrated()
-                    // ->native(false),
-    
+                // ->dehydrated()
+                // ->native(false),
+
                 TextInput::make('password')
                     ->password()
                     ->required(fn (string $operation): bool => $operation === 'create')

@@ -9,10 +9,10 @@ use App\Filament\Admin\Resources\MenuCategories\Schemas\MenuCategoryForm;
 use App\Filament\Admin\Resources\MenuCategories\Tables\MenuCategoriesTable;
 use App\Models\MenuCategory;
 use BackedEnum;
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class MenuCategoryResource extends Resource
 {

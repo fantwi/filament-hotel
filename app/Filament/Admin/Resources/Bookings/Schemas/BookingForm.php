@@ -5,14 +5,14 @@ namespace App\Filament\Admin\Resources\Bookings\Schemas;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Models\User;
-use Filament\Actions\Action;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Schema;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -180,11 +180,11 @@ class BookingForm
                         'checked_in' => 'Check-in Now',
                     ])
                     ->default(fn () => request('walkin') ? 'checked_in' : 'pending')
-                    ->required(),    
+                    ->required(),
 
                 /**
                  * AUTO PRICE CALCULATION
-                 */    
+                 */
                 TextInput::make('total_price')
                     ->numeric()
                     ->disabled()
@@ -196,18 +196,22 @@ class BookingForm
                         $checkIn = $get('check_in');
                         $checkOut = $get('check_out');
                         $roomId = $get('room_id');
-                
-                        if (!$checkIn || !$checkOut || !$roomId) return;
-                
+
+                        if (! $checkIn || ! $checkOut || ! $roomId) {
+                            return;
+                        }
+
                         $room = Room::with('roomType')->find($roomId);
-                
-                        if (!$room) return;
-                
-                        $nights = \Carbon\Carbon::parse($checkIn)
+
+                        if (! $room) {
+                            return;
+                        }
+
+                        $nights = Carbon::parse($checkIn)
                             ->diffInDays($checkOut);
-                
+
                         $price = $room->roomType->price_per_night * max($nights, 1);
-                
+
                         $set('total_price', $price);
                     }),
             ]);

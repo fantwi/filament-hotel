@@ -21,6 +21,7 @@ class RoomResource extends Resource
     protected static string|\UnitEnum|null $navigationGroup = 'Accommodation';
 
     protected static ?int $navigationSort = 20;
+
     protected static ?string $model = Room::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
@@ -33,8 +34,8 @@ class RoomResource extends Resource
         return auth()->user()?->hasAnyRole([
             'super_admin',
             'admin',
-            'manager', 
-            'receptionist'
+            'manager',
+            'receptionist',
         ]);
         // return false;
     }
@@ -45,7 +46,7 @@ class RoomResource extends Resource
         return auth()->user()?->hasAnyRole([
             'super_admin',
             'admin',
-            'receptionist'
+            'receptionist',
         ]);
     }
 
@@ -111,6 +112,7 @@ class RoomResource extends Resource
     public function index()
     {
         $rooms = Room::where('status', 'available')->get();
+
         return view('rooms.index', compact('rooms'));
     }
 }

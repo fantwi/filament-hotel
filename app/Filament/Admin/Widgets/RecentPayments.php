@@ -10,8 +10,14 @@ use Filament\Widgets\TableWidget;
 class RecentPayments extends TableWidget
 {
     protected static ?string $heading = 'Recent Payments';
+
     protected int|string|array $columnSpan = 'full';
-    public static function canView(): bool { return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'accountant']) ?? false; }
+
+    public static function canView(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'accountant']) ?? false;
+    }
+
     public function table(Table $table): Table
     {
         return $table->query(Payment::query()->with('guest')->latest())->columns([

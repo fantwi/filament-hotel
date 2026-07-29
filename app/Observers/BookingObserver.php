@@ -2,8 +2,8 @@
 
 namespace App\Observers;
 
-use App\Models\Booking;
 use App\Models\ActivityLog;
+use App\Models\Booking;
 
 class BookingObserver
 {

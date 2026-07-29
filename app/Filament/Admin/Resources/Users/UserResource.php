@@ -20,6 +20,7 @@ class UserResource extends Resource
     protected static string|\UnitEnum|null $navigationGroup = 'System';
 
     protected static ?int $navigationSort = 10;
+
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
@@ -27,7 +28,7 @@ class UserResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->hasAnyRole([
-            'super_admin', 
+            'super_admin',
             'admin',
         ]);
     }
@@ -35,8 +36,8 @@ class UserResource extends Resource
     public static function canViewAny(): bool
     {
         return auth()->user()->hasAnyRole([
-            'super_admin', 
-            'admin'
+            'super_admin',
+            'admin',
         ]);
     }
 

@@ -12,7 +12,12 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 class AdminStats extends StatsOverviewWidget
 {
     protected int|string|array $columnSpan = 'full';
-    public static function canView(): bool { return auth()->user()?->can('view admin dashboard') ?? false; }
+
+    public static function canView(): bool
+    {
+        return auth()->user()?->can('view admin dashboard') ?? false;
+    }
+
     protected function getStats(): array
     {
         return [

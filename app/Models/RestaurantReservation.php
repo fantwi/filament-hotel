@@ -11,6 +11,7 @@ class RestaurantReservation extends Model
     use LogsActivity;
 
     protected static $logName = 'Restaurant Reservation';
+
     protected $fillable = [
 
         'restaurant_id',
@@ -108,73 +109,73 @@ class RestaurantReservation extends Model
         );
     }
     // end relationships
-    
+
     // scopes
     // public function scopePending($query)
     // {
     //     return $query->where('status', 'pending');
     // }
-    
+
     // public function scopeConfirmed($query)
     // {
     //     return $query->where('status', 'confirmed');
     // }
-    
+
     // public function scopeCheckedIn($query)
     // {
     //     return $query->where('status', 'checked_in');
     // }
-    
+
     // public function scopeCompleted($query)
     // {
     //     return $query->where('status', 'completed');
     // }
-    
+
     // public function scopeCancelled($query)
     // {
     //     return $query->where('status', 'cancelled');
     // }
-    
+
     // public function scopeNoShow($query)
     // {
     //     return $query->where('status', 'no_show');
     // }
-    
+
     // public function scopePendingPayment($query)
     // {
     //     return $query->where('payment_status', 'pending');
     // }
-    
+
     // public function scopePartialPayment($query)
     // {
     //     return $query->where('payment_status', 'partial');
     // }
-    
+
     // public function scopeCompletedPayment($query)
     // {
     //     return $query->where('payment_status', 'completed');
     // }
-    
+
     // public function scopeCancelledPayment($query)
     // {
     //     return $query->where('payment_status', 'cancelled');
     // }
-    
+
     // public function scopeRefunded($query)
     // {
     //     return $query->where('payment_status', 'refunded');
     // }
-    
+
     // public function scopeHeld($query)
     // {
     //     return $query->where('hold_status', 'held');
     // }
-    
+
     // public function scopeConfirmedHold($query)
     // {
     //     return $query->where('hold_status', 'confirmed');
     // }
-    
+
     // public function scopeExpiredHold($query)
     // {
     //     return $query->where('hold_status', 'expired');

@@ -2,17 +2,17 @@
 
 namespace App\Filament\Admin\Resources\ActivityLogs;
 
-use Spatie\Activitylog\Models\Activity;
 use App\Filament\Admin\Resources\ActivityLogs\Pages\ListActivityLogs;
-// use App\Filament\Admin\Resources\ActivityLogs\Schemas\ActivityLogForm;
 use App\Filament\Admin\Resources\ActivityLogs\Tables\ActivityLogsTable;
-// use App\Models\ActivityLog;
+// use App\Filament\Admin\Resources\ActivityLogs\Schemas\ActivityLogForm;
 use BackedEnum;
+// use App\Models\ActivityLog;
 use Filament\Resources\Resource;
-// use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+// use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Spatie\Activitylog\Models\Activity;
 
 class ActivityLogResource extends Resource
 {
@@ -36,8 +36,8 @@ class ActivityLogResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->hasAnyRole([
-            'super_admin', 
-            'admin'
+            'super_admin',
+            'admin',
         ]);
     }
 
@@ -83,7 +83,7 @@ class ActivityLogResource extends Resource
 
             if ($oldValue != $newValue) {
 
-                $output .= strtoupper($field) . "\n";
+                $output .= strtoupper($field)."\n";
                 $output .= "Old: {$oldValue}\n";
                 $output .= "New: {$newValue}\n\n";
             }

@@ -9,11 +9,11 @@ use App\Filament\Admin\Resources\Restaurants\Schemas\RestaurantForm;
 use App\Filament\Admin\Resources\Restaurants\Tables\RestaurantsTable;
 use App\Models\Restaurant;
 use BackedEnum;
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class RestaurantResource extends Resource
 {

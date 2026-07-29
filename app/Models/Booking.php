@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use App\Models\Payment;
 
 class Booking extends Model
 {
@@ -22,14 +21,14 @@ class Booking extends Model
 
         'check_in',
         'check_out',
-        
+
         'check_in_time',
         'check_out_time',
-        
+
         'total_price',
         'payment_status',
         'transaction_reference',
-        
+
         'hold_until',
         'hold_status',
         'invoice_number',
@@ -146,7 +145,7 @@ class Booking extends Model
         static::updated(function ($booking) {
             if ($booking->wasChanged('room_id')) {
                 static::syncRoomStatus($booking->getOriginal('room_id'));
-                
+
                 activity()
                     ->causedBy(auth()->user() ?? $booking->guest?->user)
                     ->performedOn($booking)

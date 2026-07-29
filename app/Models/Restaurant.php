@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Models\Concerns\HasPublicationState;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\RestaurantTable;
 
 class Restaurant extends Model
 {

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('payments', function (Blueprint $table) {
             //
-             $table->foreignId('guest_id')
+            $table->foreignId('guest_id')
                 ->nullable()
                 ->after('conference_booking_id')
                 ->constrained('guests')

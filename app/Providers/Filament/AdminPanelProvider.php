@@ -2,17 +2,26 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Admin\Pages\Dashboards\RoleDashboard;
+use App\Filament\Admin\Widgets\BestSellingMenuItems;
+use App\Filament\Admin\Widgets\BookingTrendChart;
+use App\Filament\Admin\Widgets\HotelStatistics;
+use App\Filament\Admin\Widgets\KitchenOrderQueue;
+use App\Filament\Admin\Widgets\KitchenOrderStats;
+use App\Filament\Admin\Widgets\MonthlyRevenueChart;
+use App\Filament\Admin\Widgets\RestaurantOrderStats;
+use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
+use App\Filament\Admin\Widgets\RestaurantRevenueChart;
+use App\Filament\Admin\Widgets\RevenueStats;
+use App\Filament\Admin\Widgets\StaffStats;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use App\Filament\Admin\Pages\Dashboards\RoleDashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
 use Filament\Support\Assets\Css;
-use Filament\Support\Assets\Js;
-use Filament\Support\Facades\FilamentAsset;
+use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -27,10 +36,10 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->default() //newly added by FAA
+            ->default() // newly added by FAA
             ->id('admin')
             ->path('admin')
-            ->login() //newly added by FAA
+            ->login() // newly added by FAA
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
             // ->viteTheme('resources/css/app.css') // FAA added this
@@ -46,17 +55,17 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
                 // FilamentInfoWidget::class,
-                \App\Filament\Admin\Widgets\HotelStatistics::class,
-                \App\Filament\Admin\Widgets\MonthlyRevenueChart::class,
-                \App\Filament\Admin\Widgets\BookingTrendChart::class,
-                \App\Filament\Admin\Widgets\KitchenOrderStats::class,
-                \App\Filament\Admin\Widgets\KitchenOrderQueue::class,
-                \App\Filament\Admin\Widgets\RestaurantOrderStats::class,
-                \App\Filament\Admin\Widgets\RestaurantRevenueChart::class,
-                \App\Filament\Admin\Widgets\RestaurantOrderStatusChart::class,
-                \App\Filament\Admin\Widgets\BestSellingMenuItems::class,
-                \App\Filament\Admin\Widgets\RevenueStats::class,
-                \App\Filament\Admin\Widgets\StaffStats::class,
+                HotelStatistics::class,
+                MonthlyRevenueChart::class,
+                BookingTrendChart::class,
+                KitchenOrderStats::class,
+                KitchenOrderQueue::class,
+                RestaurantOrderStats::class,
+                RestaurantRevenueChart::class,
+                RestaurantOrderStatusChart::class,
+                BestSellingMenuItems::class,
+                RevenueStats::class,
+                StaffStats::class,
             ])
             ->middleware([
                 EncryptCookies::class,

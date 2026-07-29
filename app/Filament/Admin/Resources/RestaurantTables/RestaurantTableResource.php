@@ -19,6 +19,7 @@ class RestaurantTableResource extends Resource
     protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
 
     protected static ?int $navigationSort = 20;
+
     protected static ?string $model = RestaurantTable::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;

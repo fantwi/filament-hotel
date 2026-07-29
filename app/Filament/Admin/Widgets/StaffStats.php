@@ -2,6 +2,10 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Models\Booking;
+use App\Models\Guest;
+use App\Models\Payment;
+use App\Models\Room;
 use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -15,24 +19,24 @@ class StaffStats extends StatsOverviewWidget
         // Receptionist dashboard
         if ($user->hasRole('receptionist')) {
             return [
-                Stat::make('Today Check-ins', \App\Models\Booking::whereDate('check_in', today())->count()),
-                Stat::make('Available Rooms', \App\Models\Room::where('status', 'available')->count()),
+                Stat::make('Today Check-ins', Booking::whereDate('check_in', today())->count()),
+                Stat::make('Available Rooms', Room::where('status', 'available')->count()),
             ];
         }
 
         // Accountant dashboard
         if ($user->hasRole('accountant')) {
             return [
-                Stat::make('Today Revenue', \App\Models\Payment::whereDate('created_at', today())->sum('amount')),
-                Stat::make('Outstanding Balance', \App\Models\Booking::sum('balance')),
+                Stat::make('Today Revenue', Payment::whereDate('created_at', today())->sum('amount')),
+                Stat::make('Outstanding Balance', Booking::sum('balance')),
             ];
         }
 
         // Admin / Manager dashboard
         return [
-            Stat::make('Total Bookings', \App\Models\Booking::count()),
-            Stat::make('Total Revenue', \App\Models\Payment::sum('amount')),
-            Stat::make('Guests', \App\Models\Guest::count()),
+            Stat::make('Total Bookings', Booking::count()),
+            Stat::make('Total Revenue', Payment::sum('amount')),
+            Stat::make('Guests', Guest::count()),
         ];
 
         // return [
@@ -63,7 +67,7 @@ class StaffStats extends StatsOverviewWidget
         //     Stat::make('Receptionists', User::role('receptionist')->count())
         //         ->icon('heroicon-o-user')
         //         ->color('success'),
-    
+
         //     // housekeeping
         //     Stat::make('Housekeeping', User::role('housekeeping')->count())
         //         ->icon('heroicon-o-sparkles')

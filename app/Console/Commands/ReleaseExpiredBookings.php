@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Booking;
 use Illuminate\Console\Command;
 
 class ReleaseExpiredBookings extends Command
@@ -26,15 +27,15 @@ class ReleaseExpiredBookings extends Command
     public function handle()
     {
         //
-        \App\Models\Booking::where(
+        Booking::where(
             'status',
             'pending'
         )
-        ->where(
-            'hold_until',
-            '<',
-            now()
-        )
-        ->delete();
+            ->where(
+                'hold_until',
+                '<',
+                now()
+            )
+            ->delete();
     }
 }

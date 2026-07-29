@@ -24,7 +24,7 @@ return new class extends Migration
             $table->json('new_values')->nullable();
 
             $table->string('ip_address')->nullable();
-            
+
             $table->timestamps();
         });
     }

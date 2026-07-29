@@ -12,7 +12,7 @@ class EditUser extends EditRecord
 
     protected function afterSave(): void
     {
-        if (!empty($this->data['roles'])) {
+        if (! empty($this->data['roles'])) {
             $this->record->syncRoles([$this->data['roles']]);
         }
     }

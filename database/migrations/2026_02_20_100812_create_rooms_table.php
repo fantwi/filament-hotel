@@ -18,7 +18,7 @@ return new class extends Migration
             $table->enum('status', [
                 'available',
                 'occupied',
-                'maintenance'
+                'maintenance',
             ])->default('available');
             $table->timestamps();
         });

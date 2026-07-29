@@ -2,11 +2,10 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Models\Booking;
+use App\Models\Payment;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use App\Models\Payment;
-use App\Models\Booking;
-use Carbon\Carbon;
 
 class RevenueStats extends BaseWidget
 {
@@ -28,19 +27,19 @@ class RevenueStats extends BaseWidget
 
         return [
             //
-            Stat::make('Total Revenue', "GHS " . number_format($totalRevenue, 2))
+            Stat::make('Total Revenue', 'GHS '.number_format($totalRevenue, 2))
                 ->description('All-time payments')
                 ->color('success'),
 
-            Stat::make('Revenue Today', "GHS " . number_format($todayRevenue, 2))
+            Stat::make('Revenue Today', 'GHS '.number_format($todayRevenue, 2))
                 ->description(now()->format('d M Y'))
                 ->color('primary'),
 
-            Stat::make('Revenue This Month', "GHS " . number_format($monthlyRevenue, 2))
+            Stat::make('Revenue This Month', 'GHS '.number_format($monthlyRevenue, 2))
                 ->description(now()->format('F Y'))
                 ->color('info'),
 
-            Stat::make('Outstanding Balance', "GHS " . number_format($outstandingBalance, 2))
+            Stat::make('Outstanding Balance', 'GHS '.number_format($outstandingBalance, 2))
                 ->description('Unpaid bookings')
                 ->color('danger'),
 

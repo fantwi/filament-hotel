@@ -28,8 +28,7 @@ class GuestsTable
                     ->label('Guest')
                     ->searchable(['first_name', 'last_name', 'email'])
                     ->sortable()
-                    ->getStateUsing(fn ($record) =>
-                        $record->first_name . ' ' . $record->last_name
+                    ->getStateUsing(fn ($record) => $record->first_name.' '.$record->last_name
                     ),
 
                 Tables\Columns\TextColumn::make('phone_number')

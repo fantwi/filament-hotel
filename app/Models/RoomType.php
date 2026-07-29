@@ -3,17 +3,17 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasPublicationState;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class RoomType extends Model
 {
     //
     use HasFactory;
-    use LogsActivity;
     use HasPublicationState;
+    use LogsActivity;
 
     protected $fillable = [
         'name',
@@ -45,6 +45,6 @@ class RoomType extends Model
         return LogOptions::defaults()
             ->logAll()
             ->logOnlyDirty()
-            ->setDescriptionForEvent(fn(string $eventName) => "RoomType {$eventName}");
+            ->setDescriptionForEvent(fn (string $eventName) => "RoomType {$eventName}");
     }
 }

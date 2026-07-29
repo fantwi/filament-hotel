@@ -2,20 +2,22 @@
 
 namespace App\Filament\Admin\Resources\Restaurants\Schemas;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\CheckboxList;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
-//use Filament\Forms\Components\Section;
+
+// use Filament\Forms\Components\Section;
 
 class RestaurantForm
 {
-    public static function configure(Schema $schema): Schema {
+    public static function configure(Schema $schema): Schema
+    {
 
         return $schema
 

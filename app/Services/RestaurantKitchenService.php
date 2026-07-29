@@ -51,7 +51,7 @@ class RestaurantKitchenService
     {
         $this->ensureStatusIs($order, ['pending', 'confirmed', 'preparing']);
 
-        $notes = collect([$order->kitchen_notes, $reason ? 'Cancellation reason: ' . $reason : null])
+        $notes = collect([$order->kitchen_notes, $reason ? 'Cancellation reason: '.$reason : null])
             ->filter()
             ->implode(PHP_EOL);
 

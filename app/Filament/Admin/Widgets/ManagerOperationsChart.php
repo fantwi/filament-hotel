@@ -11,8 +11,14 @@ use Filament\Widgets\ChartWidget;
 class ManagerOperationsChart extends ChartWidget
 {
     protected ?string $heading = 'Operations — Last 7 Days';
+
     protected int|string|array $columnSpan = 'full';
-    public static function canView(): bool { return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false; }
+
+    public static function canView(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false;
+    }
+
     protected function getData(): array
     {
         $labels = $hotel = $conference = $reservations = $orders = [];
@@ -24,10 +30,15 @@ class ManagerOperationsChart extends ChartWidget
             $reservations[] = RestaurantReservation::whereDate('created_at', $date)->count();
             $orders[] = RestaurantOrder::whereDate('created_at', $date)->count();
         }
+
         return ['datasets' => [
             ['label' => 'Hotel', 'data' => $hotel], ['label' => 'Conference', 'data' => $conference],
             ['label' => 'Restaurant Reservations', 'data' => $reservations], ['label' => 'Food Orders', 'data' => $orders],
         ], 'labels' => $labels];
     }
-    protected function getType(): string { return 'line'; }
+
+    protected function getType(): string
+    {
+        return 'line';
+    }
 }

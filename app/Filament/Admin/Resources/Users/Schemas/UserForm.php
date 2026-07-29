@@ -2,12 +2,11 @@
 
 namespace App\Filament\Admin\Resources\Users\Schemas;
 
-use Filament\Forms;
-use Filament\Schemas\Schema;
+use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Schema;
 use Spatie\Permission\Models\Role;
-use App\Models\User;
 
 class UserForm
 {
@@ -30,8 +29,8 @@ class UserForm
             Select::make('department')
                 ->options(User::getDepartments())
                 ->required(),
-                // ->dehydrated()
-                // ->native(false),
+            // ->dehydrated()
+            // ->native(false),
 
             TextInput::make('password')
                 ->password()

@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::table('bookings', function (Blueprint $table) {
             //
             $table->string('payment_status')
-              ->default('pending')
-              ->after('status');
-            
+                ->default('pending')
+                ->after('status');
+
         });
     }
 

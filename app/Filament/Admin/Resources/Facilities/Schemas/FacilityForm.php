@@ -2,9 +2,8 @@
 
 namespace App\Filament\Admin\Resources\Facilities\Schemas;
 
-use Filament\Schemas\Schema;
 use Filament\Forms;
-
+use Filament\Schemas\Schema;
 
 class FacilityForm
 {

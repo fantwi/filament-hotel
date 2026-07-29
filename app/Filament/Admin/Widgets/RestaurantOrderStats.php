@@ -33,7 +33,7 @@ class RestaurantOrderStats extends StatsOverviewWidget
 
         return [
             Stat::make('Total Food Orders', number_format($totalOrders))
-                ->description(number_format($ordersToday) . ' created today')
+                ->description(number_format($ordersToday).' created today')
                 ->descriptionIcon('heroicon-m-arrow-trending-up')
                 ->icon('heroicon-o-shopping-bag')
                 ->color('primary'),
@@ -45,15 +45,15 @@ class RestaurantOrderStats extends StatsOverviewWidget
                 ->description('Confirmed, preparing, or ready')
                 ->icon('heroicon-o-fire')
                 ->color('info'),
-            Stat::make('Completed Revenue', 'GHS ' . number_format($completedRevenue, 2))
+            Stat::make('Completed Revenue', 'GHS '.number_format($completedRevenue, 2))
                 ->description('Revenue from completed payments')
                 ->icon('heroicon-o-banknotes')
                 ->color('success'),
-            Stat::make('Outstanding Revenue', 'GHS ' . number_format($outstandingRevenue, 2))
+            Stat::make('Outstanding Revenue', 'GHS '.number_format($outstandingRevenue, 2))
                 ->description('Unpaid active orders')
                 ->icon('heroicon-o-exclamation-circle')
                 ->color('danger'),
-            Stat::make('Average Order Value', 'GHS ' . number_format($averageOrderValue, 2))
+            Stat::make('Average Order Value', 'GHS '.number_format($averageOrderValue, 2))
                 ->description('Average paid order')
                 ->icon('heroicon-o-calculator')
                 ->color('gray'),

@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('menu_items', function (Blueprint $table): void {
@@ -14,5 +15,9 @@ return new class extends Migration {
             $table->decimal('low_stock_threshold', 12, 3)->default(0)->after('production_usage_per_sale');
         });
     }
-    public function down(): void { Schema::table('menu_items', fn (Blueprint $table) => $table->dropColumn(['tracks_kitchen_production', 'production_unit', 'production_usage_per_sale', 'low_stock_threshold'])); }
+
+    public function down(): void
+    {
+        Schema::table('menu_items', fn (Blueprint $table) => $table->dropColumn(['tracks_kitchen_production', 'production_unit', 'production_usage_per_sale', 'low_stock_threshold']));
+    }
 };

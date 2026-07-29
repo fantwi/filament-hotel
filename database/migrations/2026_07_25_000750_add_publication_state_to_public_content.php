@@ -32,7 +32,7 @@ return new class extends Migration
         foreach ($this->tables as $tableName) {
             Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
                 $table->dropConstrainedForeignId('created_by');
-                $table->dropIndex($tableName . '_is_published_index');
+                $table->dropIndex($tableName.'_is_published_index');
                 $table->dropColumn('is_published');
             });
         }

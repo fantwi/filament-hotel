@@ -17,7 +17,7 @@ class CreateBooking extends CreateRecord
         if ($booking->status === 'checked_in') {
 
             $booking->room->update([
-                'status' => 'occupied'
+                'status' => 'occupied',
             ]);
 
         }

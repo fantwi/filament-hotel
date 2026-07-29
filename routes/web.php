@@ -1,37 +1,36 @@
 <?php
 
 use App\Http\Controllers\BookingController;
-use App\Http\Controllers\RestaurantReservationController;
 use App\Http\Controllers\RestaurantCartController;
 use App\Http\Controllers\RestaurantCheckoutController;
 use App\Http\Controllers\RestaurantOrderPaymentController;
+use App\Http\Controllers\RestaurantReservationController;
 use App\Http\Controllers\RestaurantTableOrderController;
 use App\Http\Controllers\RestaurantTableQrController;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schedule;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use App\Models\Room;
-use App\Models\RoomType;
+use App\Mail\RestaurantPaymentReceived;
 use App\Models\Booking;
-use App\Models\Payment;
-use App\Models\Guest;
-use App\Models\ConferenceRoom;
 use App\Models\ConferenceBooking;
+use App\Models\ConferenceRoom;
 use App\Models\ContactMessage;
-use App\Models\Restaurant;
-use App\Models\RestaurantReservation;
+use App\Models\Guest;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
+use App\Models\Payment;
+use App\Models\Restaurant;
 use App\Models\RestaurantOrder;
-use App\Services\InvoiceService;
-use App\Mail\RestaurantPaymentReceived;
-use Carbon\CarbonPeriod;
+use App\Models\RestaurantReservation;
+use App\Models\Room;
+use App\Models\RoomType;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 Route::get('/', function () {
     $roomTypes = RoomType::query()->published()->with(['facilities' => fn ($query) => $query->published()])->take(3)->get();
@@ -41,173 +40,148 @@ Route::get('/', function () {
     return view('index', compact('roomTypes', 'conferenceRooms', 'restaurant'));
 })->name('home');
 
-
-
-
-
-
 Route::get('/contact', function () {
-        return view('contact');
-    }
+    return view('contact');
+}
 )->name('contact');
 
 Route::post('/contact', function (Request $request) {
-        $request->validate([
-            'name' =>
-                'required',
-            'email' =>
-                'required|email',
-            'phone_number' =>
-                'nullable',
-            'subject' =>
-                'required',
-            'message' =>
-                'required',
-        ]);
+    $request->validate([
+        'name' => 'required',
+        'email' => 'required|email',
+        'phone_number' => 'nullable',
+        'subject' => 'required',
+        'message' => 'required',
+    ]);
 
-        ContactMessage::create([
-            'name' =>
-                $request->name,
-            'email' =>
-                $request->email,
-            'phone_number' =>
-                $request->phone_number,
-            'subject' =>
-                $request->subject,
-            'message' =>
-                $request->message,
-        ]);
+    ContactMessage::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'phone_number' => $request->phone_number,
+        'subject' => $request->subject,
+        'message' => $request->message,
+    ]);
 
-        return back()->with('success', 'Message sent successfully.');
-    }
+    return back()->with('success', 'Message sent successfully.');
+}
 )->middleware('throttle:5,1');
 
 Route::get('/conference-rooms', function () {
-        
-        $rooms = ConferenceRoom::published()->with(['facilities' => fn ($query) => $query->published()])->where('is_available', true)->get();
 
-        return view('conference.index', compact('rooms'));
-    })->name('conference.index');
+    $rooms = ConferenceRoom::published()->with(['facilities' => fn ($query) => $query->published()])->where('is_available', true)->get();
+
+    return view('conference.index', compact('rooms'));
+})->name('conference.index');
 
 Route::middleware('auth')->group(function () {
 
-        Route::get('/conference-room/{room}/book',
-            function (ConferenceRoom $room) {
-                abort_unless($room->is_published, 404);
+    Route::get('/conference-room/{room}/book',
+        function (ConferenceRoom $room) {
+            abort_unless($room->is_published, 404);
 
-                return view('conference.book', compact('room'));
-            })->name('conference.book');
+            return view('conference.book', compact('room'));
+        })->name('conference.book');
 
-        Route::post('/conference-room/book',
-            function (Request $request) {
-                $request->validate([
-                    'conference_room_id' =>
-                        'required',
-                    'booking_date' =>
-                        'required|date',
-                    'start_time' =>
-                        'required',
-                    'end_time' =>
-                        'required',
-                    'attendees' =>
-                        'required|integer|min:1',
+    Route::post('/conference-room/book',
+        function (Request $request) {
+            $request->validate([
+                'conference_room_id' => 'required',
+                'booking_date' => 'required|date',
+                'start_time' => 'required',
+                'end_time' => 'required',
+                'attendees' => 'required|integer|min:1',
+            ]);
+
+            $guest = auth()->user()->guest;
+
+            $room = ConferenceRoom::published()->findOrFail(
+                $request
+                    ->conference_room_id
+            );
+
+            if (! $room->is_available) {
+                return back()->withInput()->withErrors(['conference_room_id' => 'This conference room is unavailable.']);
+            }
+
+            $start =
+                Carbon::parse(
+                    $request->start_time
+                );
+
+            $end =
+                Carbon::parse(
+                    $request->end_time
+                );
+
+            if ($end <= $start) {
+
+                return back()
+
+                    ->withErrors([
+
+                        'end_time' => 'End time must be after start time.',
+
+                    ])
+
+                    ->withInput();
+            }
+
+            $overlaps = ConferenceBooking::query()
+                ->where('conference_room_id', $room->id)
+                ->whereDate('booking_date', $request->booking_date)
+                ->where(function ($query) {
+                    $query->whereIn('status', ['confirmed', 'checked_in'])
+                        ->orWhere(function ($pending) {
+                            $pending->where('status', 'pending')->where('hold_until', '>', now());
+                        });
+                })
+                ->where('start_time', '<', $request->end_time)
+                ->where('end_time', '>', $request->start_time)
+                ->exists();
+
+            if ($overlaps) {
+                return back()->withInput()->withErrors(['start_time' => 'This conference room is already booked for the selected time slot.']);
+            }
+
+            $hours =
+                $start->diffInHours(
+                    $end
+                );
+
+            $total =
+                $hours *
+                $room->price_per_hour;
+
+            $total = $hours * $room->price_per_hour;
+
+            $booking = ConferenceBooking::create([
+                'conference_room_id' => $room->id,
+                'guest_id' => $guest->id,
+                'booking_date' => $request->booking_date,
+                'start_time' => $request->start_time,
+                'end_time' => $request->end_time,
+                'attendees' => $request->attendees,
+                'special_requests' => $request->special_requests,
+                'total_price' => $total,
+                'status' => 'pending',
+                'payment_status' => 'pending',
+                'hold_until' => now()->addMinutes(15),
+            ]);
+
+            if ($booking->payment_status === 'pending'
+                &&
+                $booking->hold_until?->isPast()) {
+                $booking->update([
+                    'status' => 'expired',
+                    'payment_status' => 'expired',
                 ]);
 
-                $guest = auth()->user()->guest;
+                return redirect()->route('conference.expired');
+            }
 
-                $room = ConferenceRoom::published()->findOrFail(
-                        $request
-                        ->conference_room_id
-                    );
-
-                if (! $room->is_available) {
-                    return back()->withInput()->withErrors(['conference_room_id' => 'This conference room is unavailable.']);
-                }
-
-
-                $start =
-                    \Carbon\Carbon::parse(
-                        $request->start_time
-                    );
-
-                $end =
-                    \Carbon\Carbon::parse(
-                        $request->end_time
-                    );
-
-                if ($end <= $start) {
-
-                    return back()
-
-                        ->withErrors([
-
-                            'end_time' =>
-
-                                'End time must be after start time.'
-
-                        ])
-
-                        ->withInput();
-                }
-
-                $overlaps = ConferenceBooking::query()
-                    ->where('conference_room_id', $room->id)
-                    ->whereDate('booking_date', $request->booking_date)
-                    ->where(function ($query) {
-                        $query->whereIn('status', ['confirmed', 'checked_in'])
-                            ->orWhere(function ($pending) {
-                                $pending->where('status', 'pending')->where('hold_until', '>', now());
-                            });
-                    })
-                    ->where('start_time', '<', $request->end_time)
-                    ->where('end_time', '>', $request->start_time)
-                    ->exists();
-
-                if ($overlaps) {
-                    return back()->withInput()->withErrors(['start_time' => 'This conference room is already booked for the selected time slot.']);
-                }
-
-                $hours =
-                    $start->diffInHours(
-                        $end
-                    );
-
-                $total =
-                    $hours *
-                    $room->price_per_hour;
-
-
-
-                $total = $hours * $room->price_per_hour;
-
-                $booking = ConferenceBooking::create([
-                    'conference_room_id' => $room->id,
-                    'guest_id' => $guest->id,
-                    'booking_date' => $request->booking_date,
-                    'start_time' => $request->start_time,
-                    'end_time' => $request->end_time,
-                    'attendees' => $request->attendees,
-                    'special_requests' => $request->special_requests,
-                    'total_price' => $total,
-                    'status' => 'pending',
-                    'payment_status' => 'pending',
-                    'hold_until' => now()->addMinutes(15),
-                ]);
-
-                if ($booking->payment_status === 'pending'
-                    &&
-                    $booking->hold_until?->isPast()) {
-                    $booking->update([
-                        'status' => 'expired',
-                        'payment_status' => 'expired',
-                    ]);
-
-                    return redirect()->route('conference.expired');
-                }
-
-                return redirect()->route('conference.payment', $booking->id);
-            })->name('conference.booking.store');
-    });
+            return redirect()->route('conference.payment', $booking->id);
+        })->name('conference.booking.store');
+});
 
 Route::get('/conference-booking/{booking}/payment',
     function (ConferenceBooking $booking) {
@@ -216,9 +190,6 @@ Route::get('/conference-booking/{booking}/payment',
 
         return view('conference.payment', compact('booking'));
     })->middleware('auth')->name('conference.payment');
-
-
-
 
 Route::post('/conference-booking/{booking}/pay',
     function (
@@ -232,7 +203,7 @@ Route::post('/conference-booking/{booking}/pay',
                 ->with('error', 'This booking is no longer available for payment.');
         }
 
-        $reference = 'CONF_' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(16));
+        $reference = 'CONF_'.Str::upper(Str::random(16));
         $booking->update(['transaction_reference' => $reference]);
 
         $response = Http::withToken(config('services.paystack.secretKey'))
@@ -247,23 +218,20 @@ Route::post('/conference-booking/{booking}/pay',
 
                     'metadata' => ['conference_booking_id' => $booking->id],
 
-                    'callback_url' =>
-                        route('conference.verify', $booking->id),
+                    'callback_url' => route('conference.verify', $booking->id),
                 ]
             )
             ->json();
 
-        if (!isset($response['data']['authorization_url'])) {
+        if (! isset($response['data']['authorization_url'])) {
             return back()
                 ->with('error', 'Payment initialization failed.');
         }
 
         return redirect(
-            $response
-                ['data']
-                ['authorization_url']
+            $response['data']['authorization_url']
         );
-})->middleware('auth')->name('conference.pay');
+    })->middleware('auth')->name('conference.pay');
 
 Route::get('/conference-booking/{booking}/verify',
 
@@ -273,7 +241,7 @@ Route::get('/conference-booking/{booking}/verify',
 
         $reference = request('reference');
 
-        if (!$reference) {
+        if (! $reference) {
             return redirect()
                 ->route(
                     'conference.payment',
@@ -291,12 +259,12 @@ Route::get('/conference-booking/{booking}/verify',
                     'services.paystack.secretKey'
                 )
             )
-            ->get(
-                "https://api.paystack.co/transaction/verify/{$reference}"
-            )
-            ->json();
+                ->get(
+                    "https://api.paystack.co/transaction/verify/{$reference}"
+                )
+                ->json();
 
-        if (!isset($response['data']) || $response['data']['status'] !== 'success'
+        if (! isset($response['data']) || $response['data']['status'] !== 'success'
             || $reference !== $booking->transaction_reference
             || (int) $response['data']['amount'] !== (int) round($booking->total_price * 100)
             || (int) data_get($response, 'data.metadata.conference_booking_id') !== $booking->id) {
@@ -311,7 +279,7 @@ Route::get('/conference-booking/{booking}/verify',
                 );
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($booking, $reference): void {
+        DB::transaction(function () use ($booking, $reference): void {
             $booking = ConferenceBooking::query()->lockForUpdate()->findOrFail($booking->id);
 
             if ($booking->payment_status === 'paid') {
@@ -348,7 +316,7 @@ Route::post(
     '/conference-booking/{booking}/cancel',
 
     function (
-        App\Models\ConferenceBooking $booking
+        ConferenceBooking $booking
     ) {
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
@@ -371,11 +339,9 @@ Route::post(
 
         $booking->update([
 
-            'status' =>
-                'cancelled',
+            'status' => 'cancelled',
 
-            'payment_status' =>
-                $booking->payment_status
+            'payment_status' => $booking->payment_status
                 === 'paid'
 
                 ? 'paid'
@@ -401,7 +367,7 @@ Route::get(
     '/conference-booking/{booking}/invoice',
 
     function (
-        App\Models\ConferenceBooking $booking
+        ConferenceBooking $booking
     ) {
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
@@ -426,7 +392,6 @@ Route::get(
 )->middleware('auth')->name(
     'conference.invoice'
 );
-
 
 Route::get('/restaurant', function () {
 
@@ -649,32 +614,32 @@ Route::post(
             return back()->with('error', 'Reservation has expired.');
         }
 
-        $reference = 'REST-' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(16));
+        $reference = 'REST-'.Str::upper(Str::random(16));
         $reservation->update(['transaction_reference' => $reference]);
 
         $response = Http::withToken(
             config('services.paystack.secretKey')
         )
-        ->post(
-            'https://api.paystack.co/transaction/initialize',
-            [
+            ->post(
+                'https://api.paystack.co/transaction/initialize',
+                [
 
-                'email' => $reservation->guest_email,
+                    'email' => $reservation->guest_email,
 
-                'amount' => $reservation->reservation_fee * 100,
+                    'amount' => $reservation->reservation_fee * 100,
 
-                'reference' => $reference,
+                    'reference' => $reference,
 
-                'metadata' => ['restaurant_reservation_id' => $reservation->id],
+                    'metadata' => ['restaurant_reservation_id' => $reservation->id],
 
-                'callback_url' => route('restaurant.verify', [
-                    'reservation' => $reservation,
-                    'token' => $accessToken,
-                ]),
+                    'callback_url' => route('restaurant.verify', [
+                        'reservation' => $reservation,
+                        'token' => $accessToken,
+                    ]),
 
-            ]
-        )
-        ->json();
+                ]
+            )
+            ->json();
 
         if (
             ! isset(
@@ -725,10 +690,10 @@ Route::get(
         $response = Http::withToken(
             config('services.paystack.secretKey')
         )
-        ->get(
-            "https://api.paystack.co/transaction/verify/{$reference}"
-        )
-        ->json();
+            ->get(
+                "https://api.paystack.co/transaction/verify/{$reference}"
+            )
+            ->json();
 
         if (! isset($response['data']) || $response['data']['status'] !== 'success'
             || $reference !== $reservation->transaction_reference
@@ -749,7 +714,7 @@ Route::get(
                 );
         }
 
-        $paymentRecorded = \Illuminate\Support\Facades\DB::transaction(function () use ($reservation, $reference): bool {
+        $paymentRecorded = DB::transaction(function () use ($reservation, $reference): bool {
             $reservation = RestaurantReservation::query()->lockForUpdate()->findOrFail($reservation->id);
 
             if ($reservation->payment_status === 'completed') {
@@ -798,7 +763,7 @@ Route::middleware('auth')->get('/dashboard', function () {
 
     $guest = $user?->guest;
 
-    if (!$guest) {
+    if (! $guest) {
         return view('dashboard', [
             'hotelBookings' => collect(),
             'conferenceBookings' => collect(),
@@ -823,23 +788,20 @@ Route::middleware('auth')->get('/dashboard', function () {
         'payment_status',
         'pending'
     )
-    ->where(
-        'hold_until',
-        '<',
-        now()
-    )
-    ->update([
+        ->where(
+            'hold_until',
+            '<',
+            now()
+        )
+        ->update([
 
-        'hold_status' =>
-            'expired',
+            'hold_status' => 'expired',
 
-        'payment_status' =>
-            'expired',
+            'payment_status' => 'expired',
 
-        'hold_until' =>
-            null,
+            'hold_until' => null,
 
-    ]);
+        ]);
 
     $hotelBookings = collect();
     $conferenceBookings = collect();
@@ -854,7 +816,7 @@ Route::middleware('auth')->get('/dashboard', function () {
                 $query
                     ->whereNull('hold_status')
                     ->orWhere('hold_status', '!=', 'expired');
-                })
+            })
             ->latest()
             ->get();
     }
@@ -870,19 +832,19 @@ Route::middleware('auth')->get('/dashboard', function () {
 
     if ($guest) {
         $restaurantReservations = RestaurantReservation::with([
-                'restaurant',
-                'table',
-                'payments',
-            ])
+            'restaurant',
+            'table',
+            'payments',
+        ])
             ->where('guest_id', $guest->id)
             ->latest()
             ->get();
 
         $restaurantOrders = RestaurantOrder::with([
-                'items.menuItem',
-                'payments',
-                'reservation.table',
-            ])
+            'items.menuItem',
+            'payments',
+            'reservation.table',
+        ])
             ->where('guest_id', $guest->id)
             ->latest()
             ->get();
@@ -890,7 +852,6 @@ Route::middleware('auth')->get('/dashboard', function () {
 
     $totalRestaurantReservations = $restaurantReservations->count();
     $totalRestaurantOrders = $restaurantOrders->count();
-
 
     $totalBookings = $hotelBookings->count() + $conferenceBookings->count() + $restaurantReservations->count();
 
@@ -913,23 +874,22 @@ Route::middleware('auth')->get('/dashboard', function () {
 
     $outstandingBalance =
         $hotelBookings->filter(function ($booking) {
-                return $booking->payment_status === 'pending' && $booking->hold_status !== 'expired';
-            })->sum('total_price')
+            return $booking->payment_status === 'pending' && $booking->hold_status !== 'expired';
+        })->sum('total_price')
         +
         $conferenceBookings->filter(function ($booking) {
-                return $booking->payment_status === 'pending';
-            })->sum('total_price')
+            return $booking->payment_status === 'pending';
+        })->sum('total_price')
         +
         $restaurantReservations->filter(function ($reservation) {
-                return $reservation->payment_status === 'pending'
-                    && $reservation->hold_status !== 'expired';
-            })->sum('reservation_fee')
+            return $reservation->payment_status === 'pending'
+                && $reservation->hold_status !== 'expired';
+        })->sum('reservation_fee')
         +
         $restaurantOrders->filter(function ($order) {
-                return $order->payment_status === 'pending'
-                    && $order->status !== 'cancelled';
-            })->sum('total');
-
+            return $order->payment_status === 'pending'
+                && $order->status !== 'cancelled';
+        })->sum('total');
 
     $upcomingHotelBookings = $hotelBookings->filter(function ($booking) {
         return $booking->check_in >= now();
@@ -959,15 +919,15 @@ Route::middleware('auth')->get('/dashboard', function () {
 
     return view(
         'dashboard',
-        compact('hotelBookings', 'conferenceBookings', 'restaurantReservations', 'restaurantOrders', 'upcomingHotelBookings', 
-            'pastHotelBookings', 'upcomingConferenceBookings', 'pastConferenceBookings', 'upcomingRestaurantReservations', 'pastRestaurantReservations', 
+        compact('hotelBookings', 'conferenceBookings', 'restaurantReservations', 'restaurantOrders', 'upcomingHotelBookings',
+            'pastHotelBookings', 'upcomingConferenceBookings', 'pastConferenceBookings', 'upcomingRestaurantReservations', 'pastRestaurantReservations',
             'totalBookings', 'totalConfirmedBookings', 'totalSpent', 'outstandingBalance', 'totalRestaurantReservations', 'totalRestaurantOrders'));
 
 })->name('dashboard');
 
 Route::get('/invoice/{booking}', function ($bookingId) {
 
-    $booking = \App\Models\Booking::findOrFail($bookingId);
+    $booking = Booking::findOrFail($bookingId);
 
     if ($booking->guest_id !== auth()->user()->guest->id) {
         abort(403);
@@ -981,7 +941,7 @@ Route::get('/invoice/{booking}', function ($bookingId) {
 
 Route::get(
     '/rooms/{roomType}/calendar',
-    function (\App\Models\RoomType $roomType) {
+    function (RoomType $roomType) {
 
         abort_unless($roomType->is_published, 404);
 
@@ -990,16 +950,6 @@ Route::get(
                 'room_type_id',
                 $roomType->id
             )->get();
-
-
-
-
-
-
-
-
-
-
 
         $events = [];
 
@@ -1012,7 +962,7 @@ Route::get(
             now()->addMonths(3)->endOfMonth();
 
         $period =
-            \Carbon\CarbonPeriod::create(
+            CarbonPeriod::create(
                 $startDate,
                 $endDate
             );
@@ -1031,22 +981,22 @@ Route::get(
 
                     }
                 )
-                ->whereNotIn('status', ['cancelled', 'no_show'])
-                ->where(function ($query) {
-                    $query->whereNull('hold_status')
-                        ->orWhere('hold_status', '!=', 'expired');
-                })
-                ->whereDate(
-                    'check_in',
-                    '<=',
-                    $date
-                )
-                ->whereDate(
-                    'check_out',
-                    '>',
-                    $date
-                )
-                ->count();
+                    ->whereNotIn('status', ['cancelled', 'no_show'])
+                    ->where(function ($query) {
+                        $query->whereNull('hold_status')
+                            ->orWhere('hold_status', '!=', 'expired');
+                    })
+                    ->whereDate(
+                        'check_in',
+                        '<=',
+                        $date
+                    )
+                    ->whereDate(
+                        'check_out',
+                        '>',
+                        $date
+                    )
+                    ->count();
 
             $available =
                 $totalRooms - $bookedCount;
@@ -1057,18 +1007,14 @@ Route::get(
 
                 $title = 'Fully Booked';
 
-            }
-
-            elseif ($available <= 2) {
+            } elseif ($available <= 2) {
 
                 $color = '#facc15';
 
                 $title =
                     "{$available} Rooms Left";
 
-            }
-
-            else {
+            } else {
 
                 $color = '#22c55e';
 
@@ -1081,8 +1027,7 @@ Route::get(
 
                 'title' => $title,
 
-                'start' =>
-                    $date->format('Y-m-d'),
+                'start' => $date->format('Y-m-d'),
 
                 'allDay' => true,
 
@@ -1100,246 +1045,107 @@ Route::get(
             )
         );
 
-})->name('rooms.calendar');
+    })->name('rooms.calendar');
 
 Route::middleware('auth')
+    ->get(
 
-->get(
+        '/profile',
 
-    '/profile',
+        function () {
 
-    function () {
+            $user =
+                auth()
+                    ->user();
 
-        $user =
-            auth()
-            ->user();
+            $guest =
+                $user
+                    ?->guest;
 
-        $guest =
-            $user
-            ?->guest;
+            $hotelBookings =
 
-        $hotelBookings =
+                Booking::where(
+                    'guest_id',
+                    $guest?->id
+                )
+                    ->latest()
+                    ->get();
 
-            Booking::where(
-                'guest_id',
-                $guest?->id
-            )
-            ->latest()
-            ->get();
+            $conferenceBookings =
 
-        $conferenceBookings =
+                ConferenceBooking::with(
+                    'room'
+                )
+                    ->where(
+                        'guest_id',
+                        $guest?->id
+                    )
+                    ->latest()
+                    ->get();
 
-            ConferenceBooking::with(
-                'room'
-            )
-            ->where(
-                'guest_id',
-                $guest?->id
-            )
-            ->latest()
-            ->get();
+            $payments =
 
-        $payments =
+                Payment::where(
+                    'guest_id',
+                    $guest?->id
+                )
+                    ->latest()
+                    ->get();
 
-            Payment::where(
-                'guest_id',
-                $guest?->id
-            )
-            ->latest()
-            ->get();
+            return view(
 
-        return view(
+                'profile',
 
-            'profile',
+                compact(
 
-            compact(
+                    'user',
 
-                'user',
+                    'guest',
 
-                'guest',
+                    'hotelBookings',
 
-                'hotelBookings',
+                    'conferenceBookings',
 
-                'conferenceBookings',
+                    'payments'
 
-                'payments'
+                )
+            );
 
-            )
-        );
-
-
-
-
-
-
-
-
-
-    }
-)
-->name('profile');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        }
+    )
+    ->name('profile');
 
 Route::post(
 
     '/profile/update',
 
     function (
-        Illuminate\Http\Request
-        $request
+        Request $request
     ) {
 
         $request->validate([
 
-            'first_name' =>
+            'first_name' => 'required|string|max:255',
 
-                'required|string|max:255',
+            'last_name' => 'required|string|max:255',
 
-            'last_name' =>
+            'email' => 'required|string|email|max:255|unique:users,email,'.auth()->id(),
 
-                'required|string|max:255',
+            'phone_number' => 'nullable|string|max:255',
 
-            'email' =>
-
-                'required|string|email|max:255|unique:users,email,' . auth()->id(),
-
-            'phone_number' =>
-
-                'nullable|string|max:255',
-
-            'profile_photo' =>
-
-                'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
 
         ]);
 
         $user =
             auth()
-            ->user();
+                ->user();
 
         $guest =
-            \App\Models\Guest::where(
+            Guest::where(
                 'user_id',
                 $user->id
             )->first();
-
 
         if (
             $request->hasFile(
@@ -1373,7 +1179,6 @@ Route::post(
             }
         }
 
-
         $phoneNumber =
 
             $request->phone_number;
@@ -1395,7 +1200,6 @@ Route::post(
         $user->phone_number =
             $phoneNumber;
 
-
         if ($guest) {
 
             $guest->first_name = $request->first_name;
@@ -1407,7 +1211,6 @@ Route::post(
             $guest->phone_number =
                 $phoneNumber;
         }
-
 
         $user->save();
 
@@ -1428,37 +1231,32 @@ Route::post(
     }
 
 )
-->middleware('auth')
-->name('profile.update');
+    ->middleware('auth')
+    ->name('profile.update');
 
 Route::post(
 
     '/profile/password',
 
     function (
-        Illuminate\Http\Request
-        $request
+        Request $request
     ) {
 
         $request->validate([
 
-            'current_password' =>
+            'current_password' => 'required',
 
-                'required',
-
-            'password' =>
-
-                'required|min:8|confirmed',
+            'password' => 'required|min:8|confirmed',
 
         ]);
 
         $user =
             auth()
-            ->user();
+                ->user();
 
         if (
 
-            !Hash::check(
+            ! Hash::check(
 
                 $request
                     ->current_password,
@@ -1474,9 +1272,7 @@ Route::post(
 
                 ->withErrors([
 
-                    'current_password' =>
-
-                        'Current password is incorrect.'
+                    'current_password' => 'Current password is incorrect.',
 
                 ]);
         }
@@ -1502,10 +1298,10 @@ Route::post(
     }
 
 )
-->middleware('auth')
-->name(
-    'profile.password'
-);
+    ->middleware('auth')
+    ->name(
+        'profile.password'
+    );
 
 Route::middleware('auth')->group(function () {
 
@@ -1538,49 +1334,47 @@ Route::middleware('auth')->group(function () {
             'payment_status',
             'pending'
         )
-        ->where(
-            'hold_until',
-            '<',
-            now()
-        )
-        ->update([
+            ->where(
+                'hold_until',
+                '<',
+                now()
+            )
+            ->update([
 
-            'hold_status' =>
-                'expired',
+                'hold_status' => 'expired',
 
-            'payment_status' =>
-                'expired',
+                'payment_status' => 'expired',
 
-        ]);
+            ]);
 
         $bookings =
             Booking::with([
-                'room.roomType'
+                'room.roomType',
             ])
-            ->where(
-                'guest_id',
-                $guest->id
-            )
-            ->where(
-                'payment_status',
-                'pending'
-            )
-            ->where(
-                'hold_status',
-                '!=',
-                'expired'
-            )
-            ->where(function ($query) {
-                $query
-                    ->whereNull('hold_until')
-                    ->orWhere(
-                        'hold_until',
-                        '>',
-                        now()
-                    );
-            })
-            ->latest()
-            ->get();
+                ->where(
+                    'guest_id',
+                    $guest->id
+                )
+                ->where(
+                    'payment_status',
+                    'pending'
+                )
+                ->where(
+                    'hold_status',
+                    '!=',
+                    'expired'
+                )
+                ->where(function ($query) {
+                    $query
+                        ->whereNull('hold_until')
+                        ->orWhere(
+                            'hold_until',
+                            '>',
+                            now()
+                        );
+                })
+                ->latest()
+                ->get();
 
         return view(
             'payments.index',
@@ -1588,11 +1382,9 @@ Route::middleware('auth')->group(function () {
         );
 
     })->middleware('auth')
-    ->name('payments.index');
+        ->name('payments.index');
 
 });
-
-
 
 Route::get('/rooms', function () {
 
@@ -1618,7 +1410,7 @@ Route::get('/rooms/{type}', function (RoomType $type) {
 
     return view(
         'rooms.show',
-        compact('type','availableRooms')
+        compact('type', 'availableRooms')
     );
 
 })->name('rooms.show');
@@ -1639,7 +1431,7 @@ Route::post('/booking/pay', function (Request $request) {
         return redirect()->route('booking.payment')->with('error', 'This booking is no longer available for payment.');
     }
 
-    $reference = 'ROOM-' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(16));
+    $reference = 'ROOM-'.Str::upper(Str::random(16));
     $booking->update(['transaction_reference' => $reference]);
 
     $response = Http::withToken(config('services.paystack.secretKey'))
@@ -1693,7 +1485,7 @@ Route::post(
     '/booking/{booking}/cancel',
 
     function (
-        App\Models\Booking $booking
+        Booking $booking
     ) {
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
@@ -1716,14 +1508,11 @@ Route::post(
 
         $booking->update([
 
-            'status' =>
-                'cancelled',
+            'status' => 'cancelled',
 
-            'payment_status' =>
-                'cancelled',
+            'payment_status' => 'cancelled',
 
-            'hold_status' =>
-                'cancelled',
+            'hold_status' => 'cancelled',
 
         ]);
 
@@ -1744,7 +1533,7 @@ Route::get(
     '/booking/{booking}/invoice',
 
     function (
-        App\Models\Booking $booking
+        Booking $booking
     ) {
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
@@ -1770,7 +1559,6 @@ Route::get(
     'booking.invoice'
 );
 
-
 Route::get('/payment/callback', function (Request $request) {
 
     $reference = $request->reference;
@@ -1791,29 +1579,7 @@ Route::get('/payment/callback', function (Request $request) {
         && (int) ($data['data']['amount'] ?? 0) === (int) round($booking->total_price * 100)
         && (int) data_get($data, 'data.metadata.booking_id') === $booking->id) {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    
-
-
-        \Illuminate\Support\Facades\DB::transaction(function () use ($booking, $reference): void {
+        DB::transaction(function () use ($booking, $reference): void {
             $booking = Booking::query()->lockForUpdate()->findOrFail($booking->id);
 
             if ($booking->payments()->where('payment_status', 'paid')->exists()) {
@@ -1838,19 +1604,12 @@ Route::get('/payment/callback', function (Request $request) {
                 'Booking confirmed!'
             );
 
-
     }
 
     return redirect('/booking/payment')
         ->with('error', 'Payment failed');
 
 })->name('payment.callback');
-
-
-
-
-
-
 
 Route::middleware('auth')->get(
     '/rooms/{type}/available',
@@ -1869,10 +1628,10 @@ Route::middleware('auth')->get(
             compact('type', 'rooms')
         );
 
-})->name('rooms.available');
+    })->name('rooms.available');
 
 Route::get('/book/{room}', function ($roomId) {
-    $room = \App\Models\Room::findOrFail($roomId);
+    $room = Room::findOrFail($roomId);
 
     return view('booking.create', compact('room'));
 })->middleware('auth');
@@ -1891,8 +1650,6 @@ Route::post('/book', function () {
                 'Please login first.'
             );
     }
-    
-
 
     $guest =
         Guest::where(
@@ -1900,47 +1657,36 @@ Route::post('/book', function () {
             $user->id
         )->first();
 
-    $nights = \Carbon\Carbon::parse(request('check_in'))
+    $nights = Carbon::parse(request('check_in'))
         ->diffInDays(request('check_out'));
 
-    $room = \App\Models\Room::find(request('room_id'));
+    $room = Room::find(request('room_id'));
 
     $total = $room->price * $nights;
 
-
     $booking = Booking::create([
 
-            'guest_id' =>
-                $guest->id,
+        'guest_id' => $guest->id,
 
-            'room_id' =>
-                session('booking.room_id'),
+        'room_id' => session('booking.room_id'),
 
-            'check_in' =>
-                session('booking.check_in'),
+        'check_in' => session('booking.check_in'),
 
-            'check_out' =>
-                session('booking.check_out'),
+        'check_out' => session('booking.check_out'),
 
-            'check_in_time' =>
-                session('booking.check_in_time'),
+        'check_in_time' => session('booking.check_in_time'),
 
-            'check_out_time' =>
-                session('booking.check_out_time'),
+        'check_out_time' => session('booking.check_out_time'),
 
-            'hold_status' =>
-                'pending',
+        'hold_status' => 'pending',
 
-            'payment_status' =>
-                'unpaid',
+        'payment_status' => 'unpaid',
 
-            'hold_until' =>
-                now()->addMinutes(15),
+        'hold_until' => now()->addMinutes(15),
 
-            'total_price' =>
-                session('booking.total'),
+        'total_price' => session('booking.total'),
 
-        ]);
+    ]);
 
     session([
         'booking.id' => $booking->id,
@@ -1953,7 +1699,7 @@ Route::post('/book', function () {
 
 Route::get('/pay/{booking}', function ($id) {
 
-    $booking = \App\Models\Booking::findOrFail($id);
+    $booking = Booking::findOrFail($id);
 
     abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
 
@@ -1973,31 +1719,30 @@ Route::middleware('auth')->group(function () {
 
     Route::get(
         '/booking/create',
-        [App\Http\Controllers\BookingController::class,'create']
+        [BookingController::class, 'create']
     )->name('booking.create');
 
     Route::post(
         '/booking/store',
-        [App\Http\Controllers\BookingController::class,'store']
+        [BookingController::class, 'store']
     )->name('booking.store');
 
-Route::get(
-    '/booking/select/{room}', 
-    function (Room $room) {
+    Route::get(
+        '/booking/select/{room}',
+        function (Room $room) {
 
-        session([
-            'booking.room_id' => $room->id,
-            'booking.room_name' => $room->roomType->name,
-            'booking.room_number' => $room->room_number,
-            'booking.room_price' => $room->roomType->price_per_night ?? 0,
-        ]);
+            session([
+                'booking.room_id' => $room->id,
+                'booking.room_name' => $room->roomType->name,
+                'booking.room_number' => $room->room_number,
+                'booking.room_price' => $room->roomType->price_per_night ?? 0,
+            ]);
 
-        return redirect('/booking/details');
+            return redirect('/booking/details');
 
-})->name('booking.select');
+        })->name('booking.select');
 
 });
-
 
 Route::middleware('auth')->group(function () {
     Route::get('/booking/details', function () {
@@ -2005,7 +1750,7 @@ Route::middleware('auth')->group(function () {
             session('booking.room_id');
 
         $bookings =
-            \App\Models\Booking::where(
+            Booking::where(
                 'room_id',
                 $roomId
             )->get();
@@ -2015,7 +1760,7 @@ Route::middleware('auth')->group(function () {
         foreach ($bookings as $booking) {
 
             $period =
-                \Carbon\CarbonPeriod::create(
+                CarbonPeriod::create(
                     $booking->check_in,
                     $booking->check_out
                 );
@@ -2034,11 +1779,7 @@ Route::middleware('auth')->group(function () {
         );
     })->name('booking.details');
 
-
     Route::post('/booking/details', function (Request $request) {
-
-
-
 
         if (! auth()->check()) {
 
@@ -2048,25 +1789,19 @@ Route::middleware('auth')->group(function () {
 
                 'pending_booking' => [
 
-                    'check_in' =>
-                        $request->input('check_in'),
+                    'check_in' => $request->input('check_in'),
 
-                    'check_out' =>
-                        $request->input('check_out'),
+                    'check_out' => $request->input('check_out'),
 
-                    'check_in_time' =>
-                        $request->input('check_in_time'),
+                    'check_in_time' => $request->input('check_in_time'),
 
-                    'check_out_time' =>
-                        $request->input('check_out_time'),
+                    'check_out_time' => $request->input('check_out_time'),
 
-                    'guests' =>
-                        $request->input('guests'),
+                    'guests' => $request->input('guests'),
 
-                    'room_id' =>
-                        session('booking.room_id'),
+                    'room_id' => session('booking.room_id'),
 
-                ]
+                ],
 
             ]);
 
@@ -2077,13 +1812,13 @@ Route::middleware('auth')->group(function () {
                 );
         }
 
-        $nights = \Carbon\Carbon::parse(
-                $request->input('check_in')
-            )->diffInDays(
-                \Carbon\Carbon::parse(
-                    $request->input('check_out')
-                )
-            );
+        $nights = Carbon::parse(
+            $request->input('check_in')
+        )->diffInDays(
+            Carbon::parse(
+                $request->input('check_out')
+            )
+        );
 
         $nights = max($nights, 1);
 
@@ -2098,48 +1833,34 @@ Route::middleware('auth')->group(function () {
                 'room_id',
                 $roomId
             )
-            ->where(function ($query) use ($request) {
+                ->where(function ($query) use ($request) {
 
-                $query->whereBetween(
-                    'check_in',
-                    [
-                        $request->input('check_in'),
-                        $request->input('check_out')
-                    ]
-                )
-                ->orWhereBetween(
-                    'check_out',
-                    [
-                        $request->input('check_in'),
-                        $request->input('check_out')
-                    ]
-                );
+                    $query->whereBetween(
+                        'check_in',
+                        [
+                            $request->input('check_in'),
+                            $request->input('check_out'),
+                        ]
+                    )
+                        ->orWhereBetween(
+                            'check_out',
+                            [
+                                $request->input('check_in'),
+                                $request->input('check_out'),
+                            ]
+                        );
 
-            })
-            ->exists();
+                })
+                ->exists();
 
         if ($conflict) {
 
             return back()
                 ->withErrors([
-                    'dates' =>
-                        'Selected dates are unavailable.'
+                    'dates' => 'Selected dates are unavailable.',
                 ])
                 ->withInput();
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         $holdUntil =
             now()->addMinutes(15);
@@ -2155,20 +1876,11 @@ Route::middleware('auth')->group(function () {
                 );
         }
 
-
-
-
-
-
-
-
-
-
         $guest =
             Guest::firstOrCreate(
 
                 [
-                    'user_id' => $user->id
+                    'user_id' => $user->id,
                 ],
 
                 [
@@ -2188,30 +1900,23 @@ Route::middleware('auth')->group(function () {
         $booking =
             Booking::create([
 
-                'guest_id' =>
-                    $guest->id,
+                'guest_id' => $guest->id,
 
-                'room_id' =>
-                    session('booking.room_id'),
+                'room_id' => session('booking.room_id'),
 
-                'check_in' =>
-                    $request->input('check_in'),
+                'check_in' => $request->input('check_in'),
 
-                'check_out' =>
-                    $request->input('check_out'),
+                'check_out' => $request->input('check_out'),
 
-                'check_in_time' =>
-                    $request->input('check_in_time'),
+                'check_in_time' => $request->input('check_in_time'),
 
-                'check_out_time' =>
-                    $request->input('check_out_time'),
+                'check_out_time' => $request->input('check_out_time'),
 
                 'hold_status' => 'pending',
 
                 'hold_until' => $holdUntil,
 
-                'total_price' =>
-                    session('booking.total'),
+                'total_price' => session('booking.total'),
 
             ]);
 
@@ -2224,14 +1929,9 @@ Route::middleware('auth')->group(function () {
             'booking.id' => $booking->id,
         ]);
 
-        
-
-
         return redirect('/booking/payment');
 
     });
-
-
 
     Route::get('/booking/payment', function () {
 
@@ -2261,16 +1961,12 @@ Route::middleware('auth')->group(function () {
                 );
         }
 
-
-
-
         return view(
             'booking.payment',
             compact('booking')
         );
 
     })->name('booking.payment');
-
 
     Route::post('/booking/payment', function () {
 
@@ -2281,38 +1977,15 @@ Route::middleware('auth')->group(function () {
             return redirect('/login');
         }
 
-
-
-
-
-
-
-
-
-
         $guest =
             Guest::where(
                 'user_id',
                 $user->id
             )->first();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
         return redirect()->route('booking.pay');
 
     });
-
 
     Route::get('/booking/confirm/{booking}', function (Booking $booking) {
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
@@ -2320,9 +1993,5 @@ Route::middleware('auth')->group(function () {
         return view('booking.confirm', compact('booking'));
     })->name('booking.confirm');
 });
-
-
-
-
 
 require __DIR__.'/auth.php';

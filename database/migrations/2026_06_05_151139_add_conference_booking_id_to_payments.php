@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         if (
-            !Schema::hasColumn(
+            ! Schema::hasColumn(
                 'payments',
                 'conference_booking_id'
             )
@@ -28,18 +28,14 @@ return new class extends Migration
                     $table->foreignId(
                         'conference_booking_id'
                     )
-
-                    ->nullable()
-
-                    ->after(
-                        'booking_id'
-                    )
-
-                    ->constrained(
-                        'conference_bookings'
-                    )
-
-                    ->nullOnDelete();
+                        ->nullable()
+                        ->after(
+                            'booking_id'
+                        )
+                        ->constrained(
+                            'conference_bookings'
+                        )
+                        ->nullOnDelete();
                 }
             );
         }

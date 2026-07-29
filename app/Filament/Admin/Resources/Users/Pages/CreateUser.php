@@ -16,7 +16,7 @@ class CreateUser extends CreateRecord
 
     protected function afterCreate(): void
     {
-        if (!empty($this->data['roles'])) {
+        if (! empty($this->data['roles'])) {
             $this->record->syncRoles([$this->data['roles']]);
         }
     }
