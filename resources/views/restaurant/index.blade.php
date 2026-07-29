@@ -92,7 +92,7 @@
 --}}
 
 <section class="relative isolate min-h-[34rem] overflow-hidden bg-[#161b48e6] sm:min-h-[38rem]">
-    @if ($restaurant->hero_image)
+    @if ($restaurant?->hero_image)
         <img src="{{ asset('storage/' . $restaurant->hero_image) }}" class="absolute inset-0 -z-20 h-full w-full object-cover" alt="{{ $restaurant->name }} dining space">
     @endif
     <div class="absolute inset-0 -z-10 bg-gradient-to-r from-slate-950 via-slate-950/75 to-slate-950/25"></div>
@@ -101,12 +101,12 @@
     <div class="mx-auto flex min-h-[34rem] max-w-7xl items-end px-4 py-10 sm:min-h-[38rem] sm:px-6 sm:py-16 lg:px-8">
         <div class="max-w-2xl text-white">
             <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-sm font-medium backdrop-blur">
-                <span class="h-2 w-2 rounded-full {{ $restaurant->is_open ? 'bg-emerald-400' : 'bg-rose-400' }}"></span>
-                {{ $restaurant->is_open ? 'Open for dining' : 'Currently closed' }}
+                <span class="h-2 w-2 rounded-full {{ $restaurant?->is_open ? 'bg-emerald-400' : 'bg-rose-400' }}"></span>
+                {{ $restaurant?->is_open ? 'Open for dining' : 'Restaurant information coming soon' }}
             </div>
-            <p class="mt-6 text-sm font-semibold uppercase tracking-[0.22em] text-amber-300">{{ $restaurant->cuisine ?: 'Local & International Cuisine' }}</p>
-            <h1 class="mt-3 text-4xl font-bold tracking-tight sm:text-6xl">{{ $restaurant->name }}</h1>
-            <p class="mt-5 max-w-xl text-base leading-7 text-slate-200 sm:text-lg">{{ $restaurant->description ?: 'Thoughtful dining, memorable flavours, and welcoming service in the heart of My Hotel.' }}</p>
+            <p class="mt-6 text-sm font-semibold uppercase tracking-[0.22em] text-amber-300">{{ $restaurant?->cuisine ?: 'Local & International Cuisine' }}</p>
+            <h1 class="mt-3 text-4xl font-bold tracking-tight sm:text-6xl">{{ $restaurant?->name ?: 'Our Restaurant' }}</h1>
+            <p class="mt-5 max-w-xl text-base leading-7 text-slate-200 sm:text-lg">{{ $restaurant?->description ?: 'Thoughtful dining, memorable flavours, and welcoming service in the heart of My Hotel.' }}</p>
 
             <div class="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a href="{{ route('restaurant.reserve') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-amber-300">Reserve a Table</a>
@@ -114,9 +114,9 @@
             </div>
 
             <div class="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-200">
-                <span>{{ $restaurant->opening_time ? \Carbon\Carbon::parse($restaurant->opening_time)->format('g:i A') : '—' }} – {{ $restaurant->closing_time ? \Carbon\Carbon::parse($restaurant->closing_time)->format('g:i A') : '—' }}</span>
-                <span>{{ $restaurant->capacity ?: '—' }} guest capacity</span>
-                <span>{{ $restaurant->dress_code ?: 'Smart casual' }}</span>
+                <span>{{ $restaurant?->opening_time ? \Carbon\Carbon::parse($restaurant->opening_time)->format('g:i A') : '—' }} – {{ $restaurant?->closing_time ? \Carbon\Carbon::parse($restaurant->closing_time)->format('g:i A') : '—' }}</span>
+                <span>{{ $restaurant?->capacity ?: '—' }} guest capacity</span>
+                <span>{{ $restaurant?->dress_code ?: 'Smart casual' }}</span>
             </div>
         </div>
     </div>
@@ -169,7 +169,7 @@
 
     <div class="grid md:grid-cols-3 gap-6">
 
-        @foreach($restaurant->tables as $table)
+        @forelse($restaurant?->tables ?? [] as $table)
 
             <div class="overflow-hidden rounded-xl bg-white shadow">
                 <img
@@ -208,7 +208,9 @@
 
             </div>
 
-        @endforeach
+        @empty
+            <p class="text-gray-500">Restaurant tables will be available soon.</p>
+        @endforelse
 
     </div>
 

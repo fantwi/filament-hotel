@@ -70,7 +70,6 @@ class RestaurantReservationController extends Controller
             'restaurant_table_id' => ['required', 'exists:restaurant_tables,id'],
             'guest_name' => ['required', 'max:255'],
             'guest_email' => ['required', 'email'],
-            'guest_phone' => ['required'],
             'guest_phone' => ['required', 'max:50'],
             'reservation_date' => ['required', 'date', 'after_or_equal:today'],
             'reservation_time' => ['required', 'date_format:H:i'],
