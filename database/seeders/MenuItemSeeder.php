@@ -38,6 +38,7 @@ class MenuItemSeeder extends Seeder
                     'price' => $price,
                     'is_available' => true,
                     'is_featured' => $featured,
+                    'is_published' => true,
                     'preparation_time' => $preparationTime,
                     'sort_order' => 0,
                 ]

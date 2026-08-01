@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Restaurant;
 use Illuminate\Database\Seeder;
 
 class RestaurantSeeder extends Seeder
@@ -11,25 +12,18 @@ class RestaurantSeeder extends Seeder
      */
     public function run(): void
     {
-        //
-        Restaurant::create([
-
-            'name' => 'My Hotel Restaurant',
-
-            'description' => 'Fine dining with local and international cuisine.',
-
-            'opening_time' => '06:00',
-
-            'closing_time' => '23:00',
-
-            'capacity' => 120,
-
-            'dress_code' => 'Smart Casual',
-
-            'cuisine' => 'African & Continental',
-
-            'is_open' => true,
-
-        ]);
+        Restaurant::updateOrCreate(
+            ['name' => 'My Hotel Restaurant'],
+            [
+                'description' => 'Fine dining with local and international cuisine.',
+                'opening_time' => '06:00',
+                'closing_time' => '23:00',
+                'capacity' => 120,
+                'dress_code' => 'Smart Casual',
+                'cuisine' => 'African & Continental',
+                'is_open' => true,
+                'is_published' => true,
+            ],
+        );
     }
 }

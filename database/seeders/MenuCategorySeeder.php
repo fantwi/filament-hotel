@@ -30,6 +30,7 @@ class MenuCategorySeeder extends Seeder
                     'name' => $name,
                     'sort_order' => $index + 1,
                     'is_active' => true,
+                    'is_published' => true,
                 ]
             );
         }

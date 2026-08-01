@@ -26,7 +26,7 @@ class RestaurantFacilitySeeder extends Seeder
         ];
 
         $ids = collect($facilities)->map(function (string $icon, string $name): int {
-            return Facility::firstOrCreate(['name' => $name], ['icon' => $icon])->id;
+            return Facility::updateOrCreate(['name' => $name], ['icon' => $icon, 'is_published' => true])->id;
         });
 
         $restaurant->facilities()->syncWithoutDetaching($ids->all());
