@@ -60,6 +60,20 @@ Route::post('/booking/pay', function (Request $request) {
         return redirect()->route('booking.payment')->with('error', 'This booking is no longer available for payment.');
     }
 
+    $organization = app(\App\Services\CorporateCreditService::class)->organizationFor(auth()->user());
+
+    if ($organization) {
+        $booking->update([
+            'corporate_organization_id' => $organization->id,
+            'status' => 'confirmed',
+            'hold_status' => 'confirmed',
+            'hold_until' => null,
+        ]);
+
+        return redirect()->route('dashboard')
+            ->with('success', "Room booking confirmed and billed to {$organization->name}.");
+
+    }
     $reference = 'ROOM-'.Str::upper(Str::random(16));
     $booking->update(['transaction_reference' => $reference]);
 

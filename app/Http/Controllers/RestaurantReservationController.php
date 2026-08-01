@@ -7,6 +7,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantReservation;
 use App\Models\RestaurantTable;
 use Carbon\Carbon;
+use App\Services\CorporateCreditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -159,6 +160,7 @@ class RestaurantReservationController extends Controller
 
         }
 
+        $organization = app(CorporateCreditService::class)->organizationFor(auth()->user());
         $reservation = RestaurantReservation::create([
 
             'restaurant_id' => $restaurant->id,
@@ -166,6 +168,7 @@ class RestaurantReservationController extends Controller
             'restaurant_table_id' => $table->id,
 
             'guest_id' => auth()->user()?->guest?->id,
+            'corporate_organization_id' => $organization?->id,
 
             'guest_name' => $validated['guest_name'],
 
@@ -183,13 +186,13 @@ class RestaurantReservationController extends Controller
 
             'duration_minutes' => 120,
 
-            'status' => 'pending',
+            'status' => $organization ? 'confirmed' : 'pending',
 
             'payment_status' => 'pending',
 
-            'hold_status' => 'held',
+            'hold_status' => $organization ? 'confirmed' : 'held',
 
-            'hold_until' => now()->addMinutes(15),
+            'hold_until' => $organization ? null : now()->addMinutes(15),
 
             'access_token' => Str::random(64),
 
@@ -203,6 +206,11 @@ class RestaurantReservationController extends Controller
 
         Mail::to($reservation->guest_email)
             ->send(new RestaurantReservationCreated($reservation));
+
+        if ($organization) {
+            return redirect()->route('dashboard')
+                ->with('success', "Your reservation has been confirmed and billed to {$organization->name}.");
+        }
 
         return redirect()
             ->route('restaurant.payment', [

@@ -12,6 +12,7 @@ class RestaurantOrder extends Model
 {
     protected $fillable = [
         'guest_id',
+        'corporate_organization_id',
         'restaurant_reservation_id',
         'restaurant_table_id',
         'ordering_channel',

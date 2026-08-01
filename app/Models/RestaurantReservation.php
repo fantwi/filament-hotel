@@ -18,6 +18,7 @@ class RestaurantReservation extends Model
 
         'restaurant_table_id',
 
+        'corporate_organization_id',
         'guest_id',
 
         'guest_name',

@@ -12,6 +12,7 @@ class ConferenceBooking extends Model
         'conference_room_id',
 
         'guest_id',
+        'corporate_organization_id',
 
         'booking_date',
 

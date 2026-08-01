@@ -3,6 +3,7 @@
 use App\Models\ConferenceBooking;
 use App\Models\ConferenceRoom;
 use App\Models\Payment;
+use App\Services\CorporateCreditService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -38,6 +39,7 @@ Route::middleware('auth')->group(function () {
             ]);
 
             $guest = auth()->user()->guest;
+            $organization = app(CorporateCreditService::class)->organizationFor(auth()->user());
 
             $room = ConferenceRoom::published()->findOrFail(
                 $request
@@ -102,15 +104,16 @@ Route::middleware('auth')->group(function () {
             $booking = ConferenceBooking::create([
                 'conference_room_id' => $room->id,
                 'guest_id' => $guest->id,
+                'corporate_organization_id' => $organization?->id,
                 'booking_date' => $request->booking_date,
                 'start_time' => $request->start_time,
                 'end_time' => $request->end_time,
                 'attendees' => $request->attendees,
                 'special_requests' => $request->special_requests,
                 'total_price' => $total,
-                'status' => 'pending',
+                'status' => $organization ? 'confirmed' : 'pending',
                 'payment_status' => 'pending',
-                'hold_until' => now()->addMinutes(15),
+                'hold_until' => $organization ? null : now()->addMinutes(15),
             ]);
 
             if ($booking->payment_status === 'pending'
@@ -122,6 +125,10 @@ Route::middleware('auth')->group(function () {
                 ]);
 
                 return redirect()->route('conference.expired');
+            }
+
+            if ($organization) {
+                return redirect()->route('dashboard')->with('success', "Conference booking confirmed and billed to {$organization->name}.");
             }
 
             return redirect()->route('conference.payment', $booking->id);

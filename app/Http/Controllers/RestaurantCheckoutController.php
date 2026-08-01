@@ -7,6 +7,7 @@ use App\Models\RecipeIngredient;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantTable;
 use App\Services\RestaurantCartService;
+use App\Services\CorporateCreditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -59,14 +60,20 @@ class RestaurantCheckoutController extends Controller
 
         $totals = $cart->totals();
         $guest = auth()->user()?->guest;
+        $organization = app(CorporateCreditService::class)->organizationFor(auth()->user());
 
-        $order = DB::transaction(function () use ($items, $totals, $data, $guest, $table) {
+        $order = DB::transaction(function () use ($items, $totals, $data, $guest, $table, $organization) {
             $order = RestaurantOrder::create([
                 'guest_id' => $guest?->id,
+                'corporate_organization_id' => $organization?->id,
                 'restaurant_table_id' => $table?->id,
                 'ordering_channel' => $table ? session('restaurant_order.channel', 'qr') : 'web',
                 'order_number' => 'FOOD-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
                 'customer_email' => $data['email'],
+                'payment_method' => $organization ? 'corporate_account' : null,
+                'payment_status' => 'pending',
+                'status' => $organization ? 'confirmed' : 'pending',
+                'confirmed_at' => $organization ? now() : null,
                 ...$totals,
                 'notes' => $data['notes'] ?? null,
             ]);

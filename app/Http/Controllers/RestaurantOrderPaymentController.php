@@ -26,6 +26,11 @@ class RestaurantOrderPaymentController extends Controller
     {
         $this->authorizeOrder($order);
 
+        if ($order->payment_method === 'corporate_account') {
+            return redirect()->route('restaurant.orders.confirmation', $order)
+                ->with('success', 'This order is billed to the corporate account and is ready for the kitchen.');
+        }
+
         if ($order->payment_status === 'completed') {
             return redirect()->route('restaurant.orders.confirmation', $order)
                 ->with('success', 'This order has already been paid.');

@@ -108,9 +108,9 @@ class RestaurantKitchenService
 
     private function ensurePaymentCompleted(RestaurantOrder $order): void
     {
-        if ($order->payment_status !== 'completed') {
+        if ($order->payment_status !== 'completed' && $order->payment_method !== 'corporate_account') {
             throw ValidationException::withMessages([
-                'payment_status' => 'The order must be paid before it enters the kitchen queue.',
+                'payment_status' => 'The order must be paid or billed to a corporate account before it enters the kitchen queue.',
             ]);
         }
     }
