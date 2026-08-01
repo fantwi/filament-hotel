@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\MenuItems;
 use App\Filament\Admin\Resources\MenuItems\Pages\CreateMenuItem;
 use App\Filament\Admin\Resources\MenuItems\Pages\EditMenuItem;
 use App\Filament\Admin\Resources\MenuItems\Pages\ListMenuItems;
+use App\Filament\Admin\Resources\MenuItems\RelationManagers\RecipeIngredientsRelationManager;
 use App\Filament\Admin\Resources\MenuItems\Schemas\MenuItemForm;
 use App\Filament\Admin\Resources\MenuItems\Tables\MenuItemsTable;
 use App\Models\MenuItem;
@@ -45,7 +46,7 @@ class MenuItemResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [RecipeIngredientsRelationManager::class];
     }
 
     public static function getPages(): array

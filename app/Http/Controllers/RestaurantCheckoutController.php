@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\MenuItem;
+use App\Models\RecipeIngredient;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantTable;
 use App\Services\RestaurantCartService;
@@ -71,13 +72,30 @@ class RestaurantCheckoutController extends Controller
             ]);
 
             foreach ($items as $line) {
-                $menuItem = MenuItem::published()->whereKey($line['item']->id)->where('is_available', true)->firstOrFail();
+                $menuItem = MenuItem::query()
+                    ->with('recipeIngredients.ingredient')
+                    ->published()
+                    ->whereKey($line['item']->id)
+                    ->where('is_available', true)
+                    ->firstOrFail();
                 $quantity = max(1, (int) $line['quantity']);
+                $ingredientSnapshot = $menuItem->recipeIngredients
+                    ->map(fn (RecipeIngredient $recipe): array => [
+                        'ingredient_id' => $recipe->ingredient_id,
+                        'ingredient_name' => $recipe->ingredient?->name,
+                        'unit' => $recipe->ingredient?->unit,
+                        'quantity_per_item' => (float) $recipe->quantity_per_item,
+                        'consumption_mode' => $menuItem->inventory_consumption_mode,
+                    ])
+                    ->values()
+                    ->all();
+
                 $order->items()->create([
                     'menu_item_id' => $menuItem->id,
                     'item_name' => $menuItem->name,
                     'production_unit' => $menuItem->production_unit,
                     'production_usage_per_sale' => $menuItem->production_usage_per_sale,
+                    'ingredient_usage_snapshot' => $ingredientSnapshot,
                     'quantity' => $quantity,
                     'unit_price' => $menuItem->price,
                     'total_price' => $menuItem->price * $quantity,

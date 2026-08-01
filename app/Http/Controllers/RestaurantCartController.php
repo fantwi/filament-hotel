@@ -13,6 +13,11 @@ class RestaurantCartController extends Controller
     public function add(MenuItem $item): RedirectResponse
     {
         abort_unless($item->is_published && $item->is_available, 422, 'This menu item is unavailable.');
+        $item->load('recipeIngredients.ingredient');
+
+        if (! $item->canPrepare()) {
+            return back()->with('error', 'This menu item cannot currently be prepared because one or more ingredients are out of stock.');
+        }
 
         $cart = session('cart', []);
         $cart[$item->id]['quantity'] = min(99, ((int) ($cart[$item->id]['quantity'] ?? 0)) + 1);

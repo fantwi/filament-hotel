@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Pages\Dashboards;
 
 use App\Filament\Admin\Widgets\BestSellingMenuItems;
 use App\Filament\Admin\Widgets\KitchenOrderQueue;
+use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
 use App\Filament\Admin\Widgets\RestaurantRevenueChart;
 use App\Filament\Admin\Widgets\SuperAdminStats;
@@ -33,6 +34,6 @@ class SuperAdminDashboard extends Dashboard
 
     public function getWidgets(): array
     {
-        return [SuperAdminStats::class, RestaurantRevenueChart::class, RestaurantOrderStatusChart::class, BestSellingMenuItems::class, KitchenOrderQueue::class];
+        return [SuperAdminStats::class, KitchenStockStats::class, RestaurantRevenueChart::class, RestaurantOrderStatusChart::class, BestSellingMenuItems::class, KitchenOrderQueue::class];
     }
 }

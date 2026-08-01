@@ -8,6 +8,8 @@ use Illuminate\Validation\ValidationException;
 
 class RestaurantKitchenService
 {
+    public function __construct(private readonly KitchenStockService $stockService) {}
+
     public function confirm(RestaurantOrder $order): RestaurantOrder
     {
         $this->ensurePaymentCompleted($order);
@@ -18,15 +20,28 @@ class RestaurantKitchenService
 
     public function startPreparing(RestaurantOrder $order, ?string $kitchenNotes = null): RestaurantOrder
     {
-        $this->ensurePaymentCompleted($order);
-        $this->ensureStatusIs($order, ['confirmed']);
+        return DB::transaction(function () use ($order, $kitchenNotes): RestaurantOrder {
+            $order = RestaurantOrder::query()->lockForUpdate()->findOrFail($order->id);
+            $this->ensurePaymentCompleted($order);
+            $this->ensureStatusIs($order, ['confirmed']);
+            $this->stockService->consumeForOrder($order);
 
-        return $this->updateOrder($order, [
-            'status' => 'preparing',
-            'preparing_at' => now(),
-            'prepared_by' => auth()->id(),
-            'kitchen_notes' => $kitchenNotes ?: $order->kitchen_notes,
-        ], 'preparing', 'Kitchen started preparing the order.', ['kitchen_notes' => $kitchenNotes]);
+            $order->update([
+                'status' => 'preparing',
+                'preparing_at' => now(),
+                'prepared_by' => auth()->id(),
+                'kitchen_notes' => $kitchenNotes ?: $order->kitchen_notes,
+            ]);
+
+            activity()
+                ->performedOn($order)
+                ->causedBy(auth()->user())
+                ->event('preparing')
+                ->withProperties(['kitchen_notes' => $kitchenNotes])
+                ->log('Kitchen started preparing the order and ingredient stock was deducted.');
+
+            return $order->refresh();
+        });
     }
 
     public function markReady(RestaurantOrder $order): RestaurantOrder
@@ -49,17 +64,30 @@ class RestaurantKitchenService
 
     public function cancel(RestaurantOrder $order, ?string $reason = null): RestaurantOrder
     {
-        $this->ensureStatusIs($order, ['pending', 'confirmed', 'preparing']);
+        return DB::transaction(function () use ($order, $reason): RestaurantOrder {
+            $order = RestaurantOrder::query()->lockForUpdate()->findOrFail($order->id);
+            $this->ensureStatusIs($order, ['pending', 'confirmed', 'preparing']);
+            $this->stockService->reverseForOrder($order);
 
-        $notes = collect([$order->kitchen_notes, $reason ? 'Cancellation reason: '.$reason : null])
-            ->filter()
-            ->implode(PHP_EOL);
+            $notes = collect([$order->kitchen_notes, $reason ? 'Cancellation reason: '.$reason : null])
+                ->filter()
+                ->implode(PHP_EOL);
 
-        return $this->updateOrder($order, [
-            'status' => 'cancelled',
-            'cancelled_at' => now(),
-            'kitchen_notes' => $notes ?: null,
-        ], 'cancelled', 'Restaurant food order cancelled.', ['reason' => $reason]);
+            $order->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now(),
+                'kitchen_notes' => $notes ?: null,
+            ]);
+
+            activity()
+                ->performedOn($order)
+                ->causedBy(auth()->user())
+                ->event('cancelled')
+                ->withProperties(['reason' => $reason])
+                ->log('Restaurant food order cancelled.');
+
+            return $order->refresh();
+        });
     }
 
     private function updateOrder(RestaurantOrder $order, array $attributes, string $event, string $message, array $properties = []): RestaurantOrder

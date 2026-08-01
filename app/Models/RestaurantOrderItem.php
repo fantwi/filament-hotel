@@ -13,6 +13,7 @@ class RestaurantOrderItem extends Model
         'item_name',
         'production_unit',
         'production_usage_per_sale',
+        'ingredient_usage_snapshot',
         'quantity',
         'unit_price',
         'total_price',
@@ -23,6 +24,7 @@ class RestaurantOrderItem extends Model
         'unit_price' => 'decimal:2',
         'total_price' => 'decimal:2',
         'production_usage_per_sale' => 'decimal:3',
+        'ingredient_usage_snapshot' => 'array',
     ];
 
     public function order(): BelongsTo

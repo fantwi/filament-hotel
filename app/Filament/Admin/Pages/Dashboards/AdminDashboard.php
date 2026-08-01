@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Pages\Dashboards;
 
 use App\Filament\Admin\Widgets\AdminStats;
 use App\Filament\Admin\Widgets\KitchenOrderQueue;
+use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\ManagerOperationsChart;
 use App\Filament\Admin\Widgets\RecentPayments;
 use Filament\Pages\Dashboard;
@@ -32,6 +33,6 @@ class AdminDashboard extends Dashboard
 
     public function getWidgets(): array
     {
-        return [AdminStats::class, ManagerOperationsChart::class, RecentPayments::class, KitchenOrderQueue::class];
+        return [AdminStats::class, KitchenStockStats::class, ManagerOperationsChart::class, RecentPayments::class, KitchenOrderQueue::class];
     }
 }

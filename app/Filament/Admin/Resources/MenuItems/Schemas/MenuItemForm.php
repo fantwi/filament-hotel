@@ -70,6 +70,16 @@ class MenuItemForm
                     Select::make('production_unit')->options(['portion' => 'Portion', 'piece' => 'Piece', 'tray' => 'Tray', 'kilogram' => 'Kilogram', 'gram' => 'Gram', 'litre' => 'Litre', 'millilitre' => 'Millilitre', 'bottle' => 'Bottle'])->default('portion')->required()->visible(fn ($get): bool => (bool) $get('tracks_kitchen_production')),
                     TextInput::make('production_usage_per_sale')->label('Production Amount Per Sale')->numeric()->minValue(0.001)->step(0.001)->default(1)->required()->visible(fn ($get): bool => (bool) $get('tracks_kitchen_production')),
                     TextInput::make('low_stock_threshold')->label('Low-Stock Threshold')->numeric()->minValue(0)->step(0.001)->default(0)->required()->visible(fn ($get): bool => (bool) $get('tracks_kitchen_production')),
+                    Select::make('inventory_consumption_mode')
+                        ->label('Ingredient Stock Deduction')
+                        ->options([
+                            'per_order' => 'When Order Preparation Starts',
+                            'production_batch' => 'When Production Batch Is Recorded',
+                            'none' => 'Do Not Deduct Ingredients',
+                        ])
+                        ->default('per_order')
+                        ->required()
+                        ->helperText('Choose when raw ingredient stock should be reduced.'),
                 ])->columns(3),
         ]);
     }

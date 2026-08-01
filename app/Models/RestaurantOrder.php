@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class RestaurantOrder extends Model
 {
@@ -34,6 +35,8 @@ class RestaurantOrder extends Model
         'cancelled_at',
         'prepared_by',
         'served_by',
+        'stock_deducted_at',
+        'stock_reversed_at',
     ];
 
     protected $casts = [
@@ -47,6 +50,8 @@ class RestaurantOrder extends Model
         'ready_at' => 'datetime',
         'served_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'stock_deducted_at' => 'datetime',
+        'stock_reversed_at' => 'datetime',
     ];
 
     public function items(): HasMany
@@ -72,6 +77,11 @@ class RestaurantOrder extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function stockMovements(): MorphMany
+    {
+        return $this->morphMany(KitchenStockMovement::class, 'reference');
     }
 
     public function preparedBy(): BelongsTo
