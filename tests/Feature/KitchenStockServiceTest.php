@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Ingredient;
+use App\Models\KitchenProduction;
 use App\Models\KitchenStockMovement;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
@@ -78,6 +79,30 @@ class KitchenStockServiceTest extends TestCase
         $this->assertSame(1, KitchenStockMovement::query()->where('type', KitchenStockMovement::TYPE_REVERSAL)->count());
     }
 
+    public function test_batch_production_consumes_ingredients_once_for_batch_mode_items(): void
+    {
+        $ingredient = $this->ingredient(10);
+        $menuItem = $this->menuItem('production_batch');
+        $menuItem->recipeIngredients()->create([
+            'ingredient_id' => $ingredient->id,
+            'quantity_per_item' => 0.5,
+        ]);
+        $production = KitchenProduction::create([
+            'menu_item_id' => $menuItem->id,
+            'production_date' => today(),
+            'quantity_produced' => 4,
+            'quantity_wasted' => 0,
+        ]);
+
+        $stock = app(KitchenStockService::class);
+        $stock->consumeForProduction($production);
+        $stock->consumeForProduction($production);
+
+        $ingredient->refresh();
+        $this->assertSame('8.000', $ingredient->current_stock);
+        $this->assertSame(1, KitchenStockMovement::query()->whereMorphedTo('reference', $production)->where('type', KitchenStockMovement::TYPE_CONSUMPTION)->count());
+    }
+
     private function ingredient(float $stock = 0): Ingredient
     {
         $restaurant = Restaurant::create([
@@ -97,7 +122,7 @@ class KitchenStockServiceTest extends TestCase
         ]);
     }
 
-    private function menuItem(): MenuItem
+    private function menuItem(string $inventoryConsumptionMode = 'per_order'): MenuItem
     {
         $category = MenuCategory::create([
             'name' => 'Test Category '.str()->random(8),
@@ -109,6 +134,7 @@ class KitchenStockServiceTest extends TestCase
             'name' => 'Test Meal '.str()->random(8),
             'slug' => str()->random(12),
             'price' => 10,
+            'inventory_consumption_mode' => $inventoryConsumptionMode,
         ]);
     }
 }

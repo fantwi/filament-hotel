@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Ingredient;
+use App\Models\KitchenProduction;
 use App\Models\KitchenStockMovement;
 use App\Models\RestaurantOrder;
 use Illuminate\Database\Eloquent\Model;
@@ -71,29 +72,35 @@ class KitchenStockService
             }
 
             $requirements = $this->requirementsFor($order);
-            $ingredients = Ingredient::query()->whereIn('id', array_keys($requirements))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
-            $shortages = [];
-
-            foreach ($requirements as $ingredientId => $quantity) {
-                $ingredient = $ingredients->get($ingredientId);
-                if (! $ingredient) {
-                    $shortages[] = "Ingredient {$ingredientId} was not found.";
-                } elseif (! $ingredient->is_active) {
-                    $shortages[] = "{$ingredient->name} is inactive.";
-                } elseif ((float) $ingredient->current_stock < $quantity) {
-                    $shortages[] = sprintf('%s requires %.3f %s, but only %.3f is available.', $ingredient->name, $quantity, $ingredient->unit, (float) $ingredient->current_stock);
-                }
-            }
-
-            if ($shortages !== []) {
-                throw ValidationException::withMessages(['stock' => implode(' ', $shortages)]);
-            }
-
-            foreach ($requirements as $ingredientId => $quantity) {
-                $this->remove($ingredients->get($ingredientId), $quantity, KitchenStockMovement::TYPE_CONSUMPTION, $order, "Ingredient consumption for order {$order->order_number}.");
-            }
+            $this->deductRequirements($requirements, $order, "Ingredient consumption for order {$order->order_number}.");
 
             $order->update(['stock_deducted_at' => now(), 'stock_reversed_at' => null]);
+        });
+    }
+
+    public function consumeForProduction(KitchenProduction $production): void
+    {
+        DB::transaction(function () use ($production): void {
+            $production = KitchenProduction::query()
+                ->with('menuItem.recipeIngredients')
+                ->lockForUpdate()
+                ->findOrFail($production->id);
+
+            if ($production->menuItem->inventory_consumption_mode !== 'production_batch') {
+                return;
+            }
+
+            if (KitchenStockMovement::query()->whereMorphedTo('reference', $production)->where('type', KitchenStockMovement::TYPE_CONSUMPTION)->exists()) {
+                return;
+            }
+
+            $requirements = [];
+            foreach ($production->menuItem->recipeIngredients as $recipe) {
+                $requirements[$recipe->ingredient_id] = round(($requirements[$recipe->ingredient_id] ?? 0) + ((float) $recipe->quantity_per_item * (float) $production->quantity_produced), 3);
+            }
+            ksort($requirements);
+
+            $this->deductRequirements($requirements, $production, "Ingredient consumption for production batch {$production->batch_reference}.");
         });
     }
 
@@ -128,6 +135,35 @@ class KitchenStockService
 
             $order->update(['stock_reversed_at' => now()]);
         });
+    }
+
+    private function deductRequirements(array $requirements, Model $reference, string $notes): void
+    {
+        if ($requirements === []) {
+            return;
+        }
+
+        $ingredients = Ingredient::query()->whereIn('id', array_keys($requirements))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+        $shortages = [];
+
+        foreach ($requirements as $ingredientId => $quantity) {
+            $ingredient = $ingredients->get($ingredientId);
+            if (! $ingredient) {
+                $shortages[] = "Ingredient {$ingredientId} was not found.";
+            } elseif (! $ingredient->is_active) {
+                $shortages[] = "{$ingredient->name} is inactive.";
+            } elseif ((float) $ingredient->current_stock < $quantity) {
+                $shortages[] = sprintf('%s requires %.3f %s, but only %.3f is available.', $ingredient->name, $quantity, $ingredient->unit, (float) $ingredient->current_stock);
+            }
+        }
+
+        if ($shortages !== []) {
+            throw ValidationException::withMessages(['stock' => implode(' ', $shortages)]);
+        }
+
+        foreach ($requirements as $ingredientId => $quantity) {
+            $this->remove($ingredients->get($ingredientId), $quantity, KitchenStockMovement::TYPE_CONSUMPTION, $reference, $notes);
+        }
     }
 
     private function requirementsFor(RestaurantOrder $order): array
