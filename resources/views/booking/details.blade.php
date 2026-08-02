@@ -28,6 +28,8 @@
     $vatRate = config('billing.vat_rate');
     $nhilRate = config('billing.nhil_rate');
     $serviceRate = config('billing.service_charge_rate');
+    $previewPromotion = filled(old('promotion_code')) ? \App\Models\Promotion::query()->where('code', strtoupper(old('promotion_code')))->applicable((float) $estimatedTotal)->first() : null;
+    $previewDiscount = app(\App\Services\BillingService::class)->calculate((float) $estimatedTotal, $previewPromotion?->discount_type, (float) ($previewPromotion?->discount_value ?? 0))['discount'];
 
 @endphp
 
@@ -237,6 +239,12 @@
                     </span>
 
                 </div>
+
+                <div class="mb-4 flex justify-between gap-4"><span class="text-gray-500">Subtotal</span><span>GHS <span x-text="subtotal.toFixed(2)"></span></span></div>
+                <div class="mb-4 flex justify-between gap-4"><span class="text-gray-500">Discount</span><span class="text-green-700"> GHS <span x-text="discount.toFixed(2)"></span></span></div>
+                <div class="mb-4 flex justify-between gap-4"><span class="text-gray-500">Discounted subtotal</span><span>GHS <span x-text="netSubtotal.toFixed(2)"></span></span></div>
+                <div class="mb-4 flex justify-between gap-4"><span class="text-gray-500">VAT ({{ $vatRate }}%)</span><span>GHS <span x-text="vat.toFixed(2)"></span></span></div>
+                <div class="mb-4 flex justify-between gap-4"><span class="text-gray-500">NHIL ({{ $nhilRate }}%)</span><span>GHS <span x-text="nhil.toFixed(2)"></span></span></div>
 
                 <!-- SERVICE -->
                 <div class="flex gap-4 justify-between mb-4">
