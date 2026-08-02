@@ -43,6 +43,9 @@ class ListIngredients extends ListRecords
                         ->prefix('GHS')
                         ->minValue(0)
                         ->step(.01),
+                    TextInput::make('supplier_name')
+                        ->label('Supplier')
+                        ->maxLength(255),
                     TextInput::make('reference_number')
                         ->label('Invoice / Delivery Reference')
                         ->maxLength(255),
@@ -59,6 +62,7 @@ class ListIngredients extends ListRecords
                         isset($data['unit_cost']) && $data['unit_cost'] !== '' ? (float) $data['unit_cost'] : null,
                         $data['reference_number'] ?? null,
                         $data['notes'] ?? null,
+                        $data['supplier_name'] ?? null,
                     );
 
                     Notification::make()

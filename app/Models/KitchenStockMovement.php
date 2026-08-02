@@ -26,7 +26,7 @@ class KitchenStockMovement extends Model
 
     public const DIRECTION_OUT = 'out';
 
-    protected $fillable = ['ingredient_id', 'type', 'direction', 'quantity', 'balance_before', 'balance_after', 'unit_cost', 'total_cost', 'reference_number', 'reference_type', 'reference_id', 'performed_by', 'occurred_at', 'notes'];
+    protected $fillable = ['ingredient_id', 'type', 'direction', 'quantity', 'balance_before', 'balance_after', 'unit_cost', 'total_cost', 'reference_number', 'supplier_name', 'reference_type', 'reference_id', 'performed_by', 'occurred_at', 'notes'];
 
     protected function casts(): array
     {

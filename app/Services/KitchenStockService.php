@@ -12,11 +12,11 @@ use Illuminate\Validation\ValidationException;
 
 class KitchenStockService
 {
-    public function receive(Ingredient $ingredient, float $quantity, ?float $unitCost = null, ?string $referenceNumber = null, ?string $notes = null): KitchenStockMovement
+    public function receive(Ingredient $ingredient, float $quantity, ?float $unitCost = null, ?string $referenceNumber = null, ?string $notes = null, ?string $supplierName = null): KitchenStockMovement
     {
         $this->ensurePositiveQuantity($quantity);
 
-        return DB::transaction(function () use ($ingredient, $quantity, $unitCost, $referenceNumber, $notes): KitchenStockMovement {
+        return DB::transaction(function () use ($ingredient, $quantity, $unitCost, $referenceNumber, $notes, $supplierName): KitchenStockMovement {
             $ingredient = $this->lockIngredient($ingredient->id);
             $before = (float) $ingredient->current_stock;
             $after = round($before + $quantity, 3);
@@ -26,7 +26,7 @@ class KitchenStockService
 
             $ingredient->update(['current_stock' => $after, 'unit_cost' => $cost]);
 
-            return $this->movement($ingredient, KitchenStockMovement::TYPE_RECEIPT, KitchenStockMovement::DIRECTION_IN, $quantity, $before, $after, $unitCost ?? $cost, $referenceNumber, notes: $notes);
+            return $this->movement($ingredient, KitchenStockMovement::TYPE_RECEIPT, KitchenStockMovement::DIRECTION_IN, $quantity, $before, $after, $unitCost ?? $cost, $referenceNumber, notes: $notes, supplierName: $supplierName);
         });
     }
 
@@ -205,7 +205,7 @@ class KitchenStockService
         return $this->movement($ingredient, $type, KitchenStockMovement::DIRECTION_OUT, $quantity, $before, $after, (float) $ingredient->unit_cost, $reference, $notes);
     }
 
-    private function movement(Ingredient $ingredient, string $type, string $direction, float $quantity, float $before, float $after, ?float $unitCost, Model|string|null $referenceOrNumber = null, ?string $notes = null): KitchenStockMovement
+    private function movement(Ingredient $ingredient, string $type, string $direction, float $quantity, float $before, float $after, ?float $unitCost, Model|string|null $referenceOrNumber = null, ?string $notes = null, ?string $supplierName = null): KitchenStockMovement
     {
         $reference = $referenceOrNumber instanceof Model ? $referenceOrNumber : null;
 
@@ -214,6 +214,7 @@ class KitchenStockService
             'balance_before' => round($before, 3), 'balance_after' => round($after, 3), 'unit_cost' => $unitCost,
             'total_cost' => $unitCost === null ? null : round($quantity * $unitCost, 2),
             'reference_number' => is_string($referenceOrNumber) ? $referenceOrNumber : null,
+            'supplier_name' => $supplierName,
             'reference_type' => $reference?->getMorphClass(), 'reference_id' => $reference?->getKey(),
             'performed_by' => auth()->id(), 'occurred_at' => now(), 'notes' => $notes,
         ]);
