@@ -241,7 +241,7 @@
                 </div>
 
                 <div class="mb-4 flex justify-between gap-4"><span class="text-gray-500">Subtotal</span><span>GHS <span x-text="subtotal.toFixed(2)"></span></span></div>
-                <div class="mb-4 flex justify-between gap-4"><span class="text-gray-500">Discount</span><span class="text-green-700"> GHS <span x-text="discount.toFixed(2)"></span></span></div>
+                <div class="mb-4 flex justify-between gap-4"><span class="text-gray-500">Discount</span><span class="text-green-700">GHS <span x-text="discount.toFixed(2)"></span></span></div>
                 <div class="mb-4 flex justify-between gap-4"><span class="text-gray-500">Discounted subtotal</span><span>GHS <span x-text="netSubtotal.toFixed(2)"></span></span></div>
                 <div class="mb-4 flex justify-between gap-4"><span class="text-gray-500">VAT ({{ $vatRate }}%)</span><span>GHS <span x-text="vat.toFixed(2)"></span></span></div>
                 <div class="mb-4 flex justify-between gap-4"><span class="text-gray-500">NHIL ({{ $nhilRate }}%)</span><span>GHS <span x-text="nhil.toFixed(2)"></span></span></div>
@@ -259,9 +259,9 @@
 
                 </div>
 
-                <div class="mb-3 flex justify-between"><span class="text-gray-500">Discount</span><span>Applied at checkout</span></div>
+                <!-- <div class="mb-3 flex justify-between"><span class="text-gray-500">Discount</span><span>Applied at checkout</span></div>
                 <div class="mb-3 flex justify-between"><span class="text-gray-500">VAT ({{ $vatRate }}%)</span><span>GHS <span x-text="vat.toFixed(2)"></span></span></div>
-                <div class="mb-3 flex justify-between"><span class="text-gray-500">NHIL ({{ $nhilRate }}%)</span><span>GHS <span x-text="nhil.toFixed(2)"></span></span></div>
+                <div class="mb-3 flex justify-between"><span class="text-gray-500">NHIL ({{ $nhilRate }}%)</span><span>GHS <span x-text="nhil.toFixed(2)"></span></span></div> -->
                 <hr class="my-5">
 
                 <!-- TOTAL -->
@@ -279,7 +279,7 @@
                 </div>
 
                 <!-- TRUST -->
-                <div class="mt-8 space-y-3 text-sm text-gray-500">
+                <!-- <div class="mt-8 space-y-3 text-sm text-gray-500">
 
                     <div class="flex items-center gap-2">
                         ✅ Free cancellation within 24 hours
@@ -293,7 +293,7 @@
                         🏨 Instant reservation confirmation
                     </div>
 
-                </div>
+                </div> -->
 
             </div>
 
