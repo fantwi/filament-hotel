@@ -327,10 +327,12 @@ function bookingCalculator() {
         },
 
         get subtotal() { return this.nights * this.pricePerNight; },
-        get vat() { return this.subtotal * {{ $vatRate }} / 100; },
-        get nhil() { return this.subtotal * {{ $nhilRate }} / 100; },
-        get serviceCharge() { return this.subtotal * {{ $serviceRate }} / 100; },
-        get total() { return this.subtotal + this.vat + this.nhil + this.serviceCharge; },
+        get discount() { return {{ (float) $previewDiscount }}; },
+        get netSubtotal() { return Math.max(0, this.subtotal - this.discount); },
+        get vat() { return this.netSubtotal * {{ $vatRate }} / 100; },
+        get nhil() { return this.netSubtotal * {{ $nhilRate }} / 100; },
+        get serviceCharge() { return this.netSubtotal * {{ $serviceRate }} / 100; },
+        get total() { return this.netSubtotal + this.vat + this.nhil + this.serviceCharge; },
 
         get formattedTotal() {
 
