@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class KitchenProduction extends Model
@@ -27,5 +28,10 @@ class KitchenProduction extends Model
     public function producer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'produced_by');
+    }
+
+    public function ingredients(): HasMany
+    {
+        return $this->hasMany(KitchenProductionIngredient::class);
     }
 }

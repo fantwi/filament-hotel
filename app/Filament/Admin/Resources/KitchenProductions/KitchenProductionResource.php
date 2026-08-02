@@ -14,6 +14,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -93,6 +94,34 @@ class KitchenProductionResource extends Resource
                                 },
                             ])
                             ->required(),
+                        Repeater::make('ingredients')
+                            ->label('Raw Ingredients Consumed')
+                            ->helperText('Record the actual quantity of each ingredient used for this batch. These amounts are deducted from kitchen stock when saved.')
+                            ->schema([
+                                Select::make('ingredient_id')
+                                    ->relationship('ingredient', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->required()
+                                    ->distinct()
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                                TextInput::make('quantity_used')
+                                    ->label('Quantity Used')
+                                    ->numeric()
+                                    ->minValue(.001)
+                                    ->step(.001)
+                                    ->required(),
+                                TextInput::make('unit')
+                                    ->maxLength(30)
+                                    ->helperText('Use the ingredient stock unit, such as kg, litres, or pieces.'),
+                                TextInput::make('notes')->maxLength(255),
+                            ])
+                            ->minItems(1)
+                            ->defaultItems(1)
+                            ->addActionLabel('Add ingredient')
+                            ->columns(['default' => 1, 'sm' => 2])
+                            ->columnSpanFull()
+                            ->visibleOn('create'),
                         Textarea::make('notes')->rows(4)->columnSpanFull(),
                         Hidden::make('produced_by')->default(fn (): ?int => auth()->id()),
                     ])

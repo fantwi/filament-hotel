@@ -23,7 +23,20 @@ class CreateKitchenProduction extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         return DB::transaction(function () use ($data): KitchenProduction {
+            $ingredients = $data['ingredients'] ?? [];
+            unset($data['ingredients']);
+
             $production = KitchenProduction::create($data);
+
+            $production->ingredients()->createMany(array_map(
+                fn (array $ingredient): array => [
+                    'ingredient_id' => $ingredient['ingredient_id'],
+                    'quantity_used' => $ingredient['quantity_used'],
+                    'unit' => $ingredient['unit'] ?? null,
+                    'notes' => $ingredient['notes'] ?? null,
+                ],
+                $ingredients,
+            ));
 
             app(KitchenStockService::class)->consumeForProduction($production);
 

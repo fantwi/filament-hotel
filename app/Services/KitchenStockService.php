@@ -82,7 +82,7 @@ class KitchenStockService
     {
         DB::transaction(function () use ($production): void {
             $production = KitchenProduction::query()
-                ->with('menuItem.recipeIngredients')
+                ->with(['menuItem.recipeIngredients', 'ingredients'])
                 ->lockForUpdate()
                 ->findOrFail($production->id);
 
@@ -94,9 +94,16 @@ class KitchenStockService
                 return;
             }
 
-            $requirements = [];
-            foreach ($production->menuItem->recipeIngredients as $recipe) {
-                $requirements[$recipe->ingredient_id] = round(($requirements[$recipe->ingredient_id] ?? 0) + ((float) $recipe->quantity_per_item * (float) $production->quantity_produced), 3);
+            $requirements = $production->ingredients
+                ->mapWithKeys(fn ($line): array => [$line->ingredient_id => (float) $line->quantity_used])
+                ->all();
+
+            // Retain recipe-based deduction for historical batches recorded before
+            // actual production ingredients were captured.
+            if ($requirements === []) {
+                foreach ($production->menuItem->recipeIngredients as $recipe) {
+                    $requirements[$recipe->ingredient_id] = round(($requirements[$recipe->ingredient_id] ?? 0) + ((float) $recipe->quantity_per_item * (float) $production->quantity_produced), 3);
+                }
             }
             ksort($requirements);
 
