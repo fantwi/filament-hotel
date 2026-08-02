@@ -24,7 +24,7 @@ class PromotionResource extends Resource
     {
         return $schema->components([
             \Filament\Forms\Components\TextInput::make('name')->required(),
-            \Filament\Forms\Components\TextInput::make('code')->required()->uppercase()->unique(ignoreRecord: true),
+            \Filament\Forms\Components\TextInput::make('code')->required()->dehydrateStateUsing(fn (string $state): string => strtoupper($state))->unique(ignoreRecord: true),
             \Filament\Forms\Components\Select::make('discount_type')->options(['percentage' => 'Percentage', 'fixed' => 'Fixed amount'])->required(),
             \Filament\Forms\Components\TextInput::make('discount_value')->numeric()->minValue(0)->required(),
             \Filament\Forms\Components\TextInput::make('minimum_spend')->numeric()->minValue(0)->prefix('GHS'),
