@@ -25,6 +25,9 @@
 
     $estimatedTotal =
         $pricePerNight * $nights;
+    $vatRate = config('billing.vat_rate');
+    $nhilRate = config('billing.nhil_rate');
+    $serviceRate = config('billing.service_charge_rate');
 
 @endphp
 
@@ -236,11 +239,13 @@
                     </span>
 
                     <span>
-                        GHS 0.00
+                        GHS <span x-text="serviceCharge.toFixed(2)"></span>
                     </span>
 
                 </div>
 
+                <div class="mb-3 flex justify-between"><span class="text-gray-500">VAT ({{ $vatRate }}%)</span><span>GHS <span x-text="vat.toFixed(2)"></span></span></div>
+                <div class="mb-3 flex justify-between"><span class="text-gray-500">NHIL ({{ $nhilRate }}%)</span><span>GHS <span x-text="nhil.toFixed(2)"></span></span></div>
                 <hr class="my-5">
 
                 <!-- TOTAL -->
@@ -313,12 +318,11 @@ function bookingCalculator() {
             return diff > 0 ? diff : 1;
         },
 
-        get total() {
-
-            return this.nights *
-                   this.pricePerNight;
-
-        },
+        get subtotal() { return this.nights * this.pricePerNight; },
+        get vat() { return this.subtotal * {{ $vatRate }} / 100; },
+        get nhil() { return this.subtotal * {{ $nhilRate }} / 100; },
+        get serviceCharge() { return this.subtotal * {{ $serviceRate }} / 100; },
+        get total() { return this.subtotal + this.vat + this.nhil + this.serviceCharge; },
 
         get formattedTotal() {
 
