@@ -391,11 +391,18 @@ Route::middleware('auth')->group(function () {
         $roomId =
             session('booking.room_id');
 
-        $bookings =
-            Booking::where(
-                'room_id',
-                $roomId
-            )->get();
+        $bookings = Booking::query()
+            ->where('room_id', $roomId)
+            ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
+            ->where(function ($query) {
+                $query->whereIn('status', ['confirmed', 'checked_in'])
+                    ->orWhere(function ($pending) {
+                        $pending->where('status', 'pending')
+                            ->where('hold_until', '>', now())
+                            ->where('hold_status', '!=', 'expired');
+                    });
+            })
+            ->get();
 
         $disabledDates = [];
 
