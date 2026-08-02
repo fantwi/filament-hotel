@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CorporateOrganization extends Model
 {
@@ -15,4 +16,9 @@ class CorporateOrganization extends Model
         'credit_limit' => 'decimal:2',
         'is_credit_enabled' => 'boolean',
     ];
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
 }

@@ -212,6 +212,10 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
+    public function corporateOrganization()
+    {
+        return $this->belongsTo(CorporateOrganization::class);
+    }
     const STATUS_ONLINE = 'online';
 
     const STATUS_OFFLINE = 'offline';

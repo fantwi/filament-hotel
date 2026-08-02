@@ -30,6 +30,7 @@ class UserResource extends Resource
         return auth()->user()?->hasAnyRole([
             'super_admin',
             'admin',
+            'manager',
         ]);
     }
 
@@ -38,6 +39,7 @@ class UserResource extends Resource
         return auth()->user()->hasAnyRole([
             'super_admin',
             'admin',
+            'manager',
         ]);
     }
 
