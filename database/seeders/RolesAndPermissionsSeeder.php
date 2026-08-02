@@ -28,7 +28,7 @@ class RolesAndPermissionsSeeder extends Seeder
             Permission::findOrCreate($permission, 'web');
         }
 
-        $roles = collect(['super_admin', 'admin', 'accountant', 'manager', 'receptionist', 'kitchen_staff'])
+        $roles = collect(['super_admin', 'admin', 'accountant', 'manager', 'receptionist', 'kitchen_manager', 'kitchen_staff'])
             ->mapWithKeys(fn (string $name) => [$name => Role::findOrCreate($name, 'web')]);
 
         $roles['super_admin']->syncPermissions(Permission::all());
@@ -56,6 +56,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'view reception dashboard', 'view bookings', 'create bookings', 'update bookings', 'cancel bookings',
             'check in guests', 'check out guests', 'view conference bookings', 'manage conference bookings',
             'view restaurant reservations', 'manage restaurant reservations',
+        ]);
+        $roles['kitchen_manager']->syncPermissions([
+            'manage kitchen orders', 'view kitchen dashboard', 'manage kitchen production', 'view kitchen production reports',
+            'view kitchen stock', 'manage kitchen stock', 'view kitchen stock movements', 'manage menu item recipes',
         ]);
         $roles['kitchen_staff']->syncPermissions([
             'manage kitchen orders', 'view kitchen dashboard', 'manage kitchen production', 'view kitchen production reports',

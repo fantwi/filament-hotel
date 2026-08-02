@@ -20,6 +20,7 @@ class RoleSeeder extends Seeder
             'receptionist',
             'housekeeping',
             'accountant',
+            'kitchen_manager',
             'kitchen_staff',
         ];
         foreach ($roles as $role) {

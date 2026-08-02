@@ -240,6 +240,8 @@ class User extends Authenticatable implements FilamentUser
         'accounting' => 'Accounting',
         'management' => 'Management',
         'kitchen' => 'Kitchen',
+        'kitchen_manager' => 'Kitchen Manager',
+        'kitchen_staff' => 'Kitchen Staff',
         'guest' => 'Guest',
     ];
 
@@ -251,6 +253,8 @@ class User extends Authenticatable implements FilamentUser
         'accounting' => 'accountant',
         'management' => 'manager',
         'kitchen' => 'kitchen_staff',
+        'kitchen_manager' => 'kitchen_manager',
+        'kitchen_staff' => 'kitchen_staff',
         'guest' => 'guest',
     ];
 
