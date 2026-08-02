@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MenuItem;
 use App\Models\RecipeIngredient;
 use App\Models\RestaurantOrder;
+use App\Models\Promotion;
 use App\Models\RestaurantTable;
 use App\Services\RestaurantCartService;
 use App\Services\CorporateCreditService;
@@ -51,6 +52,7 @@ class RestaurantCheckoutController extends Controller
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'promotion_code' => ['nullable', 'string', 'max:100'],
         ]);
         $items = $cart->items();
 
@@ -58,7 +60,9 @@ class RestaurantCheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
 
-        $totals = $cart->totals();
+        $promotion = filled($data['promotion_code'] ?? null) ? Promotion::query()->where('code', strtoupper($data['promotion_code']))->applicable((float) $items->sum('line_total'))->first() : null;
+        if (filled($data['promotion_code'] ?? null) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This promotion code is not valid for this order.']);
+        $totals = $cart->totals($promotion);
         $guest = auth()->user()?->guest;
         $organization = app(CorporateCreditService::class)->organizationFor(auth()->user());
 
