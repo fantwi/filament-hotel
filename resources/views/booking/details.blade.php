@@ -153,8 +153,8 @@
                     </p> -->
 
                     <div class="mb-6">
-                        <label class="mb-2 block text-sm font-semibold text-gray-700">Promotion code</label>
-                        <input type="text" name="promotion_code" value="{{ old('promotion_code') }}" class="min-h-12 w-full rounded-xl border border-gray-200 px-4 py-3 text-base" placeholder="Optional promotion code">
+                        <label class="mb-2 block text-sm font-semibold text-gray-700">Discount code</label>
+                        <input type="text" name="promotion_code" value="{{ old('promotion_code') }}" class="min-h-12 w-full rounded-xl border border-gray-200 px-4 py-3 text-base" placeholder="Optional discount code">
                         @error('promotion_code')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
 
@@ -250,6 +250,7 @@
 
                 </div>
 
+                <div class="mb-3 flex justify-between"><span class="text-gray-500">Discount</span><span>Applied at checkout</span></div>
                 <div class="mb-3 flex justify-between"><span class="text-gray-500">VAT ({{ $vatRate }}%)</span><span>GHS <span x-text="vat.toFixed(2)"></span></span></div>
                 <div class="mb-3 flex justify-between"><span class="text-gray-500">NHIL ({{ $nhilRate }}%)</span><span>GHS <span x-text="nhil.toFixed(2)"></span></span></div>
                 <hr class="my-5">

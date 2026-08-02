@@ -388,6 +388,11 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/booking/details', function () {
+        $subtotal = (float) session('booking.room_price') * $nights;
+        $promotion = filled($request->input('promotion_code')) ? \App\Models\Promotion::query()->where('code', strtoupper($request->input('promotion_code')))->applicable($subtotal)->first() : null;
+        if (filled($request->input('promotion_code')) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This discount code is not valid for this booking.']);
+        $total = app(\App\Services\BillingService::class)->calculate($subtotal, $promotion?->discount_type, (float) ($promotion?->discount_value ?? 0))['total'];
+
         $roomId =
             session('booking.room_id');
 
@@ -473,6 +478,11 @@ Route::middleware('auth')->group(function () {
 
         $total =
             session('booking.room_price') * $nights;
+
+        $subtotal = (float) session('booking.room_price') * $nights;
+        $promotion = filled($request->input('promotion_code')) ? \App\Models\Promotion::query()->where('code', strtoupper($request->input('promotion_code')))->applicable($subtotal)->first() : null;
+        if (filled($request->input('promotion_code')) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This discount code is not valid for this booking.']);
+        $total = app(\App\Services\BillingService::class)->calculate($subtotal, $promotion?->discount_type, (float) ($promotion?->discount_value ?? 0))['total'];
 
         $roomId =
             session('booking.room_id');
