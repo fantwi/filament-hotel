@@ -36,6 +36,7 @@ Route::middleware('auth')->group(function () {
                 'start_time' => 'required',
                 'end_time' => 'required',
                 'attendees' => 'required|integer|min:1',
+                'promotion_code' => 'nullable|string|max:100',
             ]);
 
             $guest = auth()->user()->guest;
@@ -99,7 +100,10 @@ Route::middleware('auth')->group(function () {
                 $hours *
                 $room->price_per_hour;
 
-            $total = $hours * $room->price_per_hour;
+            $subtotal = $hours * $room->price_per_hour;
+            $promotion = filled($request->promotion_code) ? \App\Models\Promotion::query()->where('code', strtoupper($request->promotion_code))->applicable((float) $subtotal)->first() : null;
+            if (filled($request->promotion_code) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This promotion code is not valid for this booking.']);
+            $total = app(\App\Services\BillingService::class)->calculate((float) $subtotal, $promotion?->discount_type, (float) ($promotion?->discount_value ?? 0))['total'];
 
             $booking = ConferenceBooking::create([
                 'conference_room_id' => $room->id,
