@@ -156,6 +156,7 @@
                         <label class="mb-2 block text-sm font-semibold text-gray-700">Discount code</label>
                         <input type="text" name="promotion_code" value="{{ old('promotion_code') }}" class="min-h-12 w-full rounded-xl border border-gray-200 px-4 py-3 text-base" placeholder="Optional discount code">
                         @error('promotion_code')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                        <button type="submit" name="apply_discount" value="1" class="mt-3 inline-flex min-h-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100">Apply discount</button>
                     </div>
 
                     <!-- BUTTON -->
