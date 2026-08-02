@@ -7,35 +7,26 @@ use Illuminate\Console\Command;
 
 class ReleaseExpiredBookings extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'app:release-expired-bookings';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Command description';
+    protected $description = 'Release unpaid hotel room holds that have expired.';
 
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    public function handle(): int
     {
-        //
-        Booking::where(
-            'status',
-            'pending'
-        )
-            ->where(
-                'hold_until',
-                '<',
-                now()
-            )
-            ->delete();
+        $released = Booking::query()
+            ->where('status', 'pending')
+            ->whereNotNull('hold_until')
+            ->where('hold_until', '<=', now())
+            ->whereDoesntHave('payments', fn ($query) => $query->where('payment_status', 'paid'))
+            ->update([
+                'status' => 'expired',
+                'payment_status' => 'expired',
+                'hold_status' => 'expired',
+                'hold_until' => null,
+            ]);
+
+        $this->info("Released {$released} expired hotel room hold(s).");
+
+        return self::SUCCESS;
     }
 }
