@@ -477,7 +477,12 @@ Route::middleware('auth')->group(function () {
         $subtotal = (float) session('booking.room_price') * $nights;
         $promotion = filled($request->input('promotion_code')) ? \App\Models\Promotion::query()->where('code', strtoupper($request->input('promotion_code')))->applicable($subtotal)->first() : null;
         if (filled($request->input('promotion_code')) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This discount code is not valid for this booking.']);
-        $total = app(\App\Services\BillingService::class)->calculate($subtotal, $promotion?->discount_type, (float) ($promotion?->discount_value ?? 0))['total'];
+        $billing = app(\App\Services\BillingService::class)->calculate($subtotal, $promotion?->discount_type, (float) ($promotion?->discount_value ?? 0));
+        $total = $billing['total'];
+
+        if ($request->boolean('apply_discount')) {
+            return back()->withInput()->with('success', $promotion ? 'Discount applied to the estimated total.' : 'No discount code was entered.');
+        }
 
         $roomId =
             session('booking.room_id');
