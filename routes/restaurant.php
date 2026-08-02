@@ -317,3 +317,15 @@ Route::get(
 
     }
 )->name('restaurant.verify');
+
+
+Route::post('/restaurant/orders/{order}/cancel', function (\App\Models\RestaurantOrder $order) {
+    $ownsOrder = in_array($order->id, session('restaurant_order_ids', []), true)
+        || (auth()->id() && $order->guest?->user_id === auth()->id());
+    abort_unless($ownsOrder, 403);
+    abort_unless($order->status === 'pending' && $order->payment_status !== 'completed', 422);
+
+    $order->update(['status' => 'cancelled', 'cancelled_at' => now()]);
+
+    return redirect()->route('restaurant.menu')->with('success', 'Food order cancelled.');
+})->name('restaurant.orders.cancel');

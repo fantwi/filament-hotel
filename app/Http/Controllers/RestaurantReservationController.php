@@ -44,8 +44,8 @@ class RestaurantReservationController extends Controller
             ->log('Restaurant reservation cancelled.');
 
         return redirect()
-            ->route('dashboard')
-            ->with('success', 'Restaurant reservation cancelled.');
+            ->route('restaurant.reserve')
+            ->with('success', 'Restaurant reservation cancelled. The table hold has been released.');
     }
 
     public function create()

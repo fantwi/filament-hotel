@@ -18,6 +18,10 @@
                     @csrf
                     <button class="flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white">Pay securely with Paystack</button>
                 </form>
+                <form action="{{ route('restaurant.orders.cancel', $order) }}" method="POST" class="mt-3">
+                    @csrf
+                    <button class="flex min-h-12 w-full items-center justify-center rounded-xl border border-red-200 bg-white py-3 font-semibold text-red-700">Cancel order</button>
+                </form>
             @else
                 <p class="mt-6 rounded-lg bg-blue-50 p-4 text-blue-700">The kitchen has received your order and will begin preparation shortly.</p>
             @endif
