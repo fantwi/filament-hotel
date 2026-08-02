@@ -9,6 +9,7 @@ use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 
@@ -37,15 +38,16 @@ class ListIngredients extends ListRecords
                         ->step(.001)
                         ->required(),
                     TextInput::make('unit_cost')
-                        ->label('Unit Cost')
+                        ->label('Purchase Unit Cost')
                         ->numeric()
                         ->prefix('GHS')
                         ->minValue(0)
                         ->step(.01),
                     TextInput::make('reference_number')
-                        ->label('Supplier / Delivery Reference')
+                        ->label('Invoice / Delivery Reference')
                         ->maxLength(255),
-                    TextInput::make('notes')
+                    Textarea::make('notes')
+                        ->rows(3)
                         ->maxLength(1000),
                 ])
                 ->action(function (array $data): void {

@@ -46,7 +46,7 @@ class IngredientsTable
                     EditAction::make(),
                     Action::make('receive_stock')->label('Receive Stock')->icon('heroicon-o-arrow-down-tray')->color('success')
                         ->visible(fn (): bool => auth()->user()?->can('manage kitchen stock') ?? false)
-                        ->schema([TextInput::make('quantity')->numeric()->minValue(0.001)->step(0.001)->required(), TextInput::make('unit_cost')->label('Purchase Unit Cost')->numeric()->prefix('GHS')->minValue(0)->step(0.01), TextInput::make('reference_number')->label('Invoice / Delivery Reference'), Textarea::make('notes')->rows(3)])
+                        ->schema([TextInput::make('quantity')->label('Quantity Received')->numeric()->minValue(0.001)->step(0.001)->required(), TextInput::make('unit_cost')->label('Purchase Unit Cost')->numeric()->prefix('GHS')->minValue(0)->step(0.01), TextInput::make('reference_number')->label('Invoice / Delivery Reference')->maxLength(255), Textarea::make('notes')->rows(3)->maxLength(1000)])
                         ->action(function (Ingredient $record, array $data, KitchenStockService $stock): void {
                             $stock->receive($record, (float) $data['quantity'], filled($data['unit_cost'] ?? null) ? (float) $data['unit_cost'] : null, $data['reference_number'] ?? null, $data['notes'] ?? null);
                             Notification::make()->title('Stock received')->success()->send();
