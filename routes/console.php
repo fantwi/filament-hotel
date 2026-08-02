@@ -13,3 +13,5 @@ Schedule::command(
 )->everyMinute();
 
 Schedule::command('restaurant:reminders')->dailyAt('08:00');
+
+Schedule::command('app:release-expired-guest-holds')->everyMinute();
