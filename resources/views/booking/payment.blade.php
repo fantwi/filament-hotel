@@ -113,6 +113,13 @@ Pay & Confirm Booking
     </button>
 </form>
 
+<form method="POST" action="{{ route('booking.cancel', $booking) }}" class="mt-3">
+    @csrf
+    <button type="submit" class="flex min-h-12 w-full items-center justify-center rounded-xl border border-red-200 bg-white px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+        Cancel booking
+    </button>
+</form>
+
 </div>
 </div>
 </section>
