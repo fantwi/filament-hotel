@@ -36,6 +36,11 @@
                         <input id="attendees" type="number" name="attendees" value="{{ old('attendees', 1) }}" min="1" max="{{ $room->capacity }}" required class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
                     <div>
+                        <label for="promotion_code" class="block text-sm font-semibold text-gray-800">Discount code <span class="font-normal text-gray-500">(optional)</span></label>
+                        <input id="promotion_code" type="text" name="promotion_code" value="{{ old('promotion_code') }}" class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Enter a discount code">
+                        @error('promotion_code')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
                         <label for="special_requests" class="block text-sm font-semibold text-gray-800">Special requests <span class="font-normal text-gray-500">(optional)</span></label>
                         <textarea id="special_requests" name="special_requests" rows="4" class="mt-2 block w-full rounded-xl border-gray-300 px-4 py-3 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ old('special_requests') }}</textarea>
                     </div>

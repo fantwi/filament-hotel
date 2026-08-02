@@ -96,14 +96,20 @@ Route::middleware('auth')->group(function () {
                     $end
                 );
 
-            $total =
-                $hours *
-                $room->price_per_hour;
-
             $subtotal = $hours * $room->price_per_hour;
-            $promotion = filled($request->promotion_code) ? \App\Models\Promotion::query()->where('code', strtoupper($request->promotion_code))->applicable((float) $subtotal)->first() : null;
-            if (filled($request->promotion_code) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This promotion code is not valid for this booking.']);
-            $total = app(\App\Services\BillingService::class)->calculate((float) $subtotal, $promotion?->discount_type, (float) ($promotion?->discount_value ?? 0))['total'];
+            $promotion = filled($request->promotion_code)
+                ? \App\Models\Promotion::query()->where('code', strtoupper($request->promotion_code))->applicable((float) $subtotal)->first()
+                : null;
+
+            if (filled($request->promotion_code) && ! $promotion) {
+                return back()->withInput()->withErrors(['promotion_code' => 'This discount code is not valid for this booking.']);
+            }
+
+            $billing = app(\App\Services\BillingService::class)->calculate(
+                (float) $subtotal,
+                $promotion?->discount_type,
+                (float) ($promotion?->discount_value ?? 0),
+            );
 
             $booking = ConferenceBooking::create([
                 'conference_room_id' => $room->id,
@@ -114,7 +120,13 @@ Route::middleware('auth')->group(function () {
                 'end_time' => $request->end_time,
                 'attendees' => $request->attendees,
                 'special_requests' => $request->special_requests,
-                'total_price' => $total,
+                'subtotal' => $billing['subtotal'],
+                'discount' => $billing['discount'],
+                'vat' => $billing['vat'],
+                'nhil' => $billing['nhil'],
+                'service_charge' => $billing['serviceCharge'],
+                'promotion_code' => $promotion?->code,
+                'total_price' => $billing['total'],
                 'status' => $organization ? 'confirmed' : 'pending',
                 'payment_status' => 'pending',
                 'hold_until' => $organization ? null : now()->addMinutes(15),

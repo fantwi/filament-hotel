@@ -1,27 +1,21 @@
 <x-guest-layout>
     <div class="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
-        @if (session('success'))
-            <div class="mb-6 rounded-lg bg-green-100 p-4 text-green-700">{{ session('success') }}</div>
-        @endif
-        @if (session('error'))
-            <div class="mb-6 rounded-lg bg-red-100 p-4 text-red-700">{{ session('error') }}</div>
-        @endif
-
+        @if (session('success'))<div class="mb-6 rounded-lg bg-green-100 p-4 text-green-700">{{ session('success') }}</div>@endif
+        @if (session('error'))<div class="mb-6 rounded-lg bg-red-100 p-4 text-red-700">{{ session('error') }}</div>@endif
         <div class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
             <h1 class="break-words text-2xl font-bold sm:text-3xl">Order {{ $order->order_number }}</h1>
-            <p class="mt-2 text-gray-600">Status: <strong>{{ ucfirst($order->status) }}</strong></p>
-            <p class="mt-1 text-gray-600">Payment: <strong>{{ ucfirst($order->payment_status) }}</strong></p>
-            <p class="mt-6 text-2xl font-bold">Total: GHS {{ number_format($order->total, 2) }}</p>
-
+            <p class="mt-2 text-gray-600">Status: <strong>{{ ucfirst($order->status) }}</strong></p><p class="mt-1 text-gray-600">Payment: <strong>{{ ucfirst($order->payment_status) }}</strong></p>
+            <dl class="mt-6 space-y-2 border-t pt-4 text-sm">
+                <div class="flex justify-between"><dt>Subtotal</dt><dd>GHS {{ number_format($order->subtotal, 2) }}</dd></div>
+                <div class="flex justify-between text-green-700"><dt>Discount</dt><dd>- GHS {{ number_format($order->discount ?? 0, 2) }}</dd></div>
+                <div class="flex justify-between"><dt>Service charge</dt><dd>GHS {{ number_format($order->service_charge, 2) }}</dd></div>
+                <div class="flex justify-between"><dt>VAT</dt><dd>GHS {{ number_format($order->vat ?? 0, 2) }}</dd></div>
+                <div class="flex justify-between"><dt>NHIL</dt><dd>GHS {{ number_format($order->nhil ?? 0, 2) }}</dd></div>
+            </dl>
+            <p class="mt-5 border-t pt-4 text-2xl font-bold">Total: GHS {{ number_format($order->total, 2) }}</p>
             @if ($order->payment_status !== 'completed')
-                <form action="{{ route('restaurant.orders.pay', $order) }}" method="POST" class="mt-6">
-                    @csrf
-                    <button class="flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white">Pay securely with Paystack</button>
-                </form>
-                <form action="{{ route('restaurant.orders.cancel', $order) }}" method="POST" class="mt-3">
-                    @csrf
-                    <button class="flex min-h-12 w-full items-center justify-center rounded-xl border border-red-200 bg-white py-3 font-semibold text-red-700">Cancel order</button>
-                </form>
+                <form action="{{ route('restaurant.orders.pay', $order) }}" method="POST" class="mt-6">@csrf<button class="flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white">Pay securely with Paystack</button></form>
+                <form action="{{ route('restaurant.orders.cancel', $order) }}" method="POST" class="mt-3">@csrf<button class="flex min-h-12 w-full items-center justify-center rounded-xl border border-red-200 bg-white py-3 font-semibold text-red-700">Cancel order</button></form>
             @else
                 <p class="mt-6 rounded-lg bg-blue-50 p-4 text-blue-700">The kitchen has received your order and will begin preparation shortly.</p>
             @endif

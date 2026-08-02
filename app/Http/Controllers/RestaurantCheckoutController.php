@@ -17,15 +17,34 @@ use Illuminate\View\View;
 
 class RestaurantCheckoutController extends Controller
 {
-    public function index(RestaurantCartService $cart): View|RedirectResponse
+    public function index(Request $request, RestaurantCartService $cart): View|RedirectResponse
     {
-        if ($cart->items()->isEmpty()) {
+        $items = $cart->items();
+
+        if ($items->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
 
+        $promotionCode = strtoupper(trim((string) $request->query('promotion_code', '')));
+        $promotion = null;
+        $promotionError = null;
+
+        if ($promotionCode !== '') {
+            $promotion = Promotion::query()
+                ->where('code', $promotionCode)
+                ->applicable((float) $items->sum('line_total'))
+                ->first();
+
+            if (! $promotion) {
+                $promotionError = 'This discount code is not valid for this order.';
+            }
+        }
+
         return view('restaurant.checkout', [
-            'cartItems' => $cart->items(),
-            'totals' => $cart->totals(),
+            'cartItems' => $items,
+            'totals' => $cart->totals($promotion),
+            'promotionCode' => $promotion?->code ?? $promotionCode,
+            'promotionError' => $promotionError,
         ]);
     }
 

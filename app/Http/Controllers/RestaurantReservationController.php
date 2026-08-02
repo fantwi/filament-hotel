@@ -162,9 +162,19 @@ class RestaurantReservationController extends Controller
         }
 
         $organization = app(CorporateCreditService::class)->organizationFor(auth()->user());
-        $promotion = filled($validated['promotion_code'] ?? null) ? \App\Models\Promotion::query()->where('code', strtoupper($validated['promotion_code']))->applicable((float) $table->reservation_fee)->first() : null;
-        if (filled($validated['promotion_code'] ?? null) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This promotion code is not valid for this reservation.']);
-        $reservationFee = app(\App\Services\BillingService::class)->calculate((float) $table->reservation_fee, $promotion?->discount_type, (float) ($promotion?->discount_value ?? 0))['total'];
+        $promotion = filled($validated['promotion_code'] ?? null)
+            ? \App\Models\Promotion::query()->where('code', strtoupper($validated['promotion_code']))->applicable((float) $table->reservation_fee)->first()
+            : null;
+
+        if (filled($validated['promotion_code'] ?? null) && ! $promotion) {
+            return back()->withInput()->withErrors(['promotion_code' => 'This discount code is not valid for this reservation.']);
+        }
+
+        $billing = app(\App\Services\BillingService::class)->calculate(
+            (float) $table->reservation_fee,
+            $promotion?->discount_type,
+            (float) ($promotion?->discount_value ?? 0),
+        );
 
         $reservation = RestaurantReservation::create([
 
@@ -186,6 +196,14 @@ class RestaurantReservationController extends Controller
             'reservation_time' => $validated['reservation_time'],
 
             'number_of_guests' => $validated['number_of_guests'],
+
+            'subtotal' => $billing['subtotal'],
+            'discount' => $billing['discount'],
+            'vat' => $billing['vat'],
+            'nhil' => $billing['nhil'],
+            'service_charge' => $billing['serviceCharge'],
+            'promotion_code' => $promotion?->code,
+            'reservation_fee' => $billing['total'],
 
             'special_requests' => $validated['special_requests'] ?? null,
 

@@ -22,6 +22,9 @@ class RestaurantOrder extends Model
         'payment_method',
         'paid_at',
         'subtotal',
+        'discount',
+        'vat',
+        'nhil',
         'tax',
         'service_charge',
         'total',
@@ -42,6 +45,9 @@ class RestaurantOrder extends Model
 
     protected $casts = [
         'subtotal' => 'decimal:2',
+        'discount' => 'decimal:2',
+        'vat' => 'decimal:2',
+        'nhil' => 'decimal:2',
         'tax' => 'decimal:2',
         'service_charge' => 'decimal:2',
         'total' => 'decimal:2',

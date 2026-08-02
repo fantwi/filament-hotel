@@ -22,6 +22,12 @@ class ConferenceBooking extends Model
 
         'attendees',
 
+        'subtotal',
+        'discount',
+        'vat',
+        'nhil',
+        'service_charge',
+        'promotion_code',
         'total_price',
 
         'status',
@@ -37,6 +43,12 @@ class ConferenceBooking extends Model
     protected $casts = [
 
         'booking_date' => 'date',
+        'subtotal' => 'decimal:2',
+        'discount' => 'decimal:2',
+        'vat' => 'decimal:2',
+        'nhil' => 'decimal:2',
+        'service_charge' => 'decimal:2',
+        'total_price' => 'decimal:2',
 
         'hold_until' => 'datetime',
 

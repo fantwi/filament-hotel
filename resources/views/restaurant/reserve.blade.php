@@ -41,6 +41,7 @@
                     <div><label for="reservation_time" class="font-semibold">Reservation Time</label><input id="reservation_time" type="time" name="reservation_time" value="{{ old('reservation_time') }}" class="mt-2 w-full rounded-lg border-gray-300 p-3" required></div>
                 </div>
 
+                <div class="mt-6"><label for="promotion_code" class="font-semibold">Discount Code <span class="font-normal text-gray-500">(optional)</span></label><input id="promotion_code" type="text" name="promotion_code" value="{{ old('promotion_code') }}" class="mt-2 w-full rounded-lg border-gray-300 p-3" placeholder="Enter a discount code">@error('promotion_code')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>
                 <div class="mt-6"><label for="special_requests" class="font-semibold">Special Requests <span class="font-normal text-gray-500">(optional)</span></label><textarea id="special_requests" name="special_requests" rows="4" class="mt-2 w-full rounded-lg border-gray-300 p-3" placeholder="Accessibility needs, dietary requests, or celebrations">{{ old('special_requests') }}</textarea></div>
                 <button type="submit" class="mt-8 flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-600 px-8 py-3 font-semibold text-white hover:bg-indigo-700 sm:w-auto">Continue to payment</button>
             </form>

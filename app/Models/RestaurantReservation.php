@@ -34,6 +34,12 @@ class RestaurantReservation extends Model
         'number_of_guests',
 
         'reservation_fee',
+        'subtotal',
+        'discount',
+        'vat',
+        'nhil',
+        'service_charge',
+        'promotion_code',
 
         'transaction_reference',
 
@@ -58,6 +64,12 @@ class RestaurantReservation extends Model
     protected $casts = [
 
         'reservation_date' => 'date',
+        'reservation_fee' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'discount' => 'decimal:2',
+        'vat' => 'decimal:2',
+        'nhil' => 'decimal:2',
+        'service_charge' => 'decimal:2',
 
         'reservation_time' => 'datetime:H:i',
 
