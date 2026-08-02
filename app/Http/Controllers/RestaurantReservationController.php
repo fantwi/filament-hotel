@@ -76,6 +76,7 @@ class RestaurantReservationController extends Controller
             'reservation_time' => ['required', 'date_format:H:i'],
             'number_of_guests' => ['required', 'integer', 'min:1'],
             'special_requests' => ['nullable', 'string', 'max:2000'],
+            'promotion_code' => ['nullable', 'string', 'max:100'],
         ]);
 
         $table = RestaurantTable::query()
@@ -161,6 +162,10 @@ class RestaurantReservationController extends Controller
         }
 
         $organization = app(CorporateCreditService::class)->organizationFor(auth()->user());
+        $promotion = filled($validated['promotion_code'] ?? null) ? \App\Models\Promotion::query()->where('code', strtoupper($validated['promotion_code']))->applicable((float) $table->reservation_fee)->first() : null;
+        if (filled($validated['promotion_code'] ?? null) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This promotion code is not valid for this reservation.']);
+        $reservationFee = app(\App\Services\BillingService::class)->calculate((float) $table->reservation_fee, $promotion?->discount_type, (float) ($promotion?->discount_value ?? 0))['total'];
+
         $reservation = RestaurantReservation::create([
 
             'restaurant_id' => $restaurant->id,
