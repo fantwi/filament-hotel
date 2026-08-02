@@ -302,12 +302,9 @@ Route::post(
 
         ]);
 
-        return back()
-
-            ->with(
-                'success',
-                'Conference booking cancelled.'
-            );
+        return redirect()
+            ->route('conference.index')
+            ->with('success', 'Conference booking cancelled. The room hold has been released.');
     }
 
 )->middleware('auth')->name(

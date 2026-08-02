@@ -159,12 +159,11 @@ Route::post(
 
         ]);
 
-        return back()
+        session()->forget(['booking.id', 'booking.total']);
 
-            ->with(
-                'success',
-                'Booking cancelled.'
-            );
+        return redirect()
+            ->route('rooms.index')
+            ->with('success', 'Booking cancelled. The room hold has been released.');
     }
 
 )->middleware('auth')->name(
