@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\KitchenProductions;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\CreateKitchenProduction;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\EditKitchenProduction;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\ListKitchenProductions;
+use App\Models\Ingredient;
 use App\Models\KitchenProduction;
 use App\Models\MenuItem;
 use BackedEnum;
@@ -99,9 +100,15 @@ class KitchenProductionResource extends Resource
                             ->helperText('Record the actual quantity of each ingredient used for this batch. These amounts are deducted from kitchen stock when saved.')
                             ->schema([
                                 Select::make('ingredient_id')
-                                    ->relationship('ingredient', 'name')
+                                    ->options(fn (): array => Ingredient::query()
+                                        ->where('is_active', true)
+                                        ->orderBy('name')
+                                        ->get()
+                                        ->mapWithKeys(fn (Ingredient $ingredient): array => [
+                                            $ingredient->id => "{$ingredient->name} ({$ingredient->unit})",
+                                        ])
+                                        ->all())
                                     ->searchable()
-                                    ->preload()
                                     ->required()
                                     ->distinct()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
