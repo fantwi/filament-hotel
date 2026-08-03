@@ -60,7 +60,8 @@ Route::get(
 Route::post(
     '/restaurant/reserve',
     [RestaurantReservationController::class, 'store']
-)->name('restaurant.reserve.store');
+)->middleware('throttle:restaurant-reservations')
+    ->name('restaurant.reserve.store');
 
 Route::middleware('auth')->group(function () {
     Route::get(

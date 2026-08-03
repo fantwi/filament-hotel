@@ -77,6 +77,7 @@ class RestaurantReservationController extends Controller
             'number_of_guests' => ['required', 'integer', 'min:1'],
             'special_requests' => ['nullable', 'string', 'max:2000'],
             'promotion_code' => ['nullable', 'string', 'max:100'],
+            'website' => ['nullable', 'string', 'max:0'],
         ]);
 
         $table = RestaurantTable::query()

@@ -21,6 +21,10 @@
         @else
             <form action="{{ route('restaurant.reserve.store') }}" method="POST" class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
                 @csrf
+                <div class="hidden" aria-hidden="true">
+                    <label for="website">Website</label>
+                    <input id="website" type="text" name="website" tabindex="-1" autocomplete="off">
+                </div>
 
                 <div>
                     <label for="restaurant_table_id" class="font-semibold">Restaurant Table</label>
