@@ -45,7 +45,10 @@ class ConferenceRoomForm
                     ->image()
                     ->disk('public')
                     ->directory('conference-rooms')
-                    ->visibility('public'),
+                    ->visibility('public')
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize(5120)
+                    ->rules(['dimensions:max_width=4096,max_height=4096']),
 
                 FileUpload::make('gallery')
                     ->label('Conference Room Gallery')
@@ -53,9 +56,13 @@ class ConferenceRoomForm
                     ->multiple()
                     ->reorderable()
                     ->appendFiles()
+                    ->maxFiles(12)
                     ->disk('public')
                     ->directory('conference-rooms/gallery')
                     ->visibility('public')
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize(5120)
+                    ->rules(['dimensions:max_width=4096,max_height=4096'])
                     ->columnSpanFull(),
 
                 Toggle::make('is_available'),

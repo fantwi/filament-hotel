@@ -394,7 +394,7 @@ Route::post(
 
             'phone_number' => 'nullable|string|max:255',
 
-            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'profile_photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048|dimensions:max_width=4096,max_height=4096',
 
         ]);
 

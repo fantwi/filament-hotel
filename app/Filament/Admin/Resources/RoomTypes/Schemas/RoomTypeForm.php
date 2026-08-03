@@ -26,7 +26,9 @@ class RoomTypeForm
                     ->image()
                     ->disk('public')
                     ->visibility('public')
-                    // ->validationRules(['image', 'max:2048'])
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize(5120)
+                    ->rules(['dimensions:max_width=4096,max_height=4096'])
                     ->imageEditor(),
                 FileUpload::make('gallery')
                     ->label('Room Gallery')
@@ -37,6 +39,10 @@ class RoomTypeForm
                     ->multiple()
                     ->reorderable()
                     ->appendFiles()
+                    ->maxFiles(12)
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize(5120)
+                    ->rules(['dimensions:max_width=4096,max_height=4096'])
                     ->helperText('Add photos guests can browse from the room listing.')
                     ->columnSpanFull(),
                 TextInput::make('capacity')

@@ -48,7 +48,10 @@ class MenuItemForm
                         ->directory('menu-items')
                         ->disk('public')
                         ->visibility('public')
-                        ->image(),
+                        ->image()
+                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                        ->maxSize(5120)
+                        ->rules(['dimensions:max_width=4096,max_height=4096']),
                     Toggle::make('is_available')->default(true),
                     Toggle::make('is_featured')->default(false),
                     Toggle::make('is_published')

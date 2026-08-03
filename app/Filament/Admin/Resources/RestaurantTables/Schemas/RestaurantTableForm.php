@@ -83,6 +83,9 @@ class RestaurantTableForm
                             ->disk('public')
                             ->directory('restaurant-tables')
                             ->visibility('public')
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                            ->maxSize(5120)
+                            ->rules(['dimensions:max_width=4096,max_height=4096'])
                             ->imageEditor()
                             ->columnSpanFull(),
 
