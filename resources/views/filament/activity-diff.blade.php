@@ -1,3 +1,3 @@
-<div class="space-y-2">
-    {!! $getState() !!}
+<div class="whitespace-pre-line break-words">
+    {{ $getState() }}
 </div>

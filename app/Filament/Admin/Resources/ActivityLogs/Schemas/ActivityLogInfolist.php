@@ -38,15 +38,10 @@ class ActivityLogInfolist
                     ->label('Date & Time')
                     ->dateTime(),
 
-                TextEntry::make('changes')
-                    ->label('Changes')
-                    ->state(fn ($record) => ActivityLogResource::formatChanges($record))
-                    ->columnSpanFull(),
-
                 ViewEntry::make('changes')
                     ->label('Changes')
                     ->view('filament.activity-diff')
-                    ->state(fn ($record) => ActivityLogResource::generateDiff($record))
+                    ->state(fn ($record) => ActivityLogResource::formatChanges($record))
                     ->columnSpanFull(),
             ]);
     }
