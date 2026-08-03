@@ -9,6 +9,11 @@ class RestaurantTableQrController extends Controller
 {
     public function print(RestaurantTable $table): View
     {
+        abort_unless(
+            auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']),
+            403
+        );
+
         abort_unless(filled($table->qr_token), 404, 'This table does not have a QR token.');
 
         $table->load('restaurant');
