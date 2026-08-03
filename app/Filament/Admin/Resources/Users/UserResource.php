@@ -78,12 +78,12 @@ class UserResource extends Resource
     {
         $user = auth()->user();
 
-        if ($record->hasRole('admin') && ! $user->hasRole('super_admin')) {
+        if (! $user?->hasAnyRole(['super_admin', 'admin'])) {
             return false;
         }
 
-        if ($record->hasRole('super_admin') && ! $user->hasRole('super_admin')) {
-            return false;
+        if ($record->hasAnyRole(['admin', 'super_admin'])) {
+            return $user->hasRole('super_admin');
         }
 
         return true;

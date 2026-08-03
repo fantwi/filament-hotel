@@ -16,7 +16,11 @@ class UserForm
             TextInput::make('last_name')->required(),
             TextInput::make('email')->email()->required(),
             TextInput::make('phone_number')->required(),
-            Select::make('department')->options(User::getDepartments())->required(),
+            Select::make('department')
+                ->options(fn (): array => auth()->user()?->hasRole('super_admin')
+                    ? User::getDepartments()
+                    : collect(User::getDepartments())->except(['super_admin', 'admin'])->all())
+                ->required(),
             Select::make('corporate_organization_id')
                 ->label('Corporate Account')
                 ->relationship('corporateOrganization', 'name')
