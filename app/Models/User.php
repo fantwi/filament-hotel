@@ -307,6 +307,7 @@ class User extends Authenticatable implements FilamentUser
     {
         return LogOptions::defaults()
             ->logAll()
+            ->logExcept(['password', 'remember_token'])
             ->logOnlyDirty()
             ->setDescriptionForEvent(fn (string $eventName) => "User {$eventName}");
     }
