@@ -23,6 +23,7 @@ class RestaurantOrder extends Model
         'paid_at',
         'subtotal',
         'discount',
+        'promotion_code',
         'vat',
         'nhil',
         'tax',

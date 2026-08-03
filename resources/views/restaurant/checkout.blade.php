@@ -12,10 +12,11 @@
             <div class="space-y-2">@foreach ($cartItems as $line)<div class="flex justify-between gap-4"><span>{{ $line['quantity'] }} x {{ $line['item']->name }}</span><span class="shrink-0">GHS {{ number_format($line['line_total'], 2) }}</span></div>@endforeach</div>
             <div class="mt-5 space-y-2 border-t pt-4 text-sm">
                 <div class="flex justify-between"><span>Subtotal</span><span>GHS {{ number_format($totals['subtotal'], 2) }}</span></div>
-                <div class="flex justify-between text-green-700"><span>Discount</span><span>- GHS {{ number_format($totals['discount'] ?? 0, 2) }}</span></div>
-                <div class="flex justify-between"><span>Service charge</span><span>GHS {{ number_format($totals['service_charge'], 2) }}</span></div>
-                <div class="flex justify-between"><span>VAT</span><span>GHS {{ number_format($totals['vat'] ?? 0, 2) }}</span></div>
-                <div class="flex justify-between"><span>NHIL</span><span>GHS {{ number_format($totals['nhil'] ?? 0, 2) }}</span></div>
+                <div class="flex justify-between text-green-700"><span>Discount{{ $promotionCode ? ' ('.$promotionCode.')' : '' }}</span><span>- GHS {{ number_format($totals['discount'] ?? 0, 2) }}</span></div>
+                <div class="flex justify-between font-medium"><span>Net after discount</span><span>GHS {{ number_format($totals['net'], 2) }}</span></div>
+                <div class="flex justify-between"><span>Service charge ({{ number_format($totals['service_charge_rate'], 2) }}%)</span><span>GHS {{ number_format($totals['service_charge'], 2) }}</span></div>
+                <div class="flex justify-between"><span>VAT ({{ number_format($totals['vat_rate'], 2) }}%)</span><span>GHS {{ number_format($totals['vat'] ?? 0, 2) }}</span></div>
+                <div class="flex justify-between"><span>NHIL ({{ number_format($totals['nhil_rate'], 2) }}%)</span><span>GHS {{ number_format($totals['nhil'] ?? 0, 2) }}</span></div>
             </div>
             <div class="mt-4 flex justify-between border-t pt-4 text-xl font-bold"><span>Estimated total</span><span>GHS {{ number_format($totals['total'], 2) }}</span></div>
             <label for="email" class="mt-6 block font-medium">Email for payment receipt</label><input id="email" name="email" type="email" value="{{ old('email', auth()->user()?->email) }}" required class="mt-2 min-h-12 w-full rounded-xl border-gray-300 px-4 text-base">

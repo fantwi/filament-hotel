@@ -23,12 +23,23 @@ class RestaurantCartService
     public function totals(?\App\Models\Promotion $promotion = null): array
     {
         $subtotal = (float) $this->items()->sum('line_total');
-        $billing = app(BillingService::class)->calculate($subtotal, $promotion?->discount_type, (float) ($promotion?->discount_value ?? 0));
+        $billing = app(BillingService::class)->calculate(
+            $subtotal,
+            $promotion?->discount_type,
+            (float) ($promotion?->discount_value ?? 0),
+        );
 
         return [
             'subtotal' => $billing['subtotal'],
-            'discount' => $billing['discount'], 'vat' => $billing['vat'], 'nhil' => $billing['nhil'], 'tax' => $billing['vat'] + $billing['nhil'],
+            'discount' => $billing['discount'],
+            'net' => $billing['net'],
+            'vat' => $billing['vat'],
+            'nhil' => $billing['nhil'],
+            'tax' => $billing['vat'] + $billing['nhil'],
             'service_charge' => $billing['serviceCharge'],
+            'vat_rate' => $billing['vatRate'],
+            'nhil_rate' => $billing['nhilRate'],
+            'service_charge_rate' => $billing['serviceChargeRate'],
             'total' => $billing['total'],
         ];
     }

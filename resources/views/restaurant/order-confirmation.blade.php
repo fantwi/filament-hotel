@@ -7,7 +7,8 @@
             <p class="mt-2 text-gray-600">Status: <strong>{{ ucfirst($order->status) }}</strong></p><p class="mt-1 text-gray-600">Payment: <strong>{{ ucfirst($order->payment_status) }}</strong></p>
             <dl class="mt-6 space-y-2 border-t pt-4 text-sm">
                 <div class="flex justify-between"><dt>Subtotal</dt><dd>GHS {{ number_format($order->subtotal, 2) }}</dd></div>
-                <div class="flex justify-between text-green-700"><dt>Discount</dt><dd>- GHS {{ number_format($order->discount ?? 0, 2) }}</dd></div>
+                <div class="flex justify-between text-green-700"><dt>Discount{{ $order->promotion_code ? ' ('.$order->promotion_code.')' : '' }}</dt><dd>- GHS {{ number_format($order->discount ?? 0, 2) }}</dd></div>
+                <div class="flex justify-between font-medium"><dt>Net after discount</dt><dd>GHS {{ number_format($order->subtotal - $order->discount, 2) }}</dd></div>
                 <div class="flex justify-between"><dt>Service charge</dt><dd>GHS {{ number_format($order->service_charge, 2) }}</dd></div>
                 <div class="flex justify-between"><dt>VAT</dt><dd>GHS {{ number_format($order->vat ?? 0, 2) }}</dd></div>
                 <div class="flex justify-between"><dt>NHIL</dt><dd>GHS {{ number_format($order->nhil ?? 0, 2) }}</dd></div>

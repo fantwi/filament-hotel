@@ -98,6 +98,7 @@ class RestaurantCheckoutController extends Controller
                 'status' => $organization ? 'confirmed' : 'pending',
                 'confirmed_at' => $organization ? now() : null,
                 ...$totals,
+                'promotion_code' => $promotion?->code,
                 'notes' => $data['notes'] ?? null,
             ]);
 
