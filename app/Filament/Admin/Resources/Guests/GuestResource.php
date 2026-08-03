@@ -11,12 +11,12 @@ use App\Filament\Admin\Resources\Guests\Schemas\GuestInfolist;
 use App\Filament\Admin\Resources\Guests\Tables\GuestsTable;
 use App\Models\Guest;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
-class GuestResource extends Resource
+class GuestResource extends SecureResource
 {
     protected static string|\UnitEnum|null $navigationGroup = 'Guest Management';
 
@@ -46,6 +46,27 @@ class GuestResource extends Resource
             'receptionist',
         ]);
     }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'receptionist']) ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'receptionist']) ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
+    }
+
 
     public static function form(Schema $schema): Schema
     {

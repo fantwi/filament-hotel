@@ -19,7 +19,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -27,7 +27,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-class KitchenProductionResource extends Resource
+class KitchenProductionResource extends SecureResource
 {
     protected static ?string $model = KitchenProduction::class;
 
@@ -43,6 +43,17 @@ class KitchenProductionResource extends Resource
     {
         return auth()->user()?->can('manage kitchen production') ?? false;
     }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('manage kitchen production') ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->can('manage kitchen production') ?? false;
+    }
+
 
     public static function form(Schema $schema): Schema
     {

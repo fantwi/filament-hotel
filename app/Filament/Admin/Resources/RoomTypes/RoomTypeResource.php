@@ -11,7 +11,7 @@ use App\Filament\Admin\Resources\RoomTypes\Schemas\RoomTypeInfolist;
 use App\Filament\Admin\Resources\RoomTypes\Tables\RoomTypesTable;
 use App\Models\RoomType;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 // use Filament\Forms\Components\FileUpload;
 
-class RoomTypeResource extends Resource
+class RoomTypeResource extends SecureResource
 {
     protected static ?string $model = RoomType::class;
 
@@ -48,6 +48,27 @@ class RoomTypeResource extends Resource
             'receptionist',
         ]);
     }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
+    }
+
 
     public static function form(Schema $schema): Schema
     {

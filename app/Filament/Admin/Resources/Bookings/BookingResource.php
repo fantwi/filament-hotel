@@ -12,12 +12,12 @@ use App\Filament\Admin\Resources\Bookings\Schemas\BookingInfolist;
 use App\Filament\Admin\Resources\Bookings\Tables\BookingsTable;
 use App\Models\Booking;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
-class BookingResource extends Resource
+class BookingResource extends SecureResource
 {
     protected static ?string $model = Booking::class;
 
@@ -51,21 +51,30 @@ class BookingResource extends Resource
         ]);
     }
 
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'receptionist']) ?? false;
+    }
+
     public static function canEdit($record): bool
     {
         $user = auth()->user();
 
-        if ($user->hasRole('admin')) {
-            return true;
+        if (! $user?->hasAnyRole(['super_admin', 'admin', 'manager', 'receptionist'])) {
+            return false;
         }
 
-        return $record->status === 'pending';
+        return $user->hasAnyRole(['super_admin', 'admin']) || $record->status === 'pending';
     }
 
-    // Only admins can delete bookings
     public static function canDelete($record): bool
     {
-        return auth()->user()?->hasRole('admin');
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
 
     public static function form(Schema $schema): Schema

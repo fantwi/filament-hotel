@@ -9,13 +9,13 @@ use App\Filament\Admin\Resources\ConferenceRooms\Schemas\ConferenceRoomForm;
 use App\Filament\Admin\Resources\ConferenceRooms\Tables\ConferenceRoomsTable;
 use App\Models\ConferenceRoom;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\ContentResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-class ConferenceRoomResource extends Resource
+class ConferenceRoomResource extends ContentResource
 {
     protected static ?string $model = ConferenceRoom::class;
 

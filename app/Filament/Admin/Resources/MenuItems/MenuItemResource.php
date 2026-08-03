@@ -10,12 +10,12 @@ use App\Filament\Admin\Resources\MenuItems\Schemas\MenuItemForm;
 use App\Filament\Admin\Resources\MenuItems\Tables\MenuItemsTable;
 use App\Models\MenuItem;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\ContentResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-class MenuItemResource extends Resource
+class MenuItemResource extends ContentResource
 {
     protected static ?string $model = MenuItem::class;
 

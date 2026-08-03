@@ -7,11 +7,11 @@ use App\Filament\Admin\Resources\Promotions\Pages\EditPromotion;
 use App\Filament\Admin\Resources\Promotions\Pages\ListPromotions;
 use App\Models\Promotion;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
-class PromotionResource extends Resource
+class PromotionResource extends SecureResource
 {
     protected static ?string $model = Promotion::class;
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-tag';
@@ -19,6 +19,32 @@ class PromotionResource extends Resource
     protected static ?string $navigationLabel = 'Promotions';
 
     public static function canViewAny(): bool { return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false; }
+
+    private static function mayManage(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::mayManage();
+    }
+
+    public static function canEdit($record): bool
+    {
+        return static::mayManage();
+    }
+
+    public static function canDelete($record): bool
+    {
+        return static::mayManage();
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::mayManage();
+    }
+
 
     public static function form(Schema $schema): Schema
     {

@@ -9,12 +9,12 @@ use App\Filament\Admin\Resources\MenuCategories\Schemas\MenuCategoryForm;
 use App\Filament\Admin\Resources\MenuCategories\Tables\MenuCategoriesTable;
 use App\Models\MenuCategory;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\ContentResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-class MenuCategoryResource extends Resource
+class MenuCategoryResource extends ContentResource
 {
     protected static ?string $model = MenuCategory::class;
 

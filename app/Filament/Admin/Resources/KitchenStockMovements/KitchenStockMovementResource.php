@@ -6,11 +6,11 @@ use App\Filament\Admin\Resources\KitchenStockMovements\Pages\ListKitchenStockMov
 use App\Filament\Admin\Resources\KitchenStockMovements\Tables\KitchenStockMovementsTable;
 use App\Models\KitchenStockMovement;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 
-class KitchenStockMovementResource extends Resource
+class KitchenStockMovementResource extends SecureResource
 {
     protected static ?string $model = KitchenStockMovement::class;
 

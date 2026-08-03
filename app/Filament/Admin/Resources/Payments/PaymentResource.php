@@ -11,12 +11,12 @@ use App\Filament\Admin\Resources\Payments\Schemas\PaymentInfolist;
 use App\Filament\Admin\Resources\Payments\Tables\PaymentsTable;
 use App\Models\Payment;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
-class PaymentResource extends Resource
+class PaymentResource extends SecureResource
 {
     protected static ?string $model = Payment::class;
 

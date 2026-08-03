@@ -9,11 +9,11 @@ use App\Filament\Admin\Resources\RestaurantOrderItems\Schemas\RestaurantOrderIte
 use App\Filament\Admin\Resources\RestaurantOrderItems\Tables\RestaurantOrderItemsTable;
 use App\Models\RestaurantOrderItem;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
-class RestaurantOrderItemResource extends Resource
+class RestaurantOrderItemResource extends SecureResource
 {
     protected static ?string $model = RestaurantOrderItem::class;
 
@@ -24,6 +24,12 @@ class RestaurantOrderItemResource extends Resource
     protected static ?string $navigationLabel = 'Food Order Items';
 
     protected static ?int $navigationSort = 70;
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('manage kitchen orders') ?? false;
+    }
+
 
     public static function form(Schema $schema): Schema
     {

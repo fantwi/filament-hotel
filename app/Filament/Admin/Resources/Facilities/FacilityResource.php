@@ -9,13 +9,13 @@ use App\Filament\Admin\Resources\Facilities\Schemas\FacilityForm;
 use App\Filament\Admin\Resources\Facilities\Tables\FacilitiesTable;
 use App\Models\Facility;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\ContentResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-class FacilityResource extends Resource
+class FacilityResource extends ContentResource
 {
     protected static ?string $model = Facility::class;
 

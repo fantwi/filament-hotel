@@ -9,12 +9,12 @@ use App\Filament\Admin\Resources\RestaurantReservations\Schemas\RestaurantReserv
 use App\Filament\Admin\Resources\RestaurantReservations\Tables\RestaurantReservationsTable;
 use App\Models\RestaurantReservation;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
-class RestaurantReservationResource extends Resource
+class RestaurantReservationResource extends SecureResource
 {
     protected static ?string $model = RestaurantReservation::class;
 
@@ -23,6 +23,27 @@ class RestaurantReservationResource extends Resource
     protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
 
     protected static ?int $navigationSort = 30;
+
+    private static function mayManageReservations(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'receptionist']) ?? false;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return static::mayManageReservations();
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::mayManageReservations();
+    }
+
+    public static function canEdit($record): bool
+    {
+        return static::mayManageReservations();
+    }
+
 
     public static function form(Schema $schema): Schema
     {

@@ -9,12 +9,12 @@ use App\Filament\Admin\Resources\Ingredients\Schemas\IngredientForm;
 use App\Filament\Admin\Resources\Ingredients\Tables\IngredientsTable;
 use App\Models\Ingredient;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 
-class IngredientResource extends Resource
+class IngredientResource extends SecureResource
 {
     protected static ?string $model = Ingredient::class;
 

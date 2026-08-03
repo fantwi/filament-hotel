@@ -7,11 +7,11 @@ use App\Filament\Admin\Resources\BillingSettings\Pages\EditBillingSetting;
 use App\Filament\Admin\Resources\BillingSettings\Pages\ListBillingSettings;
 use App\Models\BillingSetting;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
-class BillingSettingResource extends Resource
+class BillingSettingResource extends SecureResource
 {
     protected static ?string $model = BillingSetting::class;
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-calculator';
@@ -22,6 +22,32 @@ class BillingSettingResource extends Resource
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;
     }
+
+    private static function mayManage(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::mayManage();
+    }
+
+    public static function canEdit($record): bool
+    {
+        return static::mayManage();
+    }
+
+    public static function canDelete($record): bool
+    {
+        return static::mayManage();
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return static::mayManage();
+    }
+
 
     public static function form(Schema $schema): Schema
     {

@@ -7,14 +7,14 @@ use App\Filament\Admin\Resources\ActivityLogs\Tables\ActivityLogsTable;
 // use App\Filament\Admin\Resources\ActivityLogs\Schemas\ActivityLogForm;
 use BackedEnum;
 // use App\Models\ActivityLog;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Support\Icons\Heroicon;
 // use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Activitylog\Models\Activity;
 
-class ActivityLogResource extends Resource
+class ActivityLogResource extends SecureResource
 {
     protected static ?string $model = Activity::class;
 
@@ -40,6 +40,12 @@ class ActivityLogResource extends Resource
             'admin',
         ]);
     }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
+    }
+
 
     public static function getEloquentQuery(): Builder
     {

@@ -11,12 +11,12 @@ use App\Filament\Admin\Resources\Rooms\Schemas\RoomInfolist;
 use App\Filament\Admin\Resources\Rooms\Tables\RoomsTable;
 use App\Models\Room;
 use BackedEnum;
-use Filament\Resources\Resource;
+use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
-class RoomResource extends Resource
+class RoomResource extends SecureResource
 {
     protected static string|\UnitEnum|null $navigationGroup = 'Accommodation';
 
