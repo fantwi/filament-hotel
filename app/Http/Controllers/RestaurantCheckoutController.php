@@ -85,7 +85,7 @@ class RestaurantCheckoutController extends Controller
         $guest = auth()->user()?->guest;
         $organization = app(CorporateCreditService::class)->organizationFor(auth()->user());
 
-        $order = DB::transaction(function () use ($items, $totals, $data, $guest, $table, $organization) {
+        $order = DB::transaction(function () use ($items, $totals, $data, $guest, $table, $organization, $promotion) {
             $order = RestaurantOrder::create([
                 'guest_id' => $guest?->id,
                 'corporate_organization_id' => $organization?->id,
