@@ -139,7 +139,34 @@ class RestaurantCheckoutController extends Controller
         session()->forget('cart');
         session()->push('restaurant_order_ids', $order->id);
 
+        if ($order->isKitchenEligible()) {
+            $this->notifyKitchen($order);
+        }
+
+        $message = $organization
+            ? "Order {$order->order_number} has been billed to {$organization->name} and sent to the kitchen."
+            : "Order {$order->order_number} has been received. Complete payment to send it to the kitchen.";
+
         return redirect()->route('restaurant.orders.confirmation', $order)
-            ->with('success', "Order {$order->order_number} has been received. Complete payment to send it to the kitchen.");
+            ->with('success', $message);
+    }
+
+    private function notifyKitchen(RestaurantOrder $order): void
+    {
+        if (! Permission::query()
+            ->where('name', 'manage kitchen orders')
+            ->where('guard_name', 'web')
+            ->exists()) {
+            return;
+        }
+
+        User::permission('manage kitchen orders')->each(function (User $kitchenUser) use ($order): void {
+            Notification::make()
+                ->title('New corporate restaurant order')
+                ->body("Order {$order->order_number} is billed to a corporate account and ready for kitchen preparation.")
+                ->icon('heroicon-o-shopping-bag')
+                ->success()
+                ->sendToDatabase($kitchenUser);
+        });
     }
 }

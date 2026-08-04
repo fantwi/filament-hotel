@@ -107,9 +107,21 @@ class RestaurantOrder extends Model
         return $query->where('payment_status', 'completed');
     }
 
+    public function isKitchenEligible(): bool
+    {
+        return $this->payment_status === 'completed'
+            || $this->payment_method === 'corporate_account';
+    }
+
     public function scopeKitchenQueue(Builder $query): Builder
     {
-        return $query->paid()->whereIn('status', ['confirmed', 'preparing', 'ready']);
+        return $query
+            ->where(function (Builder $paymentQuery): void {
+                $paymentQuery
+                    ->where('payment_status', 'completed')
+                    ->orWhere('payment_method', 'corporate_account');
+            })
+            ->whereIn('status', ['confirmed', 'preparing', 'ready']);
     }
 
     public function scopeActive(Builder $query): Builder

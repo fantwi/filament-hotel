@@ -104,7 +104,7 @@ class RestaurantOrdersTable
                         ->label('Confirm Order')
                         ->icon('heroicon-o-check-circle')
                         ->color('info')
-                        ->visible(fn (RestaurantOrder $record): bool => $record->status === 'pending' && $record->payment_status === 'completed')
+                        ->visible(fn (RestaurantOrder $record): bool => $record->status === 'pending' && $record->isKitchenEligible())
                         ->requiresConfirmation()
                         ->action(function (RestaurantOrder $record, RestaurantKitchenService $kitchen): void {
                             $kitchen->confirm($record);
@@ -114,7 +114,7 @@ class RestaurantOrdersTable
                         ->label('Start Preparing')
                         ->icon('heroicon-o-fire')
                         ->color('warning')
-                        ->visible(fn (RestaurantOrder $record): bool => $record->status === 'confirmed' && $record->payment_status === 'completed')
+                        ->visible(fn (RestaurantOrder $record): bool => $record->status === 'confirmed' && $record->isKitchenEligible())
                         ->schema([Textarea::make('kitchen_notes')->label('Kitchen Notes')->rows(4)])
                         ->modalHeading('Start Preparing Order')
                         ->modalDescription('Assign this order to yourself and move it into preparation.')
