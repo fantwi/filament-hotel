@@ -25,7 +25,10 @@ Route::middleware('auth')->group(function () {
         function (ConferenceRoom $room) {
             abort_unless($room->is_published, 404);
 
-            return view('conference.book', compact('room'));
+            return view('conference.book', [
+                'room' => $room,
+                'billingRates' => app(\App\Services\BillingService::class)->rates(),
+            ]);
         })->name('conference.book');
 
     Route::post('/conference-room/book',
@@ -110,6 +113,28 @@ Route::middleware('auth')->group(function () {
                 $promotion?->discount_type,
                 (float) ($promotion?->discount_value ?? 0),
             );
+
+            if ($request->boolean('apply_discount')) {
+                return back()
+                    ->withInput()
+                    ->with('success', 'Estimated total updated.')
+                    ->with('conference_billing_preview', [
+                        'booking_date' => $request->booking_date,
+                        'start_time' => $request->start_time,
+                        'end_time' => $request->end_time,
+                        'promotion_code' => $promotion?->code,
+                        'subtotal' => $billing['subtotal'],
+                        'discount' => $billing['discount'],
+                        'net' => $billing['net'],
+                        'vat' => $billing['vat'],
+                        'nhil' => $billing['nhil'],
+                        'service_charge' => $billing['serviceCharge'],
+                        'vat_rate' => $billing['vatRate'],
+                        'nhil_rate' => $billing['nhilRate'],
+                        'service_charge_rate' => $billing['serviceChargeRate'],
+                        'total' => $billing['total'],
+                    ]);
+            }
 
             $booking = ConferenceBooking::create([
                 'conference_room_id' => $room->id,
