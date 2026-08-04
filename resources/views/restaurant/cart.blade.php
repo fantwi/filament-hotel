@@ -1,5 +1,9 @@
 <x-guest-layout>
-    <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14"><div class="mb-7"><p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Restaurant order</p><h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-900">Your cart</h1></div>
+    <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+        <div class="mb-7">
+            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Restaurant order</p>
+            <h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-900">Your cart</h1>
+        </div>
 
         @if (session()->has('restaurant_order.table_id'))
             <div class="mb-6 rounded-xl border border-green-200 bg-green-50 p-5">
@@ -44,12 +48,29 @@
                 @endforeach
             </div>
 
-            <div class="mt-8 ml-auto max-w-md rounded-xl bg-white p-6 shadow">
-                <div class="flex justify-between"><span>Subtotal</span><span>GHS {{ number_format($totals['subtotal'], 2) }}</span></div>
-                <div class="mt-2 flex justify-between"><span>Tax</span><span>GHS {{ number_format($totals['tax'], 2) }}</span></div>
-                <div class="mt-2 flex justify-between"><span>Service charge</span><span>GHS {{ number_format($totals['service_charge'], 2) }}</span></div>
-                <div class="mt-4 flex justify-between border-t pt-4 text-xl font-bold"><span>Total</span><span>GHS {{ number_format($totals['total'], 2) }}</span></div>
-                <a href="{{ route('restaurant.checkout') }}" class="mt-6 flex min-h-12 items-center justify-center rounded-xl bg-blue-600 py-3 text-center font-semibold text-white">Checkout</a>
+            <div class="mt-8 ml-auto max-w-md rounded-2xl bg-white p-6 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5">
+                <form action="{{ route('cart.index') }}" method="GET" class="mb-5 border-b border-slate-200 pb-5">
+                    <label for="promotion_code" class="block text-sm font-semibold text-gray-800">Discount code</label>
+                    <div class="mt-2 flex flex-col gap-2 sm:flex-row">
+                        <input id="promotion_code" name="promotion_code" type="text" value="{{ $promotionCode ?? '' }}" class="min-h-11 flex-1 rounded-xl border-gray-300 px-3 text-base" placeholder="Enter a discount code">
+                        <button type="submit" class="min-h-11 rounded-xl border border-blue-600 px-4 font-semibold text-blue-700">Apply discount</button>
+                    </div>
+                    @if ($promotionError)
+                        <p class="mt-2 text-sm text-red-600">{{ $promotionError }}</p>
+                    @endif
+                </form>
+
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between"><span>Subtotal</span><span>GHS {{ number_format($totals['subtotal'], 2) }}</span></div>
+                    <div class="flex justify-between text-green-700"><span>Discount{{ $promotionCode ? ' ('.$promotionCode.')' : '' }}</span><span>- GHS {{ number_format($totals['discount'], 2) }}</span></div>
+                    <div class="flex justify-between font-medium"><span>Net after discount</span><span>GHS {{ number_format($totals['net'], 2) }}</span></div>
+                    <div class="flex justify-between"><span>Service charge ({{ number_format($totals['service_charge_rate'], 2) }}%)</span><span>GHS {{ number_format($totals['service_charge'], 2) }}</span></div>
+                    <div class="flex justify-between"><span>VAT ({{ number_format($totals['vat_rate'], 2) }}%)</span><span>GHS {{ number_format($totals['vat'], 2) }}</span></div>
+                    <div class="flex justify-between"><span>NHIL ({{ number_format($totals['nhil_rate'], 2) }}%)</span><span>GHS {{ number_format($totals['nhil'], 2) }}</span></div>
+                </div>
+
+                <div class="mt-4 flex justify-between border-t border-slate-200 pt-4 text-xl font-bold"><span>Estimated total</span><span>GHS {{ number_format($totals['total'], 2) }}</span></div>
+                <a href="{{ route('restaurant.checkout', ['promotion_code' => $promotionCode]) }}" class="mt-6 flex min-h-12 items-center justify-center rounded-xl bg-blue-600 py-3 text-center font-semibold text-white">Checkout</a>
             </div>
         @endif
     </div>

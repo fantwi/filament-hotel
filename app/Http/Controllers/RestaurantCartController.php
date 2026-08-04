@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\MenuItem;
+use App\Models\Promotion;
 use App\Services\RestaurantCartService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,11 +27,29 @@ class RestaurantCartController extends Controller
         return back()->with('success', 'Item added to cart.');
     }
 
-    public function index(RestaurantCartService $cart): View
+    public function index(Request $request, RestaurantCartService $cart): View
     {
+        $items = $cart->items();
+        $promotionCode = strtoupper(trim((string) $request->query('promotion_code', '')));
+        $promotion = null;
+        $promotionError = null;
+
+        if ($promotionCode !== '') {
+            $promotion = Promotion::query()
+                ->where('code', $promotionCode)
+                ->applicable((float) $items->sum('line_total'))
+                ->first();
+
+            if (! $promotion) {
+                $promotionError = 'This discount code is not valid for the current cart.';
+            }
+        }
+
         return view('restaurant.cart', [
-            'cartItems' => $cart->items(),
-            'totals' => $cart->totals(),
+            'cartItems' => $items,
+            'totals' => $cart->totals($promotion),
+            'promotionCode' => $promotion?->code ?? $promotionCode,
+            'promotionError' => $promotionError,
         ]);
     }
 
