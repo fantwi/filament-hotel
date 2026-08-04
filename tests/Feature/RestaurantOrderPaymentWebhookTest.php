@@ -75,6 +75,74 @@ class RestaurantOrderPaymentWebhookTest extends TestCase
         self::assertSame(1, Payment::count());
     }
 
+    public function test_browser_callback_records_a_verified_paystack_payment(): void
+    {
+        $order = $this->orderWithReference('FOOD-CALLBACK-SUCCESS');
+
+        Http::fake([
+            'https://api.paystack.co/transaction/verify/FOOD-CALLBACK-SUCCESS' => Http::response([
+                'data' => $this->paystackPaymentData($order),
+            ]),
+        ]);
+
+        $response = $this->get(route('restaurant.orders.payment.callback', ['reference' => $order->transaction_reference]));
+
+        $response->assertRedirect(route('restaurant.orders.confirmation', $order));
+        $order->refresh();
+
+        self::assertSame('completed', $order->payment_status);
+        self::assertSame('confirmed', $order->status);
+        $this->assertDatabaseHas('payments', [
+            'restaurant_order_id' => $order->id,
+            'transaction_reference' => $order->transaction_reference,
+            'payment_status' => 'completed',
+        ]);
+    }
+
+    public function test_browser_callback_keeps_an_order_pending_when_paystack_verification_fails(): void
+    {
+        $order = $this->orderWithReference('FOOD-CALLBACK-FAILED');
+
+        Http::fake([
+            'https://api.paystack.co/transaction/verify/FOOD-CALLBACK-FAILED' => Http::response([
+                'data' => $this->paystackPaymentData($order, 'failed'),
+            ]),
+        ]);
+
+        $response = $this->get(route('restaurant.orders.payment.callback', ['reference' => $order->transaction_reference]));
+
+        $response
+            ->assertRedirect(route('restaurant.orders.confirmation', $order))
+            ->assertSessionHas('error', 'Payment verification failed. No payment was recorded.');
+        $this->assertDatabaseHas('restaurant_orders', [
+            'id' => $order->id,
+            'payment_status' => 'pending',
+        ]);
+        self::assertSame(0, Payment::count());
+    }
+
+    public function test_repeated_browser_callbacks_are_idempotent(): void
+    {
+        $order = $this->orderWithReference('FOOD-CALLBACK-DUPLICATE');
+
+        Http::fake([
+            'https://api.paystack.co/transaction/verify/FOOD-CALLBACK-DUPLICATE' => Http::response([
+                'data' => $this->paystackPaymentData($order),
+            ]),
+        ]);
+
+        $this->get(route('restaurant.orders.payment.callback', ['reference' => $order->transaction_reference]))
+            ->assertRedirect(route('restaurant.orders.confirmation', $order));
+        $this->get(route('restaurant.orders.payment.callback', ['reference' => $order->transaction_reference]))
+            ->assertRedirect(route('restaurant.orders.confirmation', $order));
+
+        self::assertSame(1, Payment::count());
+        $this->assertDatabaseHas('restaurant_orders', [
+            'id' => $order->id,
+            'payment_status' => 'completed',
+        ]);
+    }
+
     public function test_payment_initialization_persists_a_pending_attempt_before_redirecting(): void
     {
         $order = $this->orderWithReference('FOOD-WEBHOOK-INIT');
@@ -163,6 +231,16 @@ class RestaurantOrderPaymentWebhookTest extends TestCase
             ],
             $body,
         );
+    }
+
+    private function paystackPaymentData(RestaurantOrder $order, string $status = 'success'): array
+    {
+        return [
+            'status' => $status,
+            'reference' => $order->transaction_reference,
+            'amount' => (int) round($order->total * 100),
+            'metadata' => ['restaurant_order_id' => $order->id],
+        ];
     }
 
     private function payloadFor(RestaurantOrder $order, ?string $reference = null): array
