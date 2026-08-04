@@ -32,9 +32,18 @@
                             @error('promotion_code')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                         </div>
                         <div><label for="special_requests" class="block text-sm font-semibold text-gray-800">Special requests <span class="font-normal text-gray-500">(optional)</span></label><textarea id="special_requests" name="special_requests" rows="4" class="mt-2 block w-full rounded-xl border-gray-300 px-4 py-3 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ old('special_requests') }}</textarea></div>
+                        @if ($corporateOrganization)
+                            <fieldset class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                                <legend class="px-1 text-sm font-semibold text-blue-900">Payment preference</legend>
+                                <p class="mt-1 text-sm text-blue-800">Choose payment now or billing to {{ $corporateOrganization->name }}.</p>
+                                <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3"><input type="radio" name="use_corporate_credit" value="0" @checked((string) old('use_corporate_credit', '0') !== '1')><span><span class="block font-semibold text-gray-900">Pay now</span><span class="text-sm text-gray-600">Continue to Paystack after this booking is held.</span></span></label>
+                                <label class="mt-3 flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3"><input type="radio" name="use_corporate_credit" value="1" @checked((string) old('use_corporate_credit') === '1')><span><span class="block font-semibold text-gray-900">Bill to corporate account</span><span class="text-sm text-gray-600">Confirm now and charge {{ $corporateOrganization->name }} under its payment terms.</span></span></label>
+                                @error('use_corporate_credit')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                            </fieldset>
+                        @endif
                     </div>
 
-                    <button type="submit" class="mt-7 flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700">Continue to payment</button>
+                    <button type="submit" class="mt-7 flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700">Continue</button>
                 </form>
             </div>
 

@@ -47,6 +47,7 @@ class RestaurantCheckoutController extends Controller
             'totals' => $cart->totals($promotion),
             'promotionCode' => $promotion?->code ?? $promotionCode,
             'promotionError' => $promotionError,
+            'corporateOrganization' => app(CorporateCreditService::class)->organizationFor(auth()->user()),
         ]);
     }
 
@@ -74,6 +75,7 @@ class RestaurantCheckoutController extends Controller
             'email' => ['required', 'email', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'promotion_code' => ['nullable', 'string', 'max:100'],
+            'use_corporate_credit' => ['nullable', 'boolean'],
         ]);
         $items = $cart->items();
 
@@ -85,7 +87,14 @@ class RestaurantCheckoutController extends Controller
         if (filled($data['promotion_code'] ?? null) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This promotion code is not valid for this order.']);
         $totals = $cart->totals($promotion);
         $guest = auth()->user()?->guest;
-        $organization = app(CorporateCreditService::class)->organizationFor(auth()->user());
+        $eligibleOrganization = app(CorporateCreditService::class)->organizationFor(auth()->user());
+        $organization = $request->boolean('use_corporate_credit') ? $eligibleOrganization : null;
+
+        if ($request->boolean('use_corporate_credit') && ! $organization) {
+            return back()->withInput()->withErrors([
+                'use_corporate_credit' => 'An enabled corporate account is required for deferred payment.',
+            ]);
+        }
 
         if ($organization && ! app(CorporateCreditService::class)->canCharge($organization, (float) $totals['total'])) {
             return back()->withInput()->withErrors([

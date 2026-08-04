@@ -28,6 +28,7 @@ Route::middleware('auth')->group(function () {
             return view('conference.book', [
                 'room' => $room,
                 'billingRates' => app(\App\Services\BillingService::class)->rates(),
+                'corporateOrganization' => app(CorporateCreditService::class)->organizationFor(auth()->user()),
             ]);
         })->name('conference.book');
 
@@ -40,10 +41,18 @@ Route::middleware('auth')->group(function () {
                 'end_time' => 'required',
                 'attendees' => 'required|integer|min:1',
                 'promotion_code' => 'nullable|string|max:100',
+                'use_corporate_credit' => 'nullable|boolean',
             ]);
 
             $guest = auth()->user()->guest;
-            $organization = app(CorporateCreditService::class)->organizationFor(auth()->user());
+            $eligibleOrganization = app(CorporateCreditService::class)->organizationFor(auth()->user());
+            $organization = $request->boolean('use_corporate_credit') ? $eligibleOrganization : null;
+
+            if ($request->boolean('use_corporate_credit') && ! $organization) {
+                return back()->withInput()->withErrors([
+                    'use_corporate_credit' => 'An enabled corporate account is required for deferred payment.',
+                ]);
+            }
 
             $room = ConferenceRoom::published()->findOrFail(
                 $request

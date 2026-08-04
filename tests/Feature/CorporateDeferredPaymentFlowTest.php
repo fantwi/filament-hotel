@@ -49,6 +49,7 @@ class CorporateDeferredPaymentFlowTest extends TestCase
                 'check_out' => today()->addWeek()->addDays(2)->toDateString(),
                 'check_in_time' => '14:00',
                 'check_out_time' => '11:00',
+                'use_corporate_credit' => 1,
             ]);
 
         $response->assertRedirect(route('dashboard'));
@@ -78,6 +79,7 @@ class CorporateDeferredPaymentFlowTest extends TestCase
             'start_time' => '10:00',
             'end_time' => '12:00',
             'attendees' => 12,
+            'use_corporate_credit' => 1,
         ]);
 
         $response->assertRedirect(route('dashboard'));
@@ -116,6 +118,7 @@ class CorporateDeferredPaymentFlowTest extends TestCase
             'reservation_date' => today()->addWeek()->toDateString(),
             'reservation_time' => '18:00',
             'number_of_guests' => 2,
+            'use_corporate_credit' => 1,
         ]);
 
         $response->assertRedirect(route('dashboard'));
@@ -148,6 +151,7 @@ class CorporateDeferredPaymentFlowTest extends TestCase
             ->withSession(['cart' => [$item->id => ['quantity' => 2]]])
             ->post(route('restaurant.checkout.store'), [
                 'email' => $user->email,
+                'use_corporate_credit' => 1,
             ]);
 
         $order = RestaurantOrder::firstOrFail();
@@ -157,6 +161,120 @@ class CorporateDeferredPaymentFlowTest extends TestCase
         self::assertSame('confirmed', $order->status);
         self::assertSame('pending', $order->payment_status);
         self::assertTrue($order->isKitchenEligible());
+    }
+
+    public function test_linked_guest_can_choose_pay_now_across_all_four_workflows(): void
+    {
+        $user = $this->corporateUser();
+
+        $type = RoomType::create([
+            'name' => 'Pay Now Room',
+            'price_per_night' => 100,
+            'capacity' => 2,
+            'description' => 'A room for immediate payment.',
+            'is_published' => true,
+        ]);
+        $room = Room::create([
+            'room_type_id' => $type->id,
+            'room_number' => '902',
+            'status' => 'available',
+        ]);
+
+        $this->actingAs($user)
+            ->withSession(['booking.room_id' => $room->id, 'booking.room_price' => 100])
+            ->post('/booking/details', [
+                'check_in' => today()->addWeek()->toDateString(),
+                'check_out' => today()->addWeek()->addDays(2)->toDateString(),
+                'check_in_time' => '14:00',
+                'check_out_time' => '11:00',
+                'use_corporate_credit' => 0,
+            ])
+            ->assertRedirect('/booking/payment');
+
+        self::assertNull(Booking::firstOrFail()->corporate_organization_id);
+
+        $conferenceRoom = ConferenceRoom::create([
+            'name' => 'Pay Now Boardroom',
+            'capacity' => 30,
+            'price_per_hour' => 100,
+            'is_available' => true,
+            'is_published' => true,
+        ]);
+
+        $conferenceResponse = $this->actingAs($user)->post(route('conference.booking.store'), [
+            'conference_room_id' => $conferenceRoom->id,
+            'booking_date' => today()->addWeek()->addDay()->toDateString(),
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'attendees' => 12,
+            'use_corporate_credit' => 0,
+        ]);
+
+        $conference = ConferenceBooking::firstOrFail();
+        $conferenceResponse->assertRedirect(route('conference.payment', $conference));
+        self::assertNull($conference->corporate_organization_id);
+
+        $restaurant = Restaurant::create([
+            'name' => 'Pay Now Dining',
+            'description' => 'A restaurant for immediate payment.',
+            'opening_time' => '08:00',
+            'closing_time' => '22:00',
+            'capacity' => 50,
+            'is_open' => true,
+            'is_published' => true,
+        ]);
+        $table = RestaurantTable::create([
+            'restaurant_id' => $restaurant->id,
+            'table_number' => 'P1',
+            'capacity' => 4,
+            'reservation_fee' => 100,
+            'status' => 'available',
+        ]);
+
+        $reservationResponse = $this->actingAs($user)->post(route('restaurant.reserve.store'), [
+            'restaurant_table_id' => $table->id,
+            'guest_name' => $user->name,
+            'guest_email' => $user->email,
+            'guest_phone' => '0200000000',
+            'reservation_date' => today()->addWeek()->addDays(2)->toDateString(),
+            'reservation_time' => '18:00',
+            'number_of_guests' => 2,
+            'use_corporate_credit' => 0,
+        ]);
+
+        $reservation = RestaurantReservation::firstOrFail();
+        $reservationResponse->assertRedirect(route('restaurant.payment', [
+            'reservation' => $reservation,
+            'token' => $reservation->access_token,
+        ]));
+        self::assertNull($reservation->corporate_organization_id);
+
+        $category = MenuCategory::create([
+            'name' => 'Pay Now Lunch',
+            'slug' => 'pay-now-lunch',
+            'is_active' => true,
+        ]);
+        $item = MenuItem::create([
+            'menu_category_id' => $category->id,
+            'name' => 'Pay Now Meal',
+            'slug' => 'pay-now-meal',
+            'price' => 100,
+            'is_available' => true,
+            'is_published' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->withSession(['cart' => [$item->id => ['quantity' => 1]]])
+            ->post(route('restaurant.checkout.store'), [
+                'email' => $user->email,
+                'use_corporate_credit' => 0,
+            ]);
+
+        $order = RestaurantOrder::firstOrFail();
+        self::assertNull($order->corporate_organization_id);
+        self::assertNull($order->payment_method);
+        self::assertSame('pending', $order->status);
+        self::assertFalse($order->isKitchenEligible());
     }
 
     public function test_corporate_credit_limit_includes_unpaid_corporate_orders(): void

@@ -61,6 +61,7 @@ class RestaurantReservationController extends Controller
             'restaurant' => $restaurant,
             'tables' => $tables,
             'billingRates' => app(\App\Services\BillingService::class)->rates(),
+            'corporateOrganization' => app(CorporateCreditService::class)->organizationFor(auth()->user()),
         ]);
     }
 
@@ -78,6 +79,7 @@ class RestaurantReservationController extends Controller
             'number_of_guests' => ['required', 'integer', 'min:1'],
             'special_requests' => ['nullable', 'string', 'max:2000'],
             'promotion_code' => ['nullable', 'string', 'max:100'],
+            'use_corporate_credit' => ['nullable', 'boolean'],
             'website' => ['nullable', 'string', 'max:0'],
         ]);
 
@@ -163,7 +165,15 @@ class RestaurantReservationController extends Controller
 
         }
 
-        $organization = app(CorporateCreditService::class)->organizationFor(auth()->user());
+        $eligibleOrganization = app(CorporateCreditService::class)->organizationFor(auth()->user());
+        $organization = $request->boolean('use_corporate_credit') ? $eligibleOrganization : null;
+
+        if ($request->boolean('use_corporate_credit') && ! $organization) {
+            return back()->withInput()->withErrors([
+                'use_corporate_credit' => 'An enabled corporate account is required for deferred payment.',
+            ]);
+        }
+
         $promotion = filled($validated['promotion_code'] ?? null)
             ? \App\Models\Promotion::query()->where('code', strtoupper($validated['promotion_code']))->applicable((float) $table->reservation_fee)->first()
             : null;

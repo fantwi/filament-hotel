@@ -161,13 +161,23 @@
                         <button type="submit" name="apply_discount" value="1" class="mt-3 inline-flex min-h-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100">Apply discount</button>
                     </div>
 
+                    @if ($corporateOrganization)
+                        <fieldset class="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+                            <legend class="px-1 text-sm font-semibold text-indigo-900">Payment preference</legend>
+                            <p class="mt-1 text-sm text-indigo-800">Choose whether to pay now or bill this stay to {{ $corporateOrganization->name }}.</p>
+                            <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3"><input type="radio" name="use_corporate_credit" value="0" @checked((string) old('use_corporate_credit', '0') !== '1')><span><span class="block font-semibold text-gray-900">Pay now</span><span class="text-sm text-gray-600">Complete payment securely with Paystack.</span></span></label>
+                            <label class="mt-3 flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3"><input type="radio" name="use_corporate_credit" value="1" @checked((string) old('use_corporate_credit') === '1')><span><span class="block font-semibold text-gray-900">Bill to corporate account</span><span class="text-sm text-gray-600">Confirm now and charge {{ $corporateOrganization->name }} under its payment terms.</span></span></label>
+                            @error('use_corporate_credit')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                        </fieldset>
+                    @endif
+
                     <!-- BUTTON -->
                     <button
                         type="submit"
                         class="flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
 
-                        Continue to Payment
+                        Continue
 
                     </button>
 

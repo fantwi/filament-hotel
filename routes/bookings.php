@@ -436,7 +436,10 @@ Route::middleware('auth')->group(function () {
 
         return view(
             'booking.details',
-            compact('disabledDates')
+            [
+                'disabledDates' => $disabledDates,
+                'corporateOrganization' => app(\App\Services\CorporateCreditService::class)->organizationFor(auth()->user()),
+            ]
         );
     })->name('booking.details');
 
@@ -537,7 +540,14 @@ Route::middleware('auth')->group(function () {
                 );
         }
 
-        $organization = app(\App\Services\CorporateCreditService::class)->organizationFor($user);
+        $eligibleOrganization = app(\App\Services\CorporateCreditService::class)->organizationFor($user);
+        $organization = $request->boolean('use_corporate_credit') ? $eligibleOrganization : null;
+
+        if ($request->boolean('use_corporate_credit') && ! $organization) {
+            return back()->withInput()->withErrors([
+                'dates' => 'An enabled corporate account is required for deferred payment.',
+            ]);
+        }
 
         if ($organization && ! app(\App\Services\CorporateCreditService::class)->canCharge($organization, (float) $total)) {
             return back()->withInput()->withErrors([

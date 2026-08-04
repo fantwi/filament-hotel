@@ -21,6 +21,15 @@
             <div class="mt-4 flex justify-between border-t pt-4 text-xl font-bold"><span>Estimated total</span><span>GHS {{ number_format($totals['total'], 2) }}</span></div>
             <label for="email" class="mt-6 block font-medium">Email for payment receipt</label><input id="email" name="email" type="email" value="{{ old('email', auth()->user()?->email) }}" required class="mt-2 min-h-12 w-full rounded-xl border-gray-300 px-4 text-base">
             <label for="notes" class="mt-6 block font-medium">Order notes</label><textarea id="notes" name="notes" rows="4" class="mt-2 w-full rounded-xl border-gray-300 px-4 py-3 text-base" placeholder="Allergies or special instructions">{{ old('notes') }}</textarea>
+            @if ($corporateOrganization)
+                <fieldset class="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                    <legend class="px-1 text-sm font-semibold text-blue-900">Payment preference</legend>
+                    <p class="mt-1 text-sm text-blue-800">Choose payment now or billing to {{ $corporateOrganization->name }}.</p>
+                    <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3"><input type="radio" name="use_corporate_credit" value="0" @checked((string) old('use_corporate_credit', '0') !== '1')><span><span class="block font-semibold text-gray-900">Pay now</span><span class="text-sm text-gray-600">Place the order, then complete payment with Paystack.</span></span></label>
+                    <label class="mt-3 flex cursor-pointer items-start gap-3 rounded-lg bg-white p-3"><input type="radio" name="use_corporate_credit" value="1" @checked((string) old('use_corporate_credit') === '1')><span><span class="block font-semibold text-gray-900">Bill to corporate account</span><span class="text-sm text-gray-600">Send the order directly to the kitchen and charge {{ $corporateOrganization->name }}.</span></span></label>
+                    @error('use_corporate_credit')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                </fieldset>
+            @endif
             <button class="mt-6 flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700">Place order</button>
         </form>
     </div>
