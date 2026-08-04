@@ -196,10 +196,6 @@ Route::get('/conference-booking/{booking}/payment',
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
 
-        if ($booking->corporate_organization_id) {
-            return redirect()->route('dashboard')
-                ->with('success', 'This conference booking is billed to your corporate account.');
-        }
 
         return view('conference.payment', compact('booking'));
     })->middleware('auth')->name('conference.payment');
@@ -211,10 +207,6 @@ Route::post('/conference-booking/{booking}/pay',
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
 
-        if ($booking->corporate_organization_id) {
-            return redirect()->route('dashboard')
-                ->with('success', 'This conference booking is billed to your corporate account.');
-        }
 
         if ($booking->payment_status === 'paid' || $booking->hold_until?->isPast()) {
             return back()

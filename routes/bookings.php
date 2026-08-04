@@ -60,27 +60,6 @@ Route::post('/booking/pay', function (Request $request) {
         return redirect()->route('booking.payment')->with('error', 'This booking is no longer available for payment.');
     }
 
-    $organization = app(\App\Services\CorporateCreditService::class)->organizationFor(auth()->user());
-
-    if ($booking->corporate_organization_id || $organization) {
-        $organization ??= \App\Models\CorporateOrganization::find($booking->corporate_organization_id);
-
-        if (! $organization) {
-            return redirect()->route('booking.payment')
-                ->with('error', 'The corporate account for this booking is no longer available.');
-        }
-
-        $booking->update([
-            'corporate_organization_id' => $organization->id,
-            'status' => 'confirmed',
-            'hold_status' => 'confirmed',
-            'hold_until' => null,
-        ]);
-
-        return redirect()->route('dashboard')
-            ->with('success', "Room booking confirmed and billed to {$organization->name}.");
-
-    }
     $reference = 'ROOM-'.Str::upper(Str::random(16));
     $booking->update(['transaction_reference' => $reference]);
 
@@ -113,11 +92,6 @@ Route::middleware('auth')->get(
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
 
-        if ($booking->corporate_organization_id) {
-            return redirect()->route('dashboard')
-                ->with('success', 'This room booking is billed to your corporate account.');
-        }
-
         if ($booking->payment_status === 'paid') {
             return redirect()
                 ->route('payments')
@@ -130,7 +104,9 @@ Route::middleware('auth')->get(
                 ->with('error', 'This booking has expired.');
         }
 
-        return redirect()->route('booking.payment', $booking);
+        session(['booking.id' => $booking->id, 'booking.total' => $booking->total_price]);
+
+        return redirect()->route('booking.payment');
     }
 
 )->name('booking.pay.action');
@@ -648,11 +624,6 @@ Route::middleware('auth')->group(function () {
                     'error',
                     'Booking not found.'
                 );
-        }
-
-        if ($booking->corporate_organization_id) {
-            return redirect()->route('dashboard')
-                ->with('success', 'This room booking is billed to your corporate account.');
         }
 
         return view(

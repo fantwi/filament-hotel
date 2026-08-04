@@ -14,6 +14,7 @@ use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\User;
 use App\Services\CorporateCreditService;
+use App\Services\CorporatePaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +45,7 @@ class CorporateBillingDashboardTest extends TestCase
             'room_number' => 'D101',
             'status' => 'available',
         ]);
-        Booking::create([
+        $hotel = Booking::create([
             'guest_id' => $user->guest->id,
             'room_id' => $room->id,
             'corporate_organization_id' => $organization->id,
@@ -63,7 +64,7 @@ class CorporateBillingDashboardTest extends TestCase
             'is_available' => true,
             'is_published' => true,
         ]);
-        ConferenceBooking::create([
+        $conference = ConferenceBooking::create([
             'conference_room_id' => $conferenceRoom->id,
             'guest_id' => $user->guest->id,
             'corporate_organization_id' => $organization->id,
@@ -92,7 +93,7 @@ class CorporateBillingDashboardTest extends TestCase
             'reservation_fee' => 50,
             'status' => 'available',
         ]);
-        RestaurantReservation::create([
+        $reservation = RestaurantReservation::create([
             'restaurant_id' => $restaurant->id,
             'restaurant_table_id' => $table->id,
             'guest_id' => $user->guest->id,
@@ -110,7 +111,7 @@ class CorporateBillingDashboardTest extends TestCase
             'duration_minutes' => 120,
         ]);
 
-        RestaurantOrder::create([
+        $order = RestaurantOrder::create([
             'guest_id' => $user->guest->id,
             'corporate_organization_id' => $organization->id,
             'order_number' => 'DASHBOARD-CORPORATE-ORDER',
@@ -131,5 +132,17 @@ class CorporateBillingDashboardTest extends TestCase
         self::assertSame(625.0, (float) $overview['available_credit']);
         self::assertSame('Dashboard Corporate Ltd', $overview['accounts']->first()['name']);
         self::assertSame(375.0, (float) $overview['accounts']->first()['outstanding']);
+
+        $payments = app(CorporatePaymentService::class);
+        $payments->recordOfflinePayment($hotel, 'bank_transfer', 'BANK-HOTEL');
+        $payments->recordOfflinePayment($conference, 'cash', 'CASH-CONFERENCE');
+        $payments->recordOfflinePayment($reservation, 'momo', 'MOMO-TABLE');
+        $payments->recordOfflinePayment($order, 'card', 'CARD-FOOD');
+
+        self::assertSame('paid', $hotel->refresh()->payment_status);
+        self::assertSame('paid', $conference->refresh()->payment_status);
+        self::assertSame('completed', $reservation->refresh()->payment_status);
+        self::assertSame('completed', $order->refresh()->payment_status);
+        self::assertDatabaseCount('payments', 4);
     }
 }

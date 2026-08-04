@@ -96,6 +96,11 @@ class RestaurantReservation extends Model
     }
 
     // relationships
+    public function corporateOrganization()
+    {
+        return $this->belongsTo(CorporateOrganization::class);
+    }
+
     public function guest()
     {
         return $this->belongsTo(Guest::class);

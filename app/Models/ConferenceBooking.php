@@ -59,6 +59,16 @@ class ConferenceBooking extends Model
         return $this->belongsTo(ConferenceRoom::class, 'conference_room_id');
     }
 
+    public function corporateOrganization()
+    {
+        return $this->belongsTo(CorporateOrganization::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     public function guest()
     {
         return $this->belongsTo(Guest::class);

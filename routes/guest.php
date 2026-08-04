@@ -652,3 +652,35 @@ Route::middleware('auth')->group(function () {
         ->name('payments.index');
 
 });
+
+
+Route::middleware('auth')->post('/admin/corporate-receivables/{type}/{id}/mark-paid', function (Request $request, string $type, int $id) {
+    abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'accountant']), 403);
+
+    $data = $request->validate([
+        'method' => ['required', 'in:cash,momo,card,bank_transfer'],
+        'transaction_reference' => ['nullable', 'string', 'max:255'],
+    ]);
+
+    $model = match ($type) {
+        'booking' => Booking::class,
+        'conference' => ConferenceBooking::class,
+        'reservation' => RestaurantReservation::class,
+        'order' => RestaurantOrder::class,
+        default => abort(404),
+    };
+
+    $transaction = $model::query()->findOrFail($id);
+
+    try {
+        app(AppServicesCorporatePaymentService::class)->recordOfflinePayment(
+            $transaction,
+            $data['method'],
+            $data['transaction_reference'] ?? null,
+        );
+    } catch (InvalidArgumentException $exception) {
+        return back()->with('error', $exception->getMessage());
+    }
+
+    return back()->with('success', 'Corporate payment recorded. The guest dashboard now shows this transaction as paid.');
+})->name('admin.corporate-receivables.pay');

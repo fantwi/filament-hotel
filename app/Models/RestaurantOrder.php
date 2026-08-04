@@ -67,6 +67,11 @@ class RestaurantOrder extends Model
         return $this->hasMany(RestaurantOrderItem::class);
     }
 
+    public function corporateOrganization(): BelongsTo
+    {
+        return $this->belongsTo(CorporateOrganization::class);
+    }
+
     public function guest(): BelongsTo
     {
         return $this->belongsTo(Guest::class);

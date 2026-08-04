@@ -103,10 +103,6 @@ Route::get(
 
         abort_unless($canAccessRestaurantReservation($reservation, $accessToken), 403);
 
-        if ($reservation->corporate_organization_id) {
-            return redirect()->route('dashboard')
-                ->with('success', 'This table reservation is billed to your corporate account.');
-        }
 
         if (
 
@@ -166,10 +162,6 @@ Route::post(
 
         abort_unless($canAccessRestaurantReservation($reservation, $accessToken), 403);
 
-        if ($reservation->corporate_organization_id) {
-            return redirect()->route('dashboard')
-                ->with('success', 'This table reservation is billed to your corporate account.');
-        }
 
         if ($reservation->payment_status === 'completed') {
 

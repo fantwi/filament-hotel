@@ -42,6 +42,11 @@ class Booking extends Model
         'hold_until' => 'datetime',
     ];
 
+    public function corporateOrganization()
+    {
+        return $this->belongsTo(CorporateOrganization::class);
+    }
+
     public function guest()
     {
         return $this->belongsTo(Guest::class);
