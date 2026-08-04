@@ -28,11 +28,11 @@ class AccountantDashboard extends Dashboard
 
     public function getColumns(): int|array
     {
-        return [CorporateBillingOverview::class, 'default' => 1, 'md' => 2, 'xl' => 3];
+        return ['default' => 1, 'md' => 2, 'xl' => 3];
     }
 
     public function getWidgets(): array
     {
-        return [AccountantStats::class, AccountantPeriodReport::class, RestaurantRevenueChart::class, RecentPayments::class];
+        return [CorporateBillingOverview::class, AccountantStats::class, AccountantPeriodReport::class, RestaurantRevenueChart::class, RecentPayments::class];
     }
 }

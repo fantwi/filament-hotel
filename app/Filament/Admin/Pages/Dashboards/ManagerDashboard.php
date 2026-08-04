@@ -31,11 +31,11 @@ class ManagerDashboard extends Dashboard
 
     public function getColumns(): int|array
     {
-        return [CorporateBillingOverview::class, 'default' => 1, 'md' => 2, 'xl' => 3];
+        return ['default' => 1, 'md' => 2, 'xl' => 3];
     }
 
     public function getWidgets(): array
     {
-        return [KitchenProductionStats::class, KitchenStockStats::class, ManagerStats::class, ManagerPeriodReport::class, ManagerOperationsChart::class, RestaurantOrderStatusChart::class, KitchenOrderQueue::class];
+        return [CorporateBillingOverview::class, KitchenProductionStats::class, KitchenStockStats::class, ManagerStats::class, ManagerPeriodReport::class, ManagerOperationsChart::class, RestaurantOrderStatusChart::class, KitchenOrderQueue::class];
     }
 }

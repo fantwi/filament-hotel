@@ -30,11 +30,11 @@ class SuperAdminDashboard extends Dashboard
 
     public function getColumns(): int|array
     {
-        return [CorporateBillingOverview::class, 'default' => 1, 'md' => 2, 'xl' => 3];
+        return ['default' => 1, 'md' => 2, 'xl' => 3];
     }
 
     public function getWidgets(): array
     {
-        return [SuperAdminStats::class, KitchenStockStats::class, RestaurantRevenueChart::class, RestaurantOrderStatusChart::class, BestSellingMenuItems::class, KitchenOrderQueue::class];
+        return [CorporateBillingOverview::class, SuperAdminStats::class, KitchenStockStats::class, RestaurantRevenueChart::class, RestaurantOrderStatusChart::class, BestSellingMenuItems::class, KitchenOrderQueue::class];
     }
 }

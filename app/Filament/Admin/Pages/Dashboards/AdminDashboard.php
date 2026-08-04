@@ -29,11 +29,11 @@ class AdminDashboard extends Dashboard
 
     public function getColumns(): int|array
     {
-        return [CorporateBillingOverview::class, 'default' => 1, 'md' => 2, 'xl' => 3];
+        return ['default' => 1, 'md' => 2, 'xl' => 3];
     }
 
     public function getWidgets(): array
     {
-        return [AdminStats::class, KitchenStockStats::class, ManagerOperationsChart::class, RecentPayments::class, KitchenOrderQueue::class];
+        return [CorporateBillingOverview::class, AdminStats::class, KitchenStockStats::class, ManagerOperationsChart::class, RecentPayments::class, KitchenOrderQueue::class];
     }
 }
