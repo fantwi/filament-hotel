@@ -1,8 +1,10 @@
 <x-guest-layout>
     <section class="px-4 py-10 sm:px-6 sm:py-14">
         <div class="mx-auto w-full max-w-xl">
-            <div class="mb-7 text-center sm:text-left"><p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Secure checkout</p><h1 class="mt-2 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Complete your payment</h1><p class="mt-2 text-sm leading-6 text-gray-600">Review your event details and complete payment before the hold expires.</p></div>
-            <div x-data="holdTimer()" class="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 sm:p-5"><div class="flex items-center justify-between gap-4"><div><p class="text-sm font-bold text-yellow-800 sm:text-base">Conference room reserved temporarily</p><p class="mt-1 text-sm text-yellow-700">Complete payment before the timer expires.</p></div><div class="shrink-0 text-2xl font-bold tabular-nums text-yellow-800 sm:text-3xl" x-text="timeRemaining"></div></div></div>
+            <div class="mb-7 text-center sm:text-left"><p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Secure checkout</p><h1 class="mt-2 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Complete your payment</h1><p class="mt-2 text-sm leading-6 text-gray-600">{{ $booking->corporate_organization_id ? 'This corporate-billed booking has no checkout timer.' : 'Review your event details and complete payment before the hold expires.' }}</p></div>
+            @if (! $booking->corporate_organization_id)
+                <div x-data="holdTimer()" class="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 sm:p-5"><div class="flex items-center justify-between gap-4"><div><p class="text-sm font-bold text-yellow-800 sm:text-base">Conference room reserved temporarily</p><p class="mt-1 text-sm text-yellow-700">Complete payment before the timer expires.</p></div><div class="shrink-0 text-2xl font-bold tabular-nums text-yellow-800 sm:text-3xl" x-text="timeRemaining"></div></div></div>
+            @endif
             <div class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
                 <div class="border-b border-gray-100 pb-5"><p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Your event</p><h2 class="mt-1 text-xl font-bold text-gray-900">{{ $booking->room->name }}</h2></div>
                 <dl class="mt-5 space-y-4 text-sm"><div class="flex items-start justify-between gap-4"><dt class="text-gray-500">Date</dt><dd class="text-right font-semibold text-gray-900">{{ $booking->booking_date->format('M d, Y') }}</dd></div><div class="flex items-start justify-between gap-4"><dt class="text-gray-500">Time</dt><dd class="text-right font-semibold text-gray-900">{{ $booking->start_time }} - {{ $booking->end_time }}</dd></div><div class="flex items-start justify-between gap-4"><dt class="text-gray-500">Attendees</dt><dd class="text-right font-semibold text-gray-900">{{ $booking->attendees }}</dd></div></dl>
@@ -12,7 +14,9 @@
             </div>
         </div>
     </section>
+    @if (! $booking->corporate_organization_id)
     <script>
         function holdTimer() { return { expiresAt: "{{ optional($booking?->hold_until)?->toIso8601String() }}", timeRemaining: '10:00', interval: null, init() { if (!this.expiresAt) { this.timeRemaining = 'Expired'; return; } this.updateTimer(); this.interval = setInterval(() => this.updateTimer(), 1000); }, updateTimer() { const diff = Date.parse(this.expiresAt) - new Date().getTime(); if (diff <= 0) { clearInterval(this.interval); this.timeRemaining = 'Expired'; window.location.href = "{{ route('conference.expired') }}"; return; } const minutes = Math.floor(diff / 60000); const seconds = Math.floor((diff % 60000) / 1000); this.timeRemaining = minutes + ':' + seconds.toString().padStart(2, '0'); } } }
     </script>
+    @endif
 </x-guest-layout>

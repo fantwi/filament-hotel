@@ -6,7 +6,7 @@
 <div class="mb-7 text-center sm:text-left">
     <p class="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">Secure checkout</p>
     <h1 class="mt-2 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Complete your payment</h1>
-    <p class="mt-2 text-sm leading-6 text-gray-600">Your room is temporarily held while you finish payment.</p>
+    <p class="mt-2 text-sm leading-6 text-gray-600">{{ $booking->corporate_organization_id ? 'This corporate-billed booking has no checkout timer.' : 'Your room is temporarily held while you finish payment.' }}</p>
 </div>
 
 <!-- <p class="text-red-500 mb-4">
@@ -38,6 +38,7 @@
 
 </div> -->
 
+@if (! $booking->corporate_organization_id)
 <div
     x-data="holdTimer()"
     class="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 sm:p-5"
@@ -87,6 +88,7 @@
     </div>
 
 </div>
+@endif
 
 <div class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
 <p class="text-sm leading-6 text-gray-600">You will be redirected to Paystack to complete payment securely.</p>
@@ -124,6 +126,7 @@ Pay & Confirm Booking
 </div>
 </section>
 
+@if (! $booking->corporate_organization_id)
 <script>
 
 function holdTimer() {
@@ -238,5 +241,6 @@ function holdTimer() {
 }
 
 </script>
+@endif
 
 </x-guest-layout>
