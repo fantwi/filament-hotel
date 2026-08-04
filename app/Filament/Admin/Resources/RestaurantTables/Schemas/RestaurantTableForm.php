@@ -47,6 +47,13 @@ class RestaurantTableForm
 
                             ->required(),
 
+                        TextInput::make('reservation_fee')
+                            ->label('Reservation Fee (GHS)')
+                            ->numeric()
+                            ->minValue(0)
+                            ->default(0)
+                            ->required(),
+
                         TextInput::make('location')
 
                             ->placeholder(

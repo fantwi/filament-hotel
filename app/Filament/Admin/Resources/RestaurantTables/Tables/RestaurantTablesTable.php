@@ -24,6 +24,7 @@ class RestaurantTablesTable
                 TextColumn::make('table_number'),
                 TextColumn::make('restaurant.name'),
                 TextColumn::make('capacity'),
+                TextColumn::make('reservation_fee')->money('GHS'),
                 TextColumn::make('location'),
                 TextColumn::make('status')
                     ->badge()

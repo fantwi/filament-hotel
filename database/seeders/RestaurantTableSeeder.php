@@ -16,10 +16,10 @@ class RestaurantTableSeeder extends Seeder
         $restaurant = Restaurant::where('name', 'My Hotel Restaurant')->firstOrFail();
 
         foreach ([
-            ['table_number' => 'T1', 'capacity' => 2, 'location' => 'Indoor'],
-            ['table_number' => 'T2', 'capacity' => 4, 'location' => 'Indoor'],
-            ['table_number' => 'VIP-1', 'capacity' => 8, 'location' => 'VIP Lounge'],
-            ['table_number' => 'Terrace-1', 'capacity' => 6, 'location' => 'Outdoor'],
+            ['table_number' => 'T1', 'capacity' => 2, 'location' => 'Indoor', 'reservation_fee' => 50],
+            ['table_number' => 'T2', 'capacity' => 4, 'location' => 'Indoor', 'reservation_fee' => 75],
+            ['table_number' => 'VIP-1', 'capacity' => 8, 'location' => 'VIP Lounge', 'reservation_fee' => 150],
+            ['table_number' => 'Terrace-1', 'capacity' => 6, 'location' => 'Outdoor', 'reservation_fee' => 100],
         ] as $table) {
             RestaurantTable::updateOrCreate(
                 ['restaurant_id' => $restaurant->id, 'table_number' => $table['table_number']],

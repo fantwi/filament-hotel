@@ -23,6 +23,8 @@ class RestaurantTable extends Model
 
         'description',
 
+        'reservation_fee',
+
         'image',
 
         'qr_code',
@@ -33,6 +35,7 @@ class RestaurantTable extends Model
 
     protected $casts = [
         'capacity' => 'integer',
+        'reservation_fee' => 'decimal:2',
         'qr_ordering_enabled' => 'boolean',
     ];
 

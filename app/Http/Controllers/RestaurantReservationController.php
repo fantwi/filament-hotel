@@ -57,10 +57,11 @@ class RestaurantReservationController extends Controller
             ->orderBy('table_number')
             ->get();
 
-        return view(
-            'restaurant.reserve',
-            compact('restaurant', 'tables')
-        );
+        return view('restaurant.reserve', [
+            'restaurant' => $restaurant,
+            'tables' => $tables,
+            'billingRates' => app(\App\Services\BillingService::class)->rates(),
+        ]);
     }
 
     public function store(Request $request)
@@ -176,6 +177,26 @@ class RestaurantReservationController extends Controller
             $promotion?->discount_type,
             (float) ($promotion?->discount_value ?? 0),
         );
+
+        if ($request->boolean('apply_discount')) {
+            return back()
+                ->withInput()
+                ->with('success', 'Estimated total updated.')
+                ->with('restaurant_reservation_billing_preview', [
+                    'restaurant_table_id' => $table->id,
+                    'promotion_code' => $promotion?->code,
+                    'subtotal' => $billing['subtotal'],
+                    'discount' => $billing['discount'],
+                    'net' => $billing['net'],
+                    'vat' => $billing['vat'],
+                    'nhil' => $billing['nhil'],
+                    'service_charge' => $billing['serviceCharge'],
+                    'vat_rate' => $billing['vatRate'],
+                    'nhil_rate' => $billing['nhilRate'],
+                    'service_charge_rate' => $billing['serviceChargeRate'],
+                    'total' => $billing['total'],
+                ]);
+        }
 
         $reservation = RestaurantReservation::create([
 
