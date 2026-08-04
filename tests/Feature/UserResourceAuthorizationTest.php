@@ -11,14 +11,14 @@ class UserResourceAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_manager_cannot_edit_or_create_users(): void
+    public function test_manager_can_edit_guests_for_corporate_linking_but_cannot_create_users(): void
     {
         $manager = User::factory()->create(['department' => 'management']);
         $guest = User::factory()->create(['department' => 'guest']);
 
         $this->actingAs($manager);
 
-        $this->assertFalse(UserResource::canEdit($guest));
+        $this->assertTrue(UserResource::canEdit($guest));
         $this->assertFalse(UserResource::canCreate());
     }
 

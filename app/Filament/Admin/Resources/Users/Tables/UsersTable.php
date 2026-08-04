@@ -50,6 +50,12 @@ class UsersTable
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('corporateOrganization.name')
+                    ->label('Corporate Account')
+                    ->placeholder('Personal')
+                    ->searchable()
+                    ->toggleable(),
+
                 TextColumn::make('role_name')
                     ->label('Role')
                     ->badge()
@@ -135,6 +141,12 @@ class UsersTable
                 //
                 SelectFilter::make('department')
                     ->options(User::getDepartments()),
+
+                SelectFilter::make('corporate_organization_id')
+                    ->label('Corporate Account')
+                    ->relationship('corporateOrganization', 'name')
+                    ->searchable()
+                    ->preload(),
 
                 // SelectFilter::make('role')
                 //     ->label('Role')

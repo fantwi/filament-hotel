@@ -6,6 +6,7 @@ use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class UserForm
 {
@@ -23,11 +24,16 @@ class UserForm
                 ->required(),
             Select::make('corporate_organization_id')
                 ->label('Corporate Account')
-                ->relationship('corporateOrganization', 'name')
+                ->relationship(
+                    'corporateOrganization',
+                    'name',
+                    fn (Builder $query): Builder => $query->where('is_credit_enabled', true),
+                )
                 ->searchable()
                 ->preload()
+                ->nullable()
                 ->placeholder('Personal / pay immediately')
-                ->helperText('Link a guest to an approved organisation for deferred payment.'),
+                ->helperText('Select an enabled organisation to allow deferred payment. Clear this field to unlink the guest.'),
             TextInput::make('password')
                 ->password()
                 ->required(fn (string $operation): bool => $operation === 'create')

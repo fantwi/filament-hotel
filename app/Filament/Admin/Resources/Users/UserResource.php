@@ -78,6 +78,10 @@ class UserResource extends SecureResource
     {
         $user = auth()->user();
 
+        if ($user?->hasRole('manager')) {
+            return $record->department === 'guest';
+        }
+
         if (! $user?->hasAnyRole(['super_admin', 'admin'])) {
             return false;
         }

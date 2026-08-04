@@ -59,7 +59,7 @@ class CorporateOrganizationResource extends SecureResource
             \Filament\Forms\Components\TextInput::make('phone')->tel()->maxLength(50),
             \Filament\Forms\Components\TextInput::make('credit_limit')->numeric()->prefix('GHS')->minValue(0),
             \Filament\Forms\Components\TextInput::make('payment_terms_days')->numeric()->integer()->minValue(0)->default(30)->required(),
-            \Filament\Forms\Components\Toggle::make('is_credit_enabled')->label('Allow deferred payment')->helperText('Linked guests can confirm bookings and food orders on this organisations account.')->default(true)->required(),
+            \Filament\Forms\Components\Toggle::make('is_credit_enabled')->label('Allow deferred payment')->helperText("Linked guests can confirm bookings and food orders on this organization account.")->default(true)->required(),
         ])->columns(['default' => 1, 'sm' => 2]);
     }
 
