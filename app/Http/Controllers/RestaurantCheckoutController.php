@@ -7,6 +7,7 @@ use App\Models\RecipeIngredient;
 use App\Models\RestaurantOrder;
 use App\Models\Promotion;
 use App\Models\RestaurantTable;
+use App\Models\User;
 use App\Services\RestaurantCartService;
 use App\Services\CorporateCreditService;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Permission;
 
 class RestaurantCheckoutController extends Controller
 {
@@ -84,6 +86,12 @@ class RestaurantCheckoutController extends Controller
         $totals = $cart->totals($promotion);
         $guest = auth()->user()?->guest;
         $organization = app(CorporateCreditService::class)->organizationFor(auth()->user());
+
+        if ($organization && ! app(CorporateCreditService::class)->canCharge($organization, (float) $totals['total'])) {
+            return back()->withInput()->withErrors([
+                'email' => "This order would exceed your organization credit limit.",
+            ]);
+        }
 
         $order = DB::transaction(function () use ($items, $totals, $data, $guest, $table, $organization, $promotion) {
             $order = RestaurantOrder::create([

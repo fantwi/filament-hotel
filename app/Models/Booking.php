@@ -71,12 +71,14 @@ class Booking extends Model
 
     public function getTotalPaidAttribute()
     {
-        return $this->payments()->whereNotIn('payment_status', ['refunded', 'failed'])->sum('amount');
+        return $this->payments()
+            ->whereIn('payment_status', ['paid', 'completed'])
+            ->sum('amount');
     }
 
     public function getBalanceAttribute()
     {
-        return $this->total_price - $this->payments()->sum('amount');
+        return max(0, (float) $this->total_price - (float) $this->total_paid);
     }
 
     public function getActivitylogOptions(): LogOptions
@@ -88,23 +90,10 @@ class Booking extends Model
             ->setDescriptionForEvent(fn (string $eventName) => "Booking {$eventName}");
     }
 
-    public function getPaymentStatusAttribute()
-    {
-        if ($this->balance <= 0) {
-            return 'paid';
-        }
-
-        if ($this->total_paid > 0) {
-            return 'partial';
-        }
-
-        return 'unpaid';
-    }
-
     protected static function booted()
     {
         static::saving(function ($booking) {
-            if (! $booking->check_in || ! $booking->check_out) {
+            if (! $booking->check_in || ! $booking->check_out || $booking->isDirty('total_price')) {
                 return;
             }
 

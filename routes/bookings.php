@@ -62,7 +62,14 @@ Route::post('/booking/pay', function (Request $request) {
 
     $organization = app(\App\Services\CorporateCreditService::class)->organizationFor(auth()->user());
 
-    if ($organization) {
+    if ($booking->corporate_organization_id || $organization) {
+        $organization ??= \App\Models\CorporateOrganization::find($booking->corporate_organization_id);
+
+        if (! $organization) {
+            return redirect()->route('booking.payment')
+                ->with('error', 'The corporate account for this booking is no longer available.');
+        }
+
         $booking->update([
             'corporate_organization_id' => $organization->id,
             'status' => 'confirmed',
@@ -105,6 +112,11 @@ Route::middleware('auth')->get(
     function (Booking $booking) {
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
+
+        if ($booking->corporate_organization_id) {
+            return redirect()->route('dashboard')
+                ->with('success', 'This room booking is billed to your corporate account.');
+        }
 
         if ($booking->payment_status === 'paid') {
             return redirect()
@@ -228,7 +240,7 @@ Route::get('/payment/callback', function (Request $request) {
                 return;
             }
 
-            $booking->update(['hold_status' => 'confirmed', 'payment_status' => 'paid', 'hold_until' => null]);
+            $booking->update(['status' => 'confirmed', 'hold_status' => 'confirmed', 'payment_status' => 'paid', 'hold_until' => null]);
             Payment::firstOrCreate(['transaction_reference' => $reference], [
                 'booking_id' => $booking->id,
                 'guest_id' => $booking->guest_id,
@@ -513,7 +525,8 @@ Route::middleware('auth')->group(function () {
         $holdUntil =
             now()->addMinutes(15);
 
-        $user = auth()->user();
+        $user =
+            auth()->user();
 
         if (! $user) {
 
@@ -522,6 +535,14 @@ Route::middleware('auth')->group(function () {
                     'message',
                     'Please login to continue booking.'
                 );
+        }
+
+        $organization = app(\App\Services\CorporateCreditService::class)->organizationFor($user);
+
+        if ($organization && ! app(\App\Services\CorporateCreditService::class)->canCharge($organization, (float) $total)) {
+            return back()->withInput()->withErrors([
+                'dates' => 'This booking would exceed your organization credit limit.',
+            ]);
         }
 
         $guest =
@@ -550,6 +571,8 @@ Route::middleware('auth')->group(function () {
 
                 'guest_id' => $guest->id,
 
+                'corporate_organization_id' => $organization?->id,
+
                 'room_id' => session('booking.room_id'),
 
                 'check_in' => $request->input('check_in'),
@@ -560,11 +583,15 @@ Route::middleware('auth')->group(function () {
 
                 'check_out_time' => $request->input('check_out_time'),
 
-                'hold_status' => 'pending',
+                'status' => $organization ? 'confirmed' : 'pending',
 
-                'hold_until' => $holdUntil,
+                'payment_status' => 'pending',
 
-                'total_price' => session('booking.total'),
+                'hold_status' => $organization ? 'confirmed' : 'pending',
+
+                'hold_until' => $organization ? null : $holdUntil,
+
+                'total_price' => $total,
 
             ]);
 
@@ -573,12 +600,16 @@ Route::middleware('auth')->group(function () {
             'booking.check_out' => $request->check_out,
             'booking.guests' => $request->guest_id,
             'booking.nights' => $nights,
-            'booking.total' => $total,
+            'booking.total' => $booking->total_price,
             'booking.id' => $booking->id,
         ]);
 
-        return redirect('/booking/payment');
+        if ($organization) {
+            return redirect()->route('dashboard')
+                ->with('success', "Room booking confirmed and billed to {$organization->name}.");
+        }
 
+        return redirect('/booking/payment');
     });
 
     Route::get('/booking/payment', function () {
@@ -607,6 +638,11 @@ Route::middleware('auth')->group(function () {
                     'error',
                     'Booking not found.'
                 );
+        }
+
+        if ($booking->corporate_organization_id) {
+            return redirect()->route('dashboard')
+                ->with('success', 'This room booking is billed to your corporate account.');
         }
 
         return view(

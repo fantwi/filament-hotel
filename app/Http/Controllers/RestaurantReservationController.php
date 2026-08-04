@@ -178,6 +178,12 @@ class RestaurantReservationController extends Controller
             (float) ($promotion?->discount_value ?? 0),
         );
 
+        if ($organization && ! app(CorporateCreditService::class)->canCharge($organization, (float) $billing['total'])) {
+            return back()->withInput()->withErrors([
+                'restaurant_table_id' => "This reservation would exceed your organization credit limit.",
+            ]);
+        }
+
         if ($request->boolean('apply_discount')) {
             return back()
                 ->withInput()

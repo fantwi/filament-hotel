@@ -114,6 +114,12 @@ Route::middleware('auth')->group(function () {
                 (float) ($promotion?->discount_value ?? 0),
             );
 
+            if ($organization && ! app(CorporateCreditService::class)->canCharge($organization, (float) $billing['total'])) {
+                return back()->withInput()->withErrors([
+                    'conference_room_id' => "This booking would exceed your organization credit limit.",
+                ]);
+            }
+
             if ($request->boolean('apply_discount')) {
                 return back()
                     ->withInput()
@@ -181,6 +187,11 @@ Route::get('/conference-booking/{booking}/payment',
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
 
+        if ($booking->corporate_organization_id) {
+            return redirect()->route('dashboard')
+                ->with('success', 'This conference booking is billed to your corporate account.');
+        }
+
         return view('conference.payment', compact('booking'));
     })->middleware('auth')->name('conference.payment');
 
@@ -190,6 +201,11 @@ Route::post('/conference-booking/{booking}/pay',
     ) {
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
+
+        if ($booking->corporate_organization_id) {
+            return redirect()->route('dashboard')
+                ->with('success', 'This conference booking is billed to your corporate account.');
+        }
 
         if ($booking->payment_status === 'paid' || $booking->hold_until?->isPast()) {
             return back()

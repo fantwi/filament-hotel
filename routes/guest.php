@@ -135,20 +135,25 @@ Route::middleware('auth')->get('/dashboard', function () {
 
     $outstandingBalance =
         $hotelBookings->filter(function ($booking) {
-            return $booking->payment_status === 'pending' && $booking->hold_status !== 'expired';
+            return $booking->payment_status === 'pending'
+                && ! $booking->corporate_organization_id
+                && $booking->hold_status !== 'expired';
         })->sum('total_price')
         +
         $conferenceBookings->filter(function ($booking) {
-            return $booking->payment_status === 'pending';
+            return $booking->payment_status === 'pending'
+                && ! $booking->corporate_organization_id;
         })->sum('total_price')
         +
         $restaurantReservations->filter(function ($reservation) {
             return $reservation->payment_status === 'pending'
+                && ! $reservation->corporate_organization_id
                 && $reservation->hold_status !== 'expired';
         })->sum('reservation_fee')
         +
         $restaurantOrders->filter(function ($order) {
             return $order->payment_status === 'pending'
+                && $order->payment_method !== 'corporate_account'
                 && $order->status !== 'cancelled';
         })->sum('total');
 
@@ -620,6 +625,7 @@ Route::middleware('auth')->group(function () {
                     'payment_status',
                     'pending'
                 )
+                ->whereNull('corporate_organization_id')
                 ->where(
                     'hold_status',
                     '!=',

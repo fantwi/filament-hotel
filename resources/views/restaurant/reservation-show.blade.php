@@ -22,7 +22,9 @@
 
                 <div class="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
                     <a href="{{ route('dashboard') }}" class="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50">Back to dashboard</a>
-                    @if ($reservation->payment_status !== 'completed' && $reservation->hold_status !== 'expired')
+                    @if ($reservation->corporate_organization_id)
+                        <p class="text-sm font-semibold text-indigo-700">Billed to your corporate account</p>
+                    @elseif ($reservation->payment_status !== 'completed' && $reservation->hold_status !== 'expired')
                         <a href="{{ route('restaurant.payment', $reservation) }}" class="inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700">Complete payment</a>
                     @endif
                 </div>
