@@ -44,7 +44,7 @@ class RestaurantOrderPaymentController extends Controller
         }
 
         $reference = 'FOOD-'.Str::upper(Str::random(16));
-        $order->update(['transaction_reference' => $reference]);
+        $this->recordPaymentAttempt($order, $reference);
 
         $response = Http::timeout(15)
             ->withToken(config('services.paystack.secretKey'))
@@ -68,7 +68,8 @@ class RestaurantOrderPaymentController extends Controller
     public function callback(Request $request): RedirectResponse
     {
         $reference = $request->string('reference')->toString();
-        $order = RestaurantOrder::where('transaction_reference', $reference)->firstOrFail();
+        $order = $this->orderForReference($reference);
+        abort_unless($order, 404);
 
         $response = Http::timeout(15)
             ->withToken(config('services.paystack.secretKey'))
@@ -110,7 +111,7 @@ class RestaurantOrderPaymentController extends Controller
 
         $data = $payload['data'] ?? [];
         $reference = (string) ($data['reference'] ?? '');
-        $order = RestaurantOrder::where('transaction_reference', $reference)->first();
+        $order = $this->orderForReference($reference);
 
         if (! $order || ! $this->isValidPayment($data, $order, $reference)) {
             return response()->json(['status' => false], 422);
@@ -123,6 +124,48 @@ class RestaurantOrderPaymentController extends Controller
         }
 
         return response()->json(['status' => true]);
+    }
+
+    private function recordPaymentAttempt(RestaurantOrder $order, string $reference): void
+    {
+        DB::transaction(function () use ($order, $reference): void {
+            $order = RestaurantOrder::query()
+                ->lockForUpdate()
+                ->findOrFail($order->id);
+
+            if ($order->payment_status === 'completed') {
+                return;
+            }
+
+            Payment::firstOrCreate(
+                ['transaction_reference' => $reference],
+                [
+                    'restaurant_order_id' => $order->id,
+                    'guest_id' => $order->guest_id,
+                    'amount' => $order->total,
+                    'method' => 'paystack',
+                    'payment_status' => 'pending',
+                ],
+            );
+
+            $order->update(['transaction_reference' => $reference]);
+        });
+    }
+
+    private function orderForReference(string $reference): ?RestaurantOrder
+    {
+        if ($reference === '') {
+            return null;
+        }
+
+        $attempt = Payment::query()
+            ->with('restaurantOrder')
+            ->where('transaction_reference', $reference)
+            ->whereNotNull('restaurant_order_id')
+            ->first();
+
+        return $attempt?->restaurantOrder
+            ?? RestaurantOrder::where('transaction_reference', $reference)->first();
     }
 
     private function isValidPayment(?array $data, RestaurantOrder $order, string $reference): bool
@@ -141,28 +184,44 @@ class RestaurantOrderPaymentController extends Controller
                 ->lockForUpdate()
                 ->findOrFail($order->id);
 
+            $payment = Payment::query()
+                ->where('transaction_reference', $reference)
+                ->lockForUpdate()
+                ->first();
+
+            if ($payment && $payment->restaurant_order_id !== $order->id) {
+                return null;
+            }
+
+            $payment ??= Payment::create([
+                'transaction_reference' => $reference,
+                'restaurant_order_id' => $order->id,
+                'guest_id' => $order->guest_id,
+                'amount' => $order->total,
+                'method' => 'paystack',
+                'payment_status' => 'pending',
+            ]);
+
+            $payment->update([
+                'restaurant_order_id' => $order->id,
+                'guest_id' => $order->guest_id,
+                'amount' => $order->total,
+                'method' => 'paystack',
+                'payment_status' => 'completed',
+            ]);
+
             if ($order->payment_status === 'completed') {
                 return null;
             }
 
             $order->update([
+                'transaction_reference' => $reference,
                 'payment_status' => 'completed',
                 'status' => 'confirmed',
                 'payment_method' => 'paystack',
                 'paid_at' => now(),
                 'confirmed_at' => now(),
             ]);
-
-            Payment::firstOrCreate(
-                ['transaction_reference' => $reference],
-                [
-                    'restaurant_order_id' => $order->id,
-                    'guest_id' => $order->guest_id,
-                    'amount' => $order->total,
-                    'method' => 'paystack',
-                    'payment_status' => 'completed',
-                ],
-            );
 
             return $order->refresh();
         });

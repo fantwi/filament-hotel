@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class RestaurantOrderPaymentWebhookTest extends TestCase
@@ -74,6 +75,58 @@ class RestaurantOrderPaymentWebhookTest extends TestCase
         self::assertSame(1, Payment::count());
     }
 
+    public function test_payment_initialization_persists_a_pending_attempt_before_redirecting(): void
+    {
+        $order = $this->orderWithReference('FOOD-WEBHOOK-INIT');
+
+        Http::fake([
+            'https://api.paystack.co/transaction/initialize' => Http::response([
+                'data' => ['authorization_url' => 'https://checkout.paystack.test/food-order'],
+            ]),
+        ]);
+
+        $response = $this->withSession(['restaurant_order_ids' => [$order->id]])
+            ->post(route('restaurant.orders.pay', $order));
+
+        $response->assertRedirect('https://checkout.paystack.test/food-order');
+        $order->refresh();
+
+        self::assertNotSame('FOOD-WEBHOOK-INIT', $order->transaction_reference);
+        $this->assertDatabaseHas('payments', [
+            'restaurant_order_id' => $order->id,
+            'transaction_reference' => $order->transaction_reference,
+            'payment_status' => 'pending',
+        ]);
+    }
+
+    public function test_a_payment_attempt_remains_payable_after_a_later_attempt_is_started(): void
+    {
+        config(['services.paystack.secretKey' => 'webhook-secret']);
+
+        $order = $this->orderWithReference('FOOD-WEBHOOK-LATEST');
+        $earlierReference = 'FOOD-WEBHOOK-EARLIER';
+
+        Payment::create([
+            'restaurant_order_id' => $order->id,
+            'transaction_reference' => $earlierReference,
+            'amount' => $order->total,
+            'method' => 'paystack',
+            'payment_status' => 'pending',
+        ]);
+
+        $this->sendWebhook($order, $earlierReference)->assertOk();
+
+        $order->refresh();
+
+        self::assertSame('completed', $order->payment_status);
+        self::assertSame($earlierReference, $order->transaction_reference);
+        $this->assertDatabaseHas('payments', [
+            'restaurant_order_id' => $order->id,
+            'transaction_reference' => $earlierReference,
+            'payment_status' => 'completed',
+        ]);
+    }
+
     private function orderWithReference(string $reference): RestaurantOrder
     {
         return RestaurantOrder::create([
@@ -93,9 +146,9 @@ class RestaurantOrderPaymentWebhookTest extends TestCase
         ]);
     }
 
-    private function sendWebhook(RestaurantOrder $order)
+    private function sendWebhook(RestaurantOrder $order, ?string $reference = null)
     {
-        $payload = $this->payloadFor($order);
+        $payload = $this->payloadFor($order, $reference);
         $body = json_encode($payload);
 
         return $this->call(
@@ -112,13 +165,13 @@ class RestaurantOrderPaymentWebhookTest extends TestCase
         );
     }
 
-    private function payloadFor(RestaurantOrder $order): array
+    private function payloadFor(RestaurantOrder $order, ?string $reference = null): array
     {
         return [
             'event' => 'charge.success',
             'data' => [
                 'status' => 'success',
-                'reference' => $order->transaction_reference,
+                'reference' => $reference ?? $order->transaction_reference,
                 'amount' => (int) round($order->total * 100),
                 'metadata' => ['restaurant_order_id' => $order->id],
             ],
