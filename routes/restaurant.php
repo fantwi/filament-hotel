@@ -39,6 +39,9 @@ Route::post('/restaurant/checkout', [RestaurantCheckoutController::class, 'store
 Route::get('/restaurant/orders/{order}/confirmation', [RestaurantOrderPaymentController::class, 'confirmation'])->name('restaurant.orders.confirmation');
 Route::post('/restaurant/orders/{order}/pay', [RestaurantOrderPaymentController::class, 'initialize'])->name('restaurant.orders.pay');
 Route::get('/restaurant/orders/payment/callback', [RestaurantOrderPaymentController::class, 'callback'])->name('restaurant.orders.payment.callback');
+Route::post('/payments/paystack/restaurant-orders/webhook', [RestaurantOrderPaymentController::class, 'webhook'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
+    ->name('restaurant.orders.payment.webhook');
 
 Route::get(
     '/restaurant/reserve',

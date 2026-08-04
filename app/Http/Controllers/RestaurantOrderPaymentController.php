@@ -6,12 +6,14 @@ use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use App\Models\User;
 use Filament\Notifications\Notification;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Permission;
 
 class RestaurantOrderPaymentController extends Controller
 {
@@ -73,24 +75,74 @@ class RestaurantOrderPaymentController extends Controller
             ->get("https://api.paystack.co/transaction/verify/{$reference}");
         $data = $response->json('data');
 
-        $isValid = $response->successful()
-            && ($data['status'] ?? null) === 'success'
-            && ($data['reference'] ?? null) === $reference
-            && (int) ($data['amount'] ?? 0) === (int) round($order->total * 100)
-            && (int) data_get($data, 'metadata.restaurant_order_id') === $order->id;
-
-        if (! $isValid) {
+        if (! $this->isValidPayment($data, $order, $reference)) {
             return redirect()->route('restaurant.orders.confirmation', $order)
                 ->with('error', 'Payment verification failed. No payment was recorded.');
         }
 
-        $paymentRecorded = DB::transaction(function () use ($order, $reference): bool {
+        $paidOrder = $this->recordPayment($order, $reference);
+
+        if ($paidOrder) {
+            $this->notifyKitchen($paidOrder);
+        }
+
+        return redirect()->route('restaurant.orders.confirmation', $order)
+            ->with('success', 'Payment received. Your order has been sent to the kitchen.');
+    }
+
+    public function webhook(Request $request): JsonResponse
+    {
+        $secret = (string) config('services.paystack.secretKey');
+        $signature = (string) $request->header('x-paystack-signature', '');
+
+        abort_if(
+            $secret === ''
+                || $signature === ''
+                || ! hash_equals(hash_hmac('sha512', $request->getContent(), $secret), $signature),
+            403,
+        );
+
+        $payload = $request->json()->all();
+
+        if (($payload['event'] ?? null) !== 'charge.success') {
+            return response()->json(['status' => true]);
+        }
+
+        $data = $payload['data'] ?? [];
+        $reference = (string) ($data['reference'] ?? '');
+        $order = RestaurantOrder::where('transaction_reference', $reference)->first();
+
+        if (! $order || ! $this->isValidPayment($data, $order, $reference)) {
+            return response()->json(['status' => false], 422);
+        }
+
+        $paidOrder = $this->recordPayment($order, $reference);
+
+        if ($paidOrder) {
+            $this->notifyKitchen($paidOrder);
+        }
+
+        return response()->json(['status' => true]);
+    }
+
+    private function isValidPayment(?array $data, RestaurantOrder $order, string $reference): bool
+    {
+        return is_array($data)
+            && ($data['status'] ?? null) === 'success'
+            && ($data['reference'] ?? null) === $reference
+            && (int) ($data['amount'] ?? 0) === (int) round($order->total * 100)
+            && (int) data_get($data, 'metadata.restaurant_order_id') === $order->id;
+    }
+
+    private function recordPayment(RestaurantOrder $order, string $reference): ?RestaurantOrder
+    {
+        return DB::transaction(function () use ($order, $reference): ?RestaurantOrder {
             $order = RestaurantOrder::query()
                 ->lockForUpdate()
                 ->findOrFail($order->id);
 
             if ($order->payment_status === 'completed') {
-                return false;
+                return null;
             }
 
             $order->update([
@@ -109,25 +161,30 @@ class RestaurantOrderPaymentController extends Controller
                     'amount' => $order->total,
                     'method' => 'paystack',
                     'payment_status' => 'completed',
-                ]
+                ],
             );
 
-            return true;
+            return $order->refresh();
         });
+    }
 
-        if ($paymentRecorded) {
-            User::permission('manage kitchen orders')->each(function (User $kitchenUser) use ($order): void {
-                Notification::make()
-                    ->title('New paid restaurant order')
-                    ->body("Order {$order->order_number} is ready for kitchen preparation.")
-                    ->icon('heroicon-o-shopping-bag')
-                    ->success()
-                    ->sendToDatabase($kitchenUser);
-            });
+    private function notifyKitchen(RestaurantOrder $order): void
+    {
+        if (! Permission::query()
+            ->where('name', 'manage kitchen orders')
+            ->where('guard_name', 'web')
+            ->exists()) {
+            return;
         }
 
-        return redirect()->route('restaurant.orders.confirmation', $order)
-            ->with('success', 'Payment received. Your order has been sent to the kitchen.');
+        User::permission('manage kitchen orders')->each(function (User $kitchenUser) use ($order): void {
+            Notification::make()
+                ->title('New paid restaurant order')
+                ->body("Order {$order->order_number} is ready for kitchen preparation.")
+                ->icon('heroicon-o-shopping-bag')
+                ->success()
+                ->sendToDatabase($kitchenUser);
+        });
     }
 
     private function authorizeOrder(RestaurantOrder $order): void
