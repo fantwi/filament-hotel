@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Pages\Dashboards;
 
 use App\Filament\Admin\Widgets\AccountantPeriodReport;
+use App\Filament\Admin\Widgets\CorporateBillingOverview;
 use App\Filament\Admin\Widgets\AccountantStats;
 use App\Filament\Admin\Widgets\RecentPayments;
 use App\Filament\Admin\Widgets\RestaurantRevenueChart;
@@ -27,7 +28,7 @@ class AccountantDashboard extends Dashboard
 
     public function getColumns(): int|array
     {
-        return ['default' => 1, 'md' => 2, 'xl' => 3];
+        return [CorporateBillingOverview::class, 'default' => 1, 'md' => 2, 'xl' => 3];
     }
 
     public function getWidgets(): array

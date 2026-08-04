@@ -8,6 +8,8 @@ use App\Models\CorporateOrganization;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
 class CorporateCreditService
 {
@@ -36,6 +38,91 @@ class CorporateCreditService
 
         return $this->outstandingBalance($organization) + $amount
             <= (float) $organization->credit_limit + 0.004;
+    }
+
+    public function dashboardOverview(): array
+    {
+        $accounts = $this->accountExposure();
+        $totalCreditLimit = $accounts
+            ->filter(fn (array $account): bool => $account['credit_limit'] !== null)
+            ->sum('credit_limit');
+
+        return [
+            'active_accounts' => CorporateOrganization::query()
+                ->where('is_credit_enabled', true)
+                ->count(),
+            'linked_guests' => User::query()
+                ->where('department', 'guest')
+                ->whereHas('corporateOrganization', fn ($query) => $query->where('is_credit_enabled', true))
+                ->count(),
+            'billed_this_month' => $this->billedSince(now()->startOfMonth()),
+            'outstanding' => $accounts->sum('outstanding'),
+            'credit_limit' => $totalCreditLimit,
+            'available_credit' => $accounts
+                ->whereNotNull('available_credit')
+                ->sum('available_credit'),
+            'accounts' => $accounts,
+        ];
+    }
+
+    public function accountExposure(): Collection
+    {
+        $outstanding = $this->outstandingByOrganization();
+
+        return CorporateOrganization::query()
+            ->where('is_credit_enabled', true)
+            ->withCount([
+                'users as linked_guests_count' => fn ($query) => $query->where('department', 'guest'),
+            ])
+            ->orderBy('name')
+            ->get()
+            ->map(function (CorporateOrganization $organization) use ($outstanding): array {
+                $balance = (float) ($outstanding[$organization->id] ?? 0);
+                $limit = $organization->credit_limit === null
+                    ? null
+                    : (float) $organization->credit_limit;
+
+                return [
+                    'id' => $organization->id,
+                    'name' => $organization->name,
+                    'linked_guests' => $organization->linked_guests_count,
+                    'credit_limit' => $limit,
+                    'outstanding' => $balance,
+                    'available_credit' => $limit === null ? null : max(0, $limit - $balance),
+                ];
+            })
+            ->values();
+    }
+
+    private function outstandingByOrganization(): array
+    {
+        return $this->combineBalances([
+            Booking::query()->selectRaw('corporate_organization_id, SUM(total_price) as total')->whereNotNull('corporate_organization_id')->where('payment_status', 'pending')->whereNotIn('status', ['cancelled', 'expired', 'no_show'])->groupBy('corporate_organization_id')->pluck('total', 'corporate_organization_id')->all(),
+            ConferenceBooking::query()->selectRaw('corporate_organization_id, SUM(total_price) as total')->whereNotNull('corporate_organization_id')->where('payment_status', 'pending')->where('status', '!=', 'cancelled')->groupBy('corporate_organization_id')->pluck('total', 'corporate_organization_id')->all(),
+            RestaurantReservation::query()->selectRaw('corporate_organization_id, SUM(reservation_fee) as total')->whereNotNull('corporate_organization_id')->where('payment_status', 'pending')->whereNotIn('status', ['cancelled', 'no_show'])->groupBy('corporate_organization_id')->pluck('total', 'corporate_organization_id')->all(),
+            RestaurantOrder::query()->selectRaw('corporate_organization_id, SUM(total) as total')->whereNotNull('corporate_organization_id')->where('payment_method', 'corporate_account')->where('payment_status', 'pending')->where('status', '!=', 'cancelled')->groupBy('corporate_organization_id')->pluck('total', 'corporate_organization_id')->all(),
+        ]);
+    }
+
+    private function billedSince(Carbon $from): float
+    {
+        return (float) Booking::query()->whereNotNull('corporate_organization_id')->whereNotIn('status', ['cancelled', 'expired', 'no_show'])->where('created_at', '>=', $from)->sum('total_price')
+            + (float) ConferenceBooking::query()->whereNotNull('corporate_organization_id')->where('status', '!=', 'cancelled')->where('created_at', '>=', $from)->sum('total_price')
+            + (float) RestaurantReservation::query()->whereNotNull('corporate_organization_id')->whereNotIn('status', ['cancelled', 'no_show'])->where('created_at', '>=', $from)->sum('reservation_fee')
+            + (float) RestaurantOrder::query()->whereNotNull('corporate_organization_id')->where('payment_method', 'corporate_account')->where('status', '!=', 'cancelled')->where('created_at', '>=', $from)->sum('total');
+    }
+
+    private function combineBalances(array $sources): array
+    {
+        $balances = [];
+
+        foreach ($sources as $source) {
+            foreach ($source as $organizationId => $total) {
+                $balances[(int) $organizationId] = ($balances[(int) $organizationId] ?? 0) + (float) $total;
+            }
+        }
+
+        return $balances;
     }
 
     public function outstandingBalance(CorporateOrganization $organization): float
