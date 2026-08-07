@@ -247,7 +247,12 @@ class RestaurantOrderPaymentController extends Controller
         $sessionOrders = collect(session('restaurant_order_ids', []))
             ->map(fn ($id): int => (int) $id);
         $ownsSessionOrder = $sessionOrders->contains((int) $order->getKey());
-        $ownsGuestOrder = auth()->id() && $order->guest?->user_id === auth()->id();
+        // MySQL/MariaDB may hydrate foreign keys as strings while the authenticated
+        // user ID is an integer. Compare normalized primary keys to avoid denying
+        // a guest access to their own newly-created order.
+        $authenticatedGuestId = auth()->user()?->guest?->getKey();
+        $ownsGuestOrder = $authenticatedGuestId !== null
+            && (int) $order->guest_id === (int) $authenticatedGuestId;
 
         abort_unless($ownsSessionOrder || $ownsGuestOrder, 403);
     }
