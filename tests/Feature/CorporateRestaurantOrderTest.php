@@ -32,7 +32,7 @@ class CorporateRestaurantOrderTest extends TestCase
         );
     }
 
-    public function test_corporate_order_confirmation_identifies_an_unpaid_charge_and_offers_paystack_payment(): void
+    public function test_corporate_order_confirmation_identifies_an_unpaid_charge_without_offering_paystack_payment(): void
     {
         $order = $this->order([
             'order_number' => 'FOOD-CORPORATE-VIEW',
@@ -43,8 +43,23 @@ class CorporateRestaurantOrderTest extends TestCase
 
         $this->view('restaurant.order-confirmation', compact('order'))
             ->assertSee('Billing: <strong>Corporate account</strong>', false)
-            ->assertSee('awaiting payment')
-            ->assertSee('Pay securely with Paystack');
+            ->assertSee('awaiting settlement')
+            ->assertDontSee('Pay securely with Paystack');
+    }
+
+    public function test_corporate_order_paystack_endpoint_returns_to_confirmation_without_initializing_payment(): void
+    {
+        $order = $this->order([
+            'order_number' => 'FOOD-CORPORATE-NO-PAYSTACK',
+            'payment_method' => 'corporate_account',
+            'payment_status' => 'pending',
+            'status' => 'confirmed',
+        ]);
+
+        $this->withSession(['restaurant_order_ids' => [$order->id]])
+            ->post(route('restaurant.orders.pay', $order))
+            ->assertRedirect(route('restaurant.orders.confirmation', $order))
+            ->assertSessionHas('error', 'This order is billed to your corporate account and cannot be paid through Paystack.');
     }
 
     private function order(array $attributes): RestaurantOrder

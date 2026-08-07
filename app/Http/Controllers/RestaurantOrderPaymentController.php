@@ -29,6 +29,11 @@ class RestaurantOrderPaymentController extends Controller
         $this->authorizeOrder($order);
 
 
+        if ($order->payment_method === 'corporate_account' || $order->corporate_organization_id) {
+            return redirect()->route('restaurant.orders.confirmation', $order)
+                ->with('error', 'This order is billed to your corporate account and cannot be paid through Paystack.');
+        }
+
         if ($order->payment_status === 'completed') {
             return redirect()->route('restaurant.orders.confirmation', $order)
                 ->with('success', 'This order has already been paid.');
