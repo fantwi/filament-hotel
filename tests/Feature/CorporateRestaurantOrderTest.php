@@ -44,7 +44,9 @@ class CorporateRestaurantOrderTest extends TestCase
         $this->view('restaurant.order-confirmation', compact('order'))
             ->assertSee('Billing: <strong>Corporate account</strong>', false)
             ->assertSee('awaiting settlement')
-            ->assertDontSee('Pay securely with Paystack');
+            ->assertDontSee('Pay securely with Paystack')
+            ->assertSee('Back to menu')
+            ->assertSee('Back to dashboard');
     }
 
     public function test_corporate_order_paystack_endpoint_returns_to_confirmation_without_initializing_payment(): void

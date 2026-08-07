@@ -31,6 +31,10 @@
             @else
                 <p class="mt-6 rounded-lg bg-blue-50 p-4 text-blue-700">The kitchen has received your order and will begin preparation shortly.</p>
             @endif
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                <a href="{{ route('restaurant.menu') }}" class="flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-50">Back to menu</a>
+                <a href="{{ route('dashboard') }}" class="flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-50">Back to dashboard</a>
+            </div>
         </div>
     </div>
 </x-guest-layout>
