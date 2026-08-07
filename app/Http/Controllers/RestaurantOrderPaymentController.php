@@ -244,8 +244,9 @@ class RestaurantOrderPaymentController extends Controller
 
     private function authorizeOrder(RestaurantOrder $order): void
     {
-        $sessionOrders = session('restaurant_order_ids', []);
-        $ownsSessionOrder = in_array($order->id, $sessionOrders, true);
+        $sessionOrders = collect(session('restaurant_order_ids', []))
+            ->map(fn ($id): int => (int) $id);
+        $ownsSessionOrder = $sessionOrders->contains((int) $order->getKey());
         $ownsGuestOrder = auth()->id() && $order->guest?->user_id === auth()->id();
 
         abort_unless($ownsSessionOrder || $ownsGuestOrder, 403);

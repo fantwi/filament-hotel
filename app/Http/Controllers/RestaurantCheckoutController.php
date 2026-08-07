@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Guest;
 use App\Models\MenuItem;
 use App\Models\RecipeIngredient;
 use App\Models\RestaurantOrder;
@@ -87,7 +88,22 @@ class RestaurantCheckoutController extends Controller
         $promotion = filled($data['promotion_code'] ?? null) ? Promotion::query()->where('code', strtoupper($data['promotion_code']))->applicable((float) $items->sum('line_total'))->first() : null;
         if (filled($data['promotion_code'] ?? null) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This promotion code is not valid for this order.']);
         $totals = $cart->totals($promotion);
-        $guest = auth()->user()?->guest;
+        $user = auth()->user();
+        $guest = $user?->guest;
+
+        if ($user && ! $guest) {
+            $guest = Guest::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'first_name' => $user->first_name ?? 'Guest',
+                    'last_name' => $user->last_name ?? '',
+                    'email' => $user->email,
+                    'phone_number' => $user->phone_number ?? '',
+                    'id_number' => $user->id_number ?? '',
+                ],
+            );
+        }
+
         $eligibleOrganization = app(CorporateCreditService::class)->organizationFor(auth()->user());
         $organization = $request->boolean('use_corporate_credit') ? $eligibleOrganization : null;
 
@@ -155,7 +171,14 @@ class RestaurantCheckoutController extends Controller
         });
 
         session()->forget('cart');
-        session()->push('restaurant_order_ids', $order->id);
+        session([
+            'restaurant_order_ids' => collect(session('restaurant_order_ids', []))
+                ->map(fn ($id): int => (int) $id)
+                ->push($order->id)
+                ->unique()
+                ->values()
+                ->all(),
+        ]);
 
         if ($order->isKitchenEligible()) {
             $this->notifyKitchen($order);
