@@ -10,7 +10,19 @@ class HotelSetting extends Model
     protected $fillable = [
         'hotel_name',
         'logo',
+        'primary_color',
+        'secondary_color',
+        'footer_color',
     ];
+
+    public function color(string $attribute, string $fallback): string
+    {
+        $color = $this->getAttribute($attribute);
+
+        return is_string($color) && preg_match('/^#[0-9A-Fa-f]{6}$/', $color)
+            ? $color
+            : $fallback;
+    }
 
     public static function current(): self
     {

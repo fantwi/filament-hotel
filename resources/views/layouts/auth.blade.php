@@ -8,11 +8,12 @@
           content="width=device-width, initial-scale=1.0">
 
     <title>{{ $hotelBranding->hotel_name ?? config('app.name') }}</title>
+    @include('layouts.partials.hotel-theme')
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="flex min-h-screen flex-col bg-slate-50 text-gray-900">
+<body class="hotel-themed flex min-h-screen flex-col bg-slate-50 text-gray-900">
 
 @include('layouts.partials.guest-nav')
 

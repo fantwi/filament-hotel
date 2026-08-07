@@ -8,6 +8,7 @@ use App\Filament\Admin\Resources\HotelSettings\Pages\ListHotelSettings;
 use App\Filament\Admin\Resources\SecureResource;
 use App\Models\HotelSetting;
 use BackedEnum;
+use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
@@ -76,6 +77,26 @@ class HotelSettingResource extends SecureResource
                         ->columnSpanFull(),
                 ])
                 ->columns(['default' => 1, 'sm' => 2]),
+
+            Section::make('Color scheme')
+                ->description('These colors update shared navigation, links, call-to-action buttons, and the footer across guest pages.')
+                ->schema([
+                    ColorPicker::make('primary_color')
+                        ->label('Primary color')
+                        ->required()
+                        ->default('#2563EB'),
+
+                    ColorPicker::make('secondary_color')
+                        ->label('Accent color')
+                        ->required()
+                        ->default('#0EA5E9'),
+
+                    ColorPicker::make('footer_color')
+                        ->label('Footer and dark-mode color')
+                        ->required()
+                        ->default('#161B48'),
+                ])
+                ->columns(['default' => 1, 'sm' => 3]),
         ]);
     }
 

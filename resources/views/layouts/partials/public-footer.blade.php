@@ -1,4 +1,4 @@
-<footer class="border-t border-indigo-300/30 bg-[#161b48e6] text-slate-100">
+<footer class="hotel-brand-footer border-t text-slate-100">
     <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div class="sm:col-span-2 lg:col-span-1">
@@ -10,7 +10,7 @@
                 </a>
                 <p class="mt-4 max-w-xs text-sm leading-6 text-slate-200">Comfortable stays, memorable dining, and flexible spaces for every occasion.</p>
                 <p class="mt-5 text-sm text-slate-200">Cape Coast, Ghana</p>
-                <a href="mailto:info@myhotel.com" class="mt-1 inline-block text-sm text-amber-200 hover:text-amber-100">info@myhotel.com</a>
+                <a href="mailto:info@myhotel.com" class="hotel-brand-accent mt-1 inline-block text-sm hover:brightness-125">info@myhotel.com</a>
             </div>
 
             <div>
@@ -47,7 +47,7 @@
             </div>
         </div>
 
-        <div class="mt-10 flex flex-col gap-3 border-t border-indigo-300/30 pt-6 text-xs text-slate-300 sm:flex-row sm:items-center sm:justify-between">
+        <div class="hotel-brand-border mt-10 flex flex-col gap-3 border-t pt-6 text-xs text-slate-300 sm:flex-row sm:items-center sm:justify-between">
             <p>&copy; {{ now()->year }} {{ $hotelBranding->hotel_name }}. All rights reserved.</p>
             <p>Website information is current as of {{ now()->format('F Y') }}.</p>
         </div>

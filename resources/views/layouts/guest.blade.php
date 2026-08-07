@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $hotelBranding->hotel_name ?? config('app.name') }}</title>
+    @include('layouts.partials.hotel-theme')
     <script>
         (() => {
             const savedTheme = localStorage.getItem('guest-theme');
@@ -18,7 +19,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="min-w-0 overflow-x-hidden bg-gray-100 font-sans text-gray-800 antialiased transition-colors dark:bg-[#161b48e6] dark:text-slate-100">
+<body class="hotel-themed min-w-0 overflow-x-hidden bg-gray-100 font-sans text-gray-800 antialiased transition-colors dark:bg-[#161b48e6] dark:text-slate-100">
 
     <!-- NAVBAR -->
     @include('layouts.partials.guest-nav')
