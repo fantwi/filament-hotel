@@ -2,7 +2,12 @@
 
 <nav x-data="{ open: false, accountOpen: false, roomsOpen: false, restaurantOpen: false, conferenceOpen: false, mobileRoomsOpen: false, mobileRestaurantOpen: false, mobileConferenceOpen: false, dark: document.documentElement.classList.contains('dark'), toggleTheme() { this.dark = !this.dark; document.documentElement.classList.toggle('dark', this.dark); localStorage.setItem('guest-theme', this.dark ? 'dark' : 'light') } }" class="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
     <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <a href="/" class="shrink-0 text-lg font-bold text-gray-900 sm:text-xl dark:text-white">My Hotel</a>
+        <a href="/" class="flex shrink-0 items-center gap-2 text-lg font-bold text-gray-900 sm:text-xl dark:text-white">
+            @if ($hotelBranding->logo)
+                <img src="{{ asset('storage/'.$hotelBranding->logo) }}" alt="{{ $hotelBranding->hotel_name }} logo" class="h-9 w-9 rounded-lg bg-white object-contain p-0.5">
+            @endif
+            <span>{{ $hotelBranding->hotel_name }}</span>
+        </a>
 
         <div class="hidden items-center gap-2 text-sm font-medium text-gray-600 dark:text-slate-100 lg:flex">
             <div class="relative" @click.outside="roomsOpen = false">

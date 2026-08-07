@@ -14,6 +14,7 @@ class ImageUploadSecurityTest extends TestCase
             'app/Filament/Admin/Resources/MenuItems/Schemas/MenuItemForm.php',
             'app/Filament/Admin/Resources/RoomTypes/Schemas/RoomTypeForm.php',
             'app/Filament/Admin/Resources/RestaurantTables/Schemas/RestaurantTableForm.php',
+            'app/Filament/Admin/Resources/HotelSettings/HotelSettingResource.php',
         ];
 
         foreach ($schemaPaths as $path) {

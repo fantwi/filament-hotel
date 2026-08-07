@@ -2,7 +2,12 @@
     <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div class="sm:col-span-2 lg:col-span-1">
-                <a href="/" class="text-xl font-bold text-white">My Hotel</a>
+                <a href="/" class="flex items-center gap-3 text-xl font-bold text-white">
+                    @if ($hotelBranding->logo)
+                        <img src="{{ asset('storage/'.$hotelBranding->logo) }}" alt="{{ $hotelBranding->hotel_name }} logo" class="h-10 w-10 rounded-lg bg-white object-contain p-0.5">
+                    @endif
+                    <span>{{ $hotelBranding->hotel_name }}</span>
+                </a>
                 <p class="mt-4 max-w-xs text-sm leading-6 text-slate-200">Comfortable stays, memorable dining, and flexible spaces for every occasion.</p>
                 <p class="mt-5 text-sm text-slate-200">Cape Coast, Ghana</p>
                 <a href="mailto:info@myhotel.com" class="mt-1 inline-block text-sm text-amber-200 hover:text-amber-100">info@myhotel.com</a>
@@ -43,7 +48,7 @@
         </div>
 
         <div class="mt-10 flex flex-col gap-3 border-t border-indigo-300/30 pt-6 text-xs text-slate-300 sm:flex-row sm:items-center sm:justify-between">
-            <p>&copy; {{ now()->year }} My Hotel. All rights reserved.</p>
+            <p>&copy; {{ now()->year }} {{ $hotelBranding->hotel_name }}. All rights reserved.</p>
             <p>Website information is current as of {{ now()->format('F Y') }}.</p>
         </div>
     </div>
