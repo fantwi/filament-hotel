@@ -71,6 +71,7 @@
 
                 <div class="mt-4 flex justify-between border-t border-slate-200 pt-4 text-xl font-bold"><span>Estimated total</span><span>GHS {{ number_format($totals['total'], 2) }}</span></div>
                 <a href="{{ route('restaurant.checkout', ['promotion_code' => $promotionCode]) }}" class="mt-6 flex min-h-12 items-center justify-center rounded-xl bg-blue-600 py-3 text-center font-semibold text-white">Checkout</a>
+                <a href="{{ route('restaurant.menu') }}" class="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-center font-semibold text-slate-700 transition hover:bg-slate-50">or Add more food items</a>
             </div>
         @endif
     </div>
