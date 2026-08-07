@@ -5,7 +5,16 @@
             <div class="flex-1"><label for="apply_promotion_code" class="block text-sm font-semibold text-gray-800">Discount code</label><input id="apply_promotion_code" name="promotion_code" type="text" value="{{ $promotionCode ?? '' }}" class="mt-2 min-h-12 w-full rounded-xl border-gray-300 px-4 text-base" placeholder="Enter a discount code">@if ($promotionError)<p class="mt-2 text-sm text-red-600">{{ $promotionError }}</p>@endif</div>
             <button type="submit" class="mt-3 flex min-h-12 w-full items-center justify-center rounded-xl border border-indigo-600 bg-white px-5 font-semibold text-indigo-700 sm:mt-0 sm:w-auto">Apply discount</button>
         </form>
-        <form action="{{ route('restaurant.checkout.store') }}" method="POST" class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
+        @if (session('error'))
+            <div role="alert" class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{{ session('error') }}</div>
+        @endif
+        @if ($errors->any())
+            <div role="alert" class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                <p class="font-semibold">Please correct the highlighted checkout details.</p>
+                <ul class="mt-2 list-disc space-y-1 pl-5">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+            </div>
+        @endif
+        <form action="{{ route('restaurant.checkout.store') }}" method="POST" x-data="{ submitting: false }" @submit="if (submitting) { $event.preventDefault(); return; } submitting = true" class="rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:p-8">
             @csrf
             <input type="hidden" name="promotion_code" value="{{ $promotionCode ?? '' }}">
             <h2 class="mb-4 text-xl font-bold">Order summary</h2>
@@ -19,8 +28,8 @@
                 <div class="flex justify-between"><span>NHIL ({{ number_format($totals['nhil_rate'], 2) }}%)</span><span>GHS {{ number_format($totals['nhil'] ?? 0, 2) }}</span></div>
             </div>
             <div class="mt-4 flex justify-between border-t pt-4 text-xl font-bold"><span>Estimated total</span><span>GHS {{ number_format($totals['total'], 2) }}</span></div>
-            <label for="email" class="mt-6 block font-medium">Email for payment receipt</label><input id="email" name="email" type="email" value="{{ old('email', auth()->user()?->email) }}" required class="mt-2 min-h-12 w-full rounded-xl border-gray-300 px-4 text-base">
-            <label for="notes" class="mt-6 block font-medium">Order notes</label><textarea id="notes" name="notes" rows="4" class="mt-2 w-full rounded-xl border-gray-300 px-4 py-3 text-base" placeholder="Allergies or special instructions">{{ old('notes') }}</textarea>
+            <label for="email" class="mt-6 block font-medium">Email for payment receipt</label><input id="email" name="email" type="email" value="{{ old('email', auth()->user()?->email) }}" required aria-describedby="email-error" class="mt-2 min-h-12 w-full rounded-xl border-gray-300 px-4 text-base @error('email') border-red-500 @enderror">@error('email')<p id="email-error" class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+            <label for="notes" class="mt-6 block font-medium">Order notes</label><textarea id="notes" name="notes" rows="4" class="mt-2 w-full rounded-xl border-gray-300 px-4 py-3 text-base @error('notes') border-red-500 @enderror" placeholder="Allergies or special instructions">{{ old('notes') }}</textarea>@error('notes')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
             @if ($corporateOrganization)
                 <fieldset class="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
                     <legend class="px-1 text-sm font-semibold text-blue-900">Payment preference</legend>
@@ -30,7 +39,7 @@
                     @error('use_corporate_credit')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
                 </fieldset>
             @endif
-            <button class="mt-6 flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700">Place order</button>
+            <button type="submit" :disabled="submitting" class="mt-6 flex min-h-12 w-full items-center justify-center rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"><span x-show="!submitting">Place order</span><span x-cloak x-show="submitting">Placing order...</span></button>
         </form>
     </div>
 </x-guest-layout>

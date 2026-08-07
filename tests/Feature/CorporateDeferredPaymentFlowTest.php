@@ -17,6 +17,7 @@ use App\Models\RoomType;
 use App\Models\User;
 use App\Services\CorporateCreditService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class CorporateDeferredPaymentFlowTest extends TestCase
@@ -161,6 +162,42 @@ class CorporateDeferredPaymentFlowTest extends TestCase
         self::assertSame('confirmed', $order->status);
         self::assertSame('pending', $order->payment_status);
         self::assertTrue($order->isKitchenEligible());
+    }
+
+    public function test_corporate_food_order_places_successfully_when_kitchen_notifications_are_enabled(): void
+    {
+        $user = $this->corporateUser();
+        Permission::findOrCreate('manage kitchen orders', 'web');
+        $kitchenUser = User::factory()->create(['department' => 'kitchen_staff']);
+        $kitchenUser->givePermissionTo('manage kitchen orders');
+
+        $category = MenuCategory::create([
+            'name' => 'Notification Lunch',
+            'slug' => 'notification-lunch',
+            'is_active' => true,
+        ]);
+        $item = MenuItem::create([
+            'menu_category_id' => $category->id,
+            'name' => 'Notification Meal',
+            'slug' => 'notification-meal',
+            'price' => 50,
+            'is_available' => true,
+            'is_published' => true,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->withSession(['cart' => [$item->id => ['quantity' => 1]]])
+            ->post(route('restaurant.checkout.store'), [
+                'email' => $user->email,
+                'use_corporate_credit' => 1,
+            ]);
+
+        $response->assertRedirect();
+        self::assertDatabaseHas('restaurant_orders', [
+            'corporate_organization_id' => $user->corporate_organization_id,
+            'payment_method' => 'corporate_account',
+            'status' => 'confirmed',
+        ]);
     }
 
     public function test_linked_guest_can_choose_pay_now_across_all_four_workflows(): void
