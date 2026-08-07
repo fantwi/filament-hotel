@@ -39,8 +39,9 @@
                 </button>
             @endguest
             @auth
-                <a href="{{ route('cart.index') }}" class="relative inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-700 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="Restaurant cart{{ $restaurantCartCount ? ': ' . $restaurantCartCount . ' items' : '' }}">
+                <a href="{{ route('cart.index') }}" class="relative inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:text-slate-100" aria-label="Restaurant cart{{ $restaurantCartCount ? ': ' . $restaurantCartCount . ' items' : '' }}">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13 5.4 5M7 13l-1.1 5.5A1 1 0 0 0 6.9 20h10.2M17 20a1 1 0 1 0 0 2 1 1 0 0 0-2Zm-10 0a1 1 0 1 0 0 2 1 1 0 0 0-2Z" /></svg>
+                    <span>Cart</span>
                     @if ($restaurantCartCount > 0)<span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1 text-xs font-bold text-white">{{ $restaurantCartCount > 99 ? '99+' : $restaurantCartCount }}</span>@endif
                 </a>
                 <div class="relative">
