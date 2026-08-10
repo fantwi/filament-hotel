@@ -95,7 +95,8 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-white/10">
-                        @forelse ($report['orders'] as $order)
+                        @if ($report['orders']->isNotEmpty())
+                            @foreach ($report['orders'] as $order)
                             @php
                                 $statusColor = match ($order->status) {
                                     'confirmed' => 'info',
@@ -120,9 +121,10 @@
                                 <td class="px-4 py-4 text-right font-semibold">GHS {{ number_format($order->total, 2) }}</td>
                                 <td class="px-4 py-4 text-xs text-gray-600 dark:text-gray-300">{{ $order->created_at?->format('M d, Y') }}<span class="mt-1 block text-gray-500 dark:text-gray-400">{{ $order->created_at?->format('g:i A') }}</span></td>
                             </tr>
-                        @empty
+                            @endforeach
+                        @else
                             <tr><td colspan="6" class="px-4 py-12 text-center text-gray-500">No restaurant orders found for {{ strtolower($this->periodLabel()) }}.</td></tr>
-                        @endforelse
+                        @endif
                     </tbody>
                 </table>
             </div>
