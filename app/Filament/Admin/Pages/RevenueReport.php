@@ -5,8 +5,10 @@ namespace App\Filament\Admin\Pages;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\Payment;
+use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
 use Filament\Pages\Page;
+use Illuminate\Database\Eloquent\Builder;
 
 class RevenueReport extends Page
 {
@@ -20,21 +22,77 @@ class RevenueReport extends Page
 
     protected string $view = 'filament.admin.pages.revenue-report';
 
+    public string $period = 'this_month';
+
+    public function periodLabel(): string
+    {
+        return match ($this->period) {
+            'today' => 'Today',
+            'this_week' => 'This week',
+            'this_quarter' => 'This quarter',
+            'this_year' => 'This year',
+            'all' => 'All time',
+            default => 'This month',
+        };
+    }
+
     public function report(): array
     {
-        $paid = Payment::query()->whereIn('payment_status', ['paid', 'completed']);
+        $paidPayments = $this->forPeriod(
+            Payment::query()->whereIn('payment_status', ['paid', 'completed']),
+        );
+        $refunds = $this->forPeriod(
+            Payment::query()->whereIn('payment_status', ['refunded', 'refund']),
+        );
+
+        $outstanding = [
+            'hotel' => $this->forPeriod(Booking::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
+                ->sum('total_price'),
+            'conference' => $this->forPeriod(ConferenceBooking::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->where('status', '!=', 'cancelled')
+                ->sum('total_price'),
+            'table' => $this->forPeriod(RestaurantReservation::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->whereNotIn('status', ['cancelled', 'no_show'])
+                ->sum('reservation_fee'),
+            'food' => $this->forPeriod(RestaurantOrder::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->where('status', '!=', 'cancelled')
+                ->sum('total'),
+        ];
+
+        $revenue = (float) (clone $paidPayments)->sum('amount');
+        $refundTotal = (float) (clone $refunds)->sum('amount');
 
         return [
-            'daily' => (clone $paid)->whereDate('created_at', today())->sum('amount'),
-            'weekly' => (clone $paid)->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->sum('amount'),
-            'monthly' => (clone $paid)->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->sum('amount'),
-            'annual' => (clone $paid)->whereYear('created_at', now()->year)->sum('amount'),
-            'refunds' => Payment::where('payment_status', 'refunded')->sum('amount'),
-            'outstanding' => Booking::whereIn('payment_status', ['pending', 'unpaid'])->sum('total_price')
-                + ConferenceBooking::whereIn('payment_status', ['pending', 'unpaid'])->sum('total_price')
-                + RestaurantReservation::where('payment_status', 'pending')->sum('reservation_fee'),
-            'methods' => (clone $paid)->selectRaw('method, SUM(amount) as total')->groupBy('method')->pluck('total', 'method'),
+            'revenue' => $revenue,
+            'refunds' => $refundTotal,
+            'netRevenue' => $revenue - $refundTotal,
+            'outstanding' => array_sum($outstanding),
+            'outstandingBreakdown' => $outstanding,
+            'paymentsReceived' => (clone $paidPayments)->count(),
+            'refundCount' => (clone $refunds)->count(),
+            'methods' => (clone $paidPayments)
+                ->selectRaw('method, SUM(amount) as total, COUNT(*) as payment_count')
+                ->groupBy('method')
+                ->orderByDesc('total')
+                ->get(),
         ];
+    }
+
+    private function forPeriod(Builder $query, string $column = 'created_at'): Builder
+    {
+        return match ($this->period) {
+            'today' => $query->whereDate($column, today()),
+            'this_week' => $query->whereBetween($column, [now()->startOfWeek(), now()->endOfWeek()]),
+            'this_quarter' => $query->whereBetween($column, [now()->startOfQuarter(), now()->endOfQuarter()]),
+            'this_year' => $query->whereBetween($column, [now()->startOfYear(), now()->endOfYear()]),
+            'all' => $query,
+            default => $query->whereBetween($column, [now()->startOfMonth(), now()->endOfMonth()]),
+        };
     }
 
     public static function canAccess(): bool
