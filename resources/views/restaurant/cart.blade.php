@@ -30,7 +30,9 @@
         @else
             <div class="space-y-4">
                 @foreach ($cartItems as $line)
-                    @php($item = $line['item'])
+                    @php
+                        $item = $line['item'];
+                    @endphp
                     <div class="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-xl shadow-slate-200/70 ring-1 ring-slate-900/5 sm:flex-row sm:items-center">
                         @if ($item->image)
                             <img src="{{ asset('storage/'.$item->image) }}" class="h-20 w-20 rounded-lg object-cover" alt="{{ $item->name }}">

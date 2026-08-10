@@ -1,4 +1,6 @@
-@php($restaurantCartCount = collect(session('cart', []))->sum(fn (array $line) => max(1, (int) ($line['quantity'] ?? 1))))
+@php
+    $restaurantCartCount = collect(session('cart', []))->sum(fn (array $line) => max(1, (int) ($line['quantity'] ?? 1)));
+@endphp
 
 <nav x-data="{ open: false, accountOpen: false, roomsOpen: false, restaurantOpen: false, conferenceOpen: false, mobileRoomsOpen: false, mobileRestaurantOpen: false, mobileConferenceOpen: false, dark: document.documentElement.classList.contains('dark'), toggleTheme() { this.dark = !this.dark; document.documentElement.classList.toggle('dark', this.dark); localStorage.setItem('guest-theme', this.dark ? 'dark' : 'light') } }" class="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
     <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">

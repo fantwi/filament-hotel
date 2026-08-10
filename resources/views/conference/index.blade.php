@@ -9,7 +9,9 @@
                 @forelse ($rooms as $room)
                     <article class="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl shadow-slate-300/40 ring-1 ring-slate-900/5">
                         <div class="relative">
-                            @php($imageUrl = $room->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($room->image) ? \Illuminate\Support\Facades\Storage::disk('public')->url($room->image) : null)
+                            @php
+                                $imageUrl = $room->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($room->image) ? \Illuminate\Support\Facades\Storage::disk('public')->url($room->image) : null;
+                            @endphp
                             @if ($imageUrl)<img src="{{ $imageUrl }}" alt="{{ $room->name }}" class="h-48 w-full object-cover sm:h-52">@else<div class="flex h-48 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-semibold text-slate-500 sm:h-52">Conference room image coming soon</div>@endif
                             <span class="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-slate-800 shadow-sm">Up to {{ $room->capacity }} guests</span>
                         </div>

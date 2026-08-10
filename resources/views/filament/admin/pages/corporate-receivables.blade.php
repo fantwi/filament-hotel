@@ -1,6 +1,7 @@
 <x-filament::page>
-    @php($receivables = $this->receivables())
-
+    @php
+        $receivables = $this->receivables();
+    @endphp
     <x-filament::section heading="Corporate receivables" description="Record a payment received by the accountant outside the online checkout. Clearing a balance updates the guest dashboard immediately.">
         <div class="overflow-x-auto">
             <table class="w-full min-w-[760px] divide-y divide-gray-200 text-sm dark:divide-white/10">

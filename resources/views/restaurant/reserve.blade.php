@@ -1,6 +1,7 @@
 <x-guest-layout>
-    @php($billingPreview = session('restaurant_reservation_billing_preview'))
-
+    @php
+        $billingPreview = session('restaurant_reservation_billing_preview');
+    @endphp
     <section class="px-4 py-10 sm:px-6 sm:py-14">
         <div class="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
             <div>

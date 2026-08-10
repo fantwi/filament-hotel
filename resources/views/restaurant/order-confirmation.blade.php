@@ -19,7 +19,9 @@
                 <div class="flex justify-between"><dt>NHIL</dt><dd>GHS {{ number_format($order->nhil ?? 0, 2) }}</dd></div>
             </dl>
             <p class="mt-5 border-t pt-4 text-2xl font-bold">Total: GHS {{ number_format($order->total, 2) }}</p>
-            @php($isCorporateOrder = $order->corporate_organization_id || $order->payment_method === 'corporate_account')
+            @php
+                $isCorporateOrder = $order->corporate_organization_id || $order->payment_method === 'corporate_account';
+            @endphp
             @if ($isCorporateOrder && $order->payment_status !== 'completed')
                 <p class="mt-6 rounded-lg bg-amber-50 p-4 text-amber-800">Corporate billing: this order is awaiting settlement under your organization's payment terms. No Paystack payment is required from you.</p>
             @endif

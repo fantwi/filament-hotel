@@ -304,7 +304,9 @@
 
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach (array_slice($restaurant->gallery, 0, 3) as $image)
-                    @php($imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($image))
+                    @php
+                        $imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($image);
+                    @endphp
                     <button
                         type="button"
                         class="group relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-200 shadow-sm focus:outline-none focus:ring-4 focus:ring-orange-200"

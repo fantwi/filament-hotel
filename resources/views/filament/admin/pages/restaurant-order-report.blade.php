@@ -1,6 +1,7 @@
 <x-filament::page>
-    @php($report = $this->getReportData())
-
+    @php
+        $report = $this->getReportData();
+    @endphp
     <div class="space-y-6">
         <x-filament::section>
             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">

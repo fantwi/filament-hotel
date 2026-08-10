@@ -18,7 +18,9 @@
             @if ($restaurant && filled($restaurant->gallery) && is_array($restaurant->gallery))
                 <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach ($restaurant->gallery as $image)
-                        @php($imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($image))
+                        @php
+                            $imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($image);
+                        @endphp
                         <button type="button" class="group relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-200 shadow-sm focus:outline-none focus:ring-4 focus:ring-orange-200" @click="open(@js($imageUrl))">
                             <img src="{{ $imageUrl }}" alt="{{ $restaurant->name }} gallery image {{ $loop->iteration }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition group-hover:opacity-100"></div>
