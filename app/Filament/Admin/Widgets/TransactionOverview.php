@@ -39,7 +39,7 @@ class TransactionOverview extends Widget
                 ConferenceBooking::query(),
                 'total_price',
                 'conference_booking_id',
-                ['cancelled'],
+                ['cancelled', 'no_show'],
             ),
             $this->summary(
                 'Table reservations',
@@ -67,6 +67,8 @@ class TransactionOverview extends Widget
                 'payment_count' => collect($rows)->sum('payment_count'),
                 'outstanding' => collect($rows)->sum('outstanding'),
                 'outstanding_count' => collect($rows)->sum('outstanding_count'),
+                'corporate_outstanding' => collect($rows)->sum('corporate_outstanding'),
+                'corporate_outstanding_count' => collect($rows)->sum('corporate_outstanding_count'),
             ],
         ];
     }
@@ -88,6 +90,8 @@ class TransactionOverview extends Widget
         $paymentsInRange = $this->forDashboardDateRange(Payment::query())
             ->whereNotNull($paymentForeignKey)
             ->whereIn('payment_status', ['paid', 'completed']);
+        $outstandingTransactions = (clone $activeTransactions)
+            ->whereIn('payment_status', ['pending', 'unpaid']);
 
         return [
             'label' => $label,
@@ -95,11 +99,13 @@ class TransactionOverview extends Widget
             'gross' => (float) (clone $activeTransactions)->sum($amountColumn),
             'payments' => (float) (clone $paymentsInRange)->sum('amount'),
             'payment_count' => (clone $paymentsInRange)->count(),
-            'outstanding' => (float) (clone $activeTransactions)
-                ->whereIn('payment_status', ['pending', 'unpaid'])
+            'outstanding' => (float) (clone $outstandingTransactions)->sum($amountColumn),
+            'outstanding_count' => (clone $outstandingTransactions)->count(),
+            'corporate_outstanding' => (float) (clone $outstandingTransactions)
+                ->whereNotNull('corporate_organization_id')
                 ->sum($amountColumn),
-            'outstanding_count' => (clone $activeTransactions)
-                ->whereIn('payment_status', ['pending', 'unpaid'])
+            'corporate_outstanding_count' => (clone $outstandingTransactions)
+                ->whereNotNull('corporate_organization_id')
                 ->count(),
         ];
     }
