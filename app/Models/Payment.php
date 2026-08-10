@@ -56,6 +56,33 @@ class Payment extends Model
         return $this->belongsTo(RestaurantOrder::class);
     }
 
+    public function transactionLabel(): string
+    {
+        return match (true) {
+            $this->booking_id !== null => 'Hotel booking #'.$this->booking_id,
+            $this->conference_booking_id !== null => 'Conference booking #'.$this->conference_booking_id,
+            $this->restaurant_reservation_id !== null => 'Table reservation #'.$this->restaurant_reservation_id,
+            $this->restaurant_order_id !== null => 'Food order #'.$this->restaurant_order_id,
+            default => 'Unlinked payment',
+        };
+    }
+
+    public function transactionGuest(): ?Guest
+    {
+        return $this->guest
+            ?? $this->booking?->guest
+            ?? $this->conferenceBooking?->guest
+            ?? $this->restaurantReservation?->guest
+            ?? $this->restaurantOrder?->guest;
+    }
+
+    public function transactionGuestName(): string
+    {
+        $guest = $this->transactionGuest();
+
+        return $guest ? trim($guest->full_name) : 'Guest not recorded';
+    }
+
     protected static function booted()
     {
         static::created(function ($payment) {

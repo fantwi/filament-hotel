@@ -15,6 +15,7 @@ use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class PaymentResource extends SecureResource
 {
@@ -46,6 +47,17 @@ class PaymentResource extends SecureResource
             'admin',
             // 'manager',
             'accountant',
+        ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with([
+            'guest',
+            'booking.guest',
+            'conferenceBooking.guest',
+            'restaurantReservation.guest',
+            'restaurantOrder.guest',
         ]);
     }
 

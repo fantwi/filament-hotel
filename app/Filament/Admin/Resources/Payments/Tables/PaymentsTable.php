@@ -16,14 +16,17 @@ class PaymentsTable
         return $table
             ->columns([
                 //
-                Tables\Columns\TextColumn::make('booking.id')
-                    ->label('Booking ID')
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('transaction_id')
+                    ->label('Transaction ID')
+                    ->state(fn (\App\Models\Payment $record): string => $record->transactionLabel())
+                    ->description(fn (\App\Models\Payment $record): ?string => $record->transaction_reference ? 'Ref: '.$record->transaction_reference : null)
+                    ->wrap(),
 
-                Tables\Columns\TextColumn::make('booking.guest.full_name')
+                Tables\Columns\TextColumn::make('transaction_guest')
                     ->label('Guest')
-                    ->searchable()
-                    ->sortable(),
+                    ->state(fn (\App\Models\Payment $record): string => $record->transactionGuestName())
+                    ->description(fn (\App\Models\Payment $record): ?string => $record->transactionGuest()?->email)
+                    ->wrap(),
 
                 Tables\Columns\TextColumn::make('amount')
                     ->money('GHS')
