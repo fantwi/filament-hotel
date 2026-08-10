@@ -2,15 +2,15 @@
 
 namespace App\Filament\Admin\Pages\Dashboards;
 
-use App\Filament\Admin\Widgets\KitchenOrderQueue;
 use App\Filament\Admin\Widgets\CorporateBillingOverview;
+use App\Filament\Admin\Widgets\KitchenOrderQueue;
 use App\Filament\Admin\Widgets\KitchenProductionStats;
 use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\ManagerOperationsChart;
 use App\Filament\Admin\Widgets\ManagerPeriodReport;
 use App\Filament\Admin\Widgets\ManagerStats;
 use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
-use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
+use App\Filament\Admin\Widgets\RoleDashboardOverview;
 
 class ManagerDashboard extends TimeFilteredDashboard
 {
@@ -36,6 +36,16 @@ class ManagerDashboard extends TimeFilteredDashboard
 
     public function getWidgets(): array
     {
-        return [CorporateBillingOverview::class, KitchenProductionStats::class, KitchenStockStats::class, ManagerStats::class, ManagerPeriodReport::class, ManagerOperationsChart::class, RestaurantOrderStatusChart::class, KitchenOrderQueue::class];
+        return [
+            RoleDashboardOverview::class,
+            ManagerStats::class,
+            ManagerPeriodReport::class,
+            CorporateBillingOverview::class,
+            KitchenProductionStats::class,
+            KitchenStockStats::class,
+            ManagerOperationsChart::class,
+            RestaurantOrderStatusChart::class,
+            KitchenOrderQueue::class,
+        ];
     }
 }

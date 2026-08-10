@@ -3,11 +3,11 @@
 namespace App\Filament\Admin\Pages\Dashboards;
 
 use App\Filament\Admin\Widgets\AccountantPeriodReport;
-use App\Filament\Admin\Widgets\CorporateBillingOverview;
 use App\Filament\Admin\Widgets\AccountantStats;
+use App\Filament\Admin\Widgets\CorporateBillingOverview;
 use App\Filament\Admin\Widgets\RecentPayments;
 use App\Filament\Admin\Widgets\RestaurantRevenueChart;
-use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
+use App\Filament\Admin\Widgets\RoleDashboardOverview;
 
 class AccountantDashboard extends TimeFilteredDashboard
 {
@@ -33,6 +33,13 @@ class AccountantDashboard extends TimeFilteredDashboard
 
     public function getWidgets(): array
     {
-        return [CorporateBillingOverview::class, AccountantStats::class, AccountantPeriodReport::class, RestaurantRevenueChart::class, RecentPayments::class];
+        return [
+            RoleDashboardOverview::class,
+            AccountantStats::class,
+            AccountantPeriodReport::class,
+            CorporateBillingOverview::class,
+            RestaurantRevenueChart::class,
+            RecentPayments::class,
+        ];
     }
 }

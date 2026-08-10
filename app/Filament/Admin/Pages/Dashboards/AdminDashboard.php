@@ -8,7 +8,7 @@ use App\Filament\Admin\Widgets\KitchenOrderQueue;
 use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\ManagerOperationsChart;
 use App\Filament\Admin\Widgets\RecentPayments;
-use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
+use App\Filament\Admin\Widgets\RoleDashboardOverview;
 
 class AdminDashboard extends TimeFilteredDashboard
 {
@@ -34,6 +34,14 @@ class AdminDashboard extends TimeFilteredDashboard
 
     public function getWidgets(): array
     {
-        return [CorporateBillingOverview::class, AdminStats::class, KitchenStockStats::class, ManagerOperationsChart::class, RecentPayments::class, KitchenOrderQueue::class];
+        return [
+            RoleDashboardOverview::class,
+            AdminStats::class,
+            CorporateBillingOverview::class,
+            KitchenStockStats::class,
+            ManagerOperationsChart::class,
+            RecentPayments::class,
+            KitchenOrderQueue::class,
+        ];
     }
 }

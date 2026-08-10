@@ -8,8 +8,8 @@ use App\Filament\Admin\Widgets\KitchenOrderQueue;
 use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
 use App\Filament\Admin\Widgets\RestaurantRevenueChart;
+use App\Filament\Admin\Widgets\RoleDashboardOverview;
 use App\Filament\Admin\Widgets\SuperAdminStats;
-use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
 
 class SuperAdminDashboard extends TimeFilteredDashboard
 {
@@ -35,6 +35,15 @@ class SuperAdminDashboard extends TimeFilteredDashboard
 
     public function getWidgets(): array
     {
-        return [CorporateBillingOverview::class, SuperAdminStats::class, KitchenStockStats::class, RestaurantRevenueChart::class, RestaurantOrderStatusChart::class, BestSellingMenuItems::class, KitchenOrderQueue::class];
+        return [
+            RoleDashboardOverview::class,
+            SuperAdminStats::class,
+            CorporateBillingOverview::class,
+            KitchenStockStats::class,
+            RestaurantRevenueChart::class,
+            RestaurantOrderStatusChart::class,
+            BestSellingMenuItems::class,
+            KitchenOrderQueue::class,
+        ];
     }
 }

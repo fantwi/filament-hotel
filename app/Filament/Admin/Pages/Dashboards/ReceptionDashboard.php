@@ -4,7 +4,7 @@ namespace App\Filament\Admin\Pages\Dashboards;
 
 use App\Filament\Admin\Widgets\ReceptionArrivals;
 use App\Filament\Admin\Widgets\ReceptionStats;
-use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
+use App\Filament\Admin\Widgets\RoleDashboardOverview;
 
 class ReceptionDashboard extends TimeFilteredDashboard
 {
@@ -30,6 +30,6 @@ class ReceptionDashboard extends TimeFilteredDashboard
 
     public function getWidgets(): array
     {
-        return [ReceptionStats::class, ReceptionArrivals::class];
+        return [RoleDashboardOverview::class, ReceptionStats::class, ReceptionArrivals::class];
     }
 }
