@@ -44,6 +44,17 @@ class RestaurantOrderReport extends Page
             );
     }
 
+    public function periodLabel(): string
+    {
+        return match ($this->period) {
+            'today' => 'Today',
+            'this_week' => 'This week',
+            'this_year' => 'This year',
+            'all' => 'All time',
+            default => 'This month',
+        };
+    }
+
     public function getReportData(): array
     {
         $orders = $this->getOrdersQuery()->latest()->get();
@@ -52,15 +63,21 @@ class RestaurantOrderReport extends Page
             ->where('payment_status', 'pending')
             ->where('status', '!=', 'cancelled');
 
+        $nonCancelledOrders = $orders->where('status', '!=', 'cancelled');
+        $totalOrders = $orders->count();
+
         return [
             'orders' => $orders,
-            'totalOrders' => $orders->count(),
+            'totalOrders' => $totalOrders,
+            'totalItems' => $orders->sum(fn (RestaurantOrder $order): int => $order->items->sum('quantity')),
             'paidOrders' => $paidOrders->count(),
             'pendingOrders' => $orders->where('payment_status', 'pending')->count(),
             'cancelledOrders' => $orders->where('status', 'cancelled')->count(),
+            'activeOrders' => $orders->whereIn('status', ['confirmed', 'preparing', 'ready'])->count(),
             'revenue' => $paidOrders->sum('total'),
             'outstanding' => $outstandingOrders->sum('total'),
             'averageOrderValue' => $paidOrders->avg('total') ?? 0,
+            'paymentRate' => $nonCancelledOrders->isEmpty() ? 0 : round(($paidOrders->count() / $nonCancelledOrders->count()) * 100, 1),
         ];
     }
 
