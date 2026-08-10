@@ -2,9 +2,13 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Models\Booking;
+use App\Models\ConferenceBooking;
 use App\Models\ConferenceRoom;
+use App\Models\RestaurantReservation;
 use App\Models\RestaurantTable;
 use App\Models\Room;
+use Carbon\Carbon;
 use Filament\Pages\Page;
 
 class OccupancyReport extends Page
@@ -19,17 +23,116 @@ class OccupancyReport extends Page
 
     protected string $view = 'filament.admin.pages.occupancy-report';
 
+    public string $period = 'this_month';
+
+    public function periodLabel(): string
+    {
+        return match ($this->period) {
+            'today' => 'Today',
+            'this_week' => 'This week',
+            'this_quarter' => 'This quarter',
+            'this_year' => 'This year',
+            'all' => 'All time',
+            default => 'This month',
+        };
+    }
+
     public function report(): array
     {
+        [$periodStart, $periodEnd] = $this->periodBounds();
+
+        $roomStatus = [
+            'total' => Room::count(),
+            'occupied' => Room::where('status', 'occupied')->count(),
+            'available' => Room::where('status', 'available')->count(),
+            'maintenance' => Room::where('status', 'maintenance')->count(),
+        ];
+
+        $roomsInService = $roomStatus['total'] - $roomStatus['maintenance'];
+
+        $hotelBookings = Booking::query()
+            ->whereDate('check_in', '<', $periodEnd->toDateString())
+            ->whereDate('check_out', '>', $periodStart->toDateString())
+            ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
+            ->get(['id', 'check_in', 'check_out']);
+
+        $bookedRoomNights = $hotelBookings->sum(function (Booking $booking) use ($periodStart, $periodEnd): int {
+            $checkIn = Carbon::parse($booking->check_in)->max($periodStart);
+            $checkOut = Carbon::parse($booking->check_out)->min($periodEnd);
+
+            return max(0, $checkIn->diffInDays($checkOut));
+        });
+
+        $periodDays = max(1, (int) $periodStart->diffInDays($periodEnd));
+        $roomNightCapacity = $roomsInService * $periodDays;
+
+        $conferenceBookings = ConferenceBooking::query()
+            ->whereBetween('booking_date', [$periodStart->toDateString(), $periodEnd->copy()->subDay()->toDateString()])
+            ->whereNotIn('status', ['cancelled', 'no_show'])
+            ->count();
+
+        $tableReservations = RestaurantReservation::query()
+            ->whereBetween('reservation_date', [$periodStart->toDateString(), $periodEnd->copy()->subDay()->toDateString()])
+            ->whereNotIn('status', ['cancelled', 'no_show'])
+            ->count();
+
+        $conferenceAvailability = [
+            'available' => ConferenceRoom::where('is_available', true)->count(),
+            'unavailable' => ConferenceRoom::where('is_available', false)->count(),
+        ];
+
+        $tableStatus = [
+            'available' => RestaurantTable::where('status', 'available')->count(),
+            'reserved' => RestaurantTable::where('status', 'reserved')->count(),
+            'occupied' => RestaurantTable::where('status', 'occupied')->count(),
+            'unavailable' => RestaurantTable::whereIn('status', ['cleaning', 'maintenance'])->count(),
+        ];
+
         return [
-            'occupiedRooms' => Room::where('status', 'occupied')->count(),
-            'availableRooms' => Room::where('status', 'available')->count(),
-            'maintenanceRooms' => Room::where('status', 'maintenance')->count(),
-            'availableConferenceRooms' => ConferenceRoom::where('is_available', true)->count(),
-            'unavailableConferenceRooms' => ConferenceRoom::where('is_available', false)->count(),
-            'reservedTables' => RestaurantTable::where('status', 'reserved')->count(),
-            'occupiedTables' => RestaurantTable::where('status', 'occupied')->count(),
-            'availableTables' => RestaurantTable::where('status', 'available')->count(),
+            'periodStart' => $periodStart,
+            'periodEnd' => $periodEnd,
+            'roomStatus' => $roomStatus,
+            'roomsInService' => $roomsInService,
+            'hotelBookings' => $hotelBookings->count(),
+            'bookedRoomNights' => $bookedRoomNights,
+            'roomNightCapacity' => $roomNightCapacity,
+            'occupancyRate' => $roomNightCapacity > 0 ? ($bookedRoomNights / $roomNightCapacity) * 100 : 0,
+            'conferenceBookings' => $conferenceBookings,
+            'tableReservations' => $tableReservations,
+            'conferenceAvailability' => $conferenceAvailability,
+            'tableStatus' => $tableStatus,
+        ];
+    }
+
+    private function periodBounds(): array
+    {
+        return match ($this->period) {
+            'today' => [today()->startOfDay(), today()->addDay()->startOfDay()],
+            'this_week' => [now()->startOfWeek(), now()->endOfWeek()->addDay()->startOfDay()],
+            'this_quarter' => [now()->startOfQuarter(), now()->endOfQuarter()->addDay()->startOfDay()],
+            'this_year' => [now()->startOfYear(), now()->endOfYear()->addDay()->startOfDay()],
+            'all' => $this->allTimeBounds(),
+            default => [now()->startOfMonth(), now()->endOfMonth()->addDay()->startOfDay()],
+        };
+    }
+
+    private function allTimeBounds(): array
+    {
+        $start = collect([
+            Booking::min('check_in'),
+            ConferenceBooking::min('booking_date'),
+            RestaurantReservation::min('reservation_date'),
+        ])->filter()->min() ?? today()->toDateString();
+
+        $end = collect([
+            Booking::max('check_out'),
+            ConferenceBooking::max('booking_date'),
+            RestaurantReservation::max('reservation_date'),
+        ])->filter()->max() ?? today()->toDateString();
+
+        return [
+            Carbon::parse($start)->startOfDay(),
+            Carbon::parse($end)->addDay()->startOfDay(),
         ];
     }
 
