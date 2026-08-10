@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\Guest;
@@ -14,6 +15,8 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class SuperAdminStats extends StatsOverviewWidget
 {
+    use InteractsWithDashboardDateRange;
+
     protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool
@@ -23,15 +26,17 @@ class SuperAdminStats extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $revenue = Payment::whereIn('payment_status', ['paid', 'completed'])->sum('amount');
-        $reservations = Booking::count() + ConferenceBooking::count() + RestaurantReservation::count();
+        $revenue = $this->forDashboardDateRange(Payment::query())->whereIn('payment_status', ['paid', 'completed'])->sum('amount');
+        $reservations = $this->forDashboardDateRange(Booking::query())->count()
+            + $this->forDashboardDateRange(ConferenceBooking::query())->count()
+            + $this->forDashboardDateRange(RestaurantReservation::query())->count();
 
         return [
-            Stat::make('System Users', number_format(User::count()))->icon('heroicon-o-users')->color('primary'),
-            Stat::make('Registered Guests', number_format(Guest::count()))->icon('heroicon-o-user-group')->color('info'),
-            Stat::make('All Reservations', number_format($reservations))->icon('heroicon-o-calendar-days')->color('warning'),
-            Stat::make('Restaurant Orders', number_format(RestaurantOrder::count()))->icon('heroicon-o-shopping-bag')->color('gray'),
-            Stat::make('Total Revenue', 'GHS '.number_format($revenue, 2))->icon('heroicon-o-banknotes')->color('success'),
+            Stat::make('New System Users', number_format($this->forDashboardDateRange(User::query())->count()))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-users')->color('primary'),
+            Stat::make('Registered Guests', number_format($this->forDashboardDateRange(Guest::query())->count()))->description('Added in selected range')->icon('heroicon-o-user-group')->color('info'),
+            Stat::make('All Reservations', number_format($reservations))->description('Created in selected range')->icon('heroicon-o-calendar-days')->color('warning'),
+            Stat::make('Restaurant Orders', number_format($this->forDashboardDateRange(RestaurantOrder::query())->count()))->description('Created in selected range')->icon('heroicon-o-shopping-bag')->color('gray'),
+            Stat::make('Total Revenue', 'GHS '.number_format($revenue, 2))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-banknotes')->color('success'),
         ];
     }
 }

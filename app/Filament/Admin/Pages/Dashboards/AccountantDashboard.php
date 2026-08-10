@@ -7,9 +7,9 @@ use App\Filament\Admin\Widgets\CorporateBillingOverview;
 use App\Filament\Admin\Widgets\AccountantStats;
 use App\Filament\Admin\Widgets\RecentPayments;
 use App\Filament\Admin\Widgets\RestaurantRevenueChart;
-use Filament\Pages\Dashboard;
+use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
 
-class AccountantDashboard extends Dashboard
+class AccountantDashboard extends TimeFilteredDashboard
 {
     protected static string $routePath = 'accountant-dashboard';
 

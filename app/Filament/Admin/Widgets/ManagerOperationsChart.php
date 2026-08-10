@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\RestaurantOrder;
@@ -10,7 +11,9 @@ use Filament\Widgets\ChartWidget;
 
 class ManagerOperationsChart extends ChartWidget
 {
-    protected ?string $heading = 'Operations — Last 7 Days';
+    use InteractsWithDashboardDateRange;
+
+    protected ?string $heading = 'Operations by Selected Date Range';
 
     protected int|string|array $columnSpan = 'full';
 
@@ -21,14 +24,26 @@ class ManagerOperationsChart extends ChartWidget
 
     protected function getData(): array
     {
+        [$start, $end] = $this->dashboardDateRange();
+        $dailyTotals = fn (string $model): array => $this->forDashboardDateRange($model::query())
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as total')
+            ->groupBy('date')
+            ->pluck('total', 'date')
+            ->all();
+
+        $hotelTotals = $dailyTotals(Booking::class);
+        $conferenceTotals = $dailyTotals(ConferenceBooking::class);
+        $reservationTotals = $dailyTotals(RestaurantReservation::class);
+        $orderTotals = $dailyTotals(RestaurantOrder::class);
         $labels = $hotel = $conference = $reservations = $orders = [];
-        for ($daysAgo = 6; $daysAgo >= 0; $daysAgo--) {
-            $date = today()->subDays($daysAgo);
-            $labels[] = $date->format('D, M d');
-            $hotel[] = Booking::whereDate('created_at', $date)->count();
-            $conference[] = ConferenceBooking::whereDate('created_at', $date)->count();
-            $reservations[] = RestaurantReservation::whereDate('created_at', $date)->count();
-            $orders[] = RestaurantOrder::whereDate('created_at', $date)->count();
+
+        for ($date = $start->copy()->startOfDay(); $date->lessThanOrEqualTo($end); $date->addDay()) {
+            $key = $date->toDateString();
+            $labels[] = $date->format('M d');
+            $hotel[] = (int) ($hotelTotals[$key] ?? 0);
+            $conference[] = (int) ($conferenceTotals[$key] ?? 0);
+            $reservations[] = (int) ($reservationTotals[$key] ?? 0);
+            $orders[] = (int) ($orderTotals[$key] ?? 0);
         }
 
         return ['datasets' => [

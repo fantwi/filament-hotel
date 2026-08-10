@@ -1,10 +1,10 @@
 <x-filament-widgets::widget>
     <x-filament::section>
         <x-slot name="heading">Corporate billing</x-slot>
-        <x-slot name="description">Deferred-payment revenue and current credit exposure.</x-slot>
+        <x-slot name="description">Deferred-payment revenue and credit exposure for {{ $periodLabel }}.</x-slot>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-xl bg-primary-50 p-4 dark:bg-primary-500/10"><p class="text-sm text-gray-600 dark:text-gray-300">Billed this month</p><p class="mt-1 text-2xl font-bold">GHS {{ number_format($overview['billed_this_month'], 2) }}</p></div>
+            <div class="rounded-xl bg-primary-50 p-4 dark:bg-primary-500/10"><p class="text-sm text-gray-600 dark:text-gray-300">Billed in selected period</p><p class="mt-1 text-2xl font-bold">GHS {{ number_format($overview['billed_this_month'], 2) }}</p></div>
             <div class="rounded-xl bg-warning-50 p-4 dark:bg-warning-500/10"><p class="text-sm text-gray-600 dark:text-gray-300">Corporate receivables</p><p class="mt-1 text-2xl font-bold">GHS {{ number_format($overview['outstanding'], 2) }}</p></div>
             <div class="rounded-xl bg-success-50 p-4 dark:bg-success-500/10"><p class="text-sm text-gray-600 dark:text-gray-300">Available credit</p><p class="mt-1 text-2xl font-bold">GHS {{ number_format($overview['available_credit'], 2) }}</p><p class="mt-1 text-xs text-gray-500">Across limited accounts</p></div>
             <div class="rounded-xl bg-gray-50 p-4 dark:bg-white/5"><p class="text-sm text-gray-600 dark:text-gray-300">Corporate accounts</p><p class="mt-1 text-2xl font-bold">{{ number_format($overview['active_accounts']) }}</p><p class="mt-1 text-xs text-gray-500">{{ number_format($overview['linked_guests']) }} linked guest(s)</p></div>

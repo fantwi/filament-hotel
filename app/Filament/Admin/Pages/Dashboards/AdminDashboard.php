@@ -8,9 +8,9 @@ use App\Filament\Admin\Widgets\KitchenOrderQueue;
 use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\ManagerOperationsChart;
 use App\Filament\Admin\Widgets\RecentPayments;
-use Filament\Pages\Dashboard;
+use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
 
-class AdminDashboard extends Dashboard
+class AdminDashboard extends TimeFilteredDashboard
 {
     protected static string $routePath = 'admin-dashboard';
 

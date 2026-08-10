@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\RestaurantOrder;
 use App\Services\RestaurantKitchenService;
 use Filament\Actions\Action;
@@ -13,6 +14,8 @@ use Filament\Widgets\TableWidget;
 
 class KitchenOrderQueue extends TableWidget
 {
+    use InteractsWithDashboardDateRange;
+
     protected static ?string $heading = 'Live Kitchen Order Queue';
 
     protected static ?int $sort = 5;
@@ -24,7 +27,7 @@ class KitchenOrderQueue extends TableWidget
         return $table
             ->poll('10s')
             ->query(
-                RestaurantOrder::kitchenQueue()
+                $this->forDashboardDateRange(RestaurantOrder::kitchenQueue())
                     ->with(['guest', 'items.menuItem', 'reservation.table', 'table', 'preparedBy'])
                     ->orderByRaw("CASE status WHEN 'ready' THEN 1 WHEN 'preparing' THEN 2 WHEN 'confirmed' THEN 3 ELSE 4 END")
                     ->oldest('created_at'),

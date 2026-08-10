@@ -10,9 +10,9 @@ use App\Filament\Admin\Widgets\ManagerOperationsChart;
 use App\Filament\Admin\Widgets\ManagerPeriodReport;
 use App\Filament\Admin\Widgets\ManagerStats;
 use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
-use Filament\Pages\Dashboard;
+use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
 
-class ManagerDashboard extends Dashboard
+class ManagerDashboard extends TimeFilteredDashboard
 {
     protected static string $routePath = 'manager-dashboard';
 

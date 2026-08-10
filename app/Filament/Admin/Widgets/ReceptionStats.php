@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\RestaurantReservation;
@@ -10,6 +11,8 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class ReceptionStats extends StatsOverviewWidget
 {
+    use InteractsWithDashboardDateRange;
+
     protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool
@@ -19,11 +22,15 @@ class ReceptionStats extends StatsOverviewWidget
 
     protected function getStats(): array
     {
+        [$start, $end] = $this->dashboardDateRange();
+        $from = $start->toDateString();
+        $until = $end->toDateString();
+
         return [
-            Stat::make('Hotel Arrivals Today', Booking::whereDate('check_in', today())->whereIn('status', ['confirmed', 'pending'])->count())->icon('heroicon-o-arrow-right-end-on-rectangle')->color('primary'),
-            Stat::make('Hotel Departures Today', Booking::whereDate('check_out', today())->whereIn('status', ['confirmed', 'checked_in'])->count())->icon('heroicon-o-arrow-left-start-on-rectangle')->color('warning'),
-            Stat::make('Conference Bookings Today', ConferenceBooking::whereDate('booking_date', today())->count())->icon('heroicon-o-building-office')->color('info'),
-            Stat::make('Restaurant Reservations Today', RestaurantReservation::whereDate('reservation_date', today())->count())->icon('heroicon-o-calendar-days')->color('success'),
+            Stat::make('Hotel Arrivals', Booking::query()->whereBetween('check_in', [$from, $until])->whereIn('status', ['confirmed', 'pending'])->count())->description($this->dashboardDateRangeLabel())->icon('heroicon-o-arrow-right-end-on-rectangle')->color('primary'),
+            Stat::make('Hotel Departures', Booking::query()->whereBetween('check_out', [$from, $until])->whereIn('status', ['confirmed', 'checked_in'])->count())->description($this->dashboardDateRangeLabel())->icon('heroicon-o-arrow-left-start-on-rectangle')->color('warning'),
+            Stat::make('Conference Bookings', ConferenceBooking::query()->whereBetween('booking_date', [$from, $until])->count())->description($this->dashboardDateRangeLabel())->icon('heroicon-o-building-office')->color('info'),
+            Stat::make('Restaurant Reservations', RestaurantReservation::query()->whereBetween('reservation_date', [$from, $until])->count())->description($this->dashboardDateRangeLabel())->icon('heroicon-o-calendar-days')->color('success'),
         ];
     }
 }

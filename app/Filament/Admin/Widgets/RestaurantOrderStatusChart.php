@@ -2,11 +2,14 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\RestaurantOrder;
 use Filament\Widgets\ChartWidget;
 
 class RestaurantOrderStatusChart extends ChartWidget
 {
+    use InteractsWithDashboardDateRange;
+
     protected ?string $heading = 'Order Status Distribution';
 
     protected static ?int $sort = 30;
@@ -27,7 +30,7 @@ class RestaurantOrderStatusChart extends ChartWidget
             'cancelled' => 'Cancelled',
         ];
 
-        $counts = RestaurantOrder::query()
+        $counts = $this->forDashboardDateRange(RestaurantOrder::query())
             ->selectRaw('status, count(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');

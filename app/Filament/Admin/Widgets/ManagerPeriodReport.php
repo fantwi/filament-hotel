@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\RestaurantOrder;
@@ -12,6 +13,8 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class ManagerPeriodReport extends StatsOverviewWidget
 {
+    use InteractsWithDashboardDateRange;
+
     protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool
@@ -21,20 +24,16 @@ class ManagerPeriodReport extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        return [
-            Stat::make('Daily Activity', $this->activityFor(today()->startOfDay()))->description('Today')->icon('heroicon-o-calendar-days')->color('primary'),
-            Stat::make('Weekly Activity', $this->activityFor(today()->startOfWeek()))->description('Since Monday')->icon('heroicon-o-calendar')->color('info'),
-            Stat::make('Monthly Activity', $this->activityFor(today()->startOfMonth()))->description(now()->format('F Y'))->icon('heroicon-o-chart-bar')->color('success'),
-            Stat::make('Quarterly Activity', $this->activityFor(today()->startOfQuarter()))->description('Current quarter')->icon('heroicon-o-presentation-chart-line')->color('warning'),
-            Stat::make('Annual Activity', $this->activityFor(today()->startOfYear()))->description('Year to date')->icon('heroicon-o-trophy')->color('gray'),
-        ];
-    }
+        $hotel = $this->forDashboardDateRange(Booking::query())->count();
+        $conference = $this->forDashboardDateRange(ConferenceBooking::query())->count();
+        $reservations = $this->forDashboardDateRange(RestaurantReservation::query())->count();
+        $orders = $this->forDashboardDateRange(RestaurantOrder::query())->count();
 
-    private function activityFor(Carbon $from): int
-    {
-        return Booking::whereBetween('created_at', [$from, now()])->count()
-            + ConferenceBooking::whereBetween('created_at', [$from, now()])->count()
-            + RestaurantReservation::whereBetween('created_at', [$from, now()])->count()
-            + RestaurantOrder::whereBetween('created_at', [$from, now()])->count();
+        return [
+            Stat::make('Total Activity', number_format($hotel + $conference + $reservations + $orders))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-chart-bar')->color('primary'),
+            Stat::make('Hotel Bookings', number_format($hotel))->description('Created in selected range')->icon('heroicon-o-home')->color('info'),
+            Stat::make('Conference Events', number_format($conference))->description('Created in selected range')->icon('heroicon-o-building-office')->color('success'),
+            Stat::make('Restaurant Activity', number_format($reservations + $orders))->description('Reservations and orders')->icon('heroicon-o-shopping-bag')->color('warning'),
+        ];
     }
 }

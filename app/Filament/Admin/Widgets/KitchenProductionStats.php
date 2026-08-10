@@ -2,12 +2,15 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Services\KitchenProductionReportService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class KitchenProductionStats extends StatsOverviewWidget
 {
+    use InteractsWithDashboardDateRange;
+
     protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool
@@ -17,8 +20,14 @@ class KitchenProductionStats extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $r = app(KitchenProductionReportService::class)->build(today(), today())['summary'];
+        [$start, $end] = $this->dashboardDateRange();
+        $r = app(KitchenProductionReportService::class)->build($start, $end)['summary'];
 
-        return [Stat::make('Tracked Food Items', $r['tracked_items'])->color('primary'), Stat::make('Low-Stock Items', $r['low_stock_items'])->color('warning'), Stat::make('Negative Variances', $r['negative_variance_items'])->color('danger'), Stat::make('Food Revenue Today', 'GHS '.number_format($r['sales_revenue'], 2))->color('success')];
+        return [
+            Stat::make('Tracked Food Items', $r['tracked_items'])->description($this->dashboardDateRangeLabel())->color('primary'),
+            Stat::make('Low-Stock Items', $r['low_stock_items'])->description('At the end of selected range')->color('warning'),
+            Stat::make('Negative Variances', $r['negative_variance_items'])->description('Production compared with sales')->color('danger'),
+            Stat::make('Food Revenue', 'GHS '.number_format($r['sales_revenue'], 2))->description($this->dashboardDateRangeLabel())->color('success'),
+        ];
     }
 }

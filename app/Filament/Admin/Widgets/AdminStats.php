@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\RestaurantOrder;
@@ -11,6 +12,8 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class AdminStats extends StatsOverviewWidget
 {
+    use InteractsWithDashboardDateRange;
+
     protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool
@@ -21,10 +24,10 @@ class AdminStats extends StatsOverviewWidget
     protected function getStats(): array
     {
         return [
-            Stat::make('Active Hotel Bookings', Booking::whereIn('status', ['pending', 'confirmed', 'checked_in'])->count())->color('primary'),
-            Stat::make('Conference Bookings', ConferenceBooking::whereIn('status', ['pending', 'confirmed'])->count())->color('info'),
-            Stat::make('Restaurant Reservations', RestaurantReservation::whereIn('status', ['pending', 'confirmed', 'checked_in'])->count())->color('warning'),
-            Stat::make('Kitchen Orders', RestaurantOrder::whereIn('status', ['confirmed', 'preparing', 'ready'])->count())->color('success'),
+            Stat::make('Active Hotel Bookings', $this->forDashboardDateRange(Booking::query())->whereIn('status', ['pending', 'confirmed', 'checked_in'])->count())->description($this->dashboardDateRangeLabel())->color('primary'),
+            Stat::make('Conference Bookings', $this->forDashboardDateRange(ConferenceBooking::query())->whereIn('status', ['pending', 'confirmed'])->count())->description($this->dashboardDateRangeLabel())->color('info'),
+            Stat::make('Restaurant Reservations', $this->forDashboardDateRange(RestaurantReservation::query())->whereIn('status', ['pending', 'confirmed', 'checked_in'])->count())->description($this->dashboardDateRangeLabel())->color('warning'),
+            Stat::make('Kitchen Orders', $this->forDashboardDateRange(RestaurantOrder::query())->whereIn('status', ['confirmed', 'preparing', 'ready'])->count())->description($this->dashboardDateRangeLabel())->color('success'),
         ];
     }
 }

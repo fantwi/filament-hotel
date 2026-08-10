@@ -4,9 +4,9 @@ namespace App\Filament\Admin\Pages\Dashboards;
 
 use App\Filament\Admin\Widgets\ReceptionArrivals;
 use App\Filament\Admin\Widgets\ReceptionStats;
-use Filament\Pages\Dashboard;
+use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
 
-class ReceptionDashboard extends Dashboard
+class ReceptionDashboard extends TimeFilteredDashboard
 {
     protected static string $routePath = 'reception-dashboard';
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Payment;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget;
@@ -9,6 +10,8 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class AccountantPeriodReport extends StatsOverviewWidget
 {
+    use InteractsWithDashboardDateRange;
+
     protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool
@@ -18,25 +21,14 @@ class AccountantPeriodReport extends StatsOverviewWidget
 
     protected function getStats(): array
     {
+        $payments = $this->forDashboardDateRange(Payment::query())
+            ->whereIn('payment_status', ['paid', 'completed']);
+
         return [
-            $this->revenueStat('Daily Revenue', today()->startOfDay(), 'Today', 'primary'),
-            $this->revenueStat('Weekly Revenue', today()->startOfWeek(), 'Since Monday', 'info'),
-            $this->revenueStat('Monthly Revenue', today()->startOfMonth(), now()->format('F Y'), 'success'),
-            $this->revenueStat('Quarterly Revenue', today()->startOfQuarter(), 'Current quarter', 'warning'),
-            $this->revenueStat('Annual Revenue', today()->startOfYear(), 'Year to date', 'gray'),
+            Stat::make('Revenue for Selected Range', 'GHS '.number_format((clone $payments)->sum('amount'), 2))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-banknotes')->color('success'),
+            Stat::make('Payments Received', number_format((clone $payments)->count()))->description('Completed payments')->icon('heroicon-o-credit-card')->color('primary'),
+            Stat::make('Average Payment', 'GHS '.number_format((clone $payments)->avg('amount') ?? 0, 2))->description('Within selected range')->icon('heroicon-o-calculator')->color('info'),
+            Stat::make('Refunds in Range', 'GHS '.number_format($this->forDashboardDateRange(Payment::query())->whereIn('payment_status', ['refunded', 'refund'])->sum('amount'), 2))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-arrow-uturn-left')->color('warning'),
         ];
-    }
-
-    private function revenueStat(string $label, Carbon $from, string $description, string $color): Stat
-    {
-        $revenue = Payment::query()
-            ->whereIn('payment_status', ['paid', 'completed'])
-            ->whereBetween('created_at', [$from, now()])
-            ->sum('amount');
-
-        return Stat::make($label, 'GHS '.number_format($revenue, 2))
-            ->description($description)
-            ->icon('heroicon-o-banknotes')
-            ->color($color);
     }
 }

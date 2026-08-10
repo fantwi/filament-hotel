@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\MenuItem;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class BestSellingMenuItems extends TableWidget
 {
+    use InteractsWithDashboardDateRange;
+
     protected static ?string $heading = 'Best-Selling Menu Items';
 
     protected static ?int $sort = 40;
@@ -26,13 +29,13 @@ class BestSellingMenuItems extends TableWidget
                     ->withSum([
                         'orderItems as total_quantity_sold' => fn (Builder $query) => $query->whereHas(
                             'order',
-                            fn (Builder $orderQuery) => $orderQuery->where('payment_status', 'completed'),
+                            fn (Builder $orderQuery) => $this->forDashboardDateRange($orderQuery)->where('payment_status', 'completed'),
                         ),
                     ], 'quantity')
                     ->withSum([
                         'orderItems as total_sales_value' => fn (Builder $query) => $query->whereHas(
                             'order',
-                            fn (Builder $orderQuery) => $orderQuery->where('payment_status', 'completed'),
+                            fn (Builder $orderQuery) => $this->forDashboardDateRange($orderQuery)->where('payment_status', 'completed'),
                         ),
                     ], 'total_price')
                     ->orderByDesc('total_quantity_sold'),

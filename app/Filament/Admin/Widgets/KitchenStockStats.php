@@ -2,12 +2,16 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Ingredient;
+use App\Models\KitchenStockMovement;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class KitchenStockStats extends StatsOverviewWidget
 {
+    use InteractsWithDashboardDateRange;
+
     protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool
@@ -17,14 +21,13 @@ class KitchenStockStats extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $active = Ingredient::query()->where('is_active', true);
-        $stockValue = Ingredient::query()->get()->sum(fn (Ingredient $ingredient): float => $ingredient->stock_value);
+        $movements = $this->forDashboardDateRange(KitchenStockMovement::query(), 'occurred_at');
 
         return [
-            Stat::make('Active Ingredients', number_format((clone $active)->count()))->icon('heroicon-o-archive-box')->color('primary'),
-            Stat::make('Low Stock', number_format((clone $active)->whereColumn('current_stock', '<=', 'reorder_level')->where('current_stock', '>', 0)->count()))->icon('heroicon-o-exclamation-triangle')->color('warning'),
-            Stat::make('Out of Stock', number_format((clone $active)->where('current_stock', '<=', 0)->count()))->icon('heroicon-o-x-circle')->color('danger'),
-            Stat::make('Current Stock Value', 'GHS '.number_format($stockValue, 2))->icon('heroicon-o-banknotes')->color('success'),
+            Stat::make('Ingredients Moved', number_format((clone $movements)->distinct('ingredient_id')->count('ingredient_id')))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-archive-box')->color('primary'),
+            Stat::make('Stock Received', number_format((clone $movements)->where('direction', KitchenStockMovement::DIRECTION_IN)->sum('quantity'), 3))->description('Units received or adjusted in')->icon('heroicon-o-arrow-down-tray')->color('success'),
+            Stat::make('Stock Consumed', number_format((clone $movements)->where('type', KitchenStockMovement::TYPE_CONSUMPTION)->sum('quantity'), 3))->description('Units used in production')->icon('heroicon-o-fire')->color('warning'),
+            Stat::make('Stock Wasted', number_format((clone $movements)->where('type', KitchenStockMovement::TYPE_WASTAGE)->sum('quantity'), 3))->description('Units recorded as waste')->icon('heroicon-o-exclamation-triangle')->color('danger'),
         ];
     }
 }

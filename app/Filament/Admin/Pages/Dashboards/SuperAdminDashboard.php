@@ -9,9 +9,9 @@ use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
 use App\Filament\Admin\Widgets\RestaurantRevenueChart;
 use App\Filament\Admin\Widgets\SuperAdminStats;
-use Filament\Pages\Dashboard;
+use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
 
-class SuperAdminDashboard extends Dashboard
+class SuperAdminDashboard extends TimeFilteredDashboard
 {
     protected static string $routePath = 'super-admin-dashboard';
 
