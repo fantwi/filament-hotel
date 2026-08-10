@@ -12,6 +12,8 @@ class CorporateBillingOverview extends Widget
 
     protected string $view = 'filament.admin.widgets.corporate-billing-overview';
 
+    protected static bool $isLazy = false;
+
     protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool

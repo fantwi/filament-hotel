@@ -5,21 +5,26 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class CorporateBillingDashboardWidgetTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_super_admin_dashboard_renders_the_corporate_billing_widget(): void
+    public function test_super_admin_dashboard_renders_the_redesigned_corporate_billing_widget(): void
     {
         Permission::findOrCreate('view super admin dashboard', 'web');
+        $role = Role::findOrCreate('super_admin', 'web');
         $user = User::factory()->create(['department' => 'super_admin']);
         $user->givePermissionTo('view super admin dashboard');
+        $user->assignRole($role);
 
         $this->actingAs($user)
             ->get('/admin/super-admin-dashboard')
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('Corporate billing and credit exposure')
+            ->assertSee('Account credit position');
     }
 
     public function test_corporate_billing_widget_uses_responsive_credit_cards_and_utilisation_indicators(): void
