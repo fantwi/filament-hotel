@@ -11,8 +11,14 @@ use App\Models\Room;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
+/**
+ * Provides the hotel statistics Filament dashboard widget.
+ */
 class HotelStatistics extends StatsOverviewWidget
 {
+    /**
+     * Builds and returns stats.
+     */
     protected function getStats(): array
     {
         $totalBookings = Booking::count()
@@ -58,6 +64,9 @@ class HotelStatistics extends StatsOverviewWidget
         ];
     }
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;

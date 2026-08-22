@@ -12,8 +12,14 @@ use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Spatie\Permission\Models\Role;
 
+/**
+ * Configures Filament administration for users table.
+ */
 class UsersTable
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Table $table): Table
     {
         return $table

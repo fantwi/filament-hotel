@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the password reset link controller HTTP workflow.
+ */
 class PasswordResetLinkController extends Controller
 {
     /**
@@ -21,7 +24,6 @@ class PasswordResetLinkController extends Controller
 
     /**
      * Handle an incoming password reset link request.
-     *
      * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse

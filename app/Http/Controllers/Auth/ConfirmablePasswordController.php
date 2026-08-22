@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the confirmable password controller HTTP workflow.
+ */
 class ConfirmablePasswordController extends Controller
 {
     /**

@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Represents conference booking and its persisted business behavior.
+ */
 class ConferenceBooking extends Model
 {
     //
@@ -54,21 +57,33 @@ class ConferenceBooking extends Model
 
     ];
 
+    /**
+     * Defines the room relationship or domain behavior for this model.
+     */
     public function room()
     {
         return $this->belongsTo(ConferenceRoom::class, 'conference_room_id');
     }
 
+    /**
+     * Defines the corporate organization relationship or domain behavior for this model.
+     */
     public function corporateOrganization()
     {
         return $this->belongsTo(CorporateOrganization::class);
     }
 
+    /**
+     * Defines the payments relationship or domain behavior for this model.
+     */
     public function payments()
     {
         return $this->hasMany(Payment::class);
     }
 
+    /**
+     * Defines the guest relationship or domain behavior for this model.
+     */
     public function guest()
     {
         return $this->belongsTo(Guest::class);

@@ -14,6 +14,9 @@ use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the new password controller HTTP workflow.
+ */
 class NewPasswordController extends Controller
 {
     /**
@@ -26,7 +29,6 @@ class NewPasswordController extends Controller
 
     /**
      * Handle an incoming new password request.
-     *
      * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse

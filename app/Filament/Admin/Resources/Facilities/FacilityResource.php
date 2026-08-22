@@ -15,6 +15,9 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Configures Filament administration for facility resource.
+ */
 class FacilityResource extends ContentResource
 {
     protected static ?string $model = Facility::class;
@@ -27,21 +30,33 @@ class FacilityResource extends ContentResource
 
     protected static ?int $navigationSort = 30;
 
+    /**
+     * Configures the form schema and input behavior.
+     */
     public static function form(Schema $schema): Schema
     {
         return FacilityForm::configure($schema);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public static function table(Table $table): Table
     {
         return FacilitiesTable::configure($table);
     }
 
+    /**
+     * Builds and returns eloquent query.
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->visibleTo(auth()->user());
     }
 
+    /**
+     * Builds and returns relations.
+     */
     public static function getRelations(): array
     {
         return [
@@ -49,6 +64,9 @@ class FacilityResource extends ContentResource
         ];
     }
 
+    /**
+     * Builds and returns pages.
+     */
     public static function getPages(): array
     {
         return [

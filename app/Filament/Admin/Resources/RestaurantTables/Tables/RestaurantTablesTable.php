@@ -14,8 +14,14 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 
+/**
+ * Configures Filament administration for restaurant tables table.
+ */
 class RestaurantTablesTable
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Table $table): Table
     {
         return $table

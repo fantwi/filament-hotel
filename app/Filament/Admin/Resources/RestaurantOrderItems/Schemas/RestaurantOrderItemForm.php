@@ -7,8 +7,14 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
+/**
+ * Configures Filament administration for restaurant order item form.
+ */
 class RestaurantOrderItemForm
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([

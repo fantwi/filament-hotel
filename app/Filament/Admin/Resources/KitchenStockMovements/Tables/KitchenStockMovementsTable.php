@@ -9,8 +9,14 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Configures Filament administration for kitchen stock movements table.
+ */
 class KitchenStockMovementsTable
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Table $table): Table
     {
         return $table

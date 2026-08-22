@@ -11,17 +11,26 @@ use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
+/**
+ * Provides the manager period report Filament dashboard widget.
+ */
 class ManagerPeriodReport extends StatsOverviewWidget
 {
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->can('view manager dashboard') ?? false;
     }
 
+    /**
+     * Builds and returns stats.
+     */
     protected function getStats(): array
     {
         $hotel = $this->forDashboardDateRange(Booking::query())->count();

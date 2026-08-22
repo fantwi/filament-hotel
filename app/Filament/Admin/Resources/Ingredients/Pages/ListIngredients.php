@@ -13,10 +13,16 @@ use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 
+/**
+ * Configures Filament administration for list ingredients.
+ */
 class ListIngredients extends ListRecords
 {
     protected static string $resource = IngredientResource::class;
 
+    /**
+     * Builds and returns header actions.
+     */
     protected function getHeaderActions(): array
     {
         return [

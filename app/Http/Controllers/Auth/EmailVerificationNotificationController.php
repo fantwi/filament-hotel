@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
+/**
+ * Coordinates the email verification notification controller HTTP workflow.
+ */
 class EmailVerificationNotificationController extends Controller
 {
     /**

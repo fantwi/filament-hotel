@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+/**
+ * Represents room type and its persisted business behavior.
+ */
 class RoomType extends Model
 {
     //
@@ -28,11 +31,17 @@ class RoomType extends Model
 
     protected $casts = ['gallery' => 'array', 'is_published' => 'boolean'];
 
+    /**
+     * Defines the rooms relationship or domain behavior for this model.
+     */
     public function rooms()
     {
         return $this->hasMany(Room::class);
     }
 
+    /**
+     * Defines the facilities relationship or domain behavior for this model.
+     */
     public function facilities()
     {
         return $this->belongsToMany(
@@ -40,6 +49,9 @@ class RoomType extends Model
         );
     }
 
+    /**
+     * Builds and returns activitylog options.
+     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

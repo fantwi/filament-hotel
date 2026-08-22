@@ -11,6 +11,9 @@ use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
+/**
+ * Configures Filament administration for promotion resource.
+ */
 class PromotionResource extends SecureResource
 {
     protected static ?string $model = Promotion::class;
@@ -18,34 +21,55 @@ class PromotionResource extends SecureResource
     protected static string|\UnitEnum|null $navigationGroup = 'System';
     protected static ?string $navigationLabel = 'Promotions';
 
+    /**
+     * Determines whether the current user may view these records.
+     */
     public static function canViewAny(): bool { return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false; }
 
+    /**
+     * Configures may manage for the Filament administration interface.
+     */
     private static function mayManage(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false;
     }
 
+    /**
+     * Determines whether the current user may create records.
+     */
     public static function canCreate(): bool
     {
         return static::mayManage();
     }
 
+    /**
+     * Determines whether the current user may edit the supplied record.
+     */
     public static function canEdit($record): bool
     {
         return static::mayManage();
     }
 
+    /**
+     * Determines whether the current user may delete the supplied record.
+     */
     public static function canDelete($record): bool
     {
         return static::mayManage();
     }
 
+    /**
+     * Determines whether the current user may delete these records.
+     */
     public static function canDeleteAny(): bool
     {
         return static::mayManage();
     }
 
 
+    /**
+     * Configures the form schema and input behavior.
+     */
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -60,6 +84,9 @@ class PromotionResource extends SecureResource
         ])->columns(2);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public static function table(Table $table): Table
     {
         return $table->columns([
@@ -71,5 +98,8 @@ class PromotionResource extends SecureResource
         ])->recordActions([\Filament\Actions\EditAction::make(), \Filament\Actions\DeleteAction::make()]);
     }
 
+    /**
+     * Builds and returns pages.
+     */
     public static function getPages(): array { return ['index' => ListPromotions::route('/'), 'create' => CreatePromotion::route('/create'), 'edit' => EditPromotion::route('/{record}/edit')]; }
 }

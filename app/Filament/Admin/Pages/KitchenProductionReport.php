@@ -6,6 +6,9 @@ use App\Services\KitchenProductionReportService;
 use Filament\Pages\Page;
 use Illuminate\Support\Carbon;
 
+/**
+ * Provides the kitchen production report Filament administration page.
+ */
 class KitchenProductionReport extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar-square';
@@ -24,12 +27,18 @@ class KitchenProductionReport extends Page
 
     public string $untilDate;
 
+    /**
+     * Initializes component state before it is rendered.
+     */
     public function mount(): void
     {
         $this->fromDate = now()->startOfMonth()->toDateString();
         $this->untilDate = today()->toDateString();
     }
 
+    /**
+     * Applies  filters.
+     */
     public function applyFilters(): void
     {
         $this->validate([
@@ -38,6 +47,9 @@ class KitchenProductionReport extends Page
         ]);
     }
 
+    /**
+     * Builds and returns report property.
+     */
     public function getReportProperty(): array
     {
         return app(KitchenProductionReportService::class)->build(
@@ -46,6 +58,9 @@ class KitchenProductionReport extends Page
         );
     }
 
+    /**
+     * Determines whether the current user may access this feature.
+     */
     public static function canAccess(): bool
     {
         return auth()->user()?->can('view kitchen production reports') ?? false;

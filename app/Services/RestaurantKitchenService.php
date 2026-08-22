@@ -6,10 +6,19 @@ use App\Models\RestaurantOrder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * Encapsulates business rules for restaurant kitchen service.
+ */
 class RestaurantKitchenService
 {
+    /**
+     * Initializes the dependencies required by this component.
+     */
     public function __construct(private readonly KitchenStockService $stockService) {}
 
+    /**
+     * Confirms an eligible restaurant order for kitchen fulfilment.
+     */
     public function confirm(RestaurantOrder $order): RestaurantOrder
     {
         $this->ensurePaymentCompleted($order);
@@ -18,6 +27,9 @@ class RestaurantKitchenService
         return $this->updateOrder($order, ['status' => 'confirmed', 'confirmed_at' => now()], 'confirmed', 'Restaurant food order confirmed.');
     }
 
+    /**
+     * Moves a confirmed restaurant order into kitchen preparation.
+     */
     public function startPreparing(RestaurantOrder $order, ?string $kitchenNotes = null): RestaurantOrder
     {
         return DB::transaction(function () use ($order, $kitchenNotes): RestaurantOrder {
@@ -44,6 +56,9 @@ class RestaurantKitchenService
         });
     }
 
+    /**
+     * Marks a prepared restaurant order as ready for service or collection.
+     */
     public function markReady(RestaurantOrder $order): RestaurantOrder
     {
         $this->ensureStatusIs($order, ['preparing']);
@@ -51,6 +66,9 @@ class RestaurantKitchenService
         return $this->updateOrder($order, ['status' => 'ready', 'ready_at' => now()], 'ready', 'Restaurant food order marked ready.');
     }
 
+    /**
+     * Marks a ready restaurant order as served and completes fulfilment.
+     */
     public function markServed(RestaurantOrder $order): RestaurantOrder
     {
         $this->ensureStatusIs($order, ['ready']);
@@ -62,6 +80,9 @@ class RestaurantKitchenService
         ], 'served', 'Restaurant food order served.');
     }
 
+    /**
+     * Determines whether this transaction can be cancelled.
+     */
     public function cancel(RestaurantOrder $order, ?string $reason = null): RestaurantOrder
     {
         return DB::transaction(function () use ($order, $reason): RestaurantOrder {
@@ -90,6 +111,9 @@ class RestaurantKitchenService
         });
     }
 
+    /**
+     * Persists an authorised kitchen status change and its audit details.
+     */
     private function updateOrder(RestaurantOrder $order, array $attributes, string $event, string $message, array $properties = []): RestaurantOrder
     {
         return DB::transaction(function () use ($order, $attributes, $event, $message, $properties): RestaurantOrder {
@@ -106,6 +130,9 @@ class RestaurantKitchenService
         });
     }
 
+    /**
+     * Prevents kitchen fulfilment before a non-corporate order is paid.
+     */
     private function ensurePaymentCompleted(RestaurantOrder $order): void
     {
         if ($order->payment_status !== 'completed' && $order->payment_method !== 'corporate_account') {
@@ -115,6 +142,9 @@ class RestaurantKitchenService
         }
     }
 
+    /**
+     * Prevents invalid kitchen status transitions.
+     */
     private function ensureStatusIs(RestaurantOrder $order, array $allowedStatuses): void
     {
         if (! in_array($order->status, $allowedStatuses, true)) {

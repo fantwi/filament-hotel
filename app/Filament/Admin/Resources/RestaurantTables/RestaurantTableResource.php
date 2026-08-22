@@ -14,6 +14,9 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
+/**
+ * Configures Filament administration for restaurant table resource.
+ */
 class RestaurantTableResource extends ContentResource
 {
     protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
@@ -26,16 +29,25 @@ class RestaurantTableResource extends ContentResource
 
     protected static ?string $recordTitleAttribute = 'table_number';
 
+    /**
+     * Configures the form schema and input behavior.
+     */
     public static function form(Schema $schema): Schema
     {
         return RestaurantTableForm::configure($schema);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public static function table(Table $table): Table
     {
         return RestaurantTablesTable::configure($table);
     }
 
+    /**
+     * Builds and returns relations.
+     */
     public static function getRelations(): array
     {
         return [
@@ -43,6 +55,9 @@ class RestaurantTableResource extends ContentResource
         ];
     }
 
+    /**
+     * Builds and returns pages.
+     */
     public static function getPages(): array
     {
         return [

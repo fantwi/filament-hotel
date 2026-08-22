@@ -4,12 +4,18 @@ namespace App\Filament\Admin\Pages\Dashboards;
 
 use Filament\Pages\Dashboard;
 
+/**
+ * Provides the role dashboard Filament administration page.
+ */
 class RoleDashboard extends Dashboard
 {
     protected static string $routePath = '/';
 
     protected static bool $shouldRegisterNavigation = false;
 
+    /**
+     * Initializes component state before it is rendered.
+     */
     public function mount(): void
     {
         $user = auth()->user();
@@ -27,6 +33,9 @@ class RoleDashboard extends Dashboard
         $this->redirect($dashboard::getUrl());
     }
 
+    /**
+     * Builds and returns widgets.
+     */
     public function getWidgets(): array
     {
         return [];

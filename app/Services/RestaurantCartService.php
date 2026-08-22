@@ -5,8 +5,14 @@ namespace App\Services;
 use App\Models\MenuItem;
 use Illuminate\Support\Collection;
 
+/**
+ * Encapsulates business rules for restaurant cart service.
+ */
 class RestaurantCartService
 {
+    /**
+     * Returns the current restaurant cart items with their calculated line totals.
+     */
     public function items(): Collection
     {
         $cart = collect(session('cart', []));
@@ -20,6 +26,9 @@ class RestaurantCartService
         })->filter()->values();
     }
 
+    /**
+     * Calculates cart subtotal, discount, taxes, service charge, and final total.
+     */
     public function totals(?\App\Models\Promotion $promotion = null): array
     {
         $subtotal = (float) $this->items()->sum('line_total');

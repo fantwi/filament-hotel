@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
+/**
+ * Represents restaurant table and its persisted business behavior.
+ */
 class RestaurantTable extends Model
 {
     protected $fillable = [
@@ -39,6 +42,9 @@ class RestaurantTable extends Model
         'qr_ordering_enabled' => 'boolean',
     ];
 
+    /**
+     * Registers lifecycle hooks and model behavior.
+     */
     protected static function booted(): void
     {
         static::creating(function (RestaurantTable $table): void {
@@ -48,11 +54,17 @@ class RestaurantTable extends Model
         });
     }
 
+    /**
+     * Defines the restaurant relationship or domain behavior for this model.
+     */
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);
     }
 
+    /**
+     * Defines the reservations relationship or domain behavior for this model.
+     */
     public function reservations(): HasMany
     {
         return $this->hasMany(
@@ -60,6 +72,9 @@ class RestaurantTable extends Model
         );
     }
 
+    /**
+     * Defines the orders relationship or domain behavior for this model.
+     */
     public function orders(): HasMany
     {
         return $this->hasMany(RestaurantOrder::class, 'restaurant_table_id');

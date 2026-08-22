@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the profile controller HTTP workflow.
+ */
 class ProfileController extends Controller
 {
     /**

@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Registers authenticated guest-dashboard, profile, and transaction-management routes.
+ */
+
 use App\Http\Controllers\BookingController;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;

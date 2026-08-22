@@ -10,8 +10,14 @@ use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
+/**
+ * Provides the staff stats Filament dashboard widget.
+ */
 class StaffStats extends StatsOverviewWidget
 {
+    /**
+     * Builds and returns stats.
+     */
     protected function getStats(): array
     {
         $user = auth()->user();
@@ -81,6 +87,9 @@ class StaffStats extends StatsOverviewWidget
     }
 
     // only show the widget to super admins, admins, and managers
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()->hasAnyRole(['super_admin', 'admin', 'manager']);

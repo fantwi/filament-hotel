@@ -6,6 +6,9 @@ use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
+/**
+ * Renders the auth layout view component.
+ */
 class AuthLayout extends Component
 {
     /**

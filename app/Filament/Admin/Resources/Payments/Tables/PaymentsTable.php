@@ -9,8 +9,14 @@ use Filament\Actions\ViewAction;
 use Filament\Tables;
 use Filament\Tables\Table;
 
+/**
+ * Configures Filament administration for payments table.
+ */
 class PaymentsTable
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Table $table): Table
     {
         return $table

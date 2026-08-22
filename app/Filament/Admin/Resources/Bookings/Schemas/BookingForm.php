@@ -16,8 +16,14 @@ use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * Configures Filament administration for booking form.
+ */
 class BookingForm
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Schema $schema): Schema
     {
         return $schema

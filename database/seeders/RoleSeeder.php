@@ -5,6 +5,9 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 
+/**
+ * Seeds initial data for role seeder.
+ */
 class RoleSeeder extends Seeder
 {
     /**

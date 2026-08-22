@@ -5,12 +5,18 @@ namespace App\Console\Commands;
 use App\Models\Booking;
 use Illuminate\Console\Command;
 
+/**
+ * Provides the release expired bookings console operation.
+ */
 class ReleaseExpiredBookings extends Command
 {
     protected $signature = 'app:release-expired-bookings';
 
     protected $description = 'Release unpaid hotel room holds that have expired.';
 
+    /**
+     * Processes the current job, command, listener, or middleware request.
+     */
     public function handle(): int
     {
         $released = Booking::query()

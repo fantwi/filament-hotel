@@ -6,8 +6,14 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
+/**
+ * Seeds initial data for permission seeder.
+ */
 class PermissionSeeder extends Seeder
 {
+    /**
+     * Performs the run data-seeding operation.
+     */
     public function run(): void
     {
         $permission = Permission::findOrCreate('view restaurant reports', 'web');

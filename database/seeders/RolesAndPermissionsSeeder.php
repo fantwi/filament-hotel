@@ -7,8 +7,14 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
+/**
+ * Seeds initial data for roles and permissions seeder.
+ */
 class RolesAndPermissionsSeeder extends Seeder
 {
+    /**
+     * Performs the run data-seeding operation.
+     */
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();

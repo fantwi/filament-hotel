@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+/**
+ * Represents room and its persisted business behavior.
+ */
 class Room extends Model
 {
     //
@@ -29,11 +32,17 @@ class Room extends Model
         return $this->belongsTo(RoomType::class);
     }
 
+    /**
+     * Defines the bookings relationship or domain behavior for this model.
+     */
     public function bookings()
     {
         return $this->hasMany(Booking::class);
     }
 
+    /**
+     * Builds and returns activitylog options.
+     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

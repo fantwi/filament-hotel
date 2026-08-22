@@ -8,10 +8,16 @@ use App\Models\RestaurantReservation;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Provides the booking trend chart Filament dashboard widget.
+ */
 class BookingTrendChart extends ChartWidget
 {
     protected ?string $heading = 'Booking Trends';
 
+    /**
+     * Builds and returns data.
+     */
     protected function getData(): array
     {
         return [
@@ -24,6 +30,9 @@ class BookingTrendChart extends ChartWidget
         ];
     }
 
+    /**
+     * Builds and returns type.
+     */
     protected function getType(): string
     {
         return 'bar';
@@ -49,6 +58,9 @@ class BookingTrendChart extends ChartWidget
         ];
     }
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;

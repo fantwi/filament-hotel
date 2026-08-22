@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Applies this database schema change.
+     */
     public function up(): void
     {
         Schema::create('restaurant_order_items', function (Blueprint $table) {
@@ -19,6 +22,9 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverts this database schema change.
+     */
     public function down(): void
     {
         Schema::dropIfExists('restaurant_order_items');

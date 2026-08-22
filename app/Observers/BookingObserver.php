@@ -5,6 +5,9 @@ namespace App\Observers;
 use App\Models\ActivityLog;
 use App\Models\Booking;
 
+/**
+ * Responds to lifecycle events for booking observer.
+ */
 class BookingObserver
 {
     /**

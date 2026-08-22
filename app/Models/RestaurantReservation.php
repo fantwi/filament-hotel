@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+/**
+ * Represents restaurant reservation and its persisted business behavior.
+ */
 class RestaurantReservation extends Model
 {
     use LogsActivity;
@@ -77,6 +80,9 @@ class RestaurantReservation extends Model
 
     ];
 
+    /**
+     * Builds and returns activitylog options.
+     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -96,21 +102,33 @@ class RestaurantReservation extends Model
     }
 
     // relationships
+    /**
+     * Defines the corporate organization relationship or domain behavior for this model.
+     */
     public function corporateOrganization()
     {
         return $this->belongsTo(CorporateOrganization::class);
     }
 
+    /**
+     * Defines the guest relationship or domain behavior for this model.
+     */
     public function guest()
     {
         return $this->belongsTo(Guest::class);
     }
 
+    /**
+     * Defines the restaurant relationship or domain behavior for this model.
+     */
     public function restaurant()
     {
         return $this->belongsTo(Restaurant::class);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public function table()
     {
         return $this->belongsTo(
@@ -119,6 +137,9 @@ class RestaurantReservation extends Model
         );
     }
 
+    /**
+     * Defines the payments relationship or domain behavior for this model.
+     */
     public function payments()
     {
         return $this->hasMany(

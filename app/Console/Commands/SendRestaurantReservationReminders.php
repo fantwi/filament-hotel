@@ -7,12 +7,18 @@ use App\Models\RestaurantReservation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
+/**
+ * Provides the send restaurant reservation reminders console operation.
+ */
 class SendRestaurantReservationReminders extends Command
 {
     protected $signature = 'restaurant:reminders';
 
     protected $description = 'Send reminders for confirmed restaurant reservations scheduled tomorrow.';
 
+    /**
+     * Processes the current job, command, listener, or middleware request.
+     */
     public function handle(): int
     {
         $reservations = RestaurantReservation::query()

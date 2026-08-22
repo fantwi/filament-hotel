@@ -6,11 +6,17 @@ use App\Models\ConferenceBooking;
 use App\Models\RestaurantReservation;
 use Illuminate\Console\Command;
 
+/**
+ * Provides the release expired guest holds console operation.
+ */
 class ReleaseExpiredGuestHolds extends Command
 {
     protected $signature = 'app:release-expired-guest-holds';
     protected $description = 'Release expired conference and restaurant table holds.';
 
+    /**
+     * Processes the current job, command, listener, or middleware request.
+     */
     public function handle(): int
     {
         $conference = ConferenceBooking::query()

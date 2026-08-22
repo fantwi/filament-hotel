@@ -16,6 +16,9 @@ return new class extends Migration
         'conference_facilities',
     ];
 
+    /**
+     * Applies this database schema change.
+     */
     public function up(): void
     {
         foreach ($this->tables as $tableName) {
@@ -27,6 +30,9 @@ return new class extends Migration
         }
     }
 
+    /**
+     * Reverts this database schema change.
+     */
     public function down(): void
     {
         foreach ($this->tables as $tableName) {

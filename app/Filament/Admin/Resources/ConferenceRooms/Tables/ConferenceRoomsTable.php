@@ -9,8 +9,14 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
+/**
+ * Configures Filament administration for conference rooms table.
+ */
 class ConferenceRoomsTable
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Table $table): Table
     {
         return $table

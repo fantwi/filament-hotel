@@ -8,8 +8,14 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
+/**
+ * Configures Filament administration for ingredient form.
+ */
 class IngredientForm
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([

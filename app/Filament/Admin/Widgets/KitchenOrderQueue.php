@@ -12,6 +12,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 
+/**
+ * Provides the kitchen order queue Filament dashboard widget.
+ */
 class KitchenOrderQueue extends TableWidget
 {
     use InteractsWithDashboardDateRange;
@@ -22,6 +25,9 @@ class KitchenOrderQueue extends TableWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public function table(Table $table): Table
     {
         return $table
@@ -96,6 +102,9 @@ class KitchenOrderQueue extends TableWidget
             ->paginated([10, 25, 50]);
     }
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->can('view kitchen dashboard') ?? false;

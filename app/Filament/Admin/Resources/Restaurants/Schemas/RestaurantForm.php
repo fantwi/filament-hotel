@@ -14,8 +14,14 @@ use Illuminate\Database\Eloquent\Builder;
 
 // use Filament\Forms\Components\Section;
 
+/**
+ * Configures Filament administration for restaurant form.
+ */
 class RestaurantForm
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Schema $schema): Schema
     {
 

@@ -6,8 +6,14 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
+/**
+ * Configures Filament administration for conference facility form.
+ */
 class ConferenceFacilityForm
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Schema $schema): Schema
     {
         return $schema

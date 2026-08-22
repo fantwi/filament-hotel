@@ -4,6 +4,9 @@ namespace App\Filament\Admin\Pages;
 
 use Filament\Pages\Page;
 
+/**
+ * Provides the booking calendar Filament administration page.
+ */
 class BookingCalendar extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';

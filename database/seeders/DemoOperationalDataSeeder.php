@@ -28,8 +28,14 @@ use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 
+/**
+ * Seeds initial data for demo operational data seeder.
+ */
 class DemoOperationalDataSeeder extends Seeder
 {
+    /**
+     * Performs the run data-seeding operation.
+     */
     public function run(): void
     {
         $guest = $this->guest();
@@ -56,6 +62,9 @@ class DemoOperationalDataSeeder extends Seeder
         }
     }
 
+    /**
+     * Performs the guest data-seeding operation.
+     */
     private function guest(): Guest
     {
         $user = User::firstOrCreate(
@@ -78,6 +87,9 @@ class DemoOperationalDataSeeder extends Seeder
         );
     }
 
+    /**
+     * Performs the rooms data-seeding operation.
+     */
     private function rooms(): array
     {
         $standard = RoomType::updateOrCreate(
@@ -104,6 +116,9 @@ class DemoOperationalDataSeeder extends Seeder
         return [$standard, $deluxe];
     }
 
+    /**
+     * Performs the conference rooms data-seeding operation.
+     */
     private function conferenceRooms(): void
     {
         $facilities = collect([
@@ -121,6 +136,9 @@ class DemoOperationalDataSeeder extends Seeder
         }
     }
 
+    /**
+     * Performs the contact message data-seeding operation.
+     */
     private function contactMessage(Guest $guest): void
     {
         ContactMessage::firstOrCreate(
@@ -129,6 +147,9 @@ class DemoOperationalDataSeeder extends Seeder
         );
     }
 
+    /**
+     * Performs the hotel booking data-seeding operation.
+     */
     private function hotelBooking(Guest $guest, RoomType $type): void
     {
         $room = $type->rooms()->orderBy('room_number')->firstOrFail();
@@ -143,6 +164,9 @@ class DemoOperationalDataSeeder extends Seeder
         );
     }
 
+    /**
+     * Performs the conference booking data-seeding operation.
+     */
     private function conferenceBooking(Guest $guest): ConferenceBooking
     {
         $room = ConferenceRoom::where('name', 'Executive Boardroom')->firstOrFail();
@@ -159,6 +183,9 @@ class DemoOperationalDataSeeder extends Seeder
         return $booking;
     }
 
+    /**
+     * Performs the restaurant reservation data-seeding operation.
+     */
     private function restaurantReservation(Guest $guest): array
     {
         $restaurant = Restaurant::where('name', 'My Hotel Restaurant')->firstOrFail();
@@ -190,6 +217,9 @@ class DemoOperationalDataSeeder extends Seeder
         return [$reservation, $table];
     }
 
+    /**
+     * Performs the restaurant order data-seeding operation.
+     */
     private function restaurantOrder(Guest $guest, RestaurantReservation $reservation, RestaurantTable $table): void
     {
         $item = MenuItem::where('name', 'Jollof Rice')->firstOrFail();
@@ -224,6 +254,9 @@ class DemoOperationalDataSeeder extends Seeder
         );
     }
 
+    /**
+     * Performs the stock and production data-seeding operation.
+     */
     private function stockAndProduction(): void
     {
         $restaurant = Restaurant::where('name', 'My Hotel Restaurant')->firstOrFail();

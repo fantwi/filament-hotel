@@ -14,6 +14,9 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Configures Filament administration for menu category resource.
+ */
 class MenuCategoryResource extends ContentResource
 {
     protected static ?string $model = MenuCategory::class;
@@ -28,26 +31,41 @@ class MenuCategoryResource extends ContentResource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    /**
+     * Configures the form schema and input behavior.
+     */
     public static function form(Schema $schema): Schema
     {
         return MenuCategoryForm::configure($schema);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public static function table(Table $table): Table
     {
         return MenuCategoriesTable::configure($table);
     }
 
+    /**
+     * Builds and returns eloquent query.
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->visibleTo(auth()->user());
     }
 
+    /**
+     * Builds and returns relations.
+     */
     public static function getRelations(): array
     {
         return [];
     }
 
+    /**
+     * Builds and returns pages.
+     */
     public static function getPages(): array
     {
         return [

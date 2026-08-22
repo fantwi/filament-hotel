@@ -7,8 +7,14 @@ use App\Models\MenuItem;
 use App\Models\Restaurant;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the restaurant page controller HTTP workflow.
+ */
 class RestaurantPageController extends Controller
 {
+    /**
+     * Displays the index interface or response.
+     */
     public function index(): View
     {
         [$restaurant, $categories, $featuredItems] = $this->menuData(4);
@@ -21,6 +27,9 @@ class RestaurantPageController extends Controller
         return view('restaurant.index', compact('restaurant', 'categories', 'featuredItems'));
     }
 
+    /**
+     * Handles the tables HTTP action.
+     */
     public function tables(): View
     {
         $restaurant = Restaurant::published()->with([
@@ -30,6 +39,9 @@ class RestaurantPageController extends Controller
         return view('restaurant.tables', compact('restaurant'));
     }
 
+    /**
+     * Handles the gallery HTTP action.
+     */
     public function gallery(): View
     {
         $restaurant = Restaurant::published()->first();
@@ -37,6 +49,9 @@ class RestaurantPageController extends Controller
         return view('restaurant.gallery', compact('restaurant'));
     }
 
+    /**
+     * Handles the menu HTTP action.
+     */
     public function menu(): View
     {
         [$restaurant, $categories, $featuredItems] = $this->menuData(4);
@@ -44,6 +59,9 @@ class RestaurantPageController extends Controller
         return view('restaurant.menu', compact('restaurant', 'categories', 'featuredItems'));
     }
 
+    /**
+     * Handles the menu data HTTP action.
+     */
     private function menuData(int $featuredLimit): array
     {
         $restaurant = Restaurant::published()->first();

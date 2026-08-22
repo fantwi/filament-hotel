@@ -5,8 +5,14 @@ namespace App\Models\Concerns;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Provides reusable model behavior for has publication state.
+ */
 trait HasPublicationState
 {
+    /**
+     * Defines the boot has publication state relationship or domain behavior for this model.
+     */
     protected static function bootHasPublicationState(): void
     {
         static::creating(function ($model): void {
@@ -16,11 +22,17 @@ trait HasPublicationState
         });
     }
 
+    /**
+     * Applies the published query scope.
+     */
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('is_published', true);
     }
 
+    /**
+     * Applies the visible to query scope.
+     */
     public function scopeVisibleTo(Builder $query, ?User $user): Builder
     {
         if (! $user) {

@@ -31,8 +31,14 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
+/**
+ * Supports the admin panel provider Filament administration feature.
+ */
 class AdminPanelProvider extends PanelProvider
 {
+    /**
+     * Configures panel for the Filament administration interface.
+     */
     public function panel(Panel $panel): Panel
     {
         return $panel

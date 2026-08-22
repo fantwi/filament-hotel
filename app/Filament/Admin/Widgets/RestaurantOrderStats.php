@@ -6,12 +6,18 @@ use App\Models\RestaurantOrder;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
+/**
+ * Provides the restaurant order stats Filament dashboard widget.
+ */
 class RestaurantOrderStats extends StatsOverviewWidget
 {
     protected static ?int $sort = 10;
 
     protected int|string|array $columnSpan = 'full';
 
+    /**
+     * Builds and returns stats.
+     */
     protected function getStats(): array
     {
         $totalOrders = RestaurantOrder::count();
@@ -60,6 +66,9 @@ class RestaurantOrderStats extends StatsOverviewWidget
         ];
     }
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;

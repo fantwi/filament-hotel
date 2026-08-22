@@ -10,10 +10,16 @@ use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
+/**
+ * Configures Filament administration for edit corporate organization.
+ */
 class EditCorporateOrganization extends EditRecord
 {
     protected static string $resource = CorporateOrganizationResource::class;
 
+    /**
+     * Builds and returns header actions.
+     */
     protected function getHeaderActions(): array
     {
         return [

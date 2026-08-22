@@ -6,6 +6,9 @@ use App\Models\Booking;
 use App\Models\Room;
 use Filament\Pages\Page;
 
+/**
+ * Provides the room calendar Filament administration page.
+ */
 class RoomCalendar extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar';
@@ -24,6 +27,9 @@ class RoomCalendar extends Page
 
     public $roomTypeFilter = null;
 
+    /**
+     * Builds and returns events.
+     */
     public function getEvents()
     {
         $query = Booking::with(['guest', 'room.roomType'])
@@ -52,6 +58,9 @@ class RoomCalendar extends Page
         });
     }
 
+    /**
+     * Builds and returns rooms.
+     */
     public function getRooms()
     {
         $query = Room::with('roomType');
@@ -68,16 +77,25 @@ class RoomCalendar extends Page
         });
     }
 
+    /**
+     * Configures updated room type filter for the Filament administration interface.
+     */
     public function updatedRoomTypeFilter()
     {
         $this->dispatchCalendarRefresh();
     }
 
+    /**
+     * Configures updated room filter for the Filament administration interface.
+     */
     public function updatedRoomFilter()
     {
         $this->dispatchCalendarRefresh();
     }
 
+    /**
+     * Builds and returns occupancy heatmap.
+     */
     public function getOccupancyHeatmap()
     {
         $rooms = Room::count();
@@ -110,6 +128,9 @@ class RoomCalendar extends Page
         return $heatmap;
     }
 
+    /**
+     * Builds and returns calendar events.
+     */
     public function getCalendarEvents()
     {
         return array_merge(
@@ -118,6 +139,9 @@ class RoomCalendar extends Page
         );
     }
 
+    /**
+     * Configures dispatch calendar refresh for the Filament administration interface.
+     */
     private function dispatchCalendarRefresh(): void
     {
         $this->dispatch('refreshCalendar', [

@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * Represents kitchen stock movement and its persisted business behavior.
+ */
 class KitchenStockMovement extends Model
 {
     public const TYPE_OPENING_STOCK = 'opening_stock';
@@ -28,21 +31,33 @@ class KitchenStockMovement extends Model
 
     protected $fillable = ['ingredient_id', 'type', 'direction', 'quantity', 'balance_before', 'balance_after', 'unit_cost', 'total_cost', 'reference_number', 'supplier_name', 'reference_type', 'reference_id', 'performed_by', 'occurred_at', 'notes'];
 
+    /**
+     * Defines the casts relationship or domain behavior for this model.
+     */
     protected function casts(): array
     {
         return ['quantity' => 'decimal:3', 'balance_before' => 'decimal:3', 'balance_after' => 'decimal:3', 'unit_cost' => 'decimal:2', 'total_cost' => 'decimal:2', 'occurred_at' => 'datetime'];
     }
 
+    /**
+     * Defines the ingredient relationship or domain behavior for this model.
+     */
     public function ingredient(): BelongsTo
     {
         return $this->belongsTo(Ingredient::class);
     }
 
+    /**
+     * Defines the performed by relationship or domain behavior for this model.
+     */
     public function performedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'performed_by');
     }
 
+    /**
+     * Defines the reference relationship or domain behavior for this model.
+     */
     public function reference(): MorphTo
     {
         return $this->morphTo();

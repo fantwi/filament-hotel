@@ -10,8 +10,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * Encapsulates business rules for kitchen stock service.
+ */
 class KitchenStockService
 {
+    /**
+     * Records received ingredient stock and its auditable inbound movement.
+     */
     public function receive(Ingredient $ingredient, float $quantity, ?float $unitCost = null, ?string $referenceNumber = null, ?string $notes = null, ?string $supplierName = null): KitchenStockMovement
     {
         $this->ensurePositiveQuantity($quantity);
@@ -30,6 +36,9 @@ class KitchenStockService
         });
     }
 
+    /**
+     * Records  wastage for audit and reporting.
+     */
     public function recordWastage(Ingredient $ingredient, float $quantity, ?string $notes = null): KitchenStockMovement
     {
         $this->ensurePositiveQuantity($quantity);
@@ -37,6 +46,9 @@ class KitchenStockService
         return DB::transaction(fn (): KitchenStockMovement => $this->remove($this->lockIngredient($ingredient->id), $quantity, KitchenStockMovement::TYPE_WASTAGE, notes: $notes));
     }
 
+    /**
+     * Reconciles an ingredient balance with a counted physical quantity.
+     */
     public function adjustToCountedStock(Ingredient $ingredient, float $countedQuantity, ?string $notes = null): ?KitchenStockMovement
     {
         if ($countedQuantity < 0) {
@@ -62,6 +74,9 @@ class KitchenStockService
         });
     }
 
+    /**
+     * Deducts recipe ingredients or finished production for a completed food order.
+     */
     public function consumeForOrder(RestaurantOrder $order): void
     {
         DB::transaction(function () use ($order): void {
@@ -78,6 +93,9 @@ class KitchenStockService
         });
     }
 
+    /**
+     * Deducts raw ingredients consumed while preparing a production batch.
+     */
     public function consumeForProduction(KitchenProduction $production): void
     {
         DB::transaction(function () use ($production): void {
@@ -111,6 +129,9 @@ class KitchenStockService
         });
     }
 
+    /**
+     * Reverses inventory consumption recorded for a cancelled or refunded order.
+     */
     public function reverseForOrder(RestaurantOrder $order): void
     {
         DB::transaction(function () use ($order): void {
@@ -144,6 +165,9 @@ class KitchenStockService
         });
     }
 
+    /**
+     * Creates stock movements for the supplied ingredient requirements.
+     */
     private function deductRequirements(array $requirements, Model $reference, string $notes): void
     {
         if ($requirements === []) {
@@ -173,6 +197,9 @@ class KitchenStockService
         }
     }
 
+    /**
+     * Builds the ingredient requirements for the selected menu item and quantity.
+     */
     private function requirementsFor(RestaurantOrder $order): array
     {
         $requirements = [];
@@ -193,6 +220,9 @@ class KitchenStockService
         return $requirements;
     }
 
+    /**
+     * Performs the remove business operation.
+     */
     private function remove(Ingredient $ingredient, float $quantity, string $type, ?Model $reference = null, ?string $notes = null): KitchenStockMovement
     {
         $before = (float) $ingredient->current_stock;
@@ -205,6 +235,9 @@ class KitchenStockService
         return $this->movement($ingredient, $type, KitchenStockMovement::DIRECTION_OUT, $quantity, $before, $after, (float) $ingredient->unit_cost, $reference, $notes);
     }
 
+    /**
+     * Creates an auditable kitchen-stock movement for an ingredient.
+     */
     private function movement(Ingredient $ingredient, string $type, string $direction, float $quantity, float $before, float $after, ?float $unitCost, Model|string|null $referenceOrNumber = null, ?string $notes = null, ?string $supplierName = null): KitchenStockMovement
     {
         $reference = $referenceOrNumber instanceof Model ? $referenceOrNumber : null;
@@ -220,11 +253,17 @@ class KitchenStockService
         ]);
     }
 
+    /**
+     * Locks the ingredient row before changing its inventory balance.
+     */
     private function lockIngredient(int $id): Ingredient
     {
         return Ingredient::query()->lockForUpdate()->findOrFail($id);
     }
 
+    /**
+     * Rejects stock operations with a non-positive quantity.
+     */
     private function ensurePositiveQuantity(float $quantity): void
     {
         if ($quantity <= 0) {

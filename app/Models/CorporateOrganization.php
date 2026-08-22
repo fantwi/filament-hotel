@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Represents corporate organization and its persisted business behavior.
+ */
 class CorporateOrganization extends Model
 {
     protected $fillable = [
@@ -17,6 +20,9 @@ class CorporateOrganization extends Model
         'is_credit_enabled' => 'boolean',
     ];
 
+    /**
+     * Defines the users relationship or domain behavior for this model.
+     */
     public function users(): HasMany
     {
         return $this->hasMany(User::class);

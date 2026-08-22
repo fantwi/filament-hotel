@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+/**
+ * Represents guest and its persisted business behavior.
+ */
 class Guest extends Model
 {
     //
@@ -25,16 +28,25 @@ class Guest extends Model
     ];
 
     // Relationships
+    /**
+     * Defines the bookings relationship or domain behavior for this model.
+     */
     public function bookings()
     {
         return $this->hasMany(Booking::class);
     }
 
+    /**
+     * Defines the user relationship or domain behavior for this model.
+     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Defines the restaurant reservations relationship or domain behavior for this model.
+     */
     public function restaurantReservations()
     {
         return $this->hasMany(
@@ -42,6 +54,9 @@ class Guest extends Model
         );
     }
 
+    /**
+     * Defines the restaurant orders relationship or domain behavior for this model.
+     */
     public function restaurantOrders(): HasMany
     {
         return $this->hasMany(RestaurantOrder::class);
@@ -49,16 +64,25 @@ class Guest extends Model
     // End Relationships
 
     // Methods
+    /**
+     * Exposes the computed  name attribute.
+     */
     public function getNameAttribute()
     {
         return $this->first_name.' '.$this->last_name;
     }
 
+    /**
+     * Exposes the computed  full name attribute.
+     */
     public function getFullNameAttribute()
     {
         return $this->first_name.' '.$this->last_name;
     }
 
+    /**
+     * Builds and returns activitylog options.
+     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

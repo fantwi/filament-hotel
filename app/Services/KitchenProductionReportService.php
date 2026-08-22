@@ -5,8 +5,14 @@ namespace App\Services;
 use App\Models\MenuItem;
 use Carbon\CarbonInterface;
 
+/**
+ * Encapsulates business rules for kitchen production report service.
+ */
 class KitchenProductionReportService
 {
+    /**
+     * Builds .
+     */
     public function build(CarbonInterface $from, CarbonInterface $until): array
     {
         $from = $from->copy()->startOfDay();

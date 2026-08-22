@@ -5,6 +5,9 @@ namespace App\Models;
 use App\Models\Concerns\HasPublicationState;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Represents restaurant and its persisted business behavior.
+ */
 class Restaurant extends Model
 {
     use HasPublicationState;
@@ -53,6 +56,9 @@ class Restaurant extends Model
     ];
 
     // Relationships
+    /**
+     * Defines the tables relationship or domain behavior for this model.
+     */
     public function tables()
     {
         return $this->hasMany(
@@ -60,6 +66,9 @@ class Restaurant extends Model
         );
     }
 
+    /**
+     * Defines the reservations relationship or domain behavior for this model.
+     */
     public function reservations()
     {
         return $this->hasMany(
@@ -67,6 +76,9 @@ class Restaurant extends Model
         );
     }
 
+    /**
+     * Defines the facilities relationship or domain behavior for this model.
+     */
     public function facilities()
     {
         return $this->belongsToMany(Facility::class)->withTimestamps();

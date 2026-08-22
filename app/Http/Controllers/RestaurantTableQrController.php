@@ -5,8 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\RestaurantTable;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the restaurant table qr controller HTTP workflow.
+ */
 class RestaurantTableQrController extends Controller
 {
+    /**
+     * Handles the print HTTP action.
+     */
     public function print(RestaurantTable $table): View
     {
         abort_unless(

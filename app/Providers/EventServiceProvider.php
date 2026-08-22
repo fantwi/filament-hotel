@@ -7,6 +7,9 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
+/**
+ * Registers application services for event service provider.
+ */
 class EventServiceProvider extends ServiceProvider
 {
     /**

@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Represents hotel setting and its persisted business behavior.
+ */
 class HotelSetting extends Model
 {
     protected $fillable = [
@@ -15,6 +18,9 @@ class HotelSetting extends Model
         'footer_color',
     ];
 
+    /**
+     * Defines the color relationship or domain behavior for this model.
+     */
     public function color(string $attribute, string $fallback): string
     {
         $color = $this->getAttribute($attribute);
@@ -24,6 +30,9 @@ class HotelSetting extends Model
             : $fallback;
     }
 
+    /**
+     * Defines the current relationship or domain behavior for this model.
+     */
     public static function current(): self
     {
         if (! Schema::hasTable('hotel_settings')) {

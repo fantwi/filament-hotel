@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Registers restaurant browsing, table reservation, cart, food-order, and payment routes.
+ */
+
 use App\Http\Controllers\RestaurantCartController;
 use App\Http\Controllers\RestaurantCheckoutController;
 use App\Http\Controllers\RestaurantOrderPaymentController;

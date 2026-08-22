@@ -10,8 +10,14 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Configures Filament administration for conference room form.
+ */
 class ConferenceRoomForm
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Schema $schema): Schema
     {
         // return $schema

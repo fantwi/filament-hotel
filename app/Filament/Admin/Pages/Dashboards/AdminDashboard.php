@@ -10,6 +10,9 @@ use App\Filament\Admin\Widgets\ManagerOperationsChart;
 use App\Filament\Admin\Widgets\RecentPayments;
 use App\Filament\Admin\Widgets\RoleDashboardOverview;
 
+/**
+ * Provides the admin dashboard Filament administration page.
+ */
 class AdminDashboard extends TimeFilteredDashboard
 {
     protected static string $routePath = 'admin-dashboard';
@@ -22,16 +25,25 @@ class AdminDashboard extends TimeFilteredDashboard
 
     protected static ?int $navigationSort = 2;
 
+    /**
+     * Determines whether the current user may access this feature.
+     */
     public static function canAccess(): bool
     {
         return auth()->user()?->can('view admin dashboard') ?? false;
     }
 
+    /**
+     * Builds and returns columns.
+     */
     public function getColumns(): int|array
     {
         return ['default' => 1, 'md' => 2, 'xl' => 3];
     }
 
+    /**
+     * Builds and returns widgets.
+     */
     public function getWidgets(): array
     {
         return [

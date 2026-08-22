@@ -6,6 +6,9 @@ use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 
+/**
+ * Provides the room timeline Filament administration page.
+ */
 class RoomTimeline extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTableCells;
@@ -16,6 +19,9 @@ class RoomTimeline extends Page
 
     protected static ?string $title = 'Room Timeline Board';
 
+    /**
+     * Controls whether this feature appears in the Filament navigation.
+     */
     public static function shouldRegisterNavigation(): bool
     {
         return false;

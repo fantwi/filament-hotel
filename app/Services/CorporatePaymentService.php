@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
+/**
+ * Encapsulates business rules for corporate payment service.
+ */
 class CorporatePaymentService
 {
     /**
@@ -57,6 +60,9 @@ class CorporatePaymentService
         });
     }
 
+    /**
+     * Determines whether this record is paid.
+     */
     private function isPaid(Model $transaction): bool
     {
         return match ($transaction::class) {
@@ -66,6 +72,9 @@ class CorporatePaymentService
         };
     }
 
+    /**
+     * Returns the chargeable amount for the supplied transaction.
+     */
     private function amount(Model $transaction): float
     {
         return match ($transaction::class) {
@@ -76,6 +85,9 @@ class CorporatePaymentService
         };
     }
 
+    /**
+     * Builds the guest-dashboard link used to settle an unpaid corporate transaction.
+     */
     private function paymentLink(Model $transaction): array
     {
         return match ($transaction::class) {
@@ -87,6 +99,9 @@ class CorporatePaymentService
         };
     }
 
+    /**
+     * Marks a corporate transaction as paid and records the clearing payment.
+     */
     private function markTransactionPaid(Model $transaction, string $method): void
     {
         match ($transaction::class) {

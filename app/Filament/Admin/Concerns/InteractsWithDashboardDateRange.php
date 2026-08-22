@@ -7,6 +7,9 @@ use Carbon\Carbon;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Supports the interacts with dashboard date range Filament administration feature.
+ */
 trait InteractsWithDashboardDateRange
 {
     use InteractsWithPageFilters;
@@ -35,6 +38,9 @@ trait InteractsWithDashboardDateRange
         return $start->greaterThan($end) ? [$end->copy()->startOfDay(), $start->copy()->endOfDay()] : [$start, $end];
     }
 
+    /**
+     * Configures for dashboard date range for the Filament administration interface.
+     */
     protected function forDashboardDateRange(Builder $query, string $column = 'created_at'): Builder
     {
         [$start, $end] = $this->dashboardDateRange();
@@ -42,6 +48,9 @@ trait InteractsWithDashboardDateRange
         return $query->whereBetween($column, [$start, $end]);
     }
 
+    /**
+     * Configures dashboard date range label for the Filament administration interface.
+     */
     protected function dashboardDateRangeLabel(): string
     {
         [$start, $end] = $this->dashboardDateRange();

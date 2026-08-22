@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Applies this database schema change.
+     */
     public function up(): void
     {
         Schema::create('corporate_organizations', function (Blueprint $table) {
@@ -33,6 +36,9 @@ return new class extends Migration
         }
     }
 
+    /**
+     * Reverts this database schema change.
+     */
     public function down(): void
     {
         foreach (['bookings', 'conference_bookings', 'restaurant_reservations', 'restaurant_orders'] as $tableName) {

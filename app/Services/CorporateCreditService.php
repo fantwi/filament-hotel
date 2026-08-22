@@ -12,8 +12,14 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
+/**
+ * Encapsulates business rules for corporate credit service.
+ */
 class CorporateCreditService
 {
+    /**
+     * Finds the enabled corporate organisation associated with the supplied user.
+     */
     public function organizationFor(?User $user): ?CorporateOrganization
     {
         $organizationId = $user?->corporate_organization_id;
@@ -27,6 +33,9 @@ class CorporateCreditService
         return $organization?->is_credit_enabled ? $organization : null;
     }
 
+    /**
+     * Checks whether a charge remains within an organisation credit limit.
+     */
     public function canCharge(CorporateOrganization $organization, float $amount): bool
     {
         if (! $organization->is_credit_enabled || $amount < 0) {
@@ -41,6 +50,9 @@ class CorporateCreditService
             <= (float) $organization->credit_limit + 0.004;
     }
 
+    /**
+     * Aggregates corporate billing, receivables, and credit exposure for dashboard presentation.
+     */
     public function dashboardOverview(?Carbon $from = null, ?Carbon $until = null): array
     {
         $accounts = $this->accountExposure($from, $until);
@@ -68,6 +80,9 @@ class CorporateCreditService
         ];
     }
 
+    /**
+     * Builds per-organisation outstanding balances and remaining credit amounts.
+     */
     public function accountExposure(?Carbon $from = null, ?Carbon $until = null): Collection
     {
         $outstanding = $this->outstandingByOrganization($from, $until);
@@ -97,6 +112,9 @@ class CorporateCreditService
             ->values();
     }
 
+    /**
+     * Groups unpaid corporate transactions by organisation within optional date limits.
+     */
     private function outstandingByOrganization(?Carbon $from = null, ?Carbon $until = null): array
     {
         $inRange = function (Builder $query) use ($from, $until): Builder {
@@ -111,11 +129,17 @@ class CorporateCreditService
         ]);
     }
 
+    /**
+     * Totals valid corporate transactions billed from the supplied date to now.
+     */
     private function billedSince(Carbon $from): float
     {
         return $this->billedBetween($from, now());
     }
 
+    /**
+     * Totals valid corporate transactions billed within the supplied date range.
+     */
     private function billedBetween(Carbon $from, Carbon $until): float
     {
         return (float) Booking::query()->whereNotNull('corporate_organization_id')->whereNotIn('status', ['cancelled', 'expired', 'no_show'])->whereBetween('created_at', [$from, $until])->sum('total_price')
@@ -124,6 +148,9 @@ class CorporateCreditService
             + (float) RestaurantOrder::query()->whereNotNull('corporate_organization_id')->where('payment_method', 'corporate_account')->where('status', '!=', 'cancelled')->whereBetween('created_at', [$from, $until])->sum('total');
     }
 
+    /**
+     * Merges balance totals collected from each corporate transaction type.
+     */
     private function combineBalances(array $sources): array
     {
         $balances = [];
@@ -137,6 +164,9 @@ class CorporateCreditService
         return $balances;
     }
 
+    /**
+     * Calculates the organisation-wide unpaid corporate balance across every transaction type.
+     */
     public function outstandingBalance(CorporateOrganization $organization): float
     {
         $organizationId = $organization->id;

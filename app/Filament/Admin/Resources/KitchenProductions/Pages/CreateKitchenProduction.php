@@ -9,10 +9,16 @@ use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Configures Filament administration for create kitchen production.
+ */
 class CreateKitchenProduction extends CreateRecord
 {
     protected static string $resource = KitchenProductionResource::class;
 
+    /**
+     * Configures mutate form data before create for the Filament administration interface.
+     */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['produced_by'] = auth()->id();
@@ -20,6 +26,9 @@ class CreateKitchenProduction extends CreateRecord
         return $data;
     }
 
+    /**
+     * Configures handle record creation for the Filament administration interface.
+     */
     protected function handleRecordCreation(array $data): Model
     {
         return DB::transaction(function () use ($data): KitchenProduction {

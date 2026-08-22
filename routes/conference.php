@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Registers conference-room availability, booking, payment, and invoice routes.
+ */
+
 use App\Models\ConferenceBooking;
 use App\Models\ConferenceRoom;
 use App\Models\Payment;

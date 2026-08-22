@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+/**
+ * Represents booking and its persisted business behavior.
+ */
 class Booking extends Model
 {
     use HasFactory;
@@ -42,31 +45,49 @@ class Booking extends Model
         'hold_until' => 'datetime',
     ];
 
+    /**
+     * Defines the corporate organization relationship or domain behavior for this model.
+     */
     public function corporateOrganization()
     {
         return $this->belongsTo(CorporateOrganization::class);
     }
 
+    /**
+     * Defines the guest relationship or domain behavior for this model.
+     */
     public function guest()
     {
         return $this->belongsTo(Guest::class);
     }
 
+    /**
+     * Defines the user relationship or domain behavior for this model.
+     */
     public function user()
     {
         return $this->belongsTo(User::class, 'guest_id');
     }
 
+    /**
+     * Defines the room relationship or domain behavior for this model.
+     */
     public function room()
     {
         return $this->belongsTo(Room::class);
     }
 
+    /**
+     * Defines the payments relationship or domain behavior for this model.
+     */
     public function payments()
     {
         return $this->hasMany(Payment::class);
     }
 
+    /**
+     * Applies the overlapping query scope.
+     */
     public function scopeOverlapping(Builder $query, $checkIn, $checkOut): Builder
     {
         return $query
@@ -74,6 +95,9 @@ class Booking extends Model
             ->whereDate('check_out', '>', $checkIn);
     }
 
+    /**
+     * Exposes the computed  total paid attribute.
+     */
     public function getTotalPaidAttribute()
     {
         return $this->payments()
@@ -81,11 +105,17 @@ class Booking extends Model
             ->sum('amount');
     }
 
+    /**
+     * Exposes the computed  balance attribute.
+     */
     public function getBalanceAttribute()
     {
         return max(0, (float) $this->total_price - (float) $this->total_paid);
     }
 
+    /**
+     * Builds and returns activitylog options.
+     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -95,6 +125,9 @@ class Booking extends Model
             ->setDescriptionForEvent(fn (string $eventName) => "Booking {$eventName}");
     }
 
+    /**
+     * Registers lifecycle hooks and model behavior.
+     */
     protected static function booted()
     {
         static::saving(function ($booking) {
@@ -151,6 +184,9 @@ class Booking extends Model
         });
     }
 
+    /**
+     * Synchronizes  room status with the current state.
+     */
     protected static function syncRoomStatus(?int $roomId): void
     {
         if (! $roomId) {

@@ -14,6 +14,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Activitylog\Models\Activity;
 
+/**
+ * Configures Filament administration for activity log resource.
+ */
 class ActivityLogResource extends SecureResource
 {
     protected static ?string $model = Activity::class;
@@ -33,6 +36,9 @@ class ActivityLogResource extends SecureResource
     //     return ActivityLogForm::configure($schema);
     // }
 
+    /**
+     * Controls whether this feature appears in the Filament navigation.
+     */
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->hasAnyRole([
@@ -41,12 +47,18 @@ class ActivityLogResource extends SecureResource
         ]);
     }
 
+    /**
+     * Determines whether the current user may view these records.
+     */
     public static function canViewAny(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
 
 
+    /**
+     * Builds and returns eloquent query.
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -54,11 +66,17 @@ class ActivityLogResource extends SecureResource
             ->latest('created_at');
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public static function table(Table $table): Table
     {
         return ActivityLogsTable::configure($table);
     }
 
+    /**
+     * Builds and returns relations.
+     */
     public static function getRelations(): array
     {
         return [
@@ -66,6 +84,9 @@ class ActivityLogResource extends SecureResource
         ];
     }
 
+    /**
+     * Builds and returns pages.
+     */
     public static function getPages(): array
     {
         return [
@@ -75,6 +96,9 @@ class ActivityLogResource extends SecureResource
         ];
     }
 
+    /**
+     * Configures format changes for the Filament administration interface.
+     */
     public static function formatChanges($record): string
     {
         $old = $record->properties['old'] ?? [];

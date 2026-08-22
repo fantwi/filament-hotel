@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Represents restaurant order item and its persisted business behavior.
+ */
 class RestaurantOrderItem extends Model
 {
     protected $fillable = [
@@ -27,11 +30,17 @@ class RestaurantOrderItem extends Model
         'ingredient_usage_snapshot' => 'array',
     ];
 
+    /**
+     * Defines the order relationship or domain behavior for this model.
+     */
     public function order(): BelongsTo
     {
         return $this->belongsTo(RestaurantOrder::class, 'restaurant_order_id');
     }
 
+    /**
+     * Defines the menu item relationship or domain behavior for this model.
+     */
     public function menuItem(): BelongsTo
     {
         return $this->belongsTo(MenuItem::class);

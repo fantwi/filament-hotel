@@ -6,6 +6,9 @@ use App\Models\Concerns\HasPublicationState;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Represents menu category and its persisted business behavior.
+ */
 class MenuCategory extends Model
 {
     use HasPublicationState;
@@ -26,6 +29,9 @@ class MenuCategory extends Model
         'is_published' => 'boolean',
     ];
 
+    /**
+     * Defines the menu items relationship or domain behavior for this model.
+     */
     public function menuItems(): HasMany
     {
         return $this->hasMany(MenuItem::class)->orderBy('sort_order');

@@ -7,8 +7,14 @@ use App\Models\Payment;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
+/**
+ * Provides the revenue stats Filament dashboard widget.
+ */
 class RevenueStats extends BaseWidget
 {
+    /**
+     * Builds and returns stats.
+     */
     protected function getStats(): array
     {
         $totalRevenue = Payment::sum('amount');
@@ -50,6 +56,9 @@ class RevenueStats extends BaseWidget
     }
 
     // Only Admins and Accountants can view Revenue Stats Widget
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()->hasAnyRole(['super_admin', 'admin', 'accountant']);

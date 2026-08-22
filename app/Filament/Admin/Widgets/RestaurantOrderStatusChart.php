@@ -6,6 +6,9 @@ use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\RestaurantOrder;
 use Filament\Widgets\ChartWidget;
 
+/**
+ * Provides the restaurant order status chart Filament dashboard widget.
+ */
 class RestaurantOrderStatusChart extends ChartWidget
 {
     use InteractsWithDashboardDateRange;
@@ -19,6 +22,9 @@ class RestaurantOrderStatusChart extends ChartWidget
         'lg' => 1,
     ];
 
+    /**
+     * Builds and returns data.
+     */
     protected function getData(): array
     {
         $statuses = [
@@ -46,11 +52,17 @@ class RestaurantOrderStatusChart extends ChartWidget
         ];
     }
 
+    /**
+     * Builds and returns type.
+     */
     protected function getType(): string
     {
         return 'doughnut';
     }
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;

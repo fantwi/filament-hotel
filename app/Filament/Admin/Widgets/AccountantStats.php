@@ -11,17 +11,26 @@ use App\Models\RestaurantReservation;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
+/**
+ * Provides the accountant stats Filament dashboard widget.
+ */
 class AccountantStats extends StatsOverviewWidget
 {
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->can('view accountant dashboard') ?? false;
     }
 
+    /**
+     * Builds and returns stats.
+     */
     protected function getStats(): array
     {
         $revenue = $this->forDashboardDateRange(Payment::query())->whereIn('payment_status', ['paid', 'completed'])->sum('amount');

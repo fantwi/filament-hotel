@@ -10,6 +10,9 @@ use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Provides the best selling menu items Filament dashboard widget.
+ */
 class BestSellingMenuItems extends TableWidget
 {
     use InteractsWithDashboardDateRange;
@@ -20,6 +23,9 @@ class BestSellingMenuItems extends TableWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public function table(Table $table): Table
     {
         return $table
@@ -59,6 +65,9 @@ class BestSellingMenuItems extends TableWidget
             ->defaultPaginationPageOption(5);
     }
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;

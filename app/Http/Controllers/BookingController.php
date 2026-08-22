@@ -11,8 +11,14 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
+/**
+ * Coordinates the booking controller HTTP workflow.
+ */
 class BookingController extends Controller
 {
+    /**
+     * Displays the create interface or response.
+     */
     public function create(Request $request)
     {
         $room = Room::findOrFail(
@@ -25,6 +31,9 @@ class BookingController extends Controller
         );
     }
 
+    /**
+     * Validates and persists a newly submitted record.
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -72,6 +81,9 @@ class BookingController extends Controller
             );
     }
 
+    /**
+     * Builds booking events for the room-availability calendar.
+     */
     public function calendarEvents(Request $request): JsonResponse
     {
         $this->authorizeBookingAccess();
@@ -169,6 +181,9 @@ class BookingController extends Controller
         );
     }
 
+    /**
+     * Updates a booking from an authorised timeline interaction.
+     */
     public function timelineUpdate(Request $request, Booking $booking): JsonResponse
     {
         $this->authorizeBookingAccess();
@@ -205,6 +220,9 @@ class BookingController extends Controller
         ]);
     }
 
+    /**
+     * Validates and applies an authorised booking date change.
+     */
     public function reschedule(Request $request, Booking $booking): JsonResponse
     {
         $this->authorizeBookingAccess();
@@ -250,6 +268,9 @@ class BookingController extends Controller
         ]);
     }
 
+    /**
+     * Handles the authorize booking access HTTP action.
+     */
     private function authorizeBookingAccess(): void
     {
         abort_unless(

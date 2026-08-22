@@ -10,6 +10,9 @@ use App\Models\RestaurantReservation;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Provides the revenue report Filament administration page.
+ */
 class RevenueReport extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
@@ -24,6 +27,9 @@ class RevenueReport extends Page
 
     public string $period = 'this_month';
 
+    /**
+     * Configures period label for the Filament administration interface.
+     */
     public function periodLabel(): string
     {
         return match ($this->period) {
@@ -36,6 +42,9 @@ class RevenueReport extends Page
         };
     }
 
+    /**
+     * Configures report for the Filament administration interface.
+     */
     public function report(): array
     {
         $paidPayments = $this->forPeriod(
@@ -83,6 +92,9 @@ class RevenueReport extends Page
         ];
     }
 
+    /**
+     * Configures for period for the Filament administration interface.
+     */
     private function forPeriod(Builder $query, string $column = 'created_at'): Builder
     {
         return match ($this->period) {
@@ -95,6 +107,9 @@ class RevenueReport extends Page
         };
     }
 
+    /**
+     * Determines whether the current user may access this feature.
+     */
     public static function canAccess(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;

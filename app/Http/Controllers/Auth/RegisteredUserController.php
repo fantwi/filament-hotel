@@ -15,6 +15,9 @@ use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the registered user controller HTTP workflow.
+ */
 class RegisteredUserController extends Controller
 {
     /**
@@ -27,7 +30,6 @@ class RegisteredUserController extends Controller
 
     /**
      * Handle an incoming registration request.
-     *
      * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse

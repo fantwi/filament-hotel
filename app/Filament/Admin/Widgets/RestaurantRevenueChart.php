@@ -6,6 +6,9 @@ use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\RestaurantOrder;
 use Filament\Widgets\ChartWidget;
 
+/**
+ * Provides the restaurant revenue chart Filament dashboard widget.
+ */
 class RestaurantRevenueChart extends ChartWidget
 {
     use InteractsWithDashboardDateRange;
@@ -19,6 +22,9 @@ class RestaurantRevenueChart extends ChartWidget
         'lg' => 2,
     ];
 
+    /**
+     * Builds and returns data.
+     */
     protected function getData(): array
     {
         [$start, $end] = $this->dashboardDateRange();
@@ -48,11 +54,17 @@ class RestaurantRevenueChart extends ChartWidget
         ];
     }
 
+    /**
+     * Builds and returns type.
+     */
     protected function getType(): string
     {
         return 'bar';
     }
 
+    /**
+     * Builds and returns options.
+     */
     protected function getOptions(): array
     {
         return [
@@ -68,6 +80,9 @@ class RestaurantRevenueChart extends ChartWidget
         ];
     }
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;

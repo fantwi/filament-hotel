@@ -10,6 +10,9 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Builds the invoice mail email notification.
+ */
 class InvoiceMail extends Mailable
 {
     use Queueable, SerializesModels;
@@ -41,7 +44,6 @@ class InvoiceMail extends Mailable
 
     /**
      * Get the attachments for the message.
-     *
      * @return array<int, Attachment>
      */
     public function attachments(): array
@@ -49,6 +51,9 @@ class InvoiceMail extends Mailable
         return [];
     }
 
+    /**
+     * Builds .
+     */
     public function build()
     {
         return $this->subject('Your Booking Invoice')

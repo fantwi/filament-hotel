@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the authenticated session controller HTTP workflow.
+ */
 class AuthenticatedSessionController extends Controller
 {
     /**

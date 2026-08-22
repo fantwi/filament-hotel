@@ -7,8 +7,14 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Schema;
 
+/**
+ * Configures Filament administration for activity log infolist.
+ */
 class ActivityLogInfolist
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Schema $schema): Schema
     {
         return $schema

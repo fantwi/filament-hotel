@@ -14,6 +14,9 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
+/**
+ * Configures Filament administration for restaurant reservation resource.
+ */
 class RestaurantReservationResource extends SecureResource
 {
     protected static ?string $model = RestaurantReservation::class;
@@ -24,37 +27,58 @@ class RestaurantReservationResource extends SecureResource
 
     protected static ?int $navigationSort = 30;
 
+    /**
+     * Configures may manage reservations for the Filament administration interface.
+     */
     private static function mayManageReservations(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'receptionist']) ?? false;
     }
 
+    /**
+     * Determines whether the current user may view these records.
+     */
     public static function canViewAny(): bool
     {
         return static::mayManageReservations();
     }
 
+    /**
+     * Determines whether the current user may create records.
+     */
     public static function canCreate(): bool
     {
         return static::mayManageReservations();
     }
 
+    /**
+     * Determines whether the current user may edit the supplied record.
+     */
     public static function canEdit($record): bool
     {
         return static::mayManageReservations();
     }
 
 
+    /**
+     * Configures the form schema and input behavior.
+     */
     public static function form(Schema $schema): Schema
     {
         return RestaurantReservationForm::configure($schema);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public static function table(Table $table): Table
     {
         return RestaurantReservationsTable::configure($table);
     }
 
+    /**
+     * Builds and returns relations.
+     */
     public static function getRelations(): array
     {
         return [
@@ -62,6 +86,9 @@ class RestaurantReservationResource extends SecureResource
         ];
     }
 
+    /**
+     * Builds and returns pages.
+     */
     public static function getPages(): array
     {
         return [

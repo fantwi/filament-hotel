@@ -6,10 +6,16 @@ use App\Filament\Admin\Resources\Users\UserResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
+/**
+ * Configures Filament administration for edit user.
+ */
 class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
 
+    /**
+     * Configures mutate form data before save for the Filament administration interface.
+     */
     protected function mutateFormDataBeforeSave(array $data): array
     {
         if (in_array($data['department'] ?? null, ['super_admin', 'admin'], true)
@@ -20,6 +26,9 @@ class EditUser extends EditRecord
         return $data;
     }
 
+    /**
+     * Configures after save for the Filament administration interface.
+     */
     protected function afterSave(): void
     {
         if (! empty($this->data['roles'])) {
@@ -27,6 +36,9 @@ class EditUser extends EditRecord
         }
     }
 
+    /**
+     * Builds and returns header actions.
+     */
     protected function getHeaderActions(): array
     {
         return [

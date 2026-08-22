@@ -6,8 +6,14 @@ use App\Models\Facility;
 use App\Models\Restaurant;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeds initial data for restaurant facility seeder.
+ */
 class RestaurantFacilitySeeder extends Seeder
 {
+    /**
+     * Performs the run data-seeding operation.
+     */
     public function run(): void
     {
         $restaurant = Restaurant::first();

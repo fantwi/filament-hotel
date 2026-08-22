@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Loads the focused route files that make up the public and authenticated web experience.
+ */
+
 require __DIR__.'/public.php';
 require __DIR__.'/conference.php';
 require __DIR__.'/restaurant.php';

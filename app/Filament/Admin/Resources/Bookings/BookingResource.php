@@ -17,6 +17,9 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
+/**
+ * Configures Filament administration for booking resource.
+ */
 class BookingResource extends SecureResource
 {
     protected static ?string $model = Booking::class;
@@ -29,6 +32,9 @@ class BookingResource extends SecureResource
 
     protected static ?int $navigationSort = 10;
 
+    /**
+     * Controls whether this feature appears in the Filament navigation.
+     */
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->hasAnyRole([
@@ -40,6 +46,9 @@ class BookingResource extends SecureResource
         ]);
     }
 
+    /**
+     * Determines whether the current user may view these records.
+     */
     public static function canViewAny(): bool
     {
         return auth()->user()->hasAnyRole([
@@ -51,11 +60,17 @@ class BookingResource extends SecureResource
         ]);
     }
 
+    /**
+     * Determines whether the current user may create records.
+     */
     public static function canCreate(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'receptionist']) ?? false;
     }
 
+    /**
+     * Determines whether the current user may edit the supplied record.
+     */
     public static function canEdit($record): bool
     {
         $user = auth()->user();
@@ -67,31 +82,49 @@ class BookingResource extends SecureResource
         return $user->hasAnyRole(['super_admin', 'admin']) || $record->status === 'pending';
     }
 
+    /**
+     * Determines whether the current user may delete the supplied record.
+     */
     public static function canDelete($record): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
 
+    /**
+     * Determines whether the current user may delete these records.
+     */
     public static function canDeleteAny(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
 
+    /**
+     * Configures the form schema and input behavior.
+     */
     public static function form(Schema $schema): Schema
     {
         return BookingForm::configure($schema);
     }
 
+    /**
+     * Configures the read-only record details shown in the admin panel.
+     */
     public static function infolist(Schema $schema): Schema
     {
         return BookingInfolist::configure($schema);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public static function table(Table $table): Table
     {
         return BookingsTable::configure($table);
     }
 
+    /**
+     * Builds and returns relations.
+     */
     public static function getRelations(): array
     {
         return [
@@ -100,6 +133,9 @@ class BookingResource extends SecureResource
         ];
     }
 
+    /**
+     * Builds and returns pages.
+     */
     public static function getPages(): array
     {
         return [

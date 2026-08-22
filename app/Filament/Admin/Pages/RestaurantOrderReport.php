@@ -6,6 +6,9 @@ use App\Models\RestaurantOrder;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Provides the restaurant order report Filament administration page.
+ */
 class RestaurantOrderReport extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar-square';
@@ -22,6 +25,9 @@ class RestaurantOrderReport extends Page
 
     public string $period = 'this_month';
 
+    /**
+     * Builds and returns orders query.
+     */
     public function getOrdersQuery(): Builder
     {
         return RestaurantOrder::query()
@@ -44,6 +50,9 @@ class RestaurantOrderReport extends Page
             );
     }
 
+    /**
+     * Configures period label for the Filament administration interface.
+     */
     public function periodLabel(): string
     {
         return match ($this->period) {
@@ -55,6 +64,9 @@ class RestaurantOrderReport extends Page
         };
     }
 
+    /**
+     * Builds and returns report data.
+     */
     public function getReportData(): array
     {
         $orders = $this->getOrdersQuery()->latest()->get();
@@ -81,6 +93,9 @@ class RestaurantOrderReport extends Page
         ];
     }
 
+    /**
+     * Determines whether the current user may access this feature.
+     */
     public static function canAccess(): bool
     {
         $user = auth()->user();

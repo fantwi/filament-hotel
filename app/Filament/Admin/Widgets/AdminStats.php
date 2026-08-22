@@ -10,17 +10,26 @@ use App\Models\RestaurantReservation;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
+/**
+ * Provides the admin stats Filament dashboard widget.
+ */
 class AdminStats extends StatsOverviewWidget
 {
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->can('view admin dashboard') ?? false;
     }
 
+    /**
+     * Builds and returns stats.
+     */
     protected function getStats(): array
     {
         return [

@@ -7,8 +7,14 @@ use App\Models\MenuItem;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
+/**
+ * Seeds initial data for menu item seeder.
+ */
 class MenuItemSeeder extends Seeder
 {
+    /**
+     * Performs the run data-seeding operation.
+     */
     public function run(): void
     {
         $items = [

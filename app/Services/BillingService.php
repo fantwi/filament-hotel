@@ -4,8 +4,14 @@ namespace App\Services;
 
 use App\Models\BillingSetting;
 
+/**
+ * Encapsulates business rules for billing service.
+ */
 class BillingService
 {
+    /**
+     * Calculates  using the current business rules.
+     */
     public function calculate(float $subtotal, ?string $promotionType = null, float $promotionValue = 0): array
     {
         $subtotal = round(max(0, $subtotal), 2);
@@ -32,6 +38,9 @@ class BillingService
         ];
     }
 
+    /**
+     * Returns the currently configured tax and service-charge rates.
+     */
     public function rates(): array
     {
         $settings = BillingSetting::query()->latest('id')->first();

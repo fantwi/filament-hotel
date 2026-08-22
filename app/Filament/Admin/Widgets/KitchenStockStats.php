@@ -8,17 +8,26 @@ use App\Models\KitchenStockMovement;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
+/**
+ * Provides the kitchen stock stats Filament dashboard widget.
+ */
 class KitchenStockStats extends StatsOverviewWidget
 {
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->can('view kitchen stock') ?? false;
     }
 
+    /**
+     * Builds and returns stats.
+     */
     protected function getStats(): array
     {
         $movements = $this->forDashboardDateRange(KitchenStockMovement::query(), 'occurred_at');

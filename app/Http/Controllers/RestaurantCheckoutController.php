@@ -19,8 +19,14 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
 
+/**
+ * Coordinates the restaurant checkout controller HTTP workflow.
+ */
 class RestaurantCheckoutController extends Controller
 {
+    /**
+     * Displays the index interface or response.
+     */
     public function index(Request $request, RestaurantCartService $cart): View|RedirectResponse
     {
         $items = $cart->items();
@@ -53,6 +59,9 @@ class RestaurantCheckoutController extends Controller
         ]);
     }
 
+    /**
+     * Validates and persists a newly submitted record.
+     */
     public function store(Request $request, RestaurantCartService $cart): RedirectResponse
     {
         $tableId = session('restaurant_order.table_id');
@@ -192,6 +201,9 @@ class RestaurantCheckoutController extends Controller
             ->with('success', $message);
     }
 
+    /**
+     * Sends a database notification to staff responsible for kitchen fulfilment.
+     */
     private function notifyKitchen(RestaurantOrder $order): void
     {
         if (! Permission::query()

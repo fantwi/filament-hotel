@@ -15,8 +15,14 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
 
+/**
+ * Coordinates the restaurant order payment controller HTTP workflow.
+ */
 class RestaurantOrderPaymentController extends Controller
 {
+    /**
+     * Displays the current order and payment confirmation state.
+     */
     public function confirmation(RestaurantOrder $order): View
     {
         $this->authorizeOrder($order);
@@ -24,6 +30,9 @@ class RestaurantOrderPaymentController extends Controller
         return view('restaurant.order-confirmation', compact('order'));
     }
 
+    /**
+     * Starts the Paystack payment flow for the requested food order.
+     */
     public function initialize(RestaurantOrder $order): RedirectResponse
     {
         $this->authorizeOrder($order);
@@ -66,6 +75,9 @@ class RestaurantOrderPaymentController extends Controller
         return redirect()->away($data['data']['authorization_url']);
     }
 
+    /**
+     * Processes the browser return from Paystack after food-order payment.
+     */
     public function callback(Request $request): RedirectResponse
     {
         $reference = $request->string('reference')->toString();
@@ -92,6 +104,9 @@ class RestaurantOrderPaymentController extends Controller
             ->with('success', 'Payment received. Your order has been sent to the kitchen.');
     }
 
+    /**
+     * Processes verified Paystack server-to-server food-order payment notifications.
+     */
     public function webhook(Request $request): JsonResponse
     {
         $secret = (string) config('services.paystack.secretKey');
@@ -127,6 +142,9 @@ class RestaurantOrderPaymentController extends Controller
         return response()->json(['status' => true]);
     }
 
+    /**
+     * Records  payment attempt for audit and reporting.
+     */
     private function recordPaymentAttempt(RestaurantOrder $order, string $reference): void
     {
         DB::transaction(function () use ($order, $reference): void {
@@ -153,6 +171,9 @@ class RestaurantOrderPaymentController extends Controller
         });
     }
 
+    /**
+     * Resolves a food order from its payment reference with the required relationships.
+     */
     private function orderForReference(string $reference): ?RestaurantOrder
     {
         if ($reference === '') {
@@ -169,6 +190,9 @@ class RestaurantOrderPaymentController extends Controller
             ?? RestaurantOrder::where('transaction_reference', $reference)->first();
     }
 
+    /**
+     * Determines whether this record is valid payment.
+     */
     private function isValidPayment(?array $data, RestaurantOrder $order, string $reference): bool
     {
         return is_array($data)
@@ -178,6 +202,9 @@ class RestaurantOrderPaymentController extends Controller
             && (int) data_get($data, 'metadata.restaurant_order_id') === $order->id;
     }
 
+    /**
+     * Records  payment for audit and reporting.
+     */
     private function recordPayment(RestaurantOrder $order, string $reference): ?RestaurantOrder
     {
         return DB::transaction(function () use ($order, $reference): ?RestaurantOrder {
@@ -228,6 +255,9 @@ class RestaurantOrderPaymentController extends Controller
         });
     }
 
+    /**
+     * Sends a database notification to staff responsible for kitchen fulfilment.
+     */
     private function notifyKitchen(RestaurantOrder $order): void
     {
         if (! Permission::query()
@@ -247,6 +277,9 @@ class RestaurantOrderPaymentController extends Controller
         });
     }
 
+    /**
+     * Confirms that the current guest may access the requested food order.
+     */
     private function authorizeOrder(RestaurantOrder $order): void
     {
         $sessionOrders = collect(session('restaurant_order_ids', []))

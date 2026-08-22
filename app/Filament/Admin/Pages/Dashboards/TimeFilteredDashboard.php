@@ -11,10 +11,16 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
+/**
+ * Provides the time filtered dashboard Filament administration page.
+ */
 abstract class TimeFilteredDashboard extends Dashboard
 {
     use HasFiltersForm;
 
+    /**
+     * Configures filters form for the Filament administration interface.
+     */
     public function filtersForm(Schema $schema): Schema
     {
         [$start, $end] = static::presetRange('monthly');

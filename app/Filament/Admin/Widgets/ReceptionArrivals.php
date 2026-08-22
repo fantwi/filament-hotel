@@ -8,6 +8,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 
+/**
+ * Provides the reception arrivals Filament dashboard widget.
+ */
 class ReceptionArrivals extends TableWidget
 {
     use InteractsWithDashboardDateRange;
@@ -16,11 +19,17 @@ class ReceptionArrivals extends TableWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->can('view reception dashboard') ?? false;
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public function table(Table $table): Table
     {
         [$start, $end] = $this->dashboardDateRange();

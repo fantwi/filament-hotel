@@ -6,8 +6,14 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * Seeds initial data for restore admin seeder.
+ */
 class RestoreAdminSeeder extends Seeder
 {
+    /**
+     * Performs the run data-seeding operation.
+     */
     public function run(): void
     {
         $user = User::updateOrCreate(

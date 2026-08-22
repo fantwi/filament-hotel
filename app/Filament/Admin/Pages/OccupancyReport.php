@@ -11,6 +11,9 @@ use App\Models\Room;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 
+/**
+ * Provides the occupancy report Filament administration page.
+ */
 class OccupancyReport extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
@@ -25,6 +28,9 @@ class OccupancyReport extends Page
 
     public string $period = 'this_month';
 
+    /**
+     * Configures period label for the Filament administration interface.
+     */
     public function periodLabel(): string
     {
         return match ($this->period) {
@@ -37,6 +43,9 @@ class OccupancyReport extends Page
         };
     }
 
+    /**
+     * Configures report for the Filament administration interface.
+     */
     public function report(): array
     {
         [$periodStart, $periodEnd] = $this->periodBounds();
@@ -104,6 +113,9 @@ class OccupancyReport extends Page
         ];
     }
 
+    /**
+     * Configures period bounds for the Filament administration interface.
+     */
     private function periodBounds(): array
     {
         return match ($this->period) {
@@ -116,6 +128,9 @@ class OccupancyReport extends Page
         };
     }
 
+    /**
+     * Configures all time bounds for the Filament administration interface.
+     */
     private function allTimeBounds(): array
     {
         $start = collect([
@@ -136,6 +151,9 @@ class OccupancyReport extends Page
         ];
     }
 
+    /**
+     * Determines whether the current user may access this feature.
+     */
     public static function canAccess(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'receptionist']) ?? false;

@@ -8,10 +8,16 @@ use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Support\Number;
 
+/**
+ * Supports the activity log exporter Filament administration feature.
+ */
 class ActivityLogExporter extends Exporter
 {
     protected static ?string $model = Activity::class;
 
+    /**
+     * Builds and returns columns.
+     */
     public static function getColumns(): array
     {
         return [
@@ -38,6 +44,9 @@ class ActivityLogExporter extends Exporter
         ];
     }
 
+    /**
+     * Builds and returns completed notification body.
+     */
     public static function getCompletedNotificationBody(Export $export): string
     {
         $body = 'Your activity log export has completed and '.Number::format($export->successful_rows).' '.str('row')->plural($export->successful_rows).' exported.';

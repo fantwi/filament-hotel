@@ -6,6 +6,9 @@ use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeds initial data for restaurant table seeder.
+ */
 class RestaurantTableSeeder extends Seeder
 {
     /**

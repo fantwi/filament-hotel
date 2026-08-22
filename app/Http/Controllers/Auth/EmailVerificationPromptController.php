@@ -7,6 +7,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the email verification prompt controller HTTP workflow.
+ */
 class EmailVerificationPromptController extends Controller
 {
     /**

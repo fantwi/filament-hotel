@@ -8,8 +8,14 @@ use App\Models\RestaurantTable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the restaurant table order controller HTTP workflow.
+ */
 class RestaurantTableOrderController extends Controller
 {
+    /**
+     * Handles the menu HTTP action.
+     */
     public function menu(RestaurantTable $table): View|RedirectResponse
     {
         if (! $table->qr_ordering_enabled) {
@@ -45,6 +51,9 @@ class RestaurantTableOrderController extends Controller
         return view('restaurant.menu', compact('restaurant', 'categories', 'featuredItems', 'table'));
     }
 
+    /**
+     * Handles the leave table HTTP action.
+     */
     public function leaveTable(): RedirectResponse
     {
         session()->forget(['restaurant_order.table_id', 'restaurant_order.table_number', 'restaurant_order.restaurant_id', 'restaurant_order.channel', 'cart']);

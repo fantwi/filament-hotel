@@ -5,12 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Represents promotion and its persisted business behavior.
+ */
 class Promotion extends Model
 {
     protected $fillable = ['name', 'code', 'discount_type', 'discount_value', 'minimum_spend', 'starts_at', 'ends_at', 'is_active'];
 
     protected $casts = ['discount_value' => 'decimal:2', 'minimum_spend' => 'decimal:2', 'starts_at' => 'date', 'ends_at' => 'date', 'is_active' => 'boolean'];
 
+    /**
+     * Applies the applicable query scope.
+     */
     public function scopeApplicable(Builder $query, float $subtotal): Builder
     {
         return $query->where('is_active', true)

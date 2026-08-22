@@ -19,6 +19,9 @@ use Illuminate\Database\Eloquent\Builder;
 
 // use Filament\Forms\Components\FileUpload;
 
+/**
+ * Configures Filament administration for room type resource.
+ */
 class RoomTypeResource extends SecureResource
 {
     protected static ?string $model = RoomType::class;
@@ -31,6 +34,9 @@ class RoomTypeResource extends SecureResource
 
     protected static ?int $navigationSort = 10;
 
+    /**
+     * Controls whether this feature appears in the Filament navigation.
+     */
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->hasAnyRole([
@@ -40,6 +46,9 @@ class RoomTypeResource extends SecureResource
         ]);
     }
 
+    /**
+     * Determines whether the current user may view these records.
+     */
     public static function canViewAny(): bool
     {
         return auth()->user()?->hasAnyRole([
@@ -49,47 +58,74 @@ class RoomTypeResource extends SecureResource
         ]);
     }
 
+    /**
+     * Determines whether the current user may create records.
+     */
     public static function canCreate(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
 
+    /**
+     * Determines whether the current user may edit the supplied record.
+     */
     public static function canEdit($record): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
 
+    /**
+     * Determines whether the current user may delete the supplied record.
+     */
     public static function canDelete($record): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
 
+    /**
+     * Determines whether the current user may delete these records.
+     */
     public static function canDeleteAny(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
 
 
+    /**
+     * Configures the form schema and input behavior.
+     */
     public static function form(Schema $schema): Schema
     {
         return RoomTypeForm::configure($schema);
     }
 
+    /**
+     * Configures the read-only record details shown in the admin panel.
+     */
     public static function infolist(Schema $schema): Schema
     {
         return RoomTypeInfolist::configure($schema);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public static function table(Table $table): Table
     {
         return RoomTypesTable::configure($table);
     }
 
+    /**
+     * Builds and returns eloquent query.
+     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->visibleTo(auth()->user());
     }
 
+    /**
+     * Builds and returns relations.
+     */
     public static function getRelations(): array
     {
         return [
@@ -97,6 +133,9 @@ class RoomTypeResource extends SecureResource
         ];
     }
 
+    /**
+     * Builds and returns pages.
+     */
     public static function getPages(): array
     {
         return [

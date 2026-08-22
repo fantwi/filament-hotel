@@ -5,6 +5,9 @@ namespace App\Filament\Admin\Widgets;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use Filament\Widgets\Widget;
 
+/**
+ * Provides the role dashboard overview Filament dashboard widget.
+ */
 class RoleDashboardOverview extends Widget
 {
     use InteractsWithDashboardDateRange;
@@ -15,6 +18,9 @@ class RoleDashboardOverview extends Widget
 
     protected static ?int $sort = -10;
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole([
@@ -26,6 +32,9 @@ class RoleDashboardOverview extends Widget
         ]) ?? false;
     }
 
+    /**
+     * Builds and returns view data.
+     */
     protected function getViewData(): array
     {
         return [

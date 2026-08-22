@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
+/**
+ * Represents restaurant order and its persisted business behavior.
+ */
 class RestaurantOrder extends Model
 {
     protected $fillable = [
@@ -62,62 +65,98 @@ class RestaurantOrder extends Model
         'stock_reversed_at' => 'datetime',
     ];
 
+    /**
+     * Returns the current restaurant cart items with their calculated line totals.
+     */
     public function items(): HasMany
     {
         return $this->hasMany(RestaurantOrderItem::class);
     }
 
+    /**
+     * Defines the corporate organization relationship or domain behavior for this model.
+     */
     public function corporateOrganization(): BelongsTo
     {
         return $this->belongsTo(CorporateOrganization::class);
     }
 
+    /**
+     * Defines the guest relationship or domain behavior for this model.
+     */
     public function guest(): BelongsTo
     {
         return $this->belongsTo(Guest::class);
     }
 
+    /**
+     * Defines the reservation relationship or domain behavior for this model.
+     */
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(RestaurantReservation::class, 'restaurant_reservation_id');
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public function table(): BelongsTo
     {
         return $this->belongsTo(RestaurantTable::class, 'restaurant_table_id');
     }
 
+    /**
+     * Defines the payments relationship or domain behavior for this model.
+     */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
+    /**
+     * Defines the stock movements relationship or domain behavior for this model.
+     */
     public function stockMovements(): MorphMany
     {
         return $this->morphMany(KitchenStockMovement::class, 'reference');
     }
 
+    /**
+     * Defines the prepared by relationship or domain behavior for this model.
+     */
     public function preparedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'prepared_by');
     }
 
+    /**
+     * Defines the served by relationship or domain behavior for this model.
+     */
     public function servedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'served_by');
     }
 
+    /**
+     * Applies the paid query scope.
+     */
     public function scopePaid(Builder $query): Builder
     {
         return $query->where('payment_status', 'completed');
     }
 
+    /**
+     * Determines whether this record is kitchen eligible.
+     */
     public function isKitchenEligible(): bool
     {
         return $this->payment_status === 'completed'
             || $this->payment_method === 'corporate_account';
     }
 
+    /**
+     * Applies the kitchen queue query scope.
+     */
     public function scopeKitchenQueue(Builder $query): Builder
     {
         return $query
@@ -129,6 +168,9 @@ class RestaurantOrder extends Model
             ->whereIn('status', ['confirmed', 'preparing', 'ready']);
     }
 
+    /**
+     * Applies the active query scope.
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->whereNotIn('status', ['served', 'cancelled']);

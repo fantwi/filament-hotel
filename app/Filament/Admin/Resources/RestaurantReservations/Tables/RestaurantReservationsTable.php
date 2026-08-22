@@ -18,8 +18,14 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Mail;
 
+/**
+ * Configures Filament administration for restaurant reservations table.
+ */
 class RestaurantReservationsTable
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Table $table): Table
     {
         return $table

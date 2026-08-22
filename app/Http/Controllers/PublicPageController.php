@@ -10,8 +10,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the public page controller HTTP workflow.
+ */
 class PublicPageController extends Controller
 {
+    /**
+     * Handles the home HTTP action.
+     */
     public function home(): View
     {
         $roomTypes = RoomType::query()
@@ -30,11 +36,17 @@ class PublicPageController extends Controller
         return view('index', compact('roomTypes', 'conferenceRooms', 'restaurant'));
     }
 
+    /**
+     * Handles the contact HTTP action.
+     */
     public function contact(): View
     {
         return view('contact');
     }
 
+    /**
+     * Handles the store contact HTTP action.
+     */
     public function storeContact(Request $request): RedirectResponse
     {
         $validated = $request->validate([

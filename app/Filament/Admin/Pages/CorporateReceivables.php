@@ -9,6 +9,9 @@ use App\Models\RestaurantReservation;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 
+/**
+ * Provides the corporate receivables Filament administration page.
+ */
 class CorporateReceivables extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
@@ -21,11 +24,17 @@ class CorporateReceivables extends Page
 
     protected string $view = 'filament.admin.pages.corporate-receivables';
 
+    /**
+     * Determines whether the current user may access this feature.
+     */
     public static function canAccess(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'accountant']) ?? false;
     }
 
+    /**
+     * Configures receivables for the Filament administration interface.
+     */
     public function receivables(): Collection
     {
         $toRows = static function (Collection $records, string $type, string $label, string $amountField): Collection {

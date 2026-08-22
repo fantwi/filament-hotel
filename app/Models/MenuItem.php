@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Represents menu item and its persisted business behavior.
+ */
 class MenuItem extends Model
 {
     use HasPublicationState;
@@ -43,26 +46,41 @@ class MenuItem extends Model
         'low_stock_threshold' => 'decimal:3',
     ];
 
+    /**
+     * Defines the category relationship or domain behavior for this model.
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(MenuCategory::class, 'menu_category_id');
     }
 
+    /**
+     * Defines the order items relationship or domain behavior for this model.
+     */
     public function orderItems(): HasMany
     {
         return $this->hasMany(RestaurantOrderItem::class);
     }
 
+    /**
+     * Defines the kitchen productions relationship or domain behavior for this model.
+     */
     public function kitchenProductions(): HasMany
     {
         return $this->hasMany(KitchenProduction::class);
     }
 
+    /**
+     * Defines the recipe ingredients relationship or domain behavior for this model.
+     */
     public function recipeIngredients(): HasMany
     {
         return $this->hasMany(RecipeIngredient::class);
     }
 
+    /**
+     * Defines the ingredients relationship or domain behavior for this model.
+     */
     public function ingredients(): BelongsToMany
     {
         return $this->belongsToMany(Ingredient::class, 'recipe_ingredients')
@@ -70,6 +88,9 @@ class MenuItem extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Determines whether the current user may start kitchen preparation.
+     */
     public function canPrepare(int $quantity = 1): bool
     {
         if ($this->inventory_consumption_mode !== 'per_order') {

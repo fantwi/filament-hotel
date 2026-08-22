@@ -10,8 +10,14 @@ use Filament\Forms\Components\TimePicker;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
+/**
+ * Configures Filament administration for restaurant reservation form.
+ */
 class RestaurantReservationForm
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(
         Schema $schema,
     ): Schema {

@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Represents activity log and its persisted business behavior.
+ */
 class ActivityLog extends Model
 {
     //
@@ -22,6 +25,9 @@ class ActivityLog extends Model
         'new_values' => 'array',
     ];
 
+    /**
+     * Defines the user relationship or domain behavior for this model.
+     */
     public function user()
     {
         return $this->belongsTo(User::class);

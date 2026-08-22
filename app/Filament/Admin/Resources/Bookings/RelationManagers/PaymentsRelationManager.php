@@ -14,10 +14,16 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Configures Filament administration for payments relation manager.
+ */
 class PaymentsRelationManager extends RelationManager
 {
     protected static string $relationship = 'payments';
 
+    /**
+     * Configures the form schema and input behavior.
+     */
     public function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -46,6 +52,9 @@ class PaymentsRelationManager extends RelationManager
         ]);
     }
 
+    /**
+     * Configures the read-only record details shown in the admin panel.
+     */
     public function infolist(Schema $schema): Schema
     {
         return $schema->components([
@@ -53,6 +62,9 @@ class PaymentsRelationManager extends RelationManager
         ]);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public function table(Table $table): Table
     {
         return $table
@@ -83,16 +95,25 @@ class PaymentsRelationManager extends RelationManager
             });
     }
 
+    /**
+     * Determines whether the current user may create records.
+     */
     public function canCreate(): bool
     {
         return auth()->user()?->hasAnyRole(['admin', 'accountant']);
     }
 
+    /**
+     * Determines whether the current user may edit the supplied record.
+     */
     public function canEdit(Model $record): bool
     {
         return auth()->user()?->hasAnyRole(['admin', 'accountant']);
     }
 
+    /**
+     * Determines whether the current user may delete the supplied record.
+     */
     public function canDelete(Model $record): bool
     {
         return auth()->user()?->hasAnyRole(['admin', 'accountant']);

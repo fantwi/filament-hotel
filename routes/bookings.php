@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Registers hotel-room search, reservation, payment, and booking-management routes.
+ */
+
 use App\Http\Controllers\BookingController;
 use App\Models\Booking;
 use App\Models\Guest;

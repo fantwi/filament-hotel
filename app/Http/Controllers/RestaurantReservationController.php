@@ -12,8 +12,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
+/**
+ * Coordinates the restaurant reservation controller HTTP workflow.
+ */
 class RestaurantReservationController extends Controller
 {
+    /**
+     * Displays the show interface or response.
+     */
     public function show(RestaurantReservation $reservation)
     {
         $this->authorizeGuestAccess($reservation);
@@ -23,6 +29,9 @@ class RestaurantReservationController extends Controller
         return view('restaurant.reservation-show', compact('reservation'));
     }
 
+    /**
+     * Determines whether this transaction can be cancelled.
+     */
     public function cancel(RestaurantReservation $reservation)
     {
         $this->authorizeGuestAccess($reservation);
@@ -48,6 +57,9 @@ class RestaurantReservationController extends Controller
             ->with('success', 'Restaurant reservation cancelled. The table hold has been released.');
     }
 
+    /**
+     * Displays the create interface or response.
+     */
     public function create()
     {
         $restaurant = Restaurant::published()->first();
@@ -65,6 +77,9 @@ class RestaurantReservationController extends Controller
         ]);
     }
 
+    /**
+     * Validates and persists a newly submitted record.
+     */
     public function store(Request $request)
     {
         $restaurant = Restaurant::published()->firstOrFail();
@@ -281,6 +296,9 @@ class RestaurantReservationController extends Controller
             ->with('success', 'Your reservation has been received.');
     }
 
+    /**
+     * Confirms that the current guest owns the requested transaction.
+     */
     private function authorizeGuestAccess(RestaurantReservation $reservation): void
     {
         $user = auth()->user();

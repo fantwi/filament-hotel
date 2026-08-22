@@ -8,6 +8,9 @@ use Illuminate\Support\Str;
 
 return new class extends Migration
 {
+    /**
+     * Applies this database schema change.
+     */
     public function up(): void
     {
         if (! Schema::hasColumn('restaurant_reservations', 'transaction_reference')) {
@@ -33,6 +36,9 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverts this database schema change.
+     */
     public function down(): void
     {
         Schema::table('restaurant_reservations', function (Blueprint $table): void {

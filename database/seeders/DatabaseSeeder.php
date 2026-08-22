@@ -7,6 +7,9 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * Seeds initial data for database seeder.
+ */
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;

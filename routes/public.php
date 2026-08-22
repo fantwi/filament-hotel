@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Registers public hotel information and contact-page routes.
+ */
+
 use App\Http\Controllers\PublicPageController;
 use Illuminate\Support\Facades\Route;
 

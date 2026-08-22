@@ -10,6 +10,9 @@ use App\Filament\Admin\Resources\SecureResource;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Configures Filament administration for kitchen stock movement resource.
+ */
 class KitchenStockMovementResource extends SecureResource
 {
     protected static ?string $model = KitchenStockMovement::class;
@@ -22,31 +25,49 @@ class KitchenStockMovementResource extends SecureResource
 
     protected static ?int $navigationSort = 71;
 
+    /**
+     * Determines whether the current user may view these records.
+     */
     public static function canViewAny(): bool
     {
         return auth()->user()?->can('view kitchen stock movements') ?? false;
     }
 
+    /**
+     * Determines whether the current user may create records.
+     */
     public static function canCreate(): bool
     {
         return false;
     }
 
+    /**
+     * Determines whether the current user may edit the supplied record.
+     */
     public static function canEdit(Model $record): bool
     {
         return false;
     }
 
+    /**
+     * Determines whether the current user may delete the supplied record.
+     */
     public static function canDelete(Model $record): bool
     {
         return false;
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public static function table(Table $table): Table
     {
         return KitchenStockMovementsTable::configure($table);
     }
 
+    /**
+     * Builds and returns pages.
+     */
     public static function getPages(): array
     {
         return ['index' => ListKitchenStockMovements::route('/')];

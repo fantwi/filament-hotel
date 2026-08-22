@@ -5,6 +5,9 @@ namespace App\Models;
 use App\Models\Concerns\HasPublicationState;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Represents conference room and its persisted business behavior.
+ */
 class ConferenceRoom extends Model
 {
     use HasPublicationState;
@@ -33,6 +36,9 @@ class ConferenceRoom extends Model
 
     protected $casts = ['gallery' => 'array', 'is_available' => 'boolean', 'is_published' => 'boolean'];
 
+    /**
+     * Defines the bookings relationship or domain behavior for this model.
+     */
     public function bookings()
     {
         return $this->hasMany(
@@ -40,6 +46,9 @@ class ConferenceRoom extends Model
         );
     }
 
+    /**
+     * Defines the facilities relationship or domain behavior for this model.
+     */
     public function facilities()
     {
         return $this->belongsToMany(

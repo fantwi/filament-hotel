@@ -27,6 +27,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Configures Filament administration for kitchen production resource.
+ */
 class KitchenProductionResource extends SecureResource
 {
     protected static ?string $model = KitchenProduction::class;
@@ -39,22 +42,34 @@ class KitchenProductionResource extends SecureResource
 
     protected static ?int $navigationSort = 80;
 
+    /**
+     * Determines whether the current user may view these records.
+     */
     public static function canViewAny(): bool
     {
         return auth()->user()?->can('manage kitchen production') ?? false;
     }
 
+    /**
+     * Determines whether the current user may create records.
+     */
     public static function canCreate(): bool
     {
         return auth()->user()?->can('manage kitchen production') ?? false;
     }
 
+    /**
+     * Determines whether the current user may edit the supplied record.
+     */
     public static function canEdit($record): bool
     {
         return auth()->user()?->can('manage kitchen production') ?? false;
     }
 
 
+    /**
+     * Configures the form schema and input behavior.
+     */
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -243,6 +258,9 @@ class KitchenProductionResource extends SecureResource
         ]);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public static function table(Table $table): Table
     {
         return $table
@@ -285,6 +303,9 @@ class KitchenProductionResource extends SecureResource
             ->recordActions([EditAction::make(), DeleteAction::make()]);
     }
 
+    /**
+     * Builds and returns pages.
+     */
     public static function getPages(): array
     {
         return ['index' => ListKitchenProductions::route('/'), 'create' => CreateKitchenProduction::route('/create'), 'edit' => EditKitchenProduction::route('/{record}/edit')];

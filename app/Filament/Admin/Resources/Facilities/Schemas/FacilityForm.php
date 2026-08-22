@@ -5,8 +5,14 @@ namespace App\Filament\Admin\Resources\Facilities\Schemas;
 use Filament\Forms;
 use Filament\Schemas\Schema;
 
+/**
+ * Configures Filament administration for facility form.
+ */
 class FacilityForm
 {
+    /**
+     * Configures configure for the Filament administration interface.
+     */
     public static function configure(Schema $schema): Schema
     {
         // return $schema

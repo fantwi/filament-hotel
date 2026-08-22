@@ -11,6 +11,9 @@ use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
+/**
+ * Configures Filament administration for corporate organization resource.
+ */
 class CorporateOrganizationResource extends SecureResource
 {
     protected static ?string $model = CorporateOrganization::class;
@@ -19,37 +22,58 @@ class CorporateOrganizationResource extends SecureResource
     protected static ?string $navigationLabel = 'Corporate Organisations';
     protected static ?int $navigationSort = 20;
 
+    /**
+     * Determines whether the current user may view these records.
+     */
     public static function canViewAny(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false;
     }
 
+    /**
+     * Configures may manage for the Filament administration interface.
+     */
     private static function mayManage(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false;
     }
 
+    /**
+     * Determines whether the current user may create records.
+     */
     public static function canCreate(): bool
     {
         return static::mayManage();
     }
 
+    /**
+     * Determines whether the current user may edit the supplied record.
+     */
     public static function canEdit($record): bool
     {
         return static::mayManage();
     }
 
+    /**
+     * Determines whether the current user may delete the supplied record.
+     */
     public static function canDelete($record): bool
     {
         return static::mayManage();
     }
 
+    /**
+     * Determines whether the current user may delete these records.
+     */
     public static function canDeleteAny(): bool
     {
         return static::mayManage();
     }
 
 
+    /**
+     * Configures the form schema and input behavior.
+     */
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -63,6 +87,9 @@ class CorporateOrganizationResource extends SecureResource
         ])->columns(['default' => 1, 'sm' => 2]);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public static function table(Table $table): Table
     {
         return $table->columns([
@@ -78,6 +105,9 @@ class CorporateOrganizationResource extends SecureResource
         ]);
     }
 
+    /**
+     * Builds and returns pages.
+     */
     public static function getPages(): array
     {
         return [

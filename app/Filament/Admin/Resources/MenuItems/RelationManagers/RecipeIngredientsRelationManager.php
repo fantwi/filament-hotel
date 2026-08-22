@@ -15,17 +15,26 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Configures Filament administration for recipe ingredients relation manager.
+ */
 class RecipeIngredientsRelationManager extends RelationManager
 {
     protected static string $relationship = 'recipeIngredients';
 
     protected static ?string $title = 'Recipe Ingredients';
 
+    /**
+     * Determines whether the current user may view the supplied record.
+     */
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
         return auth()->user()?->can('manage menu item recipes') ?? false;
     }
 
+    /**
+     * Configures the form schema and input behavior.
+     */
     public function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -35,6 +44,9 @@ class RecipeIngredientsRelationManager extends RelationManager
         ]);
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public function table(Table $table): Table
     {
         return $table

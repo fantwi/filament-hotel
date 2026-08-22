@@ -6,8 +6,14 @@ use App\Models\MenuCategory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
+/**
+ * Seeds initial data for menu category seeder.
+ */
 class MenuCategorySeeder extends Seeder
 {
+    /**
+     * Performs the run data-seeding operation.
+     */
     public function run(): void
     {
         $categories = [

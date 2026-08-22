@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+/**
+ * Represents payment and its persisted business behavior.
+ */
 class Payment extends Model
 {
     //
@@ -27,16 +30,25 @@ class Payment extends Model
         'transaction_reference',
     ];
 
+    /**
+     * Defines the booking relationship or domain behavior for this model.
+     */
     public function booking()
     {
         return $this->belongsTo(Booking::class);
     }
 
+    /**
+     * Defines the guest relationship or domain behavior for this model.
+     */
     public function guest(): BelongsTo
     {
         return $this->belongsTo(Guest::class);
     }
 
+    /**
+     * Defines the conference booking relationship or domain behavior for this model.
+     */
     public function conferenceBooking()
     {
         return $this->belongsTo(
@@ -44,6 +56,9 @@ class Payment extends Model
         );
     }
 
+    /**
+     * Defines the restaurant reservation relationship or domain behavior for this model.
+     */
     public function restaurantReservation()
     {
         return $this->belongsTo(
@@ -51,11 +66,17 @@ class Payment extends Model
         );
     }
 
+    /**
+     * Defines the restaurant order relationship or domain behavior for this model.
+     */
     public function restaurantOrder()
     {
         return $this->belongsTo(RestaurantOrder::class);
     }
 
+    /**
+     * Defines the transaction label relationship or domain behavior for this model.
+     */
     public function transactionLabel(): string
     {
         return match (true) {
@@ -67,6 +88,9 @@ class Payment extends Model
         };
     }
 
+    /**
+     * Defines the transaction guest relationship or domain behavior for this model.
+     */
     public function transactionGuest(): ?Guest
     {
         return $this->guest
@@ -76,6 +100,9 @@ class Payment extends Model
             ?? $this->restaurantOrder?->guest;
     }
 
+    /**
+     * Defines the transaction guest name relationship or domain behavior for this model.
+     */
     public function transactionGuestName(): string
     {
         $guest = $this->transactionGuest();
@@ -83,6 +110,9 @@ class Payment extends Model
         return $guest ? trim($guest->full_name) : 'Guest not recorded';
     }
 
+    /**
+     * Registers lifecycle hooks and model behavior.
+     */
     protected static function booted()
     {
         static::created(function ($payment) {
@@ -120,6 +150,9 @@ class Payment extends Model
         });
     }
 
+    /**
+     * Builds and returns activitylog options.
+     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

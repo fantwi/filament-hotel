@@ -5,10 +5,16 @@ namespace App\Filament\Admin\Widgets;
 use App\Models\Payment;
 use Filament\Widgets\ChartWidget;
 
+/**
+ * Provides the monthly revenue chart Filament dashboard widget.
+ */
 class MonthlyRevenueChart extends ChartWidget
 {
     protected ?string $heading = 'Monthly Revenue';
 
+    /**
+     * Builds and returns data.
+     */
     protected function getData(): array
     {
         $totals = Payment::query()
@@ -32,11 +38,17 @@ class MonthlyRevenueChart extends ChartWidget
         ];
     }
 
+    /**
+     * Builds and returns type.
+     */
     protected function getType(): string
     {
         return 'line';
     }
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;

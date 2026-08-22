@@ -8,12 +8,21 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Builds the restaurant reservation refunded email notification.
+ */
 class RestaurantReservationRefunded extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    /**
+     * Initializes the dependencies required by this component.
+     */
     public function __construct(public RestaurantReservation $reservation) {}
 
+    /**
+     * Builds .
+     */
     public function build(): static
     {
         return $this

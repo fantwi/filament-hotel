@@ -6,8 +6,14 @@ use App\Models\Booking;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Encapsulates business rules for invoice service.
+ */
 class InvoiceService
 {
+    /**
+     * Creates the requested invoice document and its associated data.
+     */
     public static function generate(Booking $booking)
     {
         // Load relationships for invoice
@@ -45,6 +51,9 @@ class InvoiceService
         return $fileName;
     }
 
+    /**
+     * Generates a unique, traceable invoice number.
+     */
     public static function generateInvoiceNumber()
     {
         $year = now()->year;

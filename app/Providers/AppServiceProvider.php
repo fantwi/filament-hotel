@@ -13,6 +13,9 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 
+/**
+ * Registers application services for app service provider.
+ */
 class AppServiceProvider extends ServiceProvider
 {
     /**

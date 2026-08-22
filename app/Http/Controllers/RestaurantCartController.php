@@ -9,8 +9,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+/**
+ * Coordinates the restaurant cart controller HTTP workflow.
+ */
 class RestaurantCartController extends Controller
 {
+    /**
+     * Handles the add HTTP action.
+     */
     public function add(MenuItem $item): RedirectResponse
     {
         abort_unless($item->is_published && $item->is_available, 422, 'This menu item is unavailable.');
@@ -27,6 +33,9 @@ class RestaurantCartController extends Controller
         return back()->with('success', 'Item added to cart.');
     }
 
+    /**
+     * Displays the index interface or response.
+     */
     public function index(Request $request, RestaurantCartService $cart): View
     {
         $items = $cart->items();
@@ -53,6 +62,9 @@ class RestaurantCartController extends Controller
         ]);
     }
 
+    /**
+     * Validates and persists changes to an existing record.
+     */
     public function update(Request $request, MenuItem $item): RedirectResponse
     {
         $data = $request->validate(['quantity' => ['required', 'integer', 'min:1', 'max:99']]);
@@ -66,6 +78,9 @@ class RestaurantCartController extends Controller
         return back()->with('success', 'Cart updated.');
     }
 
+    /**
+     * Handles the remove HTTP action.
+     */
     public function remove(MenuItem $item): RedirectResponse
     {
         $cart = session('cart', []);

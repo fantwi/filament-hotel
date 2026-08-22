@@ -11,6 +11,9 @@ use App\Models\RestaurantReservation;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Provides the transaction overview Filament dashboard widget.
+ */
 class TransactionOverview extends Widget
 {
     use InteractsWithDashboardDateRange;
@@ -19,11 +22,17 @@ class TransactionOverview extends Widget
 
     protected int|string|array $columnSpan = 'full';
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;
     }
 
+    /**
+     * Builds and returns view data.
+     */
     protected function getViewData(): array
     {
         $rows = [

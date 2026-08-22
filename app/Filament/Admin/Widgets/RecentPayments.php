@@ -8,6 +8,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 
+/**
+ * Provides the recent payments Filament dashboard widget.
+ */
 class RecentPayments extends TableWidget
 {
     use InteractsWithDashboardDateRange;
@@ -16,11 +19,17 @@ class RecentPayments extends TableWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'accountant']) ?? false;
     }
 
+    /**
+     * Configures the table data source, columns, and actions.
+     */
     public function table(Table $table): Table
     {
         return $table->query($this->forDashboardDateRange(Payment::query())->with('guest')->latest())->columns([

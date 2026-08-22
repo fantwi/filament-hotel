@@ -9,6 +9,9 @@ use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
 use Filament\Widgets\ChartWidget;
 
+/**
+ * Provides the manager operations chart Filament dashboard widget.
+ */
 class ManagerOperationsChart extends ChartWidget
 {
     use InteractsWithDashboardDateRange;
@@ -17,11 +20,17 @@ class ManagerOperationsChart extends ChartWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    /**
+     * Determines whether the current user may view this feature.
+     */
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false;
     }
 
+    /**
+     * Builds and returns data.
+     */
     protected function getData(): array
     {
         [$start, $end] = $this->dashboardDateRange();
@@ -52,6 +61,9 @@ class ManagerOperationsChart extends ChartWidget
         ], 'labels' => $labels];
     }
 
+    /**
+     * Builds and returns type.
+     */
     protected function getType(): string
     {
         return 'line';
