@@ -13,7 +13,9 @@ use App\Http\Controllers\RestaurantTableOrderController;
 use App\Http\Controllers\RestaurantTableQrController;
 use App\Mail\RestaurantPaymentReceived;
 use App\Models\Payment;
+use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -44,7 +46,7 @@ Route::get('/restaurant/orders/{order}/confirmation', [RestaurantOrderPaymentCon
 Route::post('/restaurant/orders/{order}/pay', [RestaurantOrderPaymentController::class, 'initialize'])->name('restaurant.orders.pay');
 Route::get('/restaurant/orders/payment/callback', [RestaurantOrderPaymentController::class, 'callback'])->name('restaurant.orders.payment.callback');
 Route::post('/payments/paystack/restaurant-orders/webhook', [RestaurantOrderPaymentController::class, 'webhook'])
-    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
+    ->withoutMiddleware([ValidateCsrfToken::class])
     ->name('restaurant.orders.payment.webhook');
 
 Route::get(
@@ -107,7 +109,6 @@ Route::get(
 
         abort_unless($canAccessRestaurantReservation($reservation, $accessToken), 403);
 
-
         if (
 
             $reservation->hold_status == 'expired'
@@ -165,7 +166,6 @@ Route::post(
         $accessToken = $request->query('token');
 
         abort_unless($canAccessRestaurantReservation($reservation, $accessToken), 403);
-
 
         if ($reservation->payment_status === 'completed') {
 
@@ -328,8 +328,7 @@ Route::get(
     }
 )->name('restaurant.verify');
 
-
-Route::post('/restaurant/orders/{order}/cancel', function (\App\Models\RestaurantOrder $order) {
+Route::post('/restaurant/orders/{order}/cancel', function (RestaurantOrder $order) {
     $ownsOrder = in_array($order->id, session('restaurant_order_ids', []), true)
         || (auth()->id() && $order->guest?->user_id === auth()->id());
     abort_unless($ownsOrder, 403);

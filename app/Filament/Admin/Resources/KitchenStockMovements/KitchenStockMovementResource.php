@@ -4,9 +4,9 @@ namespace App\Filament\Admin\Resources\KitchenStockMovements;
 
 use App\Filament\Admin\Resources\KitchenStockMovements\Pages\ListKitchenStockMovements;
 use App\Filament\Admin\Resources\KitchenStockMovements\Tables\KitchenStockMovementsTable;
+use App\Filament\Admin\Resources\SecureResource;
 use App\Models\KitchenStockMovement;
 use BackedEnum;
-use App\Filament\Admin\Resources\SecureResource;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 

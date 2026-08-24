@@ -7,9 +7,9 @@ use App\Filament\Admin\Resources\RestaurantOrders\Pages\EditRestaurantOrder;
 use App\Filament\Admin\Resources\RestaurantOrders\Pages\ListRestaurantOrders;
 use App\Filament\Admin\Resources\RestaurantOrders\Schemas\RestaurantOrderForm;
 use App\Filament\Admin\Resources\RestaurantOrders\Tables\RestaurantOrdersTable;
+use App\Filament\Admin\Resources\SecureResource;
 use App\Models\RestaurantOrder;
 use BackedEnum;
-use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 
@@ -45,7 +45,6 @@ class RestaurantOrderResource extends SecureResource
     {
         return auth()->user()?->can('manage kitchen orders') ?? false;
     }
-
 
     /**
      * Configures the form schema and input behavior.

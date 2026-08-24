@@ -16,7 +16,7 @@ class OccupancyReportTest extends TestCase
 
     public function test_occupancy_report_uses_one_selected_period_for_structured_operational_data(): void
     {
-        $reportPage = new OccupancyReport();
+        $reportPage = new OccupancyReport;
         $reportPage->period = 'this_quarter';
 
         self::assertSame('This quarter', $reportPage->periodLabel());
@@ -59,7 +59,7 @@ class OccupancyReportTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $report = (new OccupancyReport())->report();
+        $report = (new OccupancyReport)->report();
 
         self::assertSame(1, $report['hotelBookings']);
         self::assertSame(3, $report['bookedRoomNights']);

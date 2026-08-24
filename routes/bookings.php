@@ -8,8 +8,11 @@ use App\Http\Controllers\BookingController;
 use App\Models\Booking;
 use App\Models\Guest;
 use App\Models\Payment;
+use App\Models\Promotion;
 use App\Models\Room;
 use App\Models\RoomType;
+use App\Services\BillingService;
+use App\Services\CorporateCreditService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -418,7 +421,7 @@ Route::middleware('auth')->group(function () {
             'booking.details',
             [
                 'disabledDates' => $disabledDates,
-                'corporateOrganization' => app(\App\Services\CorporateCreditService::class)->organizationFor(auth()->user()),
+                'corporateOrganization' => app(CorporateCreditService::class)->organizationFor(auth()->user()),
             ]
         );
     })->name('booking.details');
@@ -470,9 +473,11 @@ Route::middleware('auth')->group(function () {
             session('booking.room_price') * $nights;
 
         $subtotal = (float) session('booking.room_price') * $nights;
-        $promotion = filled($request->input('promotion_code')) ? \App\Models\Promotion::query()->where('code', strtoupper($request->input('promotion_code')))->applicable($subtotal)->first() : null;
-        if (filled($request->input('promotion_code')) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This discount code is not valid for this booking.']);
-        $billing = app(\App\Services\BillingService::class)->calculate($subtotal, $promotion?->discount_type, (float) ($promotion?->discount_value ?? 0));
+        $promotion = filled($request->input('promotion_code')) ? Promotion::query()->where('code', strtoupper($request->input('promotion_code')))->applicable($subtotal)->first() : null;
+        if (filled($request->input('promotion_code')) && ! $promotion) {
+            return back()->withInput()->withErrors(['promotion_code' => 'This discount code is not valid for this booking.']);
+        }
+        $billing = app(BillingService::class)->calculate($subtotal, $promotion?->discount_type, (float) ($promotion?->discount_value ?? 0));
         $total = $billing['total'];
 
         if ($request->boolean('apply_discount')) {
@@ -520,7 +525,7 @@ Route::middleware('auth')->group(function () {
                 );
         }
 
-        $eligibleOrganization = app(\App\Services\CorporateCreditService::class)->organizationFor($user);
+        $eligibleOrganization = app(CorporateCreditService::class)->organizationFor($user);
         $organization = $request->boolean('use_corporate_credit') ? $eligibleOrganization : null;
 
         if ($request->boolean('use_corporate_credit') && ! $organization) {
@@ -529,7 +534,7 @@ Route::middleware('auth')->group(function () {
             ]);
         }
 
-        if ($organization && ! app(\App\Services\CorporateCreditService::class)->canCharge($organization, (float) $total)) {
+        if ($organization && ! app(CorporateCreditService::class)->canCharge($organization, (float) $total)) {
             return back()->withInput()->withErrors([
                 'dates' => 'This booking would exceed your organization credit limit.',
             ]);

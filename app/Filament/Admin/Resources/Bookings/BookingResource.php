@@ -10,9 +10,9 @@ use App\Filament\Admin\Resources\Bookings\RelationManagers\PaymentsRelationManag
 use App\Filament\Admin\Resources\Bookings\Schemas\BookingForm;
 use App\Filament\Admin\Resources\Bookings\Schemas\BookingInfolist;
 use App\Filament\Admin\Resources\Bookings\Tables\BookingsTable;
+use App\Filament\Admin\Resources\SecureResource;
 use App\Models\Booking;
 use BackedEnum;
-use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;

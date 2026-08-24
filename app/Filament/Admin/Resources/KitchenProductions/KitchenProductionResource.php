@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\KitchenProductions;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\CreateKitchenProduction;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\EditKitchenProduction;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\ListKitchenProductions;
+use App\Filament\Admin\Resources\SecureResource;
 use App\Models\Ingredient;
 use App\Models\KitchenProduction;
 use App\Models\MenuItem;
@@ -19,7 +20,6 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -65,7 +65,6 @@ class KitchenProductionResource extends SecureResource
     {
         return auth()->user()?->can('manage kitchen production') ?? false;
     }
-
 
     /**
      * Configures the form schema and input behavior.

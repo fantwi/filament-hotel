@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\MenuItems;
 
+use App\Filament\Admin\Resources\ContentResource;
 use App\Filament\Admin\Resources\MenuItems\Pages\CreateMenuItem;
 use App\Filament\Admin\Resources\MenuItems\Pages\EditMenuItem;
 use App\Filament\Admin\Resources\MenuItems\Pages\ListMenuItems;
@@ -10,7 +11,6 @@ use App\Filament\Admin\Resources\MenuItems\Schemas\MenuItemForm;
 use App\Filament\Admin\Resources\MenuItems\Tables\MenuItemsTable;
 use App\Models\MenuItem;
 use BackedEnum;
-use App\Filament\Admin\Resources\ContentResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;

@@ -7,9 +7,9 @@ use App\Filament\Admin\Resources\ConferenceFacilities\Pages\EditConferenceFacili
 use App\Filament\Admin\Resources\ConferenceFacilities\Pages\ListConferenceFacilities;
 use App\Filament\Admin\Resources\ConferenceFacilities\Schemas\ConferenceFacilityForm;
 use App\Filament\Admin\Resources\ConferenceFacilities\Tables\ConferenceFacilitiesTable;
+use App\Filament\Admin\Resources\ContentResource;
 use App\Models\ConferenceFacility;
 use BackedEnum;
-use App\Filament\Admin\Resources\ContentResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Facilities;
 
+use App\Filament\Admin\Resources\ContentResource;
 use App\Filament\Admin\Resources\Facilities\Pages\CreateFacility;
 use App\Filament\Admin\Resources\Facilities\Pages\EditFacility;
 use App\Filament\Admin\Resources\Facilities\Pages\ListFacilities;
@@ -9,7 +10,6 @@ use App\Filament\Admin\Resources\Facilities\Schemas\FacilityForm;
 use App\Filament\Admin\Resources\Facilities\Tables\FacilitiesTable;
 use App\Models\Facility;
 use BackedEnum;
-use App\Filament\Admin\Resources\ContentResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;

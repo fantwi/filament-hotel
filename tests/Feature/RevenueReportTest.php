@@ -12,7 +12,7 @@ class RevenueReportTest extends TestCase
 
     public function test_revenue_report_uses_one_selected_period_for_structured_financial_data(): void
     {
-        $reportPage = new RevenueReport();
+        $reportPage = new RevenueReport;
         $reportPage->period = 'this_quarter';
 
         self::assertSame('This quarter', $reportPage->periodLabel());

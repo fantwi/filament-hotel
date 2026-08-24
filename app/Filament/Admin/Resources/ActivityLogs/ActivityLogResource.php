@@ -5,9 +5,9 @@ namespace App\Filament\Admin\Resources\ActivityLogs;
 use App\Filament\Admin\Resources\ActivityLogs\Pages\ListActivityLogs;
 use App\Filament\Admin\Resources\ActivityLogs\Tables\ActivityLogsTable;
 // use App\Filament\Admin\Resources\ActivityLogs\Schemas\ActivityLogForm;
-use BackedEnum;
-// use App\Models\ActivityLog;
 use App\Filament\Admin\Resources\SecureResource;
+// use App\Models\ActivityLog;
+use BackedEnum;
 use Filament\Support\Icons\Heroicon;
 // use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -54,7 +54,6 @@ class ActivityLogResource extends SecureResource
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
-
 
     /**
      * Builds and returns eloquent query.
@@ -121,6 +120,4 @@ class ActivityLogResource extends SecureResource
 
         return $output ?: 'No changes recorded';
     }
-
-
 }

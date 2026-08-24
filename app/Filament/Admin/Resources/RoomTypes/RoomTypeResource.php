@@ -9,9 +9,9 @@ use App\Filament\Admin\Resources\RoomTypes\Pages\ViewRoomType;
 use App\Filament\Admin\Resources\RoomTypes\Schemas\RoomTypeForm;
 use App\Filament\Admin\Resources\RoomTypes\Schemas\RoomTypeInfolist;
 use App\Filament\Admin\Resources\RoomTypes\Tables\RoomTypesTable;
+use App\Filament\Admin\Resources\SecureResource;
 use App\Models\RoomType;
 use BackedEnum;
-use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -89,7 +89,6 @@ class RoomTypeResource extends SecureResource
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
-
 
     /**
      * Configures the form schema and input behavior.

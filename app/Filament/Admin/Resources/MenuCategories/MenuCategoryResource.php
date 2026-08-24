@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\MenuCategories;
 
+use App\Filament\Admin\Resources\ContentResource;
 use App\Filament\Admin\Resources\MenuCategories\Pages\CreateMenuCategory;
 use App\Filament\Admin\Resources\MenuCategories\Pages\EditMenuCategory;
 use App\Filament\Admin\Resources\MenuCategories\Pages\ListMenuCategories;
@@ -9,7 +10,6 @@ use App\Filament\Admin\Resources\MenuCategories\Schemas\MenuCategoryForm;
 use App\Filament\Admin\Resources\MenuCategories\Tables\MenuCategoriesTable;
 use App\Models\MenuCategory;
 use BackedEnum;
-use App\Filament\Admin\Resources\ContentResource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;

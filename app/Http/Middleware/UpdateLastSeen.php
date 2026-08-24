@@ -13,6 +13,7 @@ class UpdateLastSeen
 {
     /**
      * Handle an incoming request.
+     *
      * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response

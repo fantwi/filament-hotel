@@ -657,7 +657,6 @@ Route::middleware('auth')->group(function () {
 
 });
 
-
 Route::middleware('auth')->post('/admin/corporate-receivables/{type}/{id}/mark-paid', function (Request $request, string $type, int $id) {
     abort_unless(auth()->user()?->hasAnyRole(['super_admin', 'admin', 'accountant']), 403);
 

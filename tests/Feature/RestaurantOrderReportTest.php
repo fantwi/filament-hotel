@@ -12,7 +12,7 @@ class RestaurantOrderReportTest extends TestCase
 
     public function test_restaurant_report_provides_structured_summary_data_for_the_selected_period(): void
     {
-        $reportPage = new RestaurantOrderReport();
+        $reportPage = new RestaurantOrderReport;
         $reportPage->period = 'this_week';
 
         self::assertSame('This week', $reportPage->periodLabel());

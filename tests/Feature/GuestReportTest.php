@@ -14,7 +14,7 @@ class GuestReportTest extends TestCase
 
     public function test_guest_report_uses_one_selected_period_for_structured_guest_data(): void
     {
-        $reportPage = new GuestReport();
+        $reportPage = new GuestReport;
         $reportPage->period = 'this_year';
 
         self::assertSame('This year', $reportPage->periodLabel());
@@ -44,7 +44,7 @@ class GuestReportTest extends TestCase
             'transaction_reference' => 'GUEST-REPORT-TEST',
         ]);
 
-        $report = (new GuestReport())->report();
+        $report = (new GuestReport)->report();
 
         self::assertSame(1, $report['payingGuests']);
         self::assertSame(125.5, $report['averageSpend']);

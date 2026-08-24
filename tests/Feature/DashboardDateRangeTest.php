@@ -50,7 +50,7 @@ class DashboardDateRangeTest extends TestCase
         ]);
         $outside->forceFill(['created_at' => Carbon::parse('2026-07-30 12:00:00')])->saveQuietly();
 
-        $probe = new DashboardDateRangeProbe();
+        $probe = new DashboardDateRangeProbe;
         $probe->pageFilters = [
             'period' => 'weekly',
             'start_date' => '2026-08-04',

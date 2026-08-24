@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Mail\RestaurantReservationCreated;
+use App\Models\Promotion;
 use App\Models\Restaurant;
 use App\Models\RestaurantReservation;
 use App\Models\RestaurantTable;
-use Carbon\Carbon;
+use App\Services\BillingService;
 use App\Services\CorporateCreditService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -72,7 +74,7 @@ class RestaurantReservationController extends Controller
         return view('restaurant.reserve', [
             'restaurant' => $restaurant,
             'tables' => $tables,
-            'billingRates' => app(\App\Services\BillingService::class)->rates(),
+            'billingRates' => app(BillingService::class)->rates(),
             'corporateOrganization' => app(CorporateCreditService::class)->organizationFor(auth()->user()),
         ]);
     }
@@ -190,14 +192,14 @@ class RestaurantReservationController extends Controller
         }
 
         $promotion = filled($validated['promotion_code'] ?? null)
-            ? \App\Models\Promotion::query()->where('code', strtoupper($validated['promotion_code']))->applicable((float) $table->reservation_fee)->first()
+            ? Promotion::query()->where('code', strtoupper($validated['promotion_code']))->applicable((float) $table->reservation_fee)->first()
             : null;
 
         if (filled($validated['promotion_code'] ?? null) && ! $promotion) {
             return back()->withInput()->withErrors(['promotion_code' => 'This discount code is not valid for this reservation.']);
         }
 
-        $billing = app(\App\Services\BillingService::class)->calculate(
+        $billing = app(BillingService::class)->calculate(
             (float) $table->reservation_fee,
             $promotion?->discount_type,
             (float) ($promotion?->discount_value ?? 0),
@@ -205,7 +207,7 @@ class RestaurantReservationController extends Controller
 
         if ($organization && ! app(CorporateCreditService::class)->canCharge($organization, (float) $billing['total'])) {
             return back()->withInput()->withErrors([
-                'restaurant_table_id' => "This reservation would exceed your organization credit limit.",
+                'restaurant_table_id' => 'This reservation would exceed your organization credit limit.',
             ]);
         }
 

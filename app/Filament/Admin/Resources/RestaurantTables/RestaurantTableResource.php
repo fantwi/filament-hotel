@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\RestaurantTables;
 
+use App\Filament\Admin\Resources\ContentResource;
 use App\Filament\Admin\Resources\RestaurantTables\Pages\CreateRestaurantTable;
 use App\Filament\Admin\Resources\RestaurantTables\Pages\EditRestaurantTable;
 use App\Filament\Admin\Resources\RestaurantTables\Pages\ListRestaurantTables;
@@ -9,7 +10,6 @@ use App\Filament\Admin\Resources\RestaurantTables\Schemas\RestaurantTableForm;
 use App\Filament\Admin\Resources\RestaurantTables\Tables\RestaurantTablesTable;
 use App\Models\RestaurantTable;
 use BackedEnum;
-use App\Filament\Admin\Resources\ContentResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;

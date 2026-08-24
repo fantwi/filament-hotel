@@ -12,6 +12,7 @@ use Illuminate\Console\Command;
 class ReleaseExpiredGuestHolds extends Command
 {
     protected $signature = 'app:release-expired-guest-holds';
+
     protected $description = 'Release expired conference and restaurant table holds.';
 
     /**

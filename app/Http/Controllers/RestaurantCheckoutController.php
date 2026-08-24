@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Guest;
 use App\Models\MenuItem;
+use App\Models\Promotion;
 use App\Models\RecipeIngredient;
 use App\Models\RestaurantOrder;
-use App\Models\Promotion;
 use App\Models\RestaurantTable;
 use App\Models\User;
-use App\Services\RestaurantCartService;
 use App\Services\CorporateCreditService;
+use App\Services\RestaurantCartService;
 use Filament\Notifications\Notification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -95,7 +95,9 @@ class RestaurantCheckoutController extends Controller
         }
 
         $promotion = filled($data['promotion_code'] ?? null) ? Promotion::query()->where('code', strtoupper($data['promotion_code']))->applicable((float) $items->sum('line_total'))->first() : null;
-        if (filled($data['promotion_code'] ?? null) && ! $promotion) return back()->withInput()->withErrors(['promotion_code' => 'This promotion code is not valid for this order.']);
+        if (filled($data['promotion_code'] ?? null) && ! $promotion) {
+            return back()->withInput()->withErrors(['promotion_code' => 'This promotion code is not valid for this order.']);
+        }
         $totals = $cart->totals($promotion);
         $user = auth()->user();
         $guest = $user?->guest;
@@ -124,7 +126,7 @@ class RestaurantCheckoutController extends Controller
 
         if ($organization && ! app(CorporateCreditService::class)->canCharge($organization, (float) $totals['total'])) {
             return back()->withInput()->withErrors([
-                'email' => "This order would exceed your organization credit limit.",
+                'email' => 'This order would exceed your organization credit limit.',
             ]);
         }
 

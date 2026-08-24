@@ -9,9 +9,9 @@ use App\Filament\Admin\Resources\Guests\Pages\ViewGuest;
 use App\Filament\Admin\Resources\Guests\Schemas\GuestForm;
 use App\Filament\Admin\Resources\Guests\Schemas\GuestInfolist;
 use App\Filament\Admin\Resources\Guests\Tables\GuestsTable;
+use App\Filament\Admin\Resources\SecureResource;
 use App\Models\Guest;
 use BackedEnum;
-use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -87,7 +87,6 @@ class GuestResource extends SecureResource
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
-
 
     /**
      * Configures the form schema and input behavior.

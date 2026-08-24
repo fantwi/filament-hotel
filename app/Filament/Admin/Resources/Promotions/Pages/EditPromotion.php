@@ -1,8 +1,14 @@
 <?php
+
 namespace App\Filament\Admin\Resources\Promotions\Pages;
+
 use App\Filament\Admin\Resources\Promotions\PromotionResource;
 use Filament\Resources\Pages\EditRecord;
+
 /**
  * Configures Filament administration for edit promotion.
  */
-class EditPromotion extends EditRecord { protected static string $resource = PromotionResource::class; }
+class EditPromotion extends EditRecord
+{
+    protected static string $resource = PromotionResource::class;
+}

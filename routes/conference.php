@@ -7,6 +7,8 @@
 use App\Models\ConferenceBooking;
 use App\Models\ConferenceRoom;
 use App\Models\Payment;
+use App\Models\Promotion;
+use App\Services\BillingService;
 use App\Services\CorporateCreditService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -31,7 +33,7 @@ Route::middleware('auth')->group(function () {
 
             return view('conference.book', [
                 'room' => $room,
-                'billingRates' => app(\App\Services\BillingService::class)->rates(),
+                'billingRates' => app(BillingService::class)->rates(),
                 'corporateOrganization' => app(CorporateCreditService::class)->organizationFor(auth()->user()),
             ]);
         })->name('conference.book');
@@ -114,14 +116,14 @@ Route::middleware('auth')->group(function () {
 
             $subtotal = $hours * $room->price_per_hour;
             $promotion = filled($request->promotion_code)
-                ? \App\Models\Promotion::query()->where('code', strtoupper($request->promotion_code))->applicable((float) $subtotal)->first()
+                ? Promotion::query()->where('code', strtoupper($request->promotion_code))->applicable((float) $subtotal)->first()
                 : null;
 
             if (filled($request->promotion_code) && ! $promotion) {
                 return back()->withInput()->withErrors(['promotion_code' => 'This discount code is not valid for this booking.']);
             }
 
-            $billing = app(\App\Services\BillingService::class)->calculate(
+            $billing = app(BillingService::class)->calculate(
                 (float) $subtotal,
                 $promotion?->discount_type,
                 (float) ($promotion?->discount_value ?? 0),
@@ -129,7 +131,7 @@ Route::middleware('auth')->group(function () {
 
             if ($organization && ! app(CorporateCreditService::class)->canCharge($organization, (float) $billing['total'])) {
                 return back()->withInput()->withErrors([
-                    'conference_room_id' => "This booking would exceed your organization credit limit.",
+                    'conference_room_id' => 'This booking would exceed your organization credit limit.',
                 ]);
             }
 
@@ -200,7 +202,6 @@ Route::get('/conference-booking/{booking}/payment',
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
 
-
         return view('conference.payment', compact('booking'));
     })->middleware('auth')->name('conference.payment');
 
@@ -210,7 +211,6 @@ Route::post('/conference-booking/{booking}/pay',
     ) {
 
         abort_unless($booking->guest_id === auth()->user()?->guest?->id, 403);
-
 
         if ($booking->payment_status === 'paid' || $booking->hold_until?->isPast()) {
             return back()

@@ -7,9 +7,9 @@ use App\Filament\Admin\Resources\ContactMessages\Pages\EditContactMessage;
 use App\Filament\Admin\Resources\ContactMessages\Pages\ListContactMessages;
 use App\Filament\Admin\Resources\ContactMessages\Schemas\ContactMessageForm;
 use App\Filament\Admin\Resources\ContactMessages\Tables\ContactMessagesTable;
+use App\Filament\Admin\Resources\SecureResource;
 use App\Models\ContactMessage;
 use BackedEnum;
-use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -68,7 +68,6 @@ class ContactMessageResource extends SecureResource
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
-
 
     /**
      * Configures the form schema and input behavior.

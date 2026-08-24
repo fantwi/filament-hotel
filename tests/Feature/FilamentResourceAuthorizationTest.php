@@ -24,8 +24,8 @@ class FilamentResourceAuthorizationTest extends TestCase
         $this->assertFalse(BookingResource::canCreate());
         $this->assertFalse(BookingResource::canEdit(new Booking(['status' => 'pending'])));
         $this->assertFalse(PaymentResource::canCreate());
-        $this->assertFalse(PaymentResource::canEdit(new Payment()));
-        $this->assertFalse(PaymentResource::canDelete(new Payment()));
+        $this->assertFalse(PaymentResource::canEdit(new Payment));
+        $this->assertFalse(PaymentResource::canDelete(new Payment));
     }
 
     public function test_managers_have_explicit_content_access_but_not_implicit_payment_access(): void

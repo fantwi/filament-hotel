@@ -5,10 +5,16 @@ namespace App\Filament\Admin\Resources\CorporateOrganizations;
 use App\Filament\Admin\Resources\CorporateOrganizations\Pages\CreateCorporateOrganization;
 use App\Filament\Admin\Resources\CorporateOrganizations\Pages\EditCorporateOrganization;
 use App\Filament\Admin\Resources\CorporateOrganizations\Pages\ListCorporateOrganizations;
+use App\Filament\Admin\Resources\SecureResource;
 use App\Models\CorporateOrganization;
 use BackedEnum;
-use App\Filament\Admin\Resources\SecureResource;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 /**
@@ -17,9 +23,13 @@ use Filament\Tables\Table;
 class CorporateOrganizationResource extends SecureResource
 {
     protected static ?string $model = CorporateOrganization::class;
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
+
     protected static string|\UnitEnum|null $navigationGroup = 'System';
+
     protected static ?string $navigationLabel = 'Corporate Organisations';
+
     protected static ?int $navigationSort = 20;
 
     /**
@@ -70,20 +80,19 @@ class CorporateOrganizationResource extends SecureResource
         return static::mayManage();
     }
 
-
     /**
      * Configures the form schema and input behavior.
      */
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            \Filament\Forms\Components\TextInput::make('name')->required()->maxLength(255),
-            \Filament\Forms\Components\TextInput::make('contact_name')->maxLength(255),
-            \Filament\Forms\Components\TextInput::make('email')->email()->maxLength(255),
-            \Filament\Forms\Components\TextInput::make('phone')->tel()->maxLength(50),
-            \Filament\Forms\Components\TextInput::make('credit_limit')->numeric()->prefix('GHS')->minValue(0),
-            \Filament\Forms\Components\TextInput::make('payment_terms_days')->numeric()->integer()->minValue(0)->default(30)->required(),
-            \Filament\Forms\Components\Toggle::make('is_credit_enabled')->label('Allow deferred payment')->helperText("Linked guests can confirm bookings and food orders on this organization account.")->default(true)->required(),
+            TextInput::make('name')->required()->maxLength(255),
+            TextInput::make('contact_name')->maxLength(255),
+            TextInput::make('email')->email()->maxLength(255),
+            TextInput::make('phone')->tel()->maxLength(50),
+            TextInput::make('credit_limit')->numeric()->prefix('GHS')->minValue(0),
+            TextInput::make('payment_terms_days')->numeric()->integer()->minValue(0)->default(30)->required(),
+            Toggle::make('is_credit_enabled')->label('Allow deferred payment')->helperText('Linked guests can confirm bookings and food orders on this organization account.')->default(true)->required(),
         ])->columns(['default' => 1, 'sm' => 2]);
     }
 
@@ -93,15 +102,15 @@ class CorporateOrganizationResource extends SecureResource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            \Filament\Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
-            \Filament\Tables\Columns\TextColumn::make('contact_name')->label('Contact')->searchable()->toggleable(),
-            \Filament\Tables\Columns\TextColumn::make('email')->searchable()->toggleable(),
-            \Filament\Tables\Columns\TextColumn::make('credit_limit')->money('GHS')->label('Credit limit')->sortable(),
-            \Filament\Tables\Columns\TextColumn::make('payment_terms_days')->label('Terms')->suffix(' days')->sortable(),
-            \Filament\Tables\Columns\IconColumn::make('is_credit_enabled')->label('Deferred payment')->boolean(),
+            TextColumn::make('name')->searchable()->sortable(),
+            TextColumn::make('contact_name')->label('Contact')->searchable()->toggleable(),
+            TextColumn::make('email')->searchable()->toggleable(),
+            TextColumn::make('credit_limit')->money('GHS')->label('Credit limit')->sortable(),
+            TextColumn::make('payment_terms_days')->label('Terms')->suffix(' days')->sortable(),
+            IconColumn::make('is_credit_enabled')->label('Deferred payment')->boolean(),
         ])->defaultSort('name')->recordActions([
-            \Filament\Actions\EditAction::make(),
-            \Filament\Actions\DeleteAction::make(),
+            EditAction::make(),
+            DeleteAction::make(),
         ]);
     }
 

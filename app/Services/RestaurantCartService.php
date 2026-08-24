@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\MenuItem;
+use App\Models\Promotion;
 use Illuminate\Support\Collection;
 
 /**
@@ -20,8 +21,11 @@ class RestaurantCartService
 
         return $cart->map(function (array $line, int|string $id) use ($menuItems) {
             $item = $menuItems->get($id);
-            if (! $item) return null;
+            if (! $item) {
+                return null;
+            }
             $quantity = max(1, (int) ($line['quantity'] ?? 1));
+
             return ['item' => $item, 'quantity' => $quantity, 'line_total' => $item->price * $quantity];
         })->filter()->values();
     }
@@ -29,7 +33,7 @@ class RestaurantCartService
     /**
      * Calculates cart subtotal, discount, taxes, service charge, and final total.
      */
-    public function totals(?\App\Models\Promotion $promotion = null): array
+    public function totals(?Promotion $promotion = null): array
     {
         $subtotal = (float) $this->items()->sum('line_total');
         $billing = app(BillingService::class)->calculate(

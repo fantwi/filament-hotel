@@ -6,9 +6,9 @@ use App\Filament\Admin\Pages\Dashboards\AccountantDashboard;
 use App\Filament\Admin\Pages\Dashboards\AdminDashboard;
 use App\Filament\Admin\Pages\Dashboards\ManagerDashboard;
 use App\Filament\Admin\Pages\Dashboards\ReceptionDashboard;
-use App\Filament\Admin\Pages\Dashboards\RoleDashboard;
 use App\Filament\Admin\Pages\Dashboards\SuperAdminDashboard;
 use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
+use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
 use App\Filament\Admin\Widgets\RoleDashboardOverview;
 use App\Filament\Admin\Widgets\TransactionOverview;
 use Tests\TestCase;
@@ -17,9 +17,9 @@ class TransactionDashboardTest extends TestCase
 {
     public function test_transaction_dashboard_uses_shared_date_filtering_and_overview_widget(): void
     {
-        self::assertTrue(is_subclass_of(\App\Filament\Admin\Pages\Dashboards\TransactionDashboard::class, TimeFilteredDashboard::class));
+        self::assertTrue(is_subclass_of(TransactionDashboard::class, TimeFilteredDashboard::class));
 
-        $dashboard = new \App\Filament\Admin\Pages\Dashboards\TransactionDashboard();
+        $dashboard = new TransactionDashboard;
 
         self::assertSame([TransactionOverview::class], $dashboard->getWidgets());
         self::assertSame(1, $dashboard->getColumns());
@@ -45,7 +45,7 @@ class TransactionDashboardTest extends TestCase
             SuperAdminDashboard::class,
         ] as $dashboardClass) {
             self::assertTrue(is_subclass_of($dashboardClass, TimeFilteredDashboard::class));
-            self::assertSame(RoleDashboardOverview::class, (new $dashboardClass())->getWidgets()[0]);
+            self::assertSame(RoleDashboardOverview::class, (new $dashboardClass)->getWidgets()[0]);
         }
 
         $view = file_get_contents(resource_path('views/filament/admin/widgets/role-dashboard-overview.blade.php'));

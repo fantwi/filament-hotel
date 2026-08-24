@@ -7,9 +7,9 @@ use App\Filament\Admin\Resources\RestaurantReservations\Pages\EditRestaurantRese
 use App\Filament\Admin\Resources\RestaurantReservations\Pages\ListRestaurantReservations;
 use App\Filament\Admin\Resources\RestaurantReservations\Schemas\RestaurantReservationForm;
 use App\Filament\Admin\Resources\RestaurantReservations\Tables\RestaurantReservationsTable;
+use App\Filament\Admin\Resources\SecureResource;
 use App\Models\RestaurantReservation;
 use BackedEnum;
-use App\Filament\Admin\Resources\SecureResource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -58,7 +58,6 @@ class RestaurantReservationResource extends SecureResource
     {
         return static::mayManageReservations();
     }
-
 
     /**
      * Configures the form schema and input behavior.

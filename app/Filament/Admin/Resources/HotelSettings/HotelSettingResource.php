@@ -8,6 +8,7 @@ use App\Filament\Admin\Resources\HotelSettings\Pages\ListHotelSettings;
 use App\Filament\Admin\Resources\SecureResource;
 use App\Models\HotelSetting;
 use BackedEnum;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
@@ -138,7 +139,7 @@ class HotelSettingResource extends SecureResource
                     ->sortable(),
             ])
             ->recordActions([
-                \Filament\Actions\EditAction::make(),
+                EditAction::make(),
             ]);
     }
 

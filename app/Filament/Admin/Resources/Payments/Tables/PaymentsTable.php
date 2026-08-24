@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Payments\Tables;
 
+use App\Models\Payment;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -24,14 +25,14 @@ class PaymentsTable
                 //
                 Tables\Columns\TextColumn::make('transaction_id')
                     ->label('Transaction ID')
-                    ->state(fn (\App\Models\Payment $record): string => $record->transactionLabel())
-                    ->description(fn (\App\Models\Payment $record): ?string => $record->transaction_reference ? 'Ref: '.$record->transaction_reference : null)
+                    ->state(fn (Payment $record): string => $record->transactionLabel())
+                    ->description(fn (Payment $record): ?string => $record->transaction_reference ? 'Ref: '.$record->transaction_reference : null)
                     ->wrap(),
 
                 Tables\Columns\TextColumn::make('transaction_guest')
                     ->label('Guest')
-                    ->state(fn (\App\Models\Payment $record): string => $record->transactionGuestName())
-                    ->description(fn (\App\Models\Payment $record): ?string => $record->transactionGuest()?->email)
+                    ->state(fn (Payment $record): string => $record->transactionGuestName())
+                    ->description(fn (Payment $record): ?string => $record->transactionGuest()?->email)
                     ->wrap(),
 
                 Tables\Columns\TextColumn::make('amount')
