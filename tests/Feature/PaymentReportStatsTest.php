@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Admin\Resources\Payments\Pages\ListPayments;
 use App\Filament\Admin\Widgets\PaymentReportStats;
 use App\Services\PaymentReportFilters;
+use Filament\Schemas\Schema;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -50,5 +51,13 @@ class PaymentReportStatsTest extends TestCase
 
         self::assertSame([PaymentReportStats::class], $method->invoke($page));
         self::assertTrue(is_subclass_of(PaymentReportStats::class, StatsOverviewWidget::class));
+    }
+
+    public function test_payment_filters_section_spans_the_full_page_width(): void
+    {
+        $schema = (new ListPayments)->filtersForm(Schema::make());
+        $section = $schema->getComponents()[0];
+
+        self::assertSame(['default' => 'full'], $section->getColumnSpan());
     }
 }

@@ -68,7 +68,8 @@ class ListPayments extends ListRecords
                         ->live()
                         ->minDate(fn ($get): ?string => $get('start_date')),
                 ])
-                ->columns(['default' => 1, 'md' => 4]),
+                ->columns(['default' => 1, 'md' => 4])
+                ->columnSpanFull(),
         ]);
     }
 
