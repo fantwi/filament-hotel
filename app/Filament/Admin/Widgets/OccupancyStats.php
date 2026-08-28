@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Filament\Admin\Widgets;
+
+use App\Filament\Admin\Pages\OccupancyReport;
+use Filament\Widgets\StatsOverviewWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
+
+/**
+ * Provides a period-aware occupancy summary for the occupancy report.
+ */
+class OccupancyStats extends StatsOverviewWidget
+{
+    protected int|string|array $columnSpan = 'full';
+
+    /**
+     * The report period selected on the parent occupancy page.
+     */
+    public string $period = 'this_month';
+
+    /**
+     * Determines whether the current user may view this feature.
+     */
+    public static function canView(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'receptionist']) ?? false;
+    }
+
+    /**
+     * Builds the occupancy metrics for the selected reporting period.
+     *
+     * @return array<int, Stat>
+     */
+    protected function getStats(): array
+    {
+        $reportPage = new OccupancyReport;
+        $reportPage->period = $this->validPeriod($this->period);
+        $report = $reportPage->report();
+        $periodLabel = $reportPage->periodLabel();
+
+        return [
+            Stat::make('Room occupancy', number_format((float) $report['occupancyRate'], 1).'%')
+                ->description($periodLabel)
+                ->icon('heroicon-o-chart-pie')
+                ->color('primary'),
+            Stat::make('Booked room nights', number_format((int) $report['bookedRoomNights']))
+                ->description('Active stays in '.$periodLabel)
+                ->icon('heroicon-o-moon')
+                ->color('success'),
+            Stat::make('Room-night capacity', number_format((int) $report['roomNightCapacity']))
+                ->description(number_format((int) $report['roomsInService']).' rooms in service')
+                ->icon('heroicon-o-home-modern')
+                ->color('info'),
+            Stat::make('Rooms available now', number_format((int) $report['roomStatus']['available']))
+                ->description('Live inventory status')
+                ->icon('heroicon-o-key')
+                ->color('primary'),
+            Stat::make('Tables available now', number_format((int) $report['tableStatus']['available']))
+                ->description('Live restaurant status')
+                ->icon('heroicon-o-square-3-stack-3d')
+                ->color('warning'),
+        ];
+    }
+
+    /**
+     * Keeps nested widget state within the periods supported by the report page.
+     */
+    private function validPeriod(string $period): string
+    {
+        return in_array($period, ['today', 'this_week', 'this_month', 'this_quarter', 'this_year', 'all'], true)
+            ? $period
+            : 'this_month';
+    }
+}

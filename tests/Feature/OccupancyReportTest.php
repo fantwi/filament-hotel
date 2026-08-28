@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\OccupancyReport;
+use App\Filament\Admin\Widgets\OccupancyStats;
 use App\Models\Booking;
 use App\Models\Guest;
 use App\Models\Room;
 use App\Models\RoomType;
+use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -65,5 +67,19 @@ class OccupancyReportTest extends TestCase
         self::assertSame(3, $report['bookedRoomNights']);
         self::assertSame(31, $report['roomNightCapacity']);
         self::assertEqualsWithDelta(9.677, $report['occupancyRate'], 0.001);
+    }
+
+    public function test_occupancy_stats_widget_uses_period_aware_overview_stats(): void
+    {
+        self::assertTrue(is_subclass_of(OccupancyStats::class, StatsOverviewWidget::class));
+
+        $widget = new OccupancyStats;
+        $widget->period = 'this_quarter';
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+
+        $stats = $method->invoke($widget);
+
+        self::assertCount(5, $stats);
     }
 }
