@@ -3,12 +3,14 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\CorporateReceivables;
+use App\Filament\Admin\Widgets\CorporateReceivablesStats;
 use App\Models\Booking;
 use App\Models\CorporateOrganization;
 use App\Models\Payment;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\User;
+use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -84,6 +86,15 @@ class CorporateReceivablesTest extends TestCase
         self::assertStringContainsString('lg:grid-cols-4', $view);
         self::assertStringContainsString('md:hidden', $view);
         self::assertStringContainsString('Receivable details', $view);
+    }
+
+    public function test_transactions_section_uses_a_stats_overview_widget(): void
+    {
+        $view = file_get_contents(resource_path('views/filament/admin/pages/corporate-receivables.blade.php'));
+
+        self::assertTrue(is_subclass_of(CorporateReceivablesStats::class, StatsOverviewWidget::class));
+        self::assertStringContainsString('CorporateReceivablesStats::class', $view);
+        self::assertStringContainsString('Receivables by service', $view);
     }
 
     /**

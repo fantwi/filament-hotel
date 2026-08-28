@@ -72,6 +72,11 @@
         </section>
 
         <x-filament::section heading="Transactions awaiting payment" description="Record the remaining balance received through cash, mobile money, card, or bank transfer.">
+            <div class="mb-6">
+                <h2 class="mb-3 text-sm font-semibold text-gray-950 dark:text-white">Receivables by service</h2>
+                @livewire(\App\Filament\Admin\Widgets\CorporateReceivablesStats::class)
+            </div>
+
             @if ($receivables->isEmpty())
                 <div class="rounded-xl border border-dashed border-gray-300 px-5 py-12 text-center dark:border-gray-700">
                     <x-filament::icon icon="heroicon-o-check-circle" class="mx-auto h-10 w-10 text-success-500" />
