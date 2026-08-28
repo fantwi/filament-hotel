@@ -58,7 +58,8 @@ abstract class TimeFilteredDashboard extends Dashboard
                         ->live()
                         ->minDate(fn ($get): ?string => $get('start_date')),
                 ])
-                ->columns(['default' => 1, 'md' => 3]),
+                ->columns(['default' => 1, 'md' => 3])
+                ->columnSpanFull(),
         ]);
     }
 

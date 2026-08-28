@@ -9,8 +9,10 @@ use App\Filament\Admin\Pages\Dashboards\ManagerDashboard;
 use App\Filament\Admin\Pages\Dashboards\ReceptionDashboard;
 use App\Filament\Admin\Pages\Dashboards\SuperAdminDashboard;
 use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
+use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
 use App\Models\Payment;
 use Carbon\Carbon;
+use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -68,6 +70,22 @@ class DashboardDateRangeTest extends TestCase
 
             self::assertTrue($start->lessThanOrEqualTo($end), $period);
             self::assertTrue($end->isToday(), $period);
+        }
+    }
+
+    public function test_requested_dashboards_render_a_full_width_period_section(): void
+    {
+        foreach ([
+            AdminDashboard::class,
+            SuperAdminDashboard::class,
+            AccountantDashboard::class,
+            ManagerDashboard::class,
+            ReceptionDashboard::class,
+            TransactionDashboard::class,
+        ] as $dashboard) {
+            $section = (new $dashboard)->filtersForm(Schema::make())->getComponents()[0];
+
+            self::assertSame(['default' => 'full'], $section->getColumnSpan(), $dashboard);
         }
     }
 }
