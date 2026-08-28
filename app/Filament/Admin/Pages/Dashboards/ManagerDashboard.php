@@ -7,7 +7,7 @@ use App\Filament\Admin\Widgets\KitchenOrderQueue;
 use App\Filament\Admin\Widgets\KitchenProductionStats;
 use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\ManagerOperationsChart;
-use App\Filament\Admin\Widgets\ManagerPeriodReport;
+use App\Filament\Admin\Widgets\ManagerOperationsStats;
 use App\Filament\Admin\Widgets\ManagerStats;
 use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
 use App\Filament\Admin\Widgets\RoleDashboardOverview;
@@ -51,7 +51,7 @@ class ManagerDashboard extends TimeFilteredDashboard
         return [
             RoleDashboardOverview::class,
             ManagerStats::class,
-            ManagerPeriodReport::class,
+            ManagerOperationsStats::class,
             CorporateBillingOverview::class,
             KitchenProductionStats::class,
             KitchenStockStats::class,
