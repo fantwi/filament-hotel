@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Pages\Dashboards;
 
 use App\Filament\Admin\Widgets\TransactionOverview;
+use App\Filament\Admin\Widgets\TransactionStats;
 
 /**
  * Provides the transaction dashboard Filament administration page.
@@ -40,6 +41,6 @@ class TransactionDashboard extends TimeFilteredDashboard
      */
     public function getWidgets(): array
     {
-        return [TransactionOverview::class];
+        return [TransactionStats::class, TransactionOverview::class];
     }
 }

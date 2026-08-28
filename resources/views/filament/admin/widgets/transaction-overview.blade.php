@@ -11,32 +11,6 @@
             </div>
         </x-filament::section>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Transactions created</p>
-                <p class="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">{{ number_format($totals['transactions']) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Across all guest transaction types</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Gross transaction value</p>
-                <p class="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">GHS {{ number_format($totals['gross'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Excludes cancelled transactions</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Payments received</p>
-                <p class="mt-2 text-3xl font-bold text-success-600 dark:text-success-400">GHS {{ number_format($totals['payments'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ number_format($totals['payment_count']) }} payment(s) recorded</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Outstanding balance</p>
-                <p class="mt-2 text-3xl font-bold text-warning-600 dark:text-warning-400">GHS {{ number_format($totals['outstanding'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ number_format($totals['outstanding_count']) }} unpaid transaction(s)</p>
-            </x-filament::section>
-        </section>
-
         <section class="grid gap-4 lg:grid-cols-3">
             <x-filament::section heading="Outstanding follow-up" description="Unpaid transactions created in {{ $periodLabel }}">
                 <div class="space-y-4">

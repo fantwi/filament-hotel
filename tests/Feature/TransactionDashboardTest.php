@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Filament\Admin\Pages\Dashboards\AccountantDashboard;
 use App\Filament\Admin\Pages\Dashboards\AdminDashboard;
 use App\Filament\Admin\Pages\Dashboards\ManagerDashboard;
@@ -11,6 +12,8 @@ use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
 use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
 use App\Filament\Admin\Widgets\RoleDashboardOverview;
 use App\Filament\Admin\Widgets\TransactionOverview;
+use App\Filament\Admin\Widgets\TransactionStats;
+use Filament\Widgets\StatsOverviewWidget;
 use Tests\TestCase;
 
 class TransactionDashboardTest extends TestCase
@@ -21,7 +24,9 @@ class TransactionDashboardTest extends TestCase
 
         $dashboard = new TransactionDashboard;
 
-        self::assertSame([TransactionOverview::class], $dashboard->getWidgets());
+        self::assertSame([TransactionStats::class, TransactionOverview::class], $dashboard->getWidgets());
+        self::assertTrue(is_subclass_of(TransactionStats::class, StatsOverviewWidget::class));
+        self::assertContains(InteractsWithDashboardDateRange::class, class_uses_recursive(TransactionStats::class));
         self::assertSame(1, $dashboard->getColumns());
     }
 
