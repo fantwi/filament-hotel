@@ -37,60 +37,36 @@
         </section>
 
         <x-filament::section heading="Transaction breakdown" description="Compare activity, payments, and outstanding balances for each guest transaction workflow.">
-            <div class="grid gap-3 md:hidden">
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 @foreach ($rows as $row)
-                    <article class="rounded-xl border border-gray-200 p-4 dark:border-white/10">
-                        <div class="flex items-start justify-between gap-4">
-                            <h3 class="font-semibold">{{ $row['label'] }}</h3>
-                            <span class="text-sm font-semibold">{{ number_format($row['transactions']) }} total</span>
+                    <article class="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+                        <div class="flex items-start justify-between gap-3">
+                            <h3 class="font-semibold text-gray-950 dark:text-white">{{ $row['label'] }}</h3>
+                            <span class="shrink-0 rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700 dark:bg-white/10 dark:text-gray-200">{{ number_format($row['transactions']) }} total</span>
                         </div>
-                        <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                        <dl class="mt-5 grid grid-cols-2 gap-3 text-sm">
                             <div>
-                                <dt class="text-gray-500 dark:text-gray-400">Gross value</dt>
-                                <dd class="mt-1 font-semibold">GHS {{ number_format($row['gross'], 2) }}</dd>
+                                <dt class="text-xs text-gray-500 dark:text-gray-400">Gross value</dt>
+                                <dd class="mt-1 font-semibold text-gray-950 dark:text-white">GHS {{ number_format($row['gross'], 2) }}</dd>
                             </div>
                             <div>
-                                <dt class="text-gray-500 dark:text-gray-400">Payments</dt>
-                                <dd class="mt-1 font-semibold">GHS {{ number_format($row['payments'], 2) }}</dd>
+                                <dt class="text-xs text-gray-500 dark:text-gray-400">Payments received</dt>
+                                <dd class="mt-1 font-semibold text-gray-950 dark:text-white">GHS {{ number_format($row['payments'], 2) }}</dd>
+                                <dd class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($row['payment_count']) }} payment(s)</dd>
                             </div>
-                            <div class="col-span-2">
-                                <dt class="text-gray-500 dark:text-gray-400">Outstanding</dt>
-                                <dd class="mt-1 font-semibold text-warning-700 dark:text-warning-300">GHS {{ number_format($row['outstanding'], 2) }} ({{ number_format($row['outstanding_count']) }} unpaid)</dd>
+                            <div class="col-span-2 rounded-lg bg-warning-50 p-3 dark:bg-warning-500/10">
+                                <dt class="text-xs text-warning-800 dark:text-warning-200">Outstanding</dt>
+                                <dd class="mt-1 font-semibold text-warning-700 dark:text-warning-300">GHS {{ number_format($row['outstanding'], 2) }}</dd>
+                                <dd class="mt-1 text-xs text-warning-700/80 dark:text-warning-200/80">{{ number_format($row['outstanding_count']) }} unpaid transaction(s)</dd>
                             </div>
                         </dl>
+                        <div class="mt-4 border-t border-gray-100 pt-3 text-xs dark:border-white/10">
+                            <dt class="text-gray-500 dark:text-gray-400">Corporate outstanding</dt>
+                            <dd class="mt-1 font-semibold text-gray-800 dark:text-gray-200">GHS {{ number_format($row['corporate_outstanding'], 2) }}</dd>
+                            <dd class="mt-1 text-gray-500 dark:text-gray-400">{{ number_format($row['corporate_outstanding_count']) }} corporate transaction(s)</dd>
+                        </div>
                     </article>
                 @endforeach
-            </div>
-
-            <div class="hidden overflow-x-auto md:block">
-                <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-white/10">
-                    <thead class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                        <tr>
-                            <th class="px-3 py-3 font-semibold">Transaction type</th>
-                            <th class="px-3 py-3 text-right font-semibold">Transactions</th>
-                            <th class="px-3 py-3 text-right font-semibold">Gross value</th>
-                            <th class="px-3 py-3 text-right font-semibold">Payments received</th>
-                            <th class="px-3 py-3 text-right font-semibold">Outstanding</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-white/5">
-                        @foreach ($rows as $row)
-                            <tr>
-                                <td class="px-3 py-4 font-semibold">{{ $row['label'] }}</td>
-                                <td class="px-3 py-4 text-right">{{ number_format($row['transactions']) }}</td>
-                                <td class="px-3 py-4 text-right">GHS {{ number_format($row['gross'], 2) }}</td>
-                                <td class="px-3 py-4 text-right">
-                                    GHS {{ number_format($row['payments'], 2) }}
-                                    <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">{{ number_format($row['payment_count']) }} payment(s)</span>
-                                </td>
-                                <td class="px-3 py-4 text-right font-semibold text-warning-700 dark:text-warning-300">
-                                    GHS {{ number_format($row['outstanding'], 2) }}
-                                    <span class="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">{{ number_format($row['outstanding_count']) }} unpaid</span>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
             </div>
         </x-filament::section>
 

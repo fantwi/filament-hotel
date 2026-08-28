@@ -36,8 +36,18 @@ class TransactionDashboardTest extends TestCase
 
         self::assertStringContainsString('Outstanding follow-up', $view);
         self::assertStringContainsString('Corporate credit awaiting payment', $view);
-        self::assertStringContainsString('md:hidden', $view);
+        self::assertStringContainsString('grid gap-4 sm:grid-cols-2 xl:grid-cols-4', $view);
         self::assertStringContainsString('Report notes', $view);
+    }
+
+    public function test_transaction_breakdown_uses_metric_cards_at_all_breakpoints(): void
+    {
+        $view = file_get_contents(resource_path('views/filament/admin/widgets/transaction-overview.blade.php'));
+
+        self::assertStringContainsString('sm:grid-cols-2 xl:grid-cols-4', $view);
+        self::assertStringContainsString('Payments received', $view);
+        self::assertStringContainsString('Corporate outstanding', $view);
+        self::assertStringNotContainsString('hidden overflow-x-auto md:block', $view);
     }
 
     public function test_role_dashboards_begin_with_the_responsive_role_overview(): void
