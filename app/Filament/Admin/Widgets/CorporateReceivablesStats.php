@@ -43,9 +43,9 @@ class CorporateReceivablesStats extends StatsOverviewWidget
     /**
      * Builds one service receivable stat from the grouped queue.
      *
-     * @param  array<string, Collection>  $groups
+     * @param  Collection<string, Collection>  $groups
      */
-    private function stat(array $groups, string $type, string $label, string $icon): Stat
+    private function stat(Collection $groups, string $type, string $label, string $icon): Stat
     {
         $items = $groups[$type] ?? collect();
 

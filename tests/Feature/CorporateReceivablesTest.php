@@ -97,6 +97,17 @@ class CorporateReceivablesTest extends TestCase
         self::assertStringContainsString('Receivables by service', $view);
     }
 
+    public function test_stats_widget_builds_service_stats_from_grouped_receivables(): void
+    {
+        $widget = new CorporateReceivablesStats;
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+
+        $stats = $method->invoke($widget);
+
+        self::assertCount(4, $stats);
+    }
+
     /**
      * @return array{0: Booking, 1: User}
      */
