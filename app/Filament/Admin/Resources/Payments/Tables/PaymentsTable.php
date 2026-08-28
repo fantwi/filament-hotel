@@ -2,13 +2,16 @@
 
 namespace App\Filament\Admin\Resources\Payments\Tables;
 
+use App\Filament\Admin\Resources\Payments\Pages\ListPayments;
 use App\Models\Payment;
+use App\Services\PaymentReportFilters;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Configures Filament administration for payments table.
@@ -21,6 +24,18 @@ class PaymentsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query, Table $table): Builder {
+                $livewire = $table->getLivewire();
+                $filters = $livewire instanceof ListPayments ? ($livewire->filters ?? []) : [];
+                [$start, $end] = PaymentReportFilters::dateRange($filters);
+
+                $query->whereBetween('created_at', [$start, $end]);
+
+                return PaymentReportFilters::applyType(
+                    $query,
+                    (string) ($filters['transaction_type'] ?? 'all'),
+                );
+            })
             ->columns([
                 //
                 Tables\Columns\TextColumn::make('transaction_id')
