@@ -9,6 +9,8 @@ use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
 use App\Filament\Admin\Widgets\RestaurantRevenueChart;
 use App\Filament\Admin\Widgets\RoleDashboardOverview;
+use App\Filament\Admin\Widgets\SuperAdminFinanceStats;
+use App\Filament\Admin\Widgets\SuperAdminOperationsStats;
 use App\Filament\Admin\Widgets\SuperAdminStats;
 
 /**
@@ -50,6 +52,8 @@ class SuperAdminDashboard extends TimeFilteredDashboard
         return [
             RoleDashboardOverview::class,
             SuperAdminStats::class,
+            SuperAdminOperationsStats::class,
+            SuperAdminFinanceStats::class,
             CorporateBillingOverview::class,
             KitchenStockStats::class,
             RestaurantRevenueChart::class,
