@@ -21,6 +21,8 @@ class RoleDashboard extends Dashboard
         $user = auth()->user();
 
         $dashboard = match (true) {
+            $user?->hasRole('kitchen_manager') => KitchenManagerDashboard::class,
+            $user?->hasRole('kitchen_staff') => KitchenStaffDashboard::class,
             $user?->hasRole('super_admin') => SuperAdminDashboard::class,
             $user?->hasRole('admin') => AdminDashboard::class,
             $user?->hasRole('accountant') => AccountantDashboard::class,
