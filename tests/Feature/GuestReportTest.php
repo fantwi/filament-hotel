@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\GuestReport;
+use App\Filament\Admin\Widgets\GuestStats;
 use App\Models\Guest;
 use App\Models\Payment;
+use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -50,5 +52,19 @@ class GuestReportTest extends TestCase
         self::assertSame(125.5, $report['averageSpend']);
         self::assertSame(125.5, $report['topGuests']->first()->total_spend);
         self::assertSame($guest->id, $report['topGuests']->first()->guest->id);
+    }
+
+    public function test_guest_stats_widget_uses_period_aware_overview_stats(): void
+    {
+        self::assertTrue(is_subclass_of(GuestStats::class, StatsOverviewWidget::class));
+
+        $widget = new GuestStats;
+        $widget->period = 'this_year';
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+
+        $stats = $method->invoke($widget);
+
+        self::assertCount(5, $stats);
     }
 }

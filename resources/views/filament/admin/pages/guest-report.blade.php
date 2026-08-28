@@ -25,30 +25,8 @@
             </div>
         </x-filament::section>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Guest profiles</p>
-                <p class="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">{{ number_format($report['totalGuests']) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">All registered guest records</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">New guests</p>
-                <p class="mt-2 text-3xl font-bold text-success-600 dark:text-success-400">{{ number_format($report['newGuests']) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Profiles created during {{ strtolower($this->periodLabel()) }}</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Paying guests</p>
-                <p class="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">{{ number_format($report['payingGuests']) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Guests with a paid transaction</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Average guest spend</p>
-                <p class="mt-2 text-3xl font-bold text-warning-600 dark:text-warning-400">GHS {{ number_format($report['averageSpend'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Average paid spend per guest</p>
-            </x-filament::section>
+        <section aria-label="Guest overview">
+            @livewire(\App\Filament\Admin\Widgets\GuestStats::class, ['period' => $this->period], key('guest-stats-'.$this->period))
         </section>
 
         <section class="grid gap-4 lg:grid-cols-3">
