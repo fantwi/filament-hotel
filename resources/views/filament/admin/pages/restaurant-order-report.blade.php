@@ -24,30 +24,8 @@
             </div>
         </x-filament::section>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Orders received</p>
-                <p class="mt-2 text-3xl font-bold">{{ number_format($report['totalOrders']) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ number_format($report['totalItems']) }} item(s) ordered</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Paid revenue</p>
-                <p class="mt-2 text-3xl font-bold text-success-600 dark:text-success-400">GHS {{ number_format($report['revenue'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ number_format($report['paidOrders']) }} paid order(s)</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Outstanding balance</p>
-                <p class="mt-2 text-3xl font-bold text-warning-600 dark:text-warning-400">GHS {{ number_format($report['outstanding'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ number_format($report['pendingOrders']) }} pending payment(s)</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Average paid order</p>
-                <p class="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">GHS {{ number_format($report['averageOrderValue'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ $report['paymentRate'] }}% payment completion</p>
-            </x-filament::section>
+        <section aria-label="Restaurant order overview">
+            @livewire(\App\Filament\Admin\Widgets\RestaurantOrderReportStats::class, ['period' => $this->period], key('restaurant-order-report-stats-'.$this->period))
         </section>
 
         <section class="grid gap-4 lg:grid-cols-3">
