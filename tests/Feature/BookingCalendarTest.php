@@ -46,15 +46,33 @@ class BookingCalendarTest extends TestCase
         $response->assertOk()->assertJsonCount(0);
     }
 
+    public function test_booking_calendar_page_renders_with_a_sidebar_navigation_entry(): void
+    {
+        $admin = User::factory()->create(['department' => 'admin']);
+
+        $response = $this->actingAs($admin)->get(route('filament.admin.pages.booking-calendar'));
+
+        $response->assertOk();
+        $response->assertSee('Booking calendar');
+        $response->assertSee('Reservations');
+        self::assertTrue(BookingCalendar::shouldRegisterNavigation());
+        self::assertSame('Reservations', BookingCalendar::getNavigationGroup());
+        self::assertSame(20, BookingCalendar::getNavigationSort());
+    }
+
     public function test_booking_calendar_view_has_responsive_sidebar_and_calendar_states(): void
     {
         $view = file_get_contents(resource_path('views/filament/admin/pages/booking-calendar.blade.php'));
+        $viteConfig = file_get_contents(base_path('vite.config.js'));
 
         self::assertStringContainsString('lg:grid-cols-[minmax(0,1fr)_18rem]', $view);
         self::assertStringContainsString('Calendar guide', $view);
         self::assertStringContainsString('No reservations in this range', $view);
         self::assertStringContainsString('aria-label="Booking calendar"', $view);
         self::assertStringContainsString('window.alert', $view);
+        self::assertStringContainsString("@vite('resources/js/calendar.js')", $view);
+        self::assertStringNotContainsString("@vite('resources/js/app.js')", $view);
+        self::assertStringContainsString("'resources/js/calendar.js'", $viteConfig);
     }
 
     public function test_events_include_hotel_conference_and_restaurant_records(): void

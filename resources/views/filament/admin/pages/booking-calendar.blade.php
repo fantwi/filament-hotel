@@ -1,5 +1,5 @@
 <x-filament::page>
-    @vite('resources/js/app.js')
+    @vite('resources/js/calendar.js')
 
     <div class="space-y-6">
         <section class="overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 px-5 py-6 text-white shadow-sm sm:px-8">
