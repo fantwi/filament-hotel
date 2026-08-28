@@ -95,7 +95,9 @@ class BookingController extends Controller
             'confirmed' => '#22c55e',
             'pending' => '#f59e0b',
             'checked_in' => '#3b82f6',
+            'checked_out' => '#6b7280',
             'cancelled' => '#ef4444',
+            'expired', 'no_show' => '#9ca3af',
             default => '#9ca3af',
         };
 
@@ -106,6 +108,10 @@ class BookingController extends Controller
                 ->whereDate('check_out', '>', $start))
             ->get()
             ->map(function (Booking $booking) use ($colorForStatus) {
+                if (! $booking->check_in || ! $booking->check_out) {
+                    return null;
+                }
+
                 return [
                     'id' => "hotel-{$booking->id}",
                     'title' => 'Hotel - Room '.($booking->room?->room_number ?? 'Unknown'),
@@ -121,7 +127,8 @@ class BookingController extends Controller
                         'details' => "Room {$booking->room?->room_number}; {$booking->check_in?->toDateString()} to {$booking->check_out?->toDateString()}",
                     ],
                 ];
-            });
+            })
+            ->filter();
 
         $conferenceBookings = ConferenceBooking::query()
             ->with(['guest', 'room'])
@@ -131,6 +138,10 @@ class BookingController extends Controller
             ->get()
             ->map(function (ConferenceBooking $booking) use ($colorForStatus) {
                 $date = $booking->booking_date?->toDateString();
+
+                if (! $date || ! $booking->start_time || ! $booking->end_time) {
+                    return null;
+                }
 
                 return [
                     'id' => "conference-{$booking->id}",
@@ -145,7 +156,8 @@ class BookingController extends Controller
                         'details' => "{$booking->room?->name}; {$date} {$booking->start_time}–{$booking->end_time}",
                     ],
                 ];
-            });
+            })
+            ->filter();
 
         $restaurantReservations = RestaurantReservation::query()
             ->with(['restaurant', 'table'])
@@ -155,7 +167,15 @@ class BookingController extends Controller
             ->get()
             ->map(function (RestaurantReservation $reservation) use ($colorForStatus) {
                 $date = $reservation->reservation_date?->toDateString();
-                $startAt = Carbon::parse("{$date} {$reservation->reservation_time}");
+
+                if (! $date || ! $reservation->reservation_time) {
+                    return null;
+                }
+
+                $time = $reservation->reservation_time instanceof Carbon
+                    ? $reservation->reservation_time->format('H:i:s')
+                    : (string) $reservation->reservation_time;
+                $startAt = Carbon::parse("{$date} {$time}");
 
                 return [
                     'id' => "restaurant-{$reservation->id}",
@@ -171,7 +191,8 @@ class BookingController extends Controller
                         'details' => "{$reservation->restaurant?->name}; Table {$reservation->table?->table_number}",
                     ],
                 ];
-            });
+            })
+            ->filter();
 
         return response()->json(
             $hotelBookings
@@ -274,7 +295,13 @@ class BookingController extends Controller
     private function authorizeBookingAccess(): void
     {
         abort_unless(
-            auth()->user()?->hasAnyRole(['admin', 'receptionist']),
+            auth()->user()?->hasAnyRole([
+                'super_admin',
+                'admin',
+                'manager',
+                'accountant',
+                'receptionist',
+            ]),
             403
         );
     }

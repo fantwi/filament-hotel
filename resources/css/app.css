@@ -6,6 +6,3 @@
 [x-cloak] {
     display: none !important;
 }
-
-@import '@fullcalendar/core/main.css';
-@import '@fullcalendar/daygrid/main.css';

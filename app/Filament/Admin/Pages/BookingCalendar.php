@@ -20,4 +20,18 @@ class BookingCalendar extends Page
     protected static ?int $navigationSort = 20;
 
     protected string $view = 'filament.admin.pages.booking-calendar';
+
+    /**
+     * Determines whether the current user may access this feature.
+     */
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            'super_admin',
+            'admin',
+            'manager',
+            'accountant',
+            'receptionist',
+        ]) ?? false;
+    }
 }
