@@ -2,7 +2,8 @@
 
 namespace App\Filament\Admin\Pages\Dashboards;
 
-use App\Filament\Admin\Widgets\AdminStats;
+use App\Filament\Admin\Widgets\AdminFinanceStats;
+use App\Filament\Admin\Widgets\AdminServiceStats;
 use App\Filament\Admin\Widgets\CorporateBillingOverview;
 use App\Filament\Admin\Widgets\KitchenOrderQueue;
 use App\Filament\Admin\Widgets\KitchenStockStats;
@@ -48,7 +49,8 @@ class AdminDashboard extends TimeFilteredDashboard
     {
         return [
             RoleDashboardOverview::class,
-            AdminStats::class,
+            AdminServiceStats::class,
+            AdminFinanceStats::class,
             CorporateBillingOverview::class,
             KitchenStockStats::class,
             ManagerOperationsChart::class,

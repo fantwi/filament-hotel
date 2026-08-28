@@ -114,7 +114,7 @@ class BookingController extends Controller
 
                 return [
                     'id' => "hotel-{$booking->id}",
-                    'title' => 'Hotel - Room '.($booking->room?->room_number ?? 'Unknown'),
+                    'title' => 'Hotel Room '.($booking->room?->room_number ?? 'Unknown'),
                     'start' => $booking->check_in?->toDateString(),
                     'end' => $booking->check_out?->toDateString(),
                     'allDay' => true,
