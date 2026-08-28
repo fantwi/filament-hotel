@@ -5,6 +5,8 @@ namespace App\Filament\Admin\Resources\ContactMessages\Tables;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 /**
@@ -19,11 +21,46 @@ class ContactMessagesTable
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('name')
+                    ->label('Name')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('phone_number')
+                    ->label('Phone')
+                    ->placeholder('Not provided')
+                    ->toggleable(),
+                TextColumn::make('subject')
+                    ->label('Subject')
+                    ->searchable()
+                    ->sortable()
+                    ->wrap(),
+                TextColumn::make('message')
+                    ->label('Message')
+                    ->limit(100)
+                    ->tooltip(fn (TextColumn $column): ?string => $column->getState())
+                    ->wrap()
+                    ->toggleable(),
+                TextColumn::make('status')
+                    ->badge()
+                    ->colors([
+                        'warning' => 'new',
+                        'success' => 'resolved',
+                    ])
+                    ->sortable(),
+                TextColumn::make('created_at')
+                    ->label('Received')
+                    ->dateTime('M d, Y g:i A')
+                    ->sortable(),
             ])
-            ->filters([
-                //
-            ])
+            ->defaultSort('created_at', 'desc')
+            ->filters([SelectFilter::make('status')->options([
+                'new' => 'New',
+                'resolved' => 'Resolved',
+            ])])
             ->recordActions([
                 EditAction::make(),
             ])
