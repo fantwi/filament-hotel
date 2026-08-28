@@ -84,16 +84,21 @@ class BookingsTable
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'pending' => 'warning',
+                        'confirmed' => 'info',
                         'checked_in' => 'success',
                         'checked_out' => 'gray',
+                        'cancelled', 'expired', 'no_show' => 'danger',
+                        default => 'gray',
                     }),
 
                 TextColumn::make('payment_status')
                     ->badge()
-                    ->color(fn ($state) => match ($state) {
+                    ->color(fn ($state): string => match ($state) {
                         'paid' => 'success',
-                        'partial' => 'warning',
-                        'unpaid' => 'danger',
+                        'pending', 'partial', 'partially_paid' => 'warning',
+                        'unpaid', 'failed', 'expired', 'cancelled' => 'danger',
+                        'refunded' => 'gray',
+                        default => 'gray',
                     }),
             ])
             ->defaultSort('created_at', 'desc')
