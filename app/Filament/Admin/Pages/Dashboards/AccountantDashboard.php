@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Pages\Dashboards;
 
-use App\Filament\Admin\Widgets\AccountantPeriodReport;
+use App\Filament\Admin\Widgets\AccountantReceivablesStats;
 use App\Filament\Admin\Widgets\AccountantStats;
 use App\Filament\Admin\Widgets\CorporateBillingOverview;
 use App\Filament\Admin\Widgets\RecentPayments;
@@ -48,7 +48,7 @@ class AccountantDashboard extends TimeFilteredDashboard
         return [
             RoleDashboardOverview::class,
             AccountantStats::class,
-            AccountantPeriodReport::class,
+            AccountantReceivablesStats::class,
             CorporateBillingOverview::class,
             RestaurantRevenueChart::class,
             RecentPayments::class,
