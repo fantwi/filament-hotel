@@ -25,30 +25,8 @@
             </div>
         </x-filament::section>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue received</p>
-                <p class="mt-2 text-3xl font-bold text-success-600 dark:text-success-400">GHS {{ number_format($report['revenue'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ number_format($report['paymentsReceived']) }} payment(s) recorded</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Refunds</p>
-                <p class="mt-2 text-3xl font-bold text-danger-600 dark:text-danger-400">GHS {{ number_format($report['refunds'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ number_format($report['refundCount']) }} refund(s) recorded</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Net revenue</p>
-                <p class="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">GHS {{ number_format($report['netRevenue'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Revenue less refunds</p>
-            </x-filament::section>
-
-            <x-filament::section compact>
-                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Outstanding balance</p>
-                <p class="mt-2 text-3xl font-bold text-warning-600 dark:text-warning-400">GHS {{ number_format($report['outstanding'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Unpaid transactions in range</p>
-            </x-filament::section>
+        <section aria-label="Revenue overview">
+            @livewire(\App\Filament\Admin\Widgets\RevenueReportStats::class, ['period' => $this->period], key('revenue-report-stats-'.$this->period))
         </section>
 
         <section class="grid gap-4 lg:grid-cols-3">
