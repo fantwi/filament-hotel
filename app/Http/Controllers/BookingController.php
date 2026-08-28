@@ -145,7 +145,7 @@ class BookingController extends Controller
 
                 return [
                     'id' => "conference-{$booking->id}",
-                    'title' => 'Conference - '.($booking->room?->name ?? 'Unknown Room'),
+                    'title' => $booking->room?->name ?? 'Unknown Room',
                     'start' => "{$date} {$booking->start_time}",
                     'end' => "{$date} {$booking->end_time}",
                     'color' => $colorForStatus($booking->status),
@@ -179,7 +179,7 @@ class BookingController extends Controller
 
                 return [
                     'id' => "restaurant-{$reservation->id}",
-                    'title' => 'Restaurant - Table '.($reservation->table?->table_number ?? 'Unknown'),
+                    'title' => $reservation->table?->table_number ?? 'Unknown Table',
                     'start' => $startAt->toDateTimeString(),
                     'end' => $startAt->copy()->addMinutes($reservation->duration_minutes ?? 120)->toDateTimeString(),
                     'color' => $colorForStatus($reservation->status),

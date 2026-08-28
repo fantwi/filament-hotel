@@ -131,9 +131,13 @@ class BookingCalendarTest extends TestCase
         ]));
 
         $response->assertOk();
+        $events = collect($response->json());
+
         self::assertSame(
             ['conference', 'hotel', 'restaurant'],
-            collect($response->json())->pluck('id')->map(fn (string $id): string => str($id)->before('-')->toString())->sort()->values()->all(),
+            $events->pluck('id')->map(fn (string $id): string => str($id)->before('-')->toString())->sort()->values()->all(),
         );
+        self::assertSame('Calendar conference room', $events->firstWhere('id', 'conference-1')['title']);
+        self::assertSame('T-1', $events->firstWhere('id', 'restaurant-1')['title']);
     }
 }
