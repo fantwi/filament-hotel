@@ -13,6 +13,7 @@ use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
 use App\Models\Room;
 use App\Models\RoomType;
+use App\Services\CorporatePaymentService;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -676,7 +677,7 @@ Route::middleware('auth')->post('/admin/corporate-receivables/{type}/{id}/mark-p
     $transaction = $model::query()->findOrFail($id);
 
     try {
-        app(AppServicesCorporatePaymentService::class)->recordOfflinePayment(
+        app(CorporatePaymentService::class)->recordOfflinePayment(
             $transaction,
             $data['method'],
             $data['transaction_reference'] ?? null,

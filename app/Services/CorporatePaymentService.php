@@ -77,12 +77,18 @@ class CorporatePaymentService
      */
     private function amount(Model $transaction): float
     {
-        return match ($transaction::class) {
+        $gross = match ($transaction::class) {
             Booking::class, ConferenceBooking::class => (float) $transaction->total_price,
             RestaurantReservation::class => (float) $transaction->reservation_fee,
             RestaurantOrder::class => (float) $transaction->total,
             default => throw new InvalidArgumentException('Unsupported corporate transaction.'),
         };
+
+        $paid = (float) $transaction->payments()
+            ->whereIn('payment_status', ['paid', 'completed'])
+            ->sum('amount');
+
+        return max(0, $gross - $paid);
     }
 
     /**
