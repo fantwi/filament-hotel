@@ -39,7 +39,7 @@ class RestaurantOrderReportStats extends StatsOverviewWidget
     {
         $reportPage = new RestaurantOrderReport;
         $reportPage->period = $this->validPeriod($this->period);
-        $report = $reportPage->getReportData();
+        $report = $reportPage->getReportMetrics();
         $periodLabel = $reportPage->periodLabel();
 
         return [
