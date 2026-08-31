@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Bookings\Tables;
 
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Models\RoomType;
 // use Filament\Tables\Actions\Action;
 
 use App\Services\InvoiceService;
@@ -20,7 +21,10 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -103,8 +107,100 @@ class BookingsTable
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                //
+                SelectFilter::make('status')
+                    ->label('Booking status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'confirmed' => 'Confirmed',
+                        'checked_in' => 'Checked in',
+                        'checked_out' => 'Checked out',
+                        'cancelled' => 'Cancelled',
+                        'expired' => 'Expired',
+                        'no_show' => 'No show',
+                    ]),
+                SelectFilter::make('payment_status')
+                    ->label('Payment status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'paid' => 'Paid',
+                        'partial' => 'Partial',
+                        'partially_paid' => 'Partially paid',
+                        'unpaid' => 'Unpaid',
+                        'failed' => 'Failed',
+                        'refunded' => 'Refunded',
+                        'expired' => 'Expired',
+                        'cancelled' => 'Cancelled',
+                    ]),
+                SelectFilter::make('room_type_id')
+                    ->label('Room type')
+                    ->options(fn (): array => RoomType::query()
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->searchable()
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        $data['value'] ?? null,
+                        fn (Builder $query, int|string $roomTypeId): Builder => $query->whereHas(
+                            'room',
+                            fn (Builder $roomQuery): Builder => $roomQuery->where('room_type_id', $roomTypeId),
+                        ),
+                    )),
+                SelectFilter::make('corporate_organization_id')
+                    ->label('Corporate account')
+                    ->relationship('corporateOrganization', 'name')
+                    ->searchable()
+                    ->preload(),
+                Filter::make('check_in')
+                    ->label('Arrival date')
+                    ->schema([
+                        DatePicker::make('from')->label('From'),
+                        DatePicker::make('until')->label('Until'),
+                    ])
+                    ->columns(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['from'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('check_in', '>=', $date),
+                        )
+                        ->when(
+                            $data['until'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('check_in', '<=', $date),
+                        )),
+                Filter::make('check_out')
+                    ->label('Departure date')
+                    ->schema([
+                        DatePicker::make('from')->label('From'),
+                        DatePicker::make('until')->label('Until'),
+                    ])
+                    ->columns(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['from'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('check_out', '>=', $date),
+                        )
+                        ->when(
+                            $data['until'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('check_out', '<=', $date),
+                        )),
+                SelectFilter::make('balance')
+                    ->label('Outstanding balance')
+                    ->options([
+                        'outstanding' => 'Has balance',
+                        'settled' => 'Settled',
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        $data['value'] ?? null,
+                        function (Builder $query, string $value): Builder {
+                            $paidAmount = '(SELECT COALESCE(SUM(payments.amount), 0) FROM payments WHERE payments.booking_id = bookings.id AND payments.payment_status IN (?, ?))';
+                            $bindings = ['paid', 'completed'];
+
+                            return $value === 'outstanding'
+                                ? $query->whereRaw("bookings.total_price > {$paidAmount}", $bindings)
+                                : $query->whereRaw("bookings.total_price <= {$paidAmount}", $bindings);
+                        },
+                    )),
             ])
+            ->filtersFormColumns(3)
             ->recordActions([
 
                 ActionGroup::make([
@@ -194,17 +290,94 @@ class BookingsTable
 
                     Action::make('check_in')
                         ->label('Check-In')
-                        ->visible(fn ($record) => $record->status === 'confirmed')
-                        ->action(fn ($record) => $record->update([
-                            'status' => 'checked_in',
-                        ])),
+                        ->icon('heroicon-o-arrow-right-on-rectangle')
+                        ->color('success')
+                        ->visible(fn (Booking $record): bool => $record->status === 'confirmed')
+                        ->requiresConfirmation()
+                        ->modalHeading('Check in guest')
+                        ->modalDescription(fn (Booking $record): string => "Check in {$record->guest?->full_name} to room {$record->room?->room_number}?")
+                        ->successNotificationTitle('Guest checked in')
+                        ->successNotification(fn (Booking $record): Notification => Notification::make()
+                            ->title('Guest checked in')
+                            ->body("Room {$record->room?->room_number} is now occupied.")
+                            ->success())
+                        ->action(function (Booking $record): void {
+                            $record->refresh();
+
+                            if ($record->status !== 'confirmed') {
+                                Notification::make()
+                                    ->title('Check-in not available')
+                                    ->body('This booking is no longer confirmed.')
+                                    ->warning()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $record->update(['status' => 'checked_in']);
+
+                            activity()
+                                ->performedOn($record)
+                                ->causedBy(auth()->user())
+                                ->log("Checked in guest {$record->guest?->full_name} to room {$record->room?->room_number}");
+
+                        }),
 
                     Action::make('check_out')
                         ->label('Check-Out')
-                        ->visible(fn ($record) => $record->status === 'checked_in')
-                        ->action(fn ($record) => $record->update([
-                            'status' => 'checked_out',
-                        ])),
+                        ->icon('heroicon-o-arrow-left-on-rectangle')
+                        ->color('danger')
+                        ->visible(fn (Booking $record): bool => $record->status === 'checked_in')
+                        ->requiresConfirmation()
+                        ->modalHeading('Check out guest')
+                        ->modalDescription(fn (Booking $record): string => $record->balance > 0
+                            ? 'This booking has an outstanding balance of GHS '.number_format($record->balance, 2).'. Settle it before checking out.'
+                            : "Check out {$record->guest?->full_name} from room {$record->room?->room_number}?")
+                        ->disabled(fn (Booking $record): bool => $record->balance > 0)
+                        ->tooltip(fn (Booking $record): ?string => $record->balance > 0
+                            ? 'Guest still has an outstanding balance.'
+                            : null)
+                        ->successNotificationTitle('Guest checked out')
+                        ->successNotification(fn (): Notification => Notification::make()
+                            ->title('Guest checked out')
+                            ->body('The room has been released and the invoice number was recorded.')
+                            ->success())
+                        ->action(function (Booking $record): void {
+                            $record->refresh();
+
+                            if ($record->status !== 'checked_in') {
+                                Notification::make()
+                                    ->title('Check-out not available')
+                                    ->body('This booking is no longer checked in.')
+                                    ->warning()
+                                    ->send();
+
+                                return;
+                            }
+
+                            if ($record->balance > 0) {
+                                Notification::make()
+                                    ->title('Check-out blocked')
+                                    ->body('Record payment for the outstanding balance before checking out.')
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            DB::transaction(function () use ($record): void {
+                                $record->update([
+                                    'status' => 'checked_out',
+                                    'invoice_number' => $record->invoice_number ?: InvoiceService::generateInvoiceNumber(),
+                                ]);
+                            });
+
+                            activity()
+                                ->performedOn($record)
+                                ->causedBy(auth()->user())
+                                ->log("Checked out guest {$record->guest?->full_name} from room {$record->room?->room_number}");
+
+                        }),
 
                     Action::make('cancel')
                         ->label('Cancel Booking')
