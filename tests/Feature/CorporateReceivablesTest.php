@@ -12,6 +12,7 @@ use App\Models\RoomType;
 use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Tests\TestCase;
 
 class CorporateReceivablesTest extends TestCase
@@ -106,6 +107,38 @@ class CorporateReceivablesTest extends TestCase
         $stats = $method->invoke($widget);
 
         self::assertCount(4, $stats);
+    }
+
+    public function test_receivables_queue_is_paginated_and_can_be_filtered(): void
+    {
+        [$booking] = $this->bookingFixture();
+
+        $page = new CorporateReceivables;
+        $page->transactionType = 'booking';
+        $page->search = 'Receivables Test';
+        $page->perPage = 1;
+
+        $results = $page->paginatedReceivables();
+
+        self::assertInstanceOf(LengthAwarePaginator::class, $results);
+        self::assertSame(1, $results->total());
+        self::assertCount(1, $results->items());
+        self::assertSame('booking', $results->items()[0]['type']);
+        self::assertSame($booking->id, $results->items()[0]['id']);
+    }
+
+    public function test_receivables_summary_uses_database_aggregates_for_the_full_queue(): void
+    {
+        $this->bookingFixture();
+
+        $page = new CorporateReceivables;
+        $summary = $page->summary();
+
+        self::assertSame(1, $summary['count']);
+        self::assertSame(100.0, $summary['total']);
+        self::assertSame(1, $summary['organizations']);
+        self::assertSame(1, $summary['by_type']['booking']);
+        self::assertSame(100.0, $summary['by_type_amount']['booking']);
     }
 
     /**
