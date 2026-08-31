@@ -9,8 +9,12 @@ use Filament\Forms\Components\Select;
 use Filament\Pages\Dashboard;
 use Filament\Pages\Dashboard\Concerns\HasFiltersForm;
 use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 
 /**
  * Provides the time filtered dashboard Filament administration page.
@@ -26,6 +30,48 @@ abstract class TimeFilteredDashboard extends Dashboard
      * widgets do not refresh for every keystroke in a custom date range.
      */
     public ?array $draftFilters = null;
+
+    /**
+     * Places KPI widgets first and keeps secondary dashboard content grouped.
+     *
+     * Each dashboard still owns its widget list; this layout only changes how
+     * those widgets are presented so the most actionable numbers stay visible.
+     */
+    public function content(Schema $schema): Schema
+    {
+        [$priorityWidgets, $sections] = $this->dashboardWidgetLayout();
+        $components = [
+            ...(method_exists($this, 'getFiltersForm') ? [$this->getFiltersFormContentComponent()] : []),
+        ];
+
+        if ($priorityWidgets !== []) {
+            $components[] = $this->widgetGrid($priorityWidgets);
+        }
+
+        if (count($sections) === 1) {
+            $label = array_key_first($sections);
+            $components[] = Section::make($label)
+                ->description($this->dashboardSectionDescription($label))
+                ->schema([$this->widgetGrid($sections[$label])])
+                ->collapsible()
+                ->collapsed($label === 'Guidance');
+        } elseif ($sections !== []) {
+            $tabs = [];
+
+            foreach ($sections as $label => $widgets) {
+                $tabs[] = Tab::make($label)
+                    ->icon($this->dashboardSectionIcon($label))
+                    ->schema([$this->widgetGrid($widgets)]);
+            }
+
+            $components[] = Tabs::make('Dashboard sections')
+                ->tabs($tabs)
+                ->persistTabInQueryString('dashboard-section')
+                ->columnSpanFull();
+        }
+
+        return $schema->components($components);
+    }
 
     /**
      * Builds the dashboard filter form without Filament's default live
@@ -47,6 +93,91 @@ abstract class TimeFilteredDashboard extends Dashboard
             ->statePath('draftFilters');
 
         return $this->filtersForm($schema);
+    }
+
+    /**
+     * Splits a dashboard's widgets into above-the-fold KPIs and tabbed detail.
+     *
+     * @return array{0: array<int, mixed>, 1: array<string, array<int, mixed>>}
+     */
+    protected function dashboardWidgetLayout(): array
+    {
+        $priorityWidgets = [];
+        $sections = [
+            'Operations' => [],
+            'Finance' => [],
+            'Restaurant' => [],
+            'Kitchen' => [],
+            'Guidance' => [],
+        ];
+
+        foreach ($this->getWidgets() as $widget) {
+            $widgetClass = $this->normalizeWidgetClass($widget);
+            $name = class_basename($widgetClass);
+
+            if (str_ends_with($name, 'Stats')) {
+                $priorityWidgets[] = $widget;
+
+                continue;
+            }
+
+            $section = match (true) {
+                $name === 'RoleDashboardOverview' => 'Guidance',
+                str_contains($name, 'Corporate')
+                    || str_contains($name, 'Payment')
+                    || str_contains($name, 'Receivable')
+                    || str_contains($name, 'Revenue')
+                    || str_contains($name, 'Transaction') => 'Finance',
+                str_contains($name, 'Restaurant')
+                    || str_contains($name, 'Menu')
+                    || str_contains($name, 'BestSelling') => 'Restaurant',
+                str_contains($name, 'Kitchen') => 'Kitchen',
+                default => 'Operations',
+            };
+
+            $sections[$section][] = $widget;
+        }
+
+        return [$priorityWidgets, array_filter($sections, filled(...))];
+    }
+
+    /**
+     * Wraps widget components in the dashboard's responsive widget grid.
+     *
+     * @param  array<int, mixed>  $widgets
+     */
+    protected function widgetGrid(array $widgets): Grid
+    {
+        return Grid::make($this->getColumns())
+            ->schema($this->getWidgetsSchemaComponents($widgets));
+    }
+
+    /**
+     * Returns the accessible icon for a secondary dashboard section.
+     */
+    protected function dashboardSectionIcon(string $section): Heroicon
+    {
+        return match ($section) {
+            'Finance' => Heroicon::OutlinedBanknotes,
+            'Restaurant' => Heroicon::OutlinedCake,
+            'Kitchen' => Heroicon::OutlinedFire,
+            'Guidance' => Heroicon::OutlinedInformationCircle,
+            default => Heroicon::OutlinedClipboardDocumentList,
+        };
+    }
+
+    /**
+     * Returns a concise description for a secondary dashboard section.
+     */
+    protected function dashboardSectionDescription(string $section): string
+    {
+        return match ($section) {
+            'Finance' => 'Payments, revenue, and outstanding balances for the selected period.',
+            'Restaurant' => 'Restaurant sales, order trends, and menu performance.',
+            'Kitchen' => 'Kitchen production, stock, and order-queue activity.',
+            'Guidance' => 'Role-specific priorities and reporting context.',
+            default => 'Operational activity and follow-up items for the selected period.',
+        };
     }
 
     /**

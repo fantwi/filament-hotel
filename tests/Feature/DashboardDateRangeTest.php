@@ -14,6 +14,8 @@ use App\Models\Payment;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -120,6 +122,38 @@ class DashboardDateRangeTest extends TestCase
         self::assertStringNotContainsString('wire:model.live="fromDate"', $view);
         self::assertStringNotContainsString('wire:model.live="untilDate"', $view);
         self::assertStringContainsString('wire:click="resetFilters"', $view);
+    }
+
+    public function test_long_dashboards_put_priority_widgets_before_secondary_sections(): void
+    {
+        foreach ([
+            SuperAdminDashboard::class,
+            AdminDashboard::class,
+            AccountantDashboard::class,
+            ManagerDashboard::class,
+        ] as $dashboardClass) {
+            $components = (new $dashboardClass)->content(Schema::make())->getComponents();
+
+            self::assertInstanceOf(Grid::class, $components[1], $dashboardClass);
+            self::assertInstanceOf(Tabs::class, $components[2], $dashboardClass);
+        }
+    }
+
+    public function test_super_admin_dashboard_sections_are_named_for_their_operational_domains(): void
+    {
+        $components = (new SuperAdminDashboard)->content(Schema::make())->getComponents();
+        $tabs = $components[2];
+
+        self::assertInstanceOf(Tabs::class, $tabs);
+        self::assertSame([
+            'Finance',
+            'Restaurant',
+            'Kitchen',
+            'Guidance',
+        ], array_map(
+            fn ($tab): string => $tab->getLabel(),
+            $tabs->getDefaultChildComponents(),
+        ));
     }
 }
 
