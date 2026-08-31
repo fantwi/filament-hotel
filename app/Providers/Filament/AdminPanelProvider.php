@@ -14,14 +14,13 @@ use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
 use App\Filament\Admin\Widgets\RestaurantRevenueChart;
 use App\Filament\Admin\Widgets\RevenueStats;
 use App\Filament\Admin\Widgets\StaffStats;
+use App\Models\HotelSetting;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Assets\Css;
-use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -29,6 +28,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /**
@@ -49,8 +49,12 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
             // ->viteTheme('resources/css/app.css') // FAA added this
-            ->colors([
-                'primary' => Color::Amber,
+            ->brandName(fn (): string => $this->hotelBrandName())
+            ->brandLogo(fn (): ?string => $this->hotelBrandLogo())
+            ->brandLogoHeight('2.25rem')
+            ->colors(fn (): array => [
+                'primary' => $this->hotelBrandColor('primary_color', '#F59E0B'),
+                'info' => $this->hotelBrandColor('secondary_color', '#0EA5E9'),
             ])
             ->navigationGroups([
                 'Dashboards',
@@ -99,5 +103,33 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+    }
+
+    /**
+     * Resolves the centrally managed hotel name for the Filament header.
+     */
+    private function hotelBrandName(): string
+    {
+        $name = HotelSetting::current()->hotel_name;
+
+        return filled($name) ? (string) $name : (string) config('app.name', 'Laravel');
+    }
+
+    /**
+     * Resolves the centrally managed hotel logo URL for the Filament header.
+     */
+    private function hotelBrandLogo(): ?string
+    {
+        $logo = HotelSetting::current()->logo;
+
+        return filled($logo) ? Storage::disk('public')->url((string) $logo) : null;
+    }
+
+    /**
+     * Resolves a validated centrally managed color for the Filament palette.
+     */
+    private function hotelBrandColor(string $attribute, string $fallback): string
+    {
+        return HotelSetting::current()->color($attribute, $fallback);
     }
 }

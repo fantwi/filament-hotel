@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Filament\Admin\Resources\HotelSettings\HotelSettingResource;
 use App\Models\HotelSetting;
 use App\Models\User;
+use App\Providers\Filament\AdminPanelProvider;
+use Filament\Panel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -58,5 +61,28 @@ class HotelBrandingTest extends TestCase
 
         self::assertFalse(HotelSettingResource::canViewAny());
         self::assertFalse(HotelSettingResource::canCreate());
+    }
+
+    public function test_admin_panel_uses_the_central_hotel_branding_settings(): void
+    {
+        Storage::fake('public');
+
+        $branding = HotelSetting::create([
+            'hotel_name' => 'Seaside Grand Hotel',
+            'logo' => 'hotel-branding/seaside-logo.png',
+            'primary_color' => '#C2410C',
+            'secondary_color' => '#F59E0B',
+            'footer_color' => '#172554',
+        ]);
+
+        $panel = (new AdminPanelProvider($this->app))->panel(Panel::make());
+
+        self::assertSame($branding->hotel_name, $panel->getBrandName());
+        self::assertSame(
+            Storage::disk('public')->url($branding->logo),
+            $panel->getBrandLogo(),
+        );
+        self::assertSame('#C2410C', $panel->getColors()['primary']);
+        self::assertSame('#F59E0B', $panel->getColors()['info']);
     }
 }
