@@ -12,6 +12,8 @@ use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
 use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
 use App\Models\Payment;
 use Carbon\Carbon;
+use Filament\Actions\Action;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -87,6 +89,37 @@ class DashboardDateRangeTest extends TestCase
 
             self::assertSame(['default' => 'full'], $section->getColumnSpan(), $dashboard);
         }
+    }
+
+    public function test_dashboard_period_form_defers_changes_until_apply_or_reset(): void
+    {
+        $section = (new AdminDashboard)->filtersForm(Schema::make())->getComponents()[0];
+        $components = $section->getDefaultChildComponents();
+
+        self::assertSame([], $components[0]->getStateBindingModifiers());
+        self::assertSame([], $components[1]->getStateBindingModifiers());
+        self::assertSame([], $components[2]->getStateBindingModifiers());
+
+        $actions = collect($components)->first(
+            fn ($component): bool => $component instanceof Actions,
+        );
+
+        self::assertInstanceOf(Actions::class, $actions);
+        self::assertSame(['applyFilters', 'resetFilters'], array_map(
+            fn (Action $action): string => $action->getName(),
+            $actions->getDefaultChildComponents(),
+        ));
+    }
+
+    public function test_kitchen_report_uses_deferred_inputs_and_has_a_reset_action(): void
+    {
+        $view = file_get_contents(resource_path('views/filament/admin/pages/kitchen-production-report.blade.php'));
+
+        self::assertStringContainsString('wire:model="fromDate"', $view);
+        self::assertStringContainsString('wire:model="untilDate"', $view);
+        self::assertStringNotContainsString('wire:model.live="fromDate"', $view);
+        self::assertStringNotContainsString('wire:model.live="untilDate"', $view);
+        self::assertStringContainsString('wire:click="resetFilters"', $view);
     }
 }
 

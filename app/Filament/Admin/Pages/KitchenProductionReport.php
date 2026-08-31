@@ -48,6 +48,16 @@ class KitchenProductionReport extends Page
     }
 
     /**
+     * Restores the report to the current month's range.
+     */
+    public function resetFilters(): void
+    {
+        $this->fromDate = now()->startOfMonth()->toDateString();
+        $this->untilDate = today()->toDateString();
+        $this->resetValidation();
+    }
+
+    /**
      * Builds and returns report property.
      */
     public function getReportProperty(): array

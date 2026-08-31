@@ -3,16 +3,23 @@
         <form wire:submit="applyFilters" class="grid gap-4 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-900 sm:grid-cols-[1fr_1fr_auto]">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
                 From
-                <input wire:model.live="fromDate" type="date" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800">
+                <input wire:model="fromDate" type="date" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800">
+                @error('fromDate')
+                    <p class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ $message }}</p>
+                @enderror
             </label>
 
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
                 Until
-                <input wire:model.live="untilDate" type="date" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800">
+                <input wire:model="untilDate" type="date" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800">
+                @error('untilDate')
+                    <p class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ $message }}</p>
+                @enderror
             </label>
 
-            <div class="flex items-end">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
                 <x-filament::button type="submit" class="w-full sm:w-auto">Apply</x-filament::button>
+                <x-filament::button type="button" color="gray" wire:click="resetFilters" class="w-full sm:w-auto">Reset</x-filament::button>
             </div>
         </form>
 
