@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Notifications\TwoFactorEmailCode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use PragmaRX\Google2FA\Google2FA;
@@ -129,6 +132,52 @@ class TwoFactorAuthenticationController extends Controller
     }
 
     /**
+     * Send a temporary backup code to the pending guest's verified email address.
+     */
+    public function requestEmailCode(Request $request): RedirectResponse
+    {
+        $user = $this->pendingUser($request);
+
+        if (! $user) {
+            return redirect()->route('login')->with('message', 'Your sign-in session expired. Please try again.');
+        }
+
+        if (! filled($user->email_verified_at)) {
+            throw ValidationException::withMessages([
+                'email_code' => 'Verify your account email before using email authentication.',
+            ]);
+        }
+
+        $rateLimitKey = $this->emailRateLimitKey($user, $request);
+        $cooldownKey = $rateLimitKey.':cooldown';
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 5)) {
+            throw ValidationException::withMessages([
+                'email_code' => 'Too many email-code requests. Try again later.',
+            ]);
+        }
+
+        if (RateLimiter::tooManyAttempts($cooldownKey, 1)) {
+            throw ValidationException::withMessages([
+                'email_code' => 'Please wait before requesting another email code.',
+            ]);
+        }
+
+        $code = (string) random_int(100000, 999999);
+        $request->session()->put('two_factor.email_code', [
+            'user_id' => $user->id,
+            'hash' => Hash::make($code),
+            'expires_at' => now()->addMinutes(10)->timestamp,
+        ]);
+
+        Notification::send($user, new TwoFactorEmailCode($code));
+        RateLimiter::hit($rateLimitKey, 600);
+        RateLimiter::hit($cooldownKey, 60);
+
+        return redirect()->route('two-factor.challenge')->with('status', 'two-factor-email-sent');
+    }
+
+    /**
      * Verify a TOTP code or consume one recovery code and finish the guest login.
      */
     public function verify(Request $request): RedirectResponse
@@ -162,6 +211,23 @@ class TwoFactorAuthenticationController extends Controller
         }
 
         if (! $valid) {
+            $emailCode = $request->session()->get('two_factor.email_code');
+            $emailCodeExpired = is_array($emailCode)
+                && (int) ($emailCode['expires_at'] ?? 0) < now()->timestamp;
+
+            if ($emailCodeExpired) {
+                $request->session()->forget('two_factor.email_code');
+            }
+
+            if (is_array($emailCode)
+                && (int) ($emailCode['user_id'] ?? 0) === $user->id
+                && ! $emailCodeExpired
+                && Hash::check($input, $emailCode['hash'] ?? '')) {
+                $valid = true;
+            }
+        }
+
+        if (! $valid) {
             throw ValidationException::withMessages([
                 'code' => 'The code is invalid. Try again or use a recovery code.',
             ]);
@@ -174,7 +240,9 @@ class TwoFactorAuthenticationController extends Controller
         }
 
         $remember = (bool) $request->session()->pull('two_factor.remember', false);
-        $request->session()->forget('two_factor.pending_user_id');
+        $request->session()->forget(['two_factor.pending_user_id', 'two_factor.email_code']);
+        RateLimiter::clear($this->emailRateLimitKey($user, $request));
+        RateLimiter::clear($this->emailRateLimitKey($user, $request).':cooldown');
         Auth::login($user, $remember);
         $request->session()->regenerate();
 
@@ -214,5 +282,10 @@ class TwoFactorAuthenticationController extends Controller
     private function normalizeRecoveryCode(string $code): string
     {
         return strtoupper((string) preg_replace('/[^A-Z0-9]/i', '', $code));
+    }
+
+    private function emailRateLimitKey(User $user, Request $request): string
+    {
+        return 'two-factor-email:'.$user->id.'|'.$request->ip();
     }
 }

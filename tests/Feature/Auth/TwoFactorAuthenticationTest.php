@@ -3,8 +3,10 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Notifications\TwoFactorEmailCode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
@@ -79,6 +81,82 @@ class TwoFactorAuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_guest_can_request_an_email_code_for_a_pending_two_factor_login(): void
+    {
+        $user = $this->enableTwoFactor(User::factory()->create());
+        Notification::fake();
+
+        $this->startTwoFactorLogin($user);
+
+        $this->post(route('two-factor.email.request'))
+            ->assertRedirect(route('two-factor.challenge'))
+            ->assertSessionHas('status', 'two-factor-email-sent');
+
+        Notification::assertSentTo($user, TwoFactorEmailCode::class);
+    }
+
+    public function test_guest_can_finish_two_factor_login_with_the_emailed_code(): void
+    {
+        $user = $this->enableTwoFactor(User::factory()->create());
+        Notification::fake();
+        $this->startTwoFactorLogin($user);
+
+        $this->post(route('two-factor.email.request'));
+        $emailCode = null;
+        Notification::assertSentTo($user, TwoFactorEmailCode::class, function (TwoFactorEmailCode $notification) use (&$emailCode): bool {
+            $emailCode = $notification->code;
+
+            return true;
+        });
+
+        $this->post(route('two-factor.verify'), ['code' => $emailCode])
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_expired_email_codes_cannot_complete_two_factor_login(): void
+    {
+        $user = $this->enableTwoFactor(User::factory()->create());
+        $this->startTwoFactorLogin($user);
+
+        session()->put('two_factor.email_code', [
+            'hash' => Hash::make('123456'),
+            'expires_at' => now()->subMinute()->timestamp,
+        ]);
+
+        $this->post(route('two-factor.verify'), ['code' => '123456'])
+            ->assertSessionHasErrors('code');
+
+        $this->assertGuest();
+    }
+
+    public function test_email_code_requests_are_throttled_for_a_pending_login(): void
+    {
+        $user = $this->enableTwoFactor(User::factory()->create());
+        Notification::fake();
+        $this->startTwoFactorLogin($user);
+
+        $this->post(route('two-factor.email.request'));
+
+        $this->post(route('two-factor.email.request'))
+            ->assertSessionHasErrors('email_code');
+
+        Notification::assertSentToTimes($user, TwoFactorEmailCode::class, 1);
+    }
+
+    public function test_unverified_guest_email_cannot_be_used_as_a_two_factor_fallback(): void
+    {
+        $user = $this->enableTwoFactor(User::factory()->unverified()->create());
+        Notification::fake();
+        $this->startTwoFactorLogin($user);
+
+        $this->post(route('two-factor.email.request'))
+            ->assertSessionHasErrors('email_code');
+
+        Notification::assertNothingSent();
+    }
+
     public function test_guest_can_use_a_recovery_code_once_when_the_authenticator_is_unavailable(): void
     {
         $recoveryCode = 'ABCD1234EFGH';
@@ -131,5 +209,13 @@ class TwoFactorAuthenticationTest extends TestCase
         ])->save();
 
         return $user->refresh();
+    }
+
+    private function startTwoFactorLogin(User $user): void
+    {
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertRedirect(route('two-factor.challenge'));
     }
 }

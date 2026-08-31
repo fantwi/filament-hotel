@@ -23,6 +23,10 @@ Route::post('two-factor/challenge', [TwoFactorAuthenticationController::class, '
     ->middleware('throttle:5,1')
     ->name('two-factor.verify');
 
+Route::post('two-factor/email-code', [TwoFactorAuthenticationController::class, 'requestEmailCode'])
+    ->middleware('throttle:5,1')
+    ->name('two-factor.email.request');
+
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
