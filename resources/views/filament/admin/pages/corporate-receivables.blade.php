@@ -126,7 +126,7 @@
             </x-filament::section>
         </section>
 
-        <x-filament::section heading="Transactions awaiting payment" description="Record the remaining balance received through cash, mobile money, card, or bank transfer.">
+        <x-filament::section heading="Transactions awaiting payment" description="Record the remaining balance received through cash, mobile money, card, or bank transfer." x-data="corporatePaymentReview()" x-on:keydown.escape.window="closeReview()">
             <div class="mb-6">
                 <h2 class="mb-3 text-sm font-semibold text-gray-950 dark:text-white">Receivables by service</h2>
                 @livewire(\App\Filament\Admin\Widgets\CorporateReceivablesStats::class, ['filters' => [
@@ -166,7 +166,7 @@
                                     <td class="px-3 py-4 text-right font-bold text-danger-600 dark:text-danger-400">GHS {{ number_format($item['amount'], 2) }}</td>
                                     <td class="whitespace-nowrap px-3 py-4 text-gray-600 dark:text-gray-400">{{ $item['created_at']?->format('M d, Y') }}</td>
                                     <td class="px-3 py-4">
-                                        <form method="POST" action="{{ route('admin.corporate-receivables.pay', [$item['type'], $item['id']]) }}" class="flex min-w-[24rem] flex-wrap items-center gap-2">
+                                        <form id="payment-form-{{ $item['type'] }}-{{ $item['id'] }}" method="POST" action="{{ route('admin.corporate-receivables.pay', [$item['type'], $item['id']]) }}" class="flex min-w-[24rem] flex-wrap items-center gap-2" data-label="{{ $item['label'] }} #{{ $item['id'] }}" data-amount="GHS {{ number_format($item['amount'], 2) }}" data-organization="{{ $item['organization'] }}" data-guest="{{ $item['guest'] }}" data-created="{{ $item['created_at']?->format('M d, Y') }}" x-on:submit.prevent="openReview($el)">
                                             @csrf
                                             <label class="sr-only" for="method-{{ $item['type'] }}-{{ $item['id'] }}">Payment method</label>
                                             <select id="method-{{ $item['type'] }}-{{ $item['id'] }}" name="method" class="rounded-lg border-gray-300 text-sm dark:border-white/10 dark:bg-gray-900">
@@ -174,7 +174,7 @@
                                             </select>
                                             <label class="sr-only" for="reference-{{ $item['type'] }}-{{ $item['id'] }}">Transaction reference</label>
                                             <input id="reference-{{ $item['type'] }}-{{ $item['id'] }}" name="transaction_reference" class="min-w-0 flex-1 rounded-lg border-gray-300 text-sm dark:border-white/10 dark:bg-gray-900" placeholder="Reference (optional)">
-                                            <button type="submit" class="rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500">Mark paid</button>
+                                            <button type="button" x-on:click="openReview($el.form)" class="rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500">Review payment</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -194,7 +194,7 @@
                                 <span class="whitespace-nowrap text-sm font-bold text-danger-600 dark:text-danger-400">GHS {{ number_format($item['amount'], 2) }}</span>
                             </div>
                             <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">Created {{ $item['created_at']?->format('M d, Y') }} · {{ ucfirst($item['status']) }}</p>
-                            <form method="POST" action="{{ route('admin.corporate-receivables.pay', [$item['type'], $item['id']]) }}" class="mt-4 space-y-2">
+                            <form id="mobile-payment-form-{{ $item['type'] }}-{{ $item['id'] }}" method="POST" action="{{ route('admin.corporate-receivables.pay', [$item['type'], $item['id']]) }}" class="mt-4 space-y-2" data-label="{{ $item['label'] }} #{{ $item['id'] }}" data-amount="GHS {{ number_format($item['amount'], 2) }}" data-organization="{{ $item['organization'] }}" data-guest="{{ $item['guest'] }}" data-created="{{ $item['created_at']?->format('M d, Y') }}" x-on:submit.prevent="openReview($el)">
                                 @csrf
                                 <label class="sr-only" for="mobile-method-{{ $item['type'] }}-{{ $item['id'] }}">Payment method</label>
                                 <select id="mobile-method-{{ $item['type'] }}-{{ $item['id'] }}" name="method" class="w-full rounded-lg border-gray-300 text-sm dark:border-white/10 dark:bg-gray-900">
@@ -202,7 +202,7 @@
                                 </select>
                                 <label class="sr-only" for="mobile-reference-{{ $item['type'] }}-{{ $item['id'] }}">Transaction reference</label>
                                 <input id="mobile-reference-{{ $item['type'] }}-{{ $item['id'] }}" name="transaction_reference" class="w-full rounded-lg border-gray-300 text-sm dark:border-white/10 dark:bg-gray-900" placeholder="Reference (optional)">
-                                <button type="submit" class="w-full rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500">Mark paid</button>
+                                <button type="button" x-on:click="openReview($el.form)" class="w-full rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-500">Review payment</button>
                             </form>
                         </article>
                     @endforeach
@@ -214,6 +214,85 @@
                     </div>
                 @endif
             @endif
+
+            <div x-cloak x-show="open" x-transition.opacity class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="corporate-payment-review-title">
+                <div class="flex min-h-full items-center justify-center bg-gray-950/60 p-4" x-on:click.self="closeReview()">
+                    <div x-show="open" x-transition class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl ring-1 ring-gray-950/10 dark:bg-gray-900 dark:ring-white/10" x-on:click.stop>
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Payment review</p>
+                                <h2 id="corporate-payment-review-title" class="mt-1 text-xl font-semibold text-gray-950 dark:text-white">Confirm settlement</h2>
+                            </div>
+                            <button type="button" class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200" x-on:click="closeReview()" aria-label="Close payment review">&times;</button>
+                        </div>
+
+                        <p class="mt-4 text-sm leading-6 text-gray-600 dark:text-gray-300">Review the details below before the outstanding balance is marked as paid. This action records an offline payment and updates the guest dashboard.</p>
+
+                        <dl class="mt-5 divide-y divide-gray-200 rounded-xl border border-gray-200 text-sm dark:divide-white/10 dark:border-white/10">
+                            <div class="flex items-start justify-between gap-4 p-4"><dt class="text-gray-500 dark:text-gray-400">Transaction</dt><dd class="text-right font-semibold text-gray-950 dark:text-white" x-text="transaction.label"></dd></div>
+                            <div class="flex items-start justify-between gap-4 p-4"><dt class="text-gray-500 dark:text-gray-400">Organisation</dt><dd class="text-right font-medium text-gray-950 dark:text-white" x-text="transaction.organization"></dd></div>
+                            <div class="flex items-start justify-between gap-4 p-4"><dt class="text-gray-500 dark:text-gray-400">Guest</dt><dd class="text-right font-medium text-gray-950 dark:text-white" x-text="transaction.guest"></dd></div>
+                            <div class="flex items-start justify-between gap-4 p-4"><dt class="text-gray-500 dark:text-gray-400">Outstanding amount</dt><dd class="text-right font-bold text-danger-600 dark:text-danger-400" x-text="transaction.amount"></dd></div>
+                            <div class="flex items-start justify-between gap-4 p-4"><dt class="text-gray-500 dark:text-gray-400">Payment method</dt><dd class="text-right font-medium text-gray-950 dark:text-white" x-text="transaction.method"></dd></div>
+                            <div class="flex items-start justify-between gap-4 p-4"><dt class="text-gray-500 dark:text-gray-400">Reference</dt><dd class="max-w-[14rem] break-words text-right font-medium text-gray-950 dark:text-white" x-text="transaction.reference"></dd></div>
+                            <div class="flex items-start justify-between gap-4 p-4"><dt class="text-gray-500 dark:text-gray-400">Recorded by</dt><dd class="text-right font-medium text-gray-950 dark:text-white">{{ auth()->user()?->name ?? 'Current staff member' }}</dd></div>
+                        </dl>
+
+                        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                            <x-filament::button type="button" color="gray" x-on:click="closeReview()">Go back</x-filament::button>
+                            <x-filament::button type="button" x-ref="confirmButton" x-on:click="confirmPayment()">Confirm and mark paid</x-filament::button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </x-filament::section>
     </div>
+
+    <script>
+        function corporatePaymentReview() {
+            return {
+                open: false,
+                formId: null,
+                transaction: {},
+
+                openReview(form) {
+                    if (! form) {
+                        return;
+                    }
+
+                    const method = form.querySelector('[name="method"]');
+                    const reference = form.querySelector('[name="transaction_reference"]');
+
+                    this.formId = form.id;
+                    this.transaction = {
+                        label: form.dataset.label,
+                        amount: form.dataset.amount,
+                        organization: form.dataset.organization,
+                        guest: form.dataset.guest,
+                        method: method?.options[method.selectedIndex]?.text ?? 'Not selected',
+                        reference: reference?.value.trim() || 'Auto-generated when recorded',
+                    };
+                    this.open = true;
+                    this.$nextTick(() => this.$refs.confirmButton?.focus());
+                },
+
+                closeReview() {
+                    this.open = false;
+                },
+
+                confirmPayment() {
+                    const form = this.formId ? document.getElementById(this.formId) : null;
+
+                    if (! form) {
+                        this.closeReview();
+
+                        return;
+                    }
+
+                    this.open = false;
+                    form.submit();
+                },
+            };
+        }
+    </script>
 </x-filament::page>

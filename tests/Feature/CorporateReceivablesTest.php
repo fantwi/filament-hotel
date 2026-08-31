@@ -89,6 +89,18 @@ class CorporateReceivablesTest extends TestCase
         self::assertStringContainsString('Receivable details', $view);
     }
 
+    public function test_mark_paid_requires_an_accessible_payment_review_before_submission(): void
+    {
+        $view = file_get_contents(resource_path('views/filament/admin/pages/corporate-receivables.blade.php'));
+
+        self::assertStringContainsString('x-data="corporatePaymentReview()', $view);
+        self::assertStringContainsString('x-on:submit.prevent', $view);
+        self::assertStringContainsString('Review payment', $view);
+        self::assertStringContainsString('Confirm and mark paid', $view);
+        self::assertStringContainsString('aria-modal="true"', $view);
+        self::assertStringContainsString('Outstanding amount', $view);
+    }
+
     public function test_transactions_section_uses_a_stats_overview_widget(): void
     {
         $view = file_get_contents(resource_path('views/filament/admin/pages/corporate-receivables.blade.php'));
