@@ -25,7 +25,7 @@ class ActivityLogResource extends SecureResource
 
     protected static ?string $navigationLabel = 'Activity Logs';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'System';
+    protected static string|\UnitEnum|null $navigationGroup = 'Access & Administration';
 
     protected static ?int $navigationSort = 20;
 

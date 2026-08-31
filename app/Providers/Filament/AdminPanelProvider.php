@@ -52,6 +52,18 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->navigationGroups([
+                'Dashboards',
+                'Accommodation',
+                'Conferences',
+                'Restaurant Sales',
+                'Kitchen & Inventory',
+                'Guests & Communications',
+                'Finance',
+                'Reports',
+                'Access & Administration',
+                'Hotel Configuration',
+            ])
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\Filament\Admin\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
             ->pages([

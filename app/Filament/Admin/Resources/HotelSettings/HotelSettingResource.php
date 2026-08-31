@@ -27,7 +27,7 @@ class HotelSettingResource extends SecureResource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'System';
+    protected static string|\UnitEnum|null $navigationGroup = 'Hotel Configuration';
 
     protected static ?string $navigationLabel = 'Hotel Branding';
 

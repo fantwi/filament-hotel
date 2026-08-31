@@ -23,11 +23,11 @@ class MenuCategoryResource extends ContentResource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-squares-2x2';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
+    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant Sales';
 
     protected static ?string $navigationLabel = 'Menu Categories';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 20;
 
     protected static ?string $recordTitleAttribute = 'name';
 

@@ -23,9 +23,9 @@ class RestaurantReservationResource extends SecureResource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
+    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant Sales';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 50;
 
     /**
      * Configures may manage reservations for the Filament administration interface.

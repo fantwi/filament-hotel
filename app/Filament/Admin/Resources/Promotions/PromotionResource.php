@@ -28,9 +28,11 @@ class PromotionResource extends SecureResource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-tag';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'System';
+    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
 
     protected static ?string $navigationLabel = 'Promotions';
+
+    protected static ?int $navigationSort = 50;
 
     /**
      * Determines whether the current user may view these records.

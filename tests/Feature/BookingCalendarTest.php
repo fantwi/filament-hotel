@@ -56,8 +56,8 @@ class BookingCalendarTest extends TestCase
         $response->assertSee('Booking calendar');
         $response->assertSee('Reservations');
         self::assertTrue(BookingCalendar::shouldRegisterNavigation());
-        self::assertSame('Reservations', BookingCalendar::getNavigationGroup());
-        self::assertSame(20, BookingCalendar::getNavigationSort());
+        self::assertSame('Accommodation', BookingCalendar::getNavigationGroup());
+        self::assertSame(50, BookingCalendar::getNavigationSort());
     }
 
     public function test_booking_calendar_view_has_responsive_sidebar_and_calendar_states(): void

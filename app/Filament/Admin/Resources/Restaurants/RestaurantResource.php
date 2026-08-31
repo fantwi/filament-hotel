@@ -26,9 +26,9 @@ class RestaurantResource extends ContentResource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
+    protected static string|\UnitEnum|null $navigationGroup = 'Hotel Configuration';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 20;
 
     /**
      * Configures the form schema and input behavior.

@@ -23,7 +23,9 @@ class BillingSettingResource extends SecureResource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-calculator';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'System';
+    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+
+    protected static ?int $navigationSort = 40;
 
     protected static ?string $navigationLabel = 'Billing Settings';
 

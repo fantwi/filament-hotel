@@ -23,11 +23,11 @@ class IngredientResource extends SecureResource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-archive-box';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
+    protected static string|\UnitEnum|null $navigationGroup = 'Kitchen & Inventory';
 
     protected static ?string $navigationLabel = 'Kitchen Stock';
 
-    protected static ?int $navigationSort = 70;
+    protected static ?int $navigationSort = 10;
 
     /**
      * Determines whether the current user may view these records.

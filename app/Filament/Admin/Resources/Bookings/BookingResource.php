@@ -28,9 +28,9 @@ class BookingResource extends SecureResource
 
     protected static ?string $recordTitleAttribute = 'guest_id';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Reservations';
+    protected static string|\UnitEnum|null $navigationGroup = 'Accommodation';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 60;
 
     /**
      * Controls whether this feature appears in the Filament navigation.

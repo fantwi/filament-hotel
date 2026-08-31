@@ -19,7 +19,7 @@ use Filament\Tables\Table;
  */
 class ContactMessageResource extends SecureResource
 {
-    protected static string|\UnitEnum|null $navigationGroup = 'Guest Management';
+    protected static string|\UnitEnum|null $navigationGroup = 'Guests & Communications';
 
     protected static ?int $navigationSort = 20;
 

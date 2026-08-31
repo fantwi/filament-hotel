@@ -36,11 +36,11 @@ class KitchenProductionResource extends SecureResource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
+    protected static string|\UnitEnum|null $navigationGroup = 'Kitchen & Inventory';
 
     protected static ?string $navigationLabel = 'Kitchen Production';
 
-    protected static ?int $navigationSort = 80;
+    protected static ?int $navigationSort = 30;
 
     /**
      * Determines whether the current user may view these records.

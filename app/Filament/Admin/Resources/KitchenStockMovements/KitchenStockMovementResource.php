@@ -19,11 +19,11 @@ class KitchenStockMovementResource extends SecureResource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-arrow-path';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
+    protected static string|\UnitEnum|null $navigationGroup = 'Kitchen & Inventory';
 
     protected static ?string $navigationLabel = 'Stock Movements';
 
-    protected static ?int $navigationSort = 71;
+    protected static ?int $navigationSort = 20;
 
     /**
      * Determines whether the current user may view these records.

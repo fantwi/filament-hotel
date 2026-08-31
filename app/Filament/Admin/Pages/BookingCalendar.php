@@ -15,9 +15,9 @@ class BookingCalendar extends Page
 
     protected static ?string $title = 'Booking Calendar';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Reservations';
+    protected static string|\UnitEnum|null $navigationGroup = 'Accommodation';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 50;
 
     protected string $view = 'filament.admin.pages.booking-calendar';
 

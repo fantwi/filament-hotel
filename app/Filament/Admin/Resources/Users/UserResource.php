@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class UserResource extends SecureResource
 {
-    protected static string|\UnitEnum|null $navigationGroup = 'System';
+    protected static string|\UnitEnum|null $navigationGroup = 'Access & Administration';
 
     protected static ?int $navigationSort = 10;
 

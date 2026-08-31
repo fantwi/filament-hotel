@@ -26,7 +26,7 @@ class ConferenceRoomResource extends ContentResource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Conference';
+    protected static string|\UnitEnum|null $navigationGroup = 'Conferences';
 
     protected static ?int $navigationSort = 10;
 

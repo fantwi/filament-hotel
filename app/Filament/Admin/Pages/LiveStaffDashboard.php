@@ -17,7 +17,7 @@ class LiveStaffDashboard extends Page
 
     protected static ?string $title = 'Live Staff Dashboard';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'System';
+    protected static string|\UnitEnum|null $navigationGroup = 'Access & Administration';
 
     protected static ?int $navigationSort = 30;
 

@@ -13,13 +13,13 @@ class KitchenProductionReport extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar-square';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
+    protected static string|\UnitEnum|null $navigationGroup = 'Kitchen & Inventory';
 
     protected static ?string $navigationLabel = 'Production vs Sales';
 
     protected static ?string $title = 'Kitchen Production vs Sales';
 
-    protected static ?int $navigationSort = 90;
+    protected static ?int $navigationSort = 40;
 
     protected string $view = 'filament.admin.pages.kitchen-production-report';
 

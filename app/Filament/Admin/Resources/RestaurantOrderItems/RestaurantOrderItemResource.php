@@ -22,7 +22,7 @@ class RestaurantOrderItemResource extends SecureResource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-list-bullet';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
+    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant Sales';
 
     protected static ?string $navigationLabel = 'Food Order Items';
 

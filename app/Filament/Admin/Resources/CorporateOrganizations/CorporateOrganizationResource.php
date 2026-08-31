@@ -26,7 +26,7 @@ class CorporateOrganizationResource extends SecureResource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'System';
+    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
 
     protected static ?string $navigationLabel = 'Corporate Organisations';
 

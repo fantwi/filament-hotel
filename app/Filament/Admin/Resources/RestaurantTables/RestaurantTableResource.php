@@ -19,9 +19,9 @@ use Filament\Tables\Table;
  */
 class RestaurantTableResource extends ContentResource
 {
-    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant';
+    protected static string|\UnitEnum|null $navigationGroup = 'Restaurant Sales';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 40;
 
     protected static ?string $model = RestaurantTable::class;
 
