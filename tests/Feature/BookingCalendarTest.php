@@ -69,7 +69,14 @@ class BookingCalendarTest extends TestCase
         self::assertStringContainsString('Calendar guide', $view);
         self::assertStringContainsString('No reservations in this range', $view);
         self::assertStringContainsString('aria-label="Booking calendar"', $view);
-        self::assertStringContainsString('window.alert', $view);
+        self::assertStringContainsString('booking-calendar-event-modal', $view);
+        self::assertStringContainsString('Open reservation record', $view);
+        self::assertStringContainsString('Payment', $view);
+        self::assertStringContainsString('booking-calendar-event-selected', $view);
+        self::assertStringNotContainsString('window.alert', $view);
+        self::assertStringNotContainsString('window.location.assign', $view);
+        self::assertStringContainsString('livewire:navigating', $view);
+        self::assertStringContainsString('element.__bookingCalendar.destroy()', $view);
         self::assertStringContainsString("@vite('resources/js/calendar.js')", $view);
         self::assertStringNotContainsString("@vite('resources/js/app.js')", $view);
         self::assertStringContainsString("'resources/js/calendar.js'", $viteConfig);
@@ -101,6 +108,7 @@ class BookingCalendarTest extends TestCase
             'check_out' => now()->startOfMonth()->addDays(3),
             'total_price' => 200,
             'status' => 'confirmed',
+            'payment_status' => 'paid',
         ]);
 
         $conferenceRoom = ConferenceRoom::query()->create([
@@ -117,6 +125,7 @@ class BookingCalendarTest extends TestCase
             'end_time' => '12:00',
             'total_price' => 200,
             'status' => 'confirmed',
+            'payment_status' => 'paid',
         ]);
 
         $restaurant = Restaurant::query()->create([
@@ -141,6 +150,7 @@ class BookingCalendarTest extends TestCase
             'reservation_time' => '18:00',
             'number_of_guests' => 2,
             'status' => 'confirmed',
+            'payment_status' => 'completed',
         ]);
 
         $response = $this->actingAs($manager)->getJson(route('admin.calendar-events', [
@@ -157,5 +167,8 @@ class BookingCalendarTest extends TestCase
         );
         self::assertSame('Calendar conference room', $events->firstWhere('id', 'conference-1')['title']);
         self::assertSame('T-1', $events->firstWhere('id', 'restaurant-1')['title']);
+        self::assertSame('paid', $events->firstWhere('id', 'hotel-1')['extendedProps']['payment_status']);
+        self::assertSame('paid', $events->firstWhere('id', 'conference-1')['extendedProps']['payment_status']);
+        self::assertSame('completed', $events->firstWhere('id', 'restaurant-1')['extendedProps']['payment_status']);
     }
 }

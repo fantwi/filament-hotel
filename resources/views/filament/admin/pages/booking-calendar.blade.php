@@ -76,22 +76,150 @@
                     <ul class="mt-3 space-y-3 text-sm leading-5 text-gray-600 dark:text-gray-300">
                         <li class="flex gap-2"><span class="text-primary-500">•</span><span>Switch to week view when checking daily capacity.</span></li>
                         <li class="flex gap-2"><span class="text-primary-500">•</span><span>Click an event to open the related reservation.</span></li>
-                        <li class="flex gap-2"><span class="text-primary-500">•</span><span>Hover over an event for guest and timing details.</span></li>
+                        <li class="flex gap-2"><span class="text-primary-500">•</span><span>Open an event for guest, status, and timing details.</span></li>
                     </ul>
                 </section>
             </aside>
         </div>
     </div>
 
+    <div
+        x-data="{ selectedEvent: null }"
+        x-on:booking-calendar-event-selected.window="selectedEvent = $event.detail; $dispatch('open-modal', { id: 'booking-calendar-event-modal' })"
+    >
+        <x-filament::modal
+            id="booking-calendar-event-modal"
+            heading="Reservation details"
+            description="Review the reservation before opening its record."
+            width="lg"
+            slide-over
+        >
+            <div x-cloak x-show="selectedEvent" class="space-y-5">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary-600 dark:text-primary-400" x-text="selectedEvent ? selectedEvent.type : 'Reservation'"></p>
+                    <h3 class="mt-2 text-xl font-semibold text-gray-950 dark:text-white" x-text="selectedEvent ? selectedEvent.title : 'Reservation'"></h3>
+                </div>
+
+                <dl class="grid gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm dark:border-white/10 dark:bg-gray-800/60 sm:grid-cols-2">
+                    <div>
+                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Guest</dt>
+                        <dd class="mt-1 font-medium text-gray-950 dark:text-white" x-text="selectedEvent ? selectedEvent.guest : '—'"></dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</dt>
+                        <dd class="mt-1 font-medium capitalize text-gray-950 dark:text-white" x-text="selectedEvent ? selectedEvent.status : '—'"></dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Payment</dt>
+                        <dd class="mt-1 font-medium capitalize text-gray-950 dark:text-white" x-text="selectedEvent ? selectedEvent.paymentStatus : '—'"></dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Starts</dt>
+                        <dd class="mt-1 font-medium text-gray-950 dark:text-white" x-text="selectedEvent ? selectedEvent.start : '—'"></dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Ends</dt>
+                        <dd class="mt-1 font-medium text-gray-950 dark:text-white" x-text="selectedEvent ? selectedEvent.end : '—'"></dd>
+                    </div>
+                </dl>
+
+                <div x-show="selectedEvent && selectedEvent.details" class="rounded-xl border border-gray-200 p-4 dark:border-white/10">
+                    <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Additional details</p>
+                    <p class="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300" x-text="selectedEvent ? selectedEvent.details : ''"></p>
+                </div>
+
+                <div class="flex flex-col gap-3 border-t border-gray-200 pt-4 dark:border-white/10 sm:flex-row sm:items-center">
+                    <a
+                        x-show="selectedEvent && selectedEvent.url"
+                        x-bind:href="selectedEvent && selectedEvent.url ? selectedEvent.url : '#'"
+                        class="inline-flex w-full items-center justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 sm:w-auto"
+                    >
+                        Open reservation record
+                    </a>
+                    <p x-show="selectedEvent && ! selectedEvent.url" class="text-sm text-gray-500 dark:text-gray-400">
+                        No direct record link is available for this reservation.
+                    </p>
+                </div>
+            </div>
+        </x-filament::modal>
+    </div>
+
     <script>
         (() => {
+            const controller = window.__bookingCalendarController ??= {};
+
+            const formatEventDate = (value, allDay = false) => {
+                if (! value) {
+                    return '—';
+                }
+
+                if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                    const [year, month, day] = value.split('-').map(Number);
+
+                    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(
+                        new Date(year, month - 1, day),
+                    );
+                }
+
+                const date = new Date(value);
+
+                if (Number.isNaN(date.valueOf())) {
+                    return value;
+                }
+
+                return new Intl.DateTimeFormat(undefined, allDay
+                    ? { dateStyle: 'medium' }
+                    : { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+            };
+
+            const humanizeStatus = (status) => status
+                ? status.replace(/_/g, ' ')
+                    .replace(/\b\w/g, (character) => character.toUpperCase())
+                : 'Unknown';
+
+            const eventDetails = (event) => {
+                const { type, guest, status, payment_status: paymentStatus, details } = event.extendedProps ?? {};
+
+                return {
+                    id: event.id,
+                    title: event.title,
+                    type: type ?? 'Reservation',
+                    guest: guest ?? 'Unknown guest',
+                    status: humanizeStatus(status),
+                    paymentStatus: paymentStatus ? humanizeStatus(paymentStatus) : 'Not recorded',
+                    details: details ?? '',
+                    start: formatEventDate(event.startStr, event.allDay),
+                    end: formatEventDate(event.endStr, event.allDay),
+                    url: event.url || null,
+                };
+            };
+
+            const openEventDetails = (event, browserEvent = null) => {
+                browserEvent?.preventDefault();
+                window.dispatchEvent(new CustomEvent('booking-calendar-event-selected', {
+                    detail: eventDetails(event),
+                }));
+            };
+
+            const destroyBookingCalendar = () => {
+                const element = document.getElementById('booking-calendar');
+
+                if (! element?.__bookingCalendar) {
+                    return;
+                }
+
+                element.__bookingCalendar.destroy();
+                delete element.__bookingCalendar;
+                delete element.dataset.initialized;
+            };
+
             const initializeBookingCalendar = () => {
                 const element = document.getElementById('booking-calendar');
                 const status = document.getElementById('booking-calendar-status');
                 const emptyState = document.getElementById('booking-calendar-empty');
                 const errorState = document.getElementById('booking-calendar-error');
 
-                if (! element || element.dataset.initialized === 'true') {
+                if (! element || element.__bookingCalendar) {
                     return;
                 }
 
@@ -138,29 +266,41 @@
                         },
                     },
                     eventClick(info) {
-                        if (info.event.url) {
-                            info.jsEvent.preventDefault();
-                            window.location.assign(info.event.url);
-
-                            return;
-                        }
-
-                        const { type, guest, status: eventStatus, details } = info.event.extendedProps;
-                        window.alert([info.event.title, type, guest, eventStatus, details]
-                            .filter(Boolean)
-                            .join('\n'));
+                        openEventDetails(info.event, info.jsEvent);
                     },
                     eventDidMount(info) {
-                        const { type, guest, status: eventStatus, details } = info.event.extendedProps;
-                        info.el.title = [type, guest, eventStatus, details].filter(Boolean).join(' — ');
+                        const details = eventDetails(info.event);
+                        const label = [details.title, details.type, details.guest, details.status, details.paymentStatus, details.start, details.end]
+                            .filter(Boolean)
+                            .join(', ');
+
+                        info.el.removeAttribute('title');
+                        info.el.setAttribute('aria-label', label);
+                        info.el.setAttribute('aria-haspopup', 'dialog');
+                        info.el.setAttribute('role', 'button');
+                        info.el.setAttribute('tabindex', '0');
+                        info.el.addEventListener('keydown', (event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                openEventDetails(info.event, event);
+                            }
+                        });
                     },
                 });
 
+                element.__bookingCalendar = calendar;
                 calendar.render();
             };
 
-            document.addEventListener('DOMContentLoaded', initializeBookingCalendar, { once: true });
-            document.addEventListener('livewire:navigated', initializeBookingCalendar);
+            controller.initialize = initializeBookingCalendar;
+            controller.destroy = destroyBookingCalendar;
+
+            if (! controller.listenersRegistered) {
+                document.addEventListener('DOMContentLoaded', initializeBookingCalendar, { once: true });
+                document.addEventListener('livewire:navigating', destroyBookingCalendar);
+                document.addEventListener('livewire:navigated', initializeBookingCalendar);
+                controller.listenersRegistered = true;
+            }
+
             queueMicrotask(initializeBookingCalendar);
         })();
     </script>

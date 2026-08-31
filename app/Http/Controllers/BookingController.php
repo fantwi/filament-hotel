@@ -124,6 +124,7 @@ class BookingController extends Controller
                         'type' => 'Hotel booking',
                         'guest' => $booking->guest?->full_name ?? 'Unknown Guest',
                         'status' => $booking->status,
+                        'payment_status' => $booking->payment_status,
                         'details' => "Room {$booking->room?->room_number}; {$booking->check_in?->toDateString()} to {$booking->check_out?->toDateString()}",
                     ],
                 ];
@@ -153,6 +154,7 @@ class BookingController extends Controller
                         'type' => 'Conference booking',
                         'guest' => $booking->guest?->full_name ?? 'Unknown Guest',
                         'status' => $booking->status,
+                        'payment_status' => $booking->payment_status,
                         'details' => "{$booking->room?->name}; {$date} {$booking->start_time}–{$booking->end_time}",
                     ],
                 ];
@@ -188,6 +190,7 @@ class BookingController extends Controller
                         'type' => 'Restaurant reservation',
                         'guest' => $reservation->guest_name,
                         'status' => $reservation->status,
+                        'payment_status' => $reservation->payment_status,
                         'details' => "{$reservation->restaurant?->name}; Table {$reservation->table?->table_number}",
                     ],
                 ];
