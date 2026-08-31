@@ -22,7 +22,7 @@ class RestaurantResource extends ContentResource
 {
     protected static ?string $model = Restaurant::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingStorefront;
 
     protected static ?string $recordTitleAttribute = 'name';
 

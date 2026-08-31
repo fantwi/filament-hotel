@@ -22,7 +22,7 @@ class ConferenceRoomResource extends ContentResource
 {
     protected static ?string $model = ConferenceRoom::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPresentationChartBar;
 
     protected static ?string $recordTitleAttribute = 'name';
 

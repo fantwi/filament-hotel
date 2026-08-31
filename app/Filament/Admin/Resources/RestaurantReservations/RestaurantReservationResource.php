@@ -21,7 +21,7 @@ class RestaurantReservationResource extends SecureResource
 {
     protected static ?string $model = RestaurantReservation::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDateRange;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Restaurant Sales';
 

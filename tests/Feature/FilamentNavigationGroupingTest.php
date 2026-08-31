@@ -31,6 +31,7 @@ use App\Filament\Admin\Resources\RoomTypes\RoomTypeResource;
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Providers\Filament\AdminPanelProvider;
 use Filament\Panel;
+use Filament\Support\Icons\Heroicon;
 use Tests\TestCase;
 
 class FilamentNavigationGroupingTest extends TestCase
@@ -88,5 +89,35 @@ class FilamentNavigationGroupingTest extends TestCase
             'Access & Administration',
             'Hotel Configuration',
         ], $panel->getNavigationGroups());
+    }
+
+    public function test_resource_navigation_icons_are_domain_specific_and_unique(): void
+    {
+        $resources = [
+            BookingResource::class,
+            ConferenceRoomResource::class,
+            ConferenceFacilityResource::class,
+            ContactMessageResource::class,
+            FacilityResource::class,
+            GuestResource::class,
+            HotelSettingResource::class,
+            PaymentResource::class,
+            RestaurantReservationResource::class,
+            RestaurantTableResource::class,
+            RestaurantResource::class,
+            RoomTypeResource::class,
+            RoomResource::class,
+            UserResource::class,
+        ];
+
+        $icons = array_map(
+            fn (string $resource): string => ($icon = $resource::getNavigationIcon()) instanceof Heroicon
+                ? $icon->value
+                : (string) $icon,
+            $resources,
+        );
+
+        self::assertCount(count($resources), array_unique($icons));
+        self::assertNotContains(Heroicon::OutlinedRectangleStack->value, $icons);
     }
 }

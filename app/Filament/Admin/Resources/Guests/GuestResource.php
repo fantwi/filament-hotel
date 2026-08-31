@@ -27,7 +27,7 @@ class GuestResource extends SecureResource
 
     protected static ?string $model = Guest::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
     protected static ?string $recordTitleAttribute = 'first_name';
 

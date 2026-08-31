@@ -22,7 +22,7 @@ class FacilityResource extends ContentResource
 {
     protected static ?string $model = Facility::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
 
     protected static ?string $recordTitleAttribute = 'name';
 

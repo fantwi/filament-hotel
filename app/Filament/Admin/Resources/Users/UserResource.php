@@ -26,7 +26,7 @@ class UserResource extends SecureResource
 
     protected static ?string $model = User::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserCircle;
 
     /**
      * Controls whether this feature appears in the Filament navigation.

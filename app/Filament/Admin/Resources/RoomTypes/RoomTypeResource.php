@@ -26,7 +26,7 @@ class RoomTypeResource extends SecureResource
 {
     protected static ?string $model = RoomType::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleGroup;
 
     protected static ?string $recordTitleAttribute = 'name';
 
