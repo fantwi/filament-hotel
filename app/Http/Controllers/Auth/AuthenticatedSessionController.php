@@ -29,9 +29,20 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        $user = $request->authenticate();
 
         $request->session()->regenerate(); // regenerate the session
+
+        if ($user->isGuest() && $user->twoFactorEnabled()) {
+            Auth::logout();
+
+            $request->session()->put([
+                'two_factor.pending_user_id' => $user->getAuthIdentifier(),
+                'two_factor.remember' => $request->boolean('remember'),
+            ]);
+
+            return redirect()->route('two-factor.challenge');
+        }
 
         // return redirect()->intended(route('dashboard', absolute: false));
 
@@ -42,8 +53,6 @@ class AuthenticatedSessionController extends Controller
             'action' => 'Logged in',
             //    'subject_id' => $booking->id,
         ]);
-
-        $user = auth()->user(); // get the authenticated user
 
         if ($user->isStaff()) {
             return redirect('/admin'); // filament panel

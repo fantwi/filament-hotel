@@ -12,8 +12,16 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\TwoFactorAuthenticationController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('two-factor/challenge', [TwoFactorAuthenticationController::class, 'challenge'])
+    ->name('two-factor.challenge');
+
+Route::post('two-factor/challenge', [TwoFactorAuthenticationController::class, 'verify'])
+    ->middleware('throttle:5,1')
+    ->name('two-factor.verify');
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
@@ -57,6 +65,15 @@ Route::middleware('auth')->group(function () {
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+
+    Route::post('profile/two-factor/setup', [TwoFactorAuthenticationController::class, 'setup'])
+        ->name('two-factor.setup');
+
+    Route::post('profile/two-factor/confirm', [TwoFactorAuthenticationController::class, 'confirm'])
+        ->name('two-factor.confirm');
+
+    Route::post('profile/two-factor/disable', [TwoFactorAuthenticationController::class, 'disable'])
+        ->name('two-factor.disable');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');

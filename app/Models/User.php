@@ -50,6 +50,8 @@ class User extends Authenticatable implements FilamentUser
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected static function booted()
@@ -209,6 +211,9 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 
@@ -367,7 +372,18 @@ class User extends Authenticatable implements FilamentUser
             'accountant',
             'housekeeping',
             'kitchen_staff',
+            'kitchen_manager',
         ]);
+    }
+
+    /**
+     * Determine whether this guest has completed authenticator-app setup.
+     */
+    public function twoFactorEnabled(): bool
+    {
+        return $this->isGuest()
+            && filled($this->two_factor_secret)
+            && $this->two_factor_confirmed_at !== null;
     }
 
     public function isOnline(): bool
@@ -386,6 +402,7 @@ class User extends Authenticatable implements FilamentUser
             'accountant',
             'housekeeping',
             'kitchen_staff',
+            'kitchen_manager',
         ]);
     }
 
@@ -408,6 +425,7 @@ class User extends Authenticatable implements FilamentUser
             'accountant',
             'housekeeping',
             'kitchen_staff',
+            'kitchen_manager',
             // 'security',
         ]);
     }

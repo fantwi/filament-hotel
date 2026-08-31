@@ -34,12 +34,77 @@
 
                 <div x-cloak x-show="tab === 'payments'"><h2 class="text-xl font-bold text-gray-900">Payment history</h2><div class="mt-4 space-y-3">@forelse ($payments as $payment)<div class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4"><p class="font-semibold text-gray-900">{{ $payment->method }}</p><p class="text-sm font-semibold text-green-700">GHS {{ number_format($payment->amount, 2) }}</p></div>@empty<p class="rounded-xl bg-slate-50 p-4 text-sm text-gray-600">No payments recorded yet.</p>@endforelse</div></div>
 
-                <div x-cloak x-show="tab === 'security'"><h2 class="text-xl font-bold text-gray-900">Change password</h2><p class="mt-1 text-sm text-gray-600">Use a strong, unique password to keep your account secure.</p><form method="POST" action="{{ route('profile.password') }}" class="mt-6 max-w-xl space-y-5">@csrf
-                    <div><label for="current_password" class="block text-sm font-semibold text-gray-800">Current password</label><input id="current_password" type="password" name="current_password" required autocomplete="current-password" class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500"></div>
-                    <div><label for="password" class="block text-sm font-semibold text-gray-800">New password</label><input id="password" type="password" name="password" required autocomplete="new-password" class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500"></div>
-                    <div><label for="password_confirmation" class="block text-sm font-semibold text-gray-800">Confirm new password</label><input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password" class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500"></div>
-                    <button type="submit" class="flex min-h-12 w-full items-center justify-center rounded-xl bg-red-600 px-5 py-3 font-semibold text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 sm:w-auto">Update password</button>
-                </form></div>
+                <div x-cloak x-show="tab === 'security'" class="space-y-10">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900">Change password</h2>
+                        <p class="mt-1 text-sm text-gray-600">Use a strong, unique password to keep your account secure.</p>
+                        <form method="POST" action="{{ route('profile.password') }}" class="mt-6 max-w-xl space-y-5">@csrf
+                            <div><label for="current_password" class="block text-sm font-semibold text-gray-800">Current password</label><input id="current_password" type="password" name="current_password" required autocomplete="current-password" class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500"></div>
+                            <div><label for="password" class="block text-sm font-semibold text-gray-800">New password</label><input id="password" type="password" name="password" required autocomplete="new-password" class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500"></div>
+                            <div><label for="password_confirmation" class="block text-sm font-semibold text-gray-800">Confirm new password</label><input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password" class="mt-2 block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500"></div>
+                            <button type="submit" class="flex min-h-12 w-full items-center justify-center rounded-xl bg-red-600 px-5 py-3 font-semibold text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 sm:w-auto">Update password</button>
+                        </form>
+                    </div>
+
+                    @if ($user->isGuest())
+                        <div class="max-w-2xl rounded-2xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <h2 class="text-xl font-bold text-gray-900">Two-factor authentication</h2>
+                                    <p class="mt-1 text-sm leading-6 text-gray-600">Protect your guest account with a six-digit code from an authenticator app. Recovery codes provide backup access if your device is unavailable.</p>
+                                </div>
+                                @if ($user->twoFactorEnabled())
+                                    <span class="inline-flex w-fit items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">Enabled</span>
+                                @endif
+                            </div>
+
+                            @if (session('status') === 'two-factor-enabled')
+                                <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                                    <p class="font-semibold">Save these recovery codes now.</p>
+                                    <p class="mt-1">Each code can be used once if you cannot access your authenticator app.</p>
+                                    @if ($twoFactorRecoveryCodes)
+                                        <div class="mt-3 grid grid-cols-2 gap-2 font-mono text-xs sm:grid-cols-4">
+                                            @foreach ($twoFactorRecoveryCodes as $recoveryCode)
+                                                <code class="rounded bg-white px-2 py-2 text-center ring-1 ring-amber-200">{{ $recoveryCode }}</code>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
+                            @endif
+
+                            @if ($user->twoFactorEnabled())
+                                <form method="POST" action="{{ route('two-factor.disable') }}" class="mt-6 max-w-md space-y-4">
+                                    @csrf
+                                    <label for="two_factor_disable_password" class="block text-sm font-semibold text-gray-800">Current password to disable</label>
+                                    <input id="two_factor_disable_password" type="password" name="current_password" required autocomplete="current-password" class="block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    @error('current_password')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
+                                    <button type="submit" class="min-h-11 rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50">Disable two-factor authentication</button>
+                                </form>
+                            @elseif ($twoFactorSetup)
+                                <div class="mt-6 grid gap-6 md:grid-cols-[auto,1fr] md:items-center">
+                                    <div class="flex justify-center rounded-xl bg-white p-3 ring-1 ring-slate-200">{!! $twoFactorQrCode !!}</div>
+                                    <div class="space-y-3 text-sm text-gray-700">
+                                        <p class="font-semibold text-gray-900">1. Scan this QR code</p>
+                                        <p>Use Google Authenticator, Microsoft Authenticator, 1Password, or another TOTP-compatible app.</p>
+                                        <p><span class="font-semibold text-gray-900">Manual setup key:</span> <code class="break-all rounded bg-white px-2 py-1 font-mono text-xs ring-1 ring-slate-200">{{ $twoFactorSetup['secret'] }}</code></p>
+                                    </div>
+                                </div>
+                                <form method="POST" action="{{ route('two-factor.confirm') }}" class="mt-6 max-w-md space-y-4">
+                                    @csrf
+                                    <label for="two_factor_code" class="block text-sm font-semibold text-gray-800">2. Enter the six-digit code from your app</label>
+                                    <input id="two_factor_code" type="text" inputmode="numeric" pattern="[0-9]{6}" name="code" required maxlength="6" autocomplete="one-time-code" class="block min-h-12 w-full rounded-xl border-gray-300 px-4 text-base tracking-[0.35em] shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    @error('code')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
+                                    <button type="submit" class="min-h-11 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">Confirm and enable</button>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('two-factor.setup') }}" class="mt-6">
+                                    @csrf
+                                    <button type="submit" class="min-h-11 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">Enable two-factor authentication</button>
+                                </form>
+                            @endif
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </section>

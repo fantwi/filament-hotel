@@ -18,6 +18,8 @@ use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
+use PragmaRX\Google2FA\Google2FA;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 Route::middleware('auth')->get('/dashboard', function () {
 
@@ -363,6 +365,24 @@ Route::middleware('auth')
                     ->latest()
                     ->get();
 
+            $twoFactorSetup = session('two_factor_setup');
+            if (is_array($twoFactorSetup) && now()->timestamp - (int) ($twoFactorSetup['started_at'] ?? 0) > 600) {
+                session()->forget('two_factor_setup');
+                $twoFactorSetup = null;
+            }
+
+            $twoFactorQrCode = null;
+            if (is_array($twoFactorSetup) && filled($twoFactorSetup['secret'] ?? null)) {
+                $otpAuthUrl = (new Google2FA)->getQRCodeUrl(
+                    config('app.name'),
+                    $user->email,
+                    $twoFactorSetup['secret'],
+                );
+                $twoFactorQrCode = QrCode::size(220)->margin(1)->generate($otpAuthUrl);
+            }
+
+            $twoFactorRecoveryCodes = session('two_factor_recovery_codes');
+
             return view(
 
                 'profile',
@@ -377,7 +397,10 @@ Route::middleware('auth')
 
                     'conferenceBookings',
 
-                    'payments'
+                    'payments',
+                    'twoFactorSetup',
+                    'twoFactorQrCode',
+                    'twoFactorRecoveryCodes'
 
                 )
             );
