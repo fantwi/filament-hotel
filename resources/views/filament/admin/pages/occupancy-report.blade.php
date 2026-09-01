@@ -4,42 +4,20 @@
     @endphp
     <div class="space-y-6">
         <x-filament::section>
-            <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Operations</p>
-                    <h2 class="mt-1 text-2xl font-bold tracking-tight">Occupancy and capacity</h2>
-                    <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Compare live inventory availability with hotel stays, conference bookings, and table reservations scheduled for one reporting period.</p>
-                </div>
-
-                <div class="w-full lg:max-w-xs">
-                    <label for="occupancy-report-period" class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200">Report period</label>
-                    <select id="occupancy-report-period" wire:model.live="period" class="fi-input w-full">
-                        <option value="today">Today</option>
-                        <option value="this_week">This Week</option>
-                        <option value="this_month">This Month</option>
-                        <option value="this_quarter">This Quarter</option>
-                        <option value="this_year">This Year</option>
-                        <option value="all">All Time</option>
-                    </select>
-                    <p
-                        wire:loading.delay
-                        wire:target="period"
-                        role="status"
-                        aria-live="polite"
-                        class="mt-2 text-sm font-medium text-primary-600 dark:text-primary-400"
-                    >
-                        Updating occupancy report&hellip;
-                    </p>
-                </div>
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Operations</p>
+                <h2 class="mt-1 text-2xl font-bold tracking-tight">Occupancy and capacity</h2>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Compare live inventory availability with hotel stays, conference bookings, and table reservations scheduled for one reporting period.</p>
             </div>
+            <x-filament.report-period-controls class="mt-5" />
         </x-filament::section>
 
         <section
             aria-label="Occupancy overview"
             wire:loading.class="opacity-60"
-            wire:target="period"
+            wire:target="applyReportPeriod,resetReportPeriod"
         >
-            @livewire(\App\Filament\Admin\Widgets\OccupancyStats::class, ['period' => $this->period], key('occupancy-stats-'.$this->period))
+            @livewire(\App\Filament\Admin\Widgets\OccupancyStats::class, ['period' => $this->period, 'startDate' => $this->startDate, 'endDate' => $this->endDate], key('occupancy-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
         <section class="grid gap-4 lg:grid-cols-3">

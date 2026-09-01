@@ -2,16 +2,18 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Filament\Admin\Concerns\InteractsWithReportPeriod;
 use App\Models\Guest;
 use App\Models\Payment;
 use Filament\Pages\Page;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Provides the guest report Filament administration page.
  */
 class GuestReport extends Page
 {
+    use InteractsWithReportPeriod;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Reports';
@@ -22,29 +24,12 @@ class GuestReport extends Page
 
     protected string $view = 'filament.admin.pages.guest-report';
 
-    public string $period = 'this_month';
-
-    /**
-     * Configures period label for the Filament administration interface.
-     */
-    public function periodLabel(): string
-    {
-        return match ($this->period) {
-            'today' => 'Today',
-            'this_week' => 'This week',
-            'this_quarter' => 'This quarter',
-            'this_year' => 'This year',
-            'all' => 'All time',
-            default => 'This month',
-        };
-    }
-
     /**
      * Configures report for the Filament administration interface.
      */
     public function report(): array
     {
-        $paidPayments = $this->forPeriod(
+        $paidPayments = $this->forReportPeriod(
             Payment::query()
                 ->whereIn('payment_status', ['paid', 'completed'])
                 ->whereNotNull('guest_id'),
@@ -73,7 +58,7 @@ class GuestReport extends Page
 
         return [
             'totalGuests' => Guest::count(),
-            'newGuests' => $this->forPeriod(Guest::query())->count(),
+            'newGuests' => $this->forReportPeriod(Guest::query())->count(),
             'payingGuests' => $payingGuests,
             'returningGuests' => (clone $paidPayments)
                 ->select('guest_id')
@@ -87,21 +72,6 @@ class GuestReport extends Page
             'activity' => $activity,
             'topGuests' => $topGuests,
         ];
-    }
-
-    /**
-     * Configures for period for the Filament administration interface.
-     */
-    private function forPeriod(Builder $query, string $column = 'created_at'): Builder
-    {
-        return match ($this->period) {
-            'today' => $query->whereDate($column, today()),
-            'this_week' => $query->whereBetween($column, [now()->startOfWeek(), now()->endOfWeek()]),
-            'this_quarter' => $query->whereBetween($column, [now()->startOfQuarter(), now()->endOfQuarter()]),
-            'this_year' => $query->whereBetween($column, [now()->startOfYear(), now()->endOfYear()]),
-            'all' => $query,
-            default => $query->whereBetween($column, [now()->startOfMonth(), now()->endOfMonth()]),
-        };
     }
 
     /**

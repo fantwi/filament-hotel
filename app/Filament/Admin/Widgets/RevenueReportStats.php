@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Pages\RevenueReport;
+use App\Support\Reporting\ReportPeriod;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -16,7 +17,11 @@ class RevenueReportStats extends StatsOverviewWidget
     /**
      * The report period selected on the parent revenue report page.
      */
-    public string $period = 'this_month';
+    public string $period = 'monthly';
+
+    public string $startDate = '';
+
+    public string $endDate = '';
 
     /**
      * Determines whether the current user may view this feature.
@@ -35,6 +40,8 @@ class RevenueReportStats extends StatsOverviewWidget
     {
         $reportPage = new RevenueReport;
         $reportPage->period = $this->validPeriod($this->period);
+        $reportPage->startDate = $this->startDate;
+        $reportPage->endDate = $this->endDate;
         $report = $reportPage->report();
         $periodLabel = $reportPage->periodLabel();
 
@@ -63,8 +70,8 @@ class RevenueReportStats extends StatsOverviewWidget
      */
     private function validPeriod(string $period): string
     {
-        return in_array($period, ['today', 'this_week', 'this_month', 'this_quarter', 'this_year', 'all'], true)
+        return array_key_exists($period, ReportPeriod::options())
             ? $period
-            : 'this_month';
+            : 'monthly';
     }
 }

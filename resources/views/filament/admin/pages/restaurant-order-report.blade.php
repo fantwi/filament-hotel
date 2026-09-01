@@ -4,38 +4,24 @@
     @endphp
     <div class="space-y-6">
         <x-filament::section>
-            <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Restaurant operations</p>
-                    <h2 class="mt-1 text-2xl font-bold tracking-tight">Order performance</h2>
-                    <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Review food-order volume, payment performance, outstanding balances, and kitchen activity for the selected period.</p>
-                </div>
-
-                <div class="grid w-full gap-4 sm:grid-cols-2 lg:max-w-xl">
-                    <div>
-                    <label for="restaurant-report-period" class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200">Report period</label>
-                    <select id="restaurant-report-period" wire:model.live="period" class="fi-input w-full">
-                        <option value="today">Today</option>
-                        <option value="this_week">This Week</option>
-                        <option value="this_month">This Month</option>
-                        <option value="this_year">This Year</option>
-                        <option value="all">All Time</option>
-                    </select>
-                </div>
-                    <div>
-                        <label for="restaurant-report-per-page" class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200">Rows per page</label>
-                        <select id="restaurant-report-per-page" wire:model.live="perPage" class="fi-input w-full">
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>
-                    </div>
-                </div>
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Restaurant operations</p>
+                <h2 class="mt-1 text-2xl font-bold tracking-tight">Order performance</h2>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Review food-order volume, payment performance, outstanding balances, and kitchen activity for the selected period.</p>
             </div>
+            <x-filament.report-period-controls class="mt-5" />
+            <label for="restaurant-report-per-page" class="mt-4 block max-w-xs text-sm font-semibold text-gray-700 dark:text-gray-200">
+                Rows per page
+                <select id="restaurant-report-per-page" wire:model.live="perPage" class="fi-input mt-1 w-full">
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </label>
         </x-filament::section>
 
         <section aria-label="Restaurant order overview">
-            @livewire(\App\Filament\Admin\Widgets\RestaurantOrderReportStats::class, ['period' => $this->period], key('restaurant-order-report-stats-'.$this->period))
+            @livewire(\App\Filament\Admin\Widgets\RestaurantOrderReportStats::class, ['period' => $this->period, 'startDate' => $this->startDate, 'endDate' => $this->endDate], key('restaurant-order-report-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
         <section class="grid gap-4 lg:grid-cols-3">

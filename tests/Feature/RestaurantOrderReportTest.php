@@ -16,9 +16,9 @@ class RestaurantOrderReportTest extends TestCase
     public function test_restaurant_report_provides_structured_summary_data_for_the_selected_period(): void
     {
         $reportPage = new RestaurantOrderReport;
-        $reportPage->period = 'this_week';
+        $reportPage->period = 'weekly';
 
-        self::assertSame('This week', $reportPage->periodLabel());
+        self::assertSame('Weekly', $reportPage->periodLabel());
 
         $report = $reportPage->getReportData();
 
@@ -33,7 +33,7 @@ class RestaurantOrderReportTest extends TestCase
         self::assertTrue(is_subclass_of(RestaurantOrderReportStats::class, StatsOverviewWidget::class));
 
         $widget = new RestaurantOrderReportStats;
-        $widget->period = 'this_week';
+        $widget->period = 'weekly';
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 
@@ -45,7 +45,7 @@ class RestaurantOrderReportTest extends TestCase
     public function test_restaurant_order_register_uses_server_side_pagination(): void
     {
         $reportPage = new RestaurantOrderReport;
-        $reportPage->period = 'all';
+        $reportPage->period = 'monthly';
         $reportPage->perPage = 10;
 
         $report = $reportPage->getReportData();

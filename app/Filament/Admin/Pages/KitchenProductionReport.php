@@ -2,15 +2,17 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Filament\Admin\Concerns\InteractsWithReportPeriod;
 use App\Services\KitchenProductionReportService;
 use Filament\Pages\Page;
-use Illuminate\Support\Carbon;
 
 /**
  * Provides the kitchen production report Filament administration page.
  */
 class KitchenProductionReport extends Page
 {
+    use InteractsWithReportPeriod;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar-square';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Kitchen & Inventory';
@@ -23,48 +25,16 @@ class KitchenProductionReport extends Page
 
     protected string $view = 'filament.admin.pages.kitchen-production-report';
 
-    public string $fromDate;
-
-    public string $untilDate;
-
-    /**
-     * Initializes component state before it is rendered.
-     */
-    public function mount(): void
-    {
-        $this->fromDate = now()->startOfMonth()->toDateString();
-        $this->untilDate = today()->toDateString();
-    }
-
-    /**
-     * Applies  filters.
-     */
-    public function applyFilters(): void
-    {
-        $this->validate([
-            'fromDate' => ['required', 'date', 'before_or_equal:untilDate'],
-            'untilDate' => ['required', 'date', 'after_or_equal:fromDate'],
-        ]);
-    }
-
-    /**
-     * Restores the report to the current month's range.
-     */
-    public function resetFilters(): void
-    {
-        $this->fromDate = now()->startOfMonth()->toDateString();
-        $this->untilDate = today()->toDateString();
-        $this->resetValidation();
-    }
-
     /**
      * Builds and returns report property.
      */
     public function getReportProperty(): array
     {
+        [$start, $end] = $this->periodBounds();
+
         return app(KitchenProductionReportService::class)->build(
-            Carbon::parse($this->fromDate),
-            Carbon::parse($this->untilDate),
+            $start,
+            $end,
         );
     }
 

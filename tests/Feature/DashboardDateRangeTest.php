@@ -115,13 +115,15 @@ class DashboardDateRangeTest extends TestCase
 
     public function test_kitchen_report_uses_deferred_inputs_and_has_a_reset_action(): void
     {
-        $view = file_get_contents(resource_path('views/filament/admin/pages/kitchen-production-report.blade.php'));
+        $page = file_get_contents(resource_path('views/filament/admin/pages/kitchen-production-report.blade.php'));
+        $view = file_get_contents(resource_path('views/components/filament/report-period-controls.blade.php'));
 
-        self::assertStringContainsString('wire:model="fromDate"', $view);
-        self::assertStringContainsString('wire:model="untilDate"', $view);
-        self::assertStringNotContainsString('wire:model.live="fromDate"', $view);
-        self::assertStringNotContainsString('wire:model.live="untilDate"', $view);
-        self::assertStringContainsString('wire:click="resetFilters"', $view);
+        self::assertStringContainsString('<x-filament.report-period-controls', $page);
+        self::assertStringContainsString('wire:model="draftStartDate"', $view);
+        self::assertStringContainsString('wire:model="draftEndDate"', $view);
+        self::assertStringNotContainsString('wire:model.live="draftStartDate"', $view);
+        self::assertStringNotContainsString('wire:model.live="draftEndDate"', $view);
+        self::assertStringContainsString('wire:click="resetReportPeriod"', $view);
     }
 
     public function test_long_dashboards_put_priority_widgets_before_secondary_sections(): void

@@ -17,9 +17,9 @@ class GuestReportTest extends TestCase
     public function test_guest_report_uses_one_selected_period_for_structured_guest_data(): void
     {
         $reportPage = new GuestReport;
-        $reportPage->period = 'this_year';
+        $reportPage->period = 'yearly';
 
-        self::assertSame('This year', $reportPage->periodLabel());
+        self::assertSame('Yearly', $reportPage->periodLabel());
 
         $report = $reportPage->report();
 
@@ -59,7 +59,7 @@ class GuestReportTest extends TestCase
         self::assertTrue(is_subclass_of(GuestStats::class, StatsOverviewWidget::class));
 
         $widget = new GuestStats;
-        $widget->period = 'this_year';
+        $widget->period = 'yearly';
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 

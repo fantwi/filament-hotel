@@ -39,14 +39,15 @@ class KitchenProductionReportStats extends StatsOverviewWidget
     protected function getStats(): array
     {
         $reportPage = new KitchenProductionReport;
-        $reportPage->fromDate = filled($this->fromDate)
+        $reportPage->period = 'custom';
+        $reportPage->startDate = filled($this->fromDate)
             ? $this->fromDate
             : now()->startOfMonth()->toDateString();
-        $reportPage->untilDate = filled($this->untilDate)
+        $reportPage->endDate = filled($this->untilDate)
             ? $this->untilDate
             : today()->toDateString();
         $summary = $reportPage->getReportProperty()['summary'];
-        $rangeLabel = $this->rangeLabel($reportPage->fromDate, $reportPage->untilDate);
+        $rangeLabel = $this->rangeLabel($reportPage->startDate, $reportPage->endDate);
 
         return [
             Stat::make('Tracked items', number_format((int) $summary['tracked_items']))

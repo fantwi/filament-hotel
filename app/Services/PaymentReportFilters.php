@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\Reporting\ReportPeriod;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -33,13 +34,7 @@ final class PaymentReportFilters
      */
     public static function periodOptions(): array
     {
-        return [
-            'daily' => 'Daily',
-            'weekly' => 'Weekly',
-            'monthly' => 'Monthly',
-            'quarterly' => 'Quarterly',
-            'yearly' => 'Annually',
-        ];
+        return array_diff_key(ReportPeriod::options(), ['custom' => true]);
     }
 
     /**
@@ -50,29 +45,20 @@ final class PaymentReportFilters
      */
     public static function dateRange(array $filters = []): array
     {
-        $now = now();
-        [$fallbackStart, $fallbackEnd] = match ((string) ($filters['period'] ?? 'monthly')) {
-            'daily' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
-            'weekly' => [$now->copy()->startOfWeek(), $now->copy()->endOfDay()],
-            'quarterly' => [$now->copy()->startOfQuarter(), $now->copy()->endOfDay()],
-            'yearly' => [$now->copy()->startOfYear(), $now->copy()->endOfDay()],
-            default => [$now->copy()->startOfMonth(), $now->copy()->endOfDay()],
-        };
+        $period = array_key_exists((string) ($filters['period'] ?? ''), self::periodOptions())
+            ? (string) $filters['period']
+            : 'monthly';
+        [$fallbackStart, $fallbackEnd] = ReportPeriod::range($period);
 
         try {
-            $start = filled($filters['start_date'] ?? null)
-                ? Carbon::parse($filters['start_date'])->startOfDay()
-                : $fallbackStart;
-            $end = filled($filters['end_date'] ?? null)
-                ? Carbon::parse($filters['end_date'])->endOfDay()
-                : $fallbackEnd;
+            if (filled($filters['start_date'] ?? null) && filled($filters['end_date'] ?? null)) {
+                return ReportPeriod::range('custom', $filters['start_date'], $filters['end_date']);
+            }
         } catch (\Throwable) {
             return [$fallbackStart, $fallbackEnd];
         }
 
-        // Invalid ranges are rejected by the form. Fall back safely for a
-        // malformed URL or stale session instead of silently reversing dates.
-        return $start->greaterThan($end) ? [$fallbackStart, $fallbackEnd] : [$start, $end];
+        return [$fallbackStart, $fallbackEnd];
     }
 
     /**

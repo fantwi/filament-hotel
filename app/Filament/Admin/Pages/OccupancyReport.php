@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Filament\Admin\Concerns\InteractsWithReportPeriod;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\ConferenceRoom;
@@ -16,6 +17,8 @@ use Filament\Pages\Page;
  */
 class OccupancyReport extends Page
 {
+    use InteractsWithReportPeriod;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Reports';
@@ -26,29 +29,13 @@ class OccupancyReport extends Page
 
     protected string $view = 'filament.admin.pages.occupancy-report';
 
-    public string $period = 'this_month';
-
-    /**
-     * Configures period label for the Filament administration interface.
-     */
-    public function periodLabel(): string
-    {
-        return match ($this->period) {
-            'today' => 'Today',
-            'this_week' => 'This week',
-            'this_quarter' => 'This quarter',
-            'this_year' => 'This year',
-            'all' => 'All time',
-            default => 'This month',
-        };
-    }
-
     /**
      * Configures report for the Filament administration interface.
      */
     public function report(): array
     {
         [$periodStart, $periodEnd] = $this->periodBounds();
+        $periodEndExclusive = $periodEnd->copy()->addDay()->startOfDay();
 
         $roomStatus = [
             'total' => Room::count(),
@@ -60,23 +47,23 @@ class OccupancyReport extends Page
         $roomsInService = $roomStatus['total'] - $roomStatus['maintenance'];
 
         $hotelBookings = Booking::query()
-            ->whereDate('check_in', '<', $periodEnd->toDateString())
+            ->whereDate('check_in', '<', $periodEndExclusive->toDateString())
             ->whereDate('check_out', '>', $periodStart->toDateString())
             ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
             ->count();
 
-        $bookedRoomNights = $this->bookedRoomNights($periodStart, $periodEnd);
+        $bookedRoomNights = $this->bookedRoomNights($periodStart, $periodEndExclusive);
 
-        $periodDays = max(1, (int) $periodStart->diffInDays($periodEnd));
+        $periodDays = max(1, (int) $periodStart->diffInDays($periodEndExclusive));
         $roomNightCapacity = $roomsInService * $periodDays;
 
         $conferenceBookings = ConferenceBooking::query()
-            ->whereBetween('booking_date', [$periodStart->toDateString(), $periodEnd->copy()->subDay()->toDateString()])
+            ->whereBetween('booking_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
             ->whereNotIn('status', ['cancelled', 'no_show'])
             ->count();
 
         $tableReservations = RestaurantReservation::query()
-            ->whereBetween('reservation_date', [$periodStart->toDateString(), $periodEnd->copy()->subDay()->toDateString()])
+            ->whereBetween('reservation_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
             ->whereNotIn('status', ['cancelled', 'no_show'])
             ->count();
 
@@ -128,44 +115,6 @@ class OccupancyReport extends Page
 
                 return max(0, $checkIn->diffInDays($checkOut));
             });
-    }
-
-    /**
-     * Configures period bounds for the Filament administration interface.
-     */
-    private function periodBounds(): array
-    {
-        return match ($this->period) {
-            'today' => [today()->startOfDay(), today()->addDay()->startOfDay()],
-            'this_week' => [now()->startOfWeek(), now()->endOfWeek()->addDay()->startOfDay()],
-            'this_quarter' => [now()->startOfQuarter(), now()->endOfQuarter()->addDay()->startOfDay()],
-            'this_year' => [now()->startOfYear(), now()->endOfYear()->addDay()->startOfDay()],
-            'all' => $this->allTimeBounds(),
-            default => [now()->startOfMonth(), now()->endOfMonth()->addDay()->startOfDay()],
-        };
-    }
-
-    /**
-     * Configures all time bounds for the Filament administration interface.
-     */
-    private function allTimeBounds(): array
-    {
-        $start = collect([
-            Booking::min('check_in'),
-            ConferenceBooking::min('booking_date'),
-            RestaurantReservation::min('reservation_date'),
-        ])->filter()->min() ?? today()->toDateString();
-
-        $end = collect([
-            Booking::max('check_out'),
-            ConferenceBooking::max('booking_date'),
-            RestaurantReservation::max('reservation_date'),
-        ])->filter()->max() ?? today()->toDateString();
-
-        return [
-            Carbon::parse($start)->startOfDay(),
-            Carbon::parse($end)->addDay()->startOfDay(),
-        ];
     }
 
     /**

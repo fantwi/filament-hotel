@@ -4,29 +4,16 @@
     @endphp
     <div class="space-y-6">
         <x-filament::section>
-            <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Guest insights</p>
-                    <h2 class="mt-1 text-2xl font-bold tracking-tight">Guest performance</h2>
-                    <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Monitor guest growth, paying-guest activity, repeat visits, and spend for one consistent reporting period.</p>
-                </div>
-
-                <div class="w-full lg:max-w-xs">
-                    <label for="guest-report-period" class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200">Report period</label>
-                    <select id="guest-report-period" wire:model.live="period" class="fi-input w-full">
-                        <option value="today">Today</option>
-                        <option value="this_week">This Week</option>
-                        <option value="this_month">This Month</option>
-                        <option value="this_quarter">This Quarter</option>
-                        <option value="this_year">This Year</option>
-                        <option value="all">All Time</option>
-                    </select>
-                </div>
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Guest insights</p>
+                <h2 class="mt-1 text-2xl font-bold tracking-tight">Guest performance</h2>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Monitor guest growth, paying-guest activity, repeat visits, and spend for one consistent reporting period.</p>
             </div>
+            <x-filament.report-period-controls class="mt-5" />
         </x-filament::section>
 
         <section aria-label="Guest overview">
-            @livewire(\App\Filament\Admin\Widgets\GuestStats::class, ['period' => $this->period], key('guest-stats-'.$this->period))
+            @livewire(\App\Filament\Admin\Widgets\GuestStats::class, ['period' => $this->period, 'startDate' => $this->startDate, 'endDate' => $this->endDate], key('guest-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
         <section class="grid gap-4 lg:grid-cols-3">

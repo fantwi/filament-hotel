@@ -2,19 +2,21 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Filament\Admin\Concerns\InteractsWithReportPeriod;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
 use Filament\Pages\Page;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Provides the revenue report Filament administration page.
  */
 class RevenueReport extends Page
 {
+    use InteractsWithReportPeriod;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Reports';
@@ -25,49 +27,32 @@ class RevenueReport extends Page
 
     protected string $view = 'filament.admin.pages.revenue-report';
 
-    public string $period = 'this_month';
-
-    /**
-     * Configures period label for the Filament administration interface.
-     */
-    public function periodLabel(): string
-    {
-        return match ($this->period) {
-            'today' => 'Today',
-            'this_week' => 'This week',
-            'this_quarter' => 'This quarter',
-            'this_year' => 'This year',
-            'all' => 'All time',
-            default => 'This month',
-        };
-    }
-
     /**
      * Configures report for the Filament administration interface.
      */
     public function report(): array
     {
-        $paidPayments = $this->forPeriod(
+        $paidPayments = $this->forReportPeriod(
             Payment::query()->whereIn('payment_status', ['paid', 'completed']),
         );
-        $refunds = $this->forPeriod(
+        $refunds = $this->forReportPeriod(
             Payment::query()->whereIn('payment_status', ['refunded', 'refund']),
         );
 
         $outstanding = [
-            'hotel' => $this->forPeriod(Booking::query())
+            'hotel' => $this->forReportPeriod(Booking::query())
                 ->whereIn('payment_status', ['pending', 'unpaid'])
                 ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
                 ->sum('total_price'),
-            'conference' => $this->forPeriod(ConferenceBooking::query())
+            'conference' => $this->forReportPeriod(ConferenceBooking::query())
                 ->whereIn('payment_status', ['pending', 'unpaid'])
                 ->where('status', '!=', 'cancelled')
                 ->sum('total_price'),
-            'table' => $this->forPeriod(RestaurantReservation::query())
+            'table' => $this->forReportPeriod(RestaurantReservation::query())
                 ->whereIn('payment_status', ['pending', 'unpaid'])
                 ->whereNotIn('status', ['cancelled', 'no_show'])
                 ->sum('reservation_fee'),
-            'food' => $this->forPeriod(RestaurantOrder::query())
+            'food' => $this->forReportPeriod(RestaurantOrder::query())
                 ->whereIn('payment_status', ['pending', 'unpaid'])
                 ->where('status', '!=', 'cancelled')
                 ->sum('total'),
@@ -90,21 +75,6 @@ class RevenueReport extends Page
                 ->orderByDesc('total')
                 ->get(),
         ];
-    }
-
-    /**
-     * Configures for period for the Filament administration interface.
-     */
-    private function forPeriod(Builder $query, string $column = 'created_at'): Builder
-    {
-        return match ($this->period) {
-            'today' => $query->whereDate($column, today()),
-            'this_week' => $query->whereBetween($column, [now()->startOfWeek(), now()->endOfWeek()]),
-            'this_quarter' => $query->whereBetween($column, [now()->startOfQuarter(), now()->endOfQuarter()]),
-            'this_year' => $query->whereBetween($column, [now()->startOfYear(), now()->endOfYear()]),
-            'all' => $query,
-            default => $query->whereBetween($column, [now()->startOfMonth(), now()->endOfMonth()]),
-        };
     }
 
     /**

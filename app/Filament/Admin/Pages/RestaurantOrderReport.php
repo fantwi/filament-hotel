@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Filament\Admin\Concerns\InteractsWithReportPeriod;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantOrderItem;
 use Filament\Pages\Page;
@@ -14,6 +15,7 @@ use Livewire\WithPagination;
  */
 class RestaurantOrderReport extends Page
 {
+    use InteractsWithReportPeriod;
     use WithPagination;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar-square';
@@ -28,8 +30,6 @@ class RestaurantOrderReport extends Page
 
     protected string $view = 'filament.admin.pages.restaurant-order-report';
 
-    public string $period = 'this_month';
-
     public int $perPage = 25;
 
     /**
@@ -37,7 +37,7 @@ class RestaurantOrderReport extends Page
      */
     public function getOrdersQuery(): Builder
     {
-        return $this->applyPeriod(
+        return $this->forReportPeriod(
             RestaurantOrder::query()->with(['guest', 'items']),
         );
     }
@@ -52,20 +52,6 @@ class RestaurantOrderReport extends Page
         return $this->getOrdersQuery()
             ->latest()
             ->paginate($perPage, ['*'], 'orders_page');
-    }
-
-    /**
-     * Configures period label for the Filament administration interface.
-     */
-    public function periodLabel(): string
-    {
-        return match ($this->period) {
-            'today' => 'Today',
-            'this_week' => 'This week',
-            'this_year' => 'This year',
-            'all' => 'All time',
-            default => 'This month',
-        };
     }
 
     /**
@@ -99,7 +85,7 @@ class RestaurantOrderReport extends Page
             ->first();
 
         $totalItems = RestaurantOrderItem::query()
-            ->whereHas('order', fn (Builder $query): Builder => $this->applyPeriod($query))
+            ->whereHas('order', fn (Builder $query): Builder => $this->forReportPeriod($query))
             ->sum('quantity');
 
         $paidOrders = (int) ($totals->paid_orders ?? 0);
@@ -120,14 +106,6 @@ class RestaurantOrderReport extends Page
     }
 
     /**
-     * Resets pagination when the selected reporting period changes.
-     */
-    public function updatedPeriod(): void
-    {
-        $this->resetPage('orders_page');
-    }
-
-    /**
      * Resets pagination when the page size changes.
      */
     public function updatedPerPage(): void
@@ -136,27 +114,11 @@ class RestaurantOrderReport extends Page
     }
 
     /**
-     * Applies the selected reporting period to a query.
+     * Identifies the report paginator reset after a period is applied.
      */
-    private function applyPeriod(Builder $query): Builder
+    protected function reportPaginatorName(): ?string
     {
-        return $query
-            ->when(
-                $this->period === 'today',
-                fn (Builder $query) => $query->whereDate('created_at', today()),
-            )
-            ->when(
-                $this->period === 'this_week',
-                fn (Builder $query) => $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]),
-            )
-            ->when(
-                $this->period === 'this_month',
-                fn (Builder $query) => $query->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]),
-            )
-            ->when(
-                $this->period === 'this_year',
-                fn (Builder $query) => $query->whereBetween('created_at', [now()->startOfYear(), now()->endOfYear()]),
-            );
+        return 'orders_page';
     }
 
     /**

@@ -47,6 +47,7 @@ class PaymentReportStatsTest extends TestCase
             ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
             array_keys(PaymentReportFilters::periodOptions()),
         );
+        self::assertSame('Yearly', PaymentReportFilters::periodOptions()['yearly']);
     }
 
     public function test_reversed_payment_date_ranges_fall_back_instead_of_being_silently_swapped(): void

@@ -15,9 +15,9 @@ class RevenueReportTest extends TestCase
     public function test_revenue_report_uses_one_selected_period_for_structured_financial_data(): void
     {
         $reportPage = new RevenueReport;
-        $reportPage->period = 'this_quarter';
+        $reportPage->period = 'quarterly';
 
-        self::assertSame('This quarter', $reportPage->periodLabel());
+        self::assertSame('Quarterly', $reportPage->periodLabel());
 
         $report = $reportPage->report();
 
@@ -32,7 +32,7 @@ class RevenueReportTest extends TestCase
         self::assertTrue(is_subclass_of(RevenueReportStats::class, StatsOverviewWidget::class));
 
         $widget = new RevenueReportStats;
-        $widget->period = 'this_quarter';
+        $widget->period = 'quarterly';
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 

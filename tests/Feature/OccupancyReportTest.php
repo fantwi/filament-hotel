@@ -19,9 +19,9 @@ class OccupancyReportTest extends TestCase
     public function test_occupancy_report_uses_one_selected_period_for_structured_operational_data(): void
     {
         $reportPage = new OccupancyReport;
-        $reportPage->period = 'this_quarter';
+        $reportPage->period = 'quarterly';
 
-        self::assertSame('This quarter', $reportPage->periodLabel());
+        self::assertSame('Quarterly', $reportPage->periodLabel());
 
         $report = $reportPage->report();
 
@@ -33,6 +33,8 @@ class OccupancyReportTest extends TestCase
 
     public function test_occupancy_report_counts_booking_nights_that_overlap_the_selected_period(): void
     {
+        $this->travelTo('2026-09-15 12:00:00');
+
         $roomType = RoomType::query()->create([
             'name' => 'Report room',
             'price_per_night' => 100,
@@ -65,8 +67,8 @@ class OccupancyReportTest extends TestCase
 
         self::assertSame(1, $report['hotelBookings']);
         self::assertSame(3, $report['bookedRoomNights']);
-        self::assertSame(now()->daysInMonth, $report['roomNightCapacity']);
-        self::assertEqualsWithDelta((3 / now()->daysInMonth) * 100, $report['occupancyRate'], 0.001);
+        self::assertSame(now()->day, $report['roomNightCapacity']);
+        self::assertEqualsWithDelta((3 / now()->day) * 100, $report['occupancyRate'], 0.001);
     }
 
     public function test_occupancy_clamps_stays_to_the_period_and_excludes_cancelled_records(): void
@@ -92,7 +94,7 @@ class OccupancyReportTest extends TestCase
         ]);
 
         $page = new OccupancyReport;
-        $page->period = 'this_month';
+        $page->period = 'monthly';
 
         self::assertSame(2, $page->report()['bookedRoomNights']);
         self::assertSame(1, $page->report()['hotelBookings']);
@@ -133,7 +135,7 @@ class OccupancyReportTest extends TestCase
         $view = file_get_contents(resource_path('views/filament/admin/pages/occupancy-report.blade.php'));
 
         self::assertStringContainsString('wire:loading', $view);
-        self::assertStringContainsString('wire:target="period"', $view);
+        self::assertStringContainsString('wire:target="applyReportPeriod,resetReportPeriod"', $view);
     }
 
     public function test_occupancy_stats_widget_uses_period_aware_overview_stats(): void
@@ -141,7 +143,7 @@ class OccupancyReportTest extends TestCase
         self::assertTrue(is_subclass_of(OccupancyStats::class, StatsOverviewWidget::class));
 
         $widget = new OccupancyStats;
-        $widget->period = 'this_quarter';
+        $widget->period = 'quarterly';
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 
