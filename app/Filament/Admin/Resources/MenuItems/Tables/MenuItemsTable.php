@@ -24,15 +24,24 @@ class MenuItemsTable
     {
         return $table
             ->columns([
-                ImageColumn::make('image')->square(),
+                ImageColumn::make('image')
+                    ->square()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('category.name')->sortable()->searchable(),
                 TextColumn::make('name')->sortable()->searchable(),
                 TextColumn::make('price')->money('GHS')->sortable(),
                 IconColumn::make('is_available')->boolean(),
-                IconColumn::make('is_featured')->boolean(),
+                IconColumn::make('is_featured')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_published')->label('Published')->boolean(),
-                TextColumn::make('preparation_time')->suffix(' mins')->sortable(),
-                TextColumn::make('sort_order')->sortable(),
+                TextColumn::make('preparation_time')
+                    ->suffix(' mins')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('sort_order')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('sort_order')
             ->filters([

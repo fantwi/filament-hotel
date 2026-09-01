@@ -28,11 +28,13 @@ class RestaurantsTable
                     ->searchable()
                     ->sortable(),
 
-                ImageColumn::make('hero_image'),
+                ImageColumn::make('hero_image')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('capacity')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('opening_time')
                     ->label('Opens')

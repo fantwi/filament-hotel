@@ -34,7 +34,8 @@ class RestaurantReservationsTable
         return $table
             ->columns([
                 //
-                TextColumn::make('id'),
+                TextColumn::make('id')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('guest_name')
                     ->searchable(),
@@ -51,7 +52,8 @@ class RestaurantReservationsTable
 
                 TextColumn::make('number_of_guests')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('status')
                     ->badge()
@@ -92,7 +94,8 @@ class RestaurantReservationsTable
                     }),
 
                 TextColumn::make('created_at')
-                    ->since(),
+                    ->since()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('restaurant')

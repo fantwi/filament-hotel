@@ -67,7 +67,8 @@ class BookingsTable
                     ->label('Nights')
                     ->state(fn ($record) => Carbon::parse($record->check_in)
                         ->diffInDays($record->check_out)
-                    ),
+                    )
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('total_price')
                     ->label('Price')
@@ -77,12 +78,14 @@ class BookingsTable
                 TextColumn::make('total_paid')
                     ->label('Paid')
                     ->money('GHS')
-                    ->color('success'),
+                    ->color('success')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('balance')
                     ->label('Balance')
                     ->money('GHS')
-                    ->color(fn ($record) => $record->balance > 0 ? 'danger' : 'success'),
+                    ->color(fn ($record) => $record->balance > 0 ? 'danger' : 'success')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('status')
                     ->badge()

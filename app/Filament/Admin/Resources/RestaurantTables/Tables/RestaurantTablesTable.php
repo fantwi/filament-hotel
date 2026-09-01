@@ -30,7 +30,10 @@ class RestaurantTablesTable
     {
         return $table
             ->columns([
-                ImageColumn::make('image')->disk('public')->square(),
+                ImageColumn::make('image')
+                    ->disk('public')
+                    ->square()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('table_number')
                     ->label('Table')
                     ->searchable()
@@ -44,10 +47,12 @@ class RestaurantTablesTable
                     ->sortable(),
                 TextColumn::make('reservation_fee')
                     ->money('GHS')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('location')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
