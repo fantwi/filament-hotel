@@ -10,7 +10,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
-use Spatie\Permission\Models\Role;
 
 /**
  * Configures Filament administration for users table.
@@ -24,7 +23,6 @@ class UsersTable
     {
         return $table
             ->columns([
-                //
                 TextColumn::make('name')
                     ->label('Staff Name')
                     ->searchable(['first_name', 'last_name', 'email'])
@@ -34,23 +32,23 @@ class UsersTable
                     ->label('Email')
                     ->searchable(),
 
-                // TextColumn::make('department_label')
-                //     ->label('Department')
-                //     ->badge()
-                //     // ->formatStateUsing(fn ($state) => str($state)->headline())
-                //     ->color(fn ($state) => match ($state) {
-                //         'super_admin' => 'danger',
-                //         'admin' => 'warning',
-                //         'reception' => 'success',
-                //         'housekeeping' => 'info',
-                //         'accounting' => 'secondary',
-                //         'management' => 'primary',
-                //         'guest' => 'gray',
-                //         default => 'gray',
-                //     })
-                //     ->sortable(),
+                TextColumn::make('department_label')
+                    ->label('Department')
+                    ->badge()
+                    ->placeholder('Unassigned')
+                    ->color(fn (?string $state): string => match ($state) {
+                        'Super Admin' => 'danger',
+                        'Admin' => 'warning',
+                        'Reception' => 'success',
+                        'Housekeeping' => 'info',
+                        'Accounting' => 'gray',
+                        'Management' => 'primary',
+                        'Kitchen' => 'warning',
+                        default => 'gray',
+                    })
+                    ->sortable(['department'])
+                    ->toggleable(),
 
-                // staff phone number
                 TextColumn::make('phone_number')
                     ->label('Phone Number')
                     ->searchable()
@@ -85,44 +83,48 @@ class UsersTable
                     })
                     ->sortable(),
 
-                // staff shift
-                // TextColumn::make('shift')
-                //     ->label('Shift')
-                //     ->badge()
-                //     ->icon(fn ($state) => match ($state) {
-                //         'morning' => 'heroicon-o-sun',
-                //         'evening' => 'heroicon-o-cloud',
-                //         'night' => 'heroicon-o-moon',
-                //         'off_duty' => 'heroicon-o-x-circle',
-                //     })
-                //     ->color(fn ($state) => match ($state) {
-                //         'morning' => 'success',
-                //         'evening' => 'warning',
-                //         'night' => 'primary',
-                //         'off_duty' => 'gray',
-                //     })
-                //     ->formatStateUsing(fn ($state) => str($state)->headline())
-                //     ->sortable(),
+                TextColumn::make('shift')
+                    ->label('Shift')
+                    ->badge()
+                    ->placeholder('Not assigned')
+                    ->icon(fn (?string $state): string => match ($state) {
+                        'morning' => 'heroicon-o-sun',
+                        'evening' => 'heroicon-o-cloud',
+                        'night' => 'heroicon-o-moon',
+                        'off_duty' => 'heroicon-o-x-circle',
+                        default => 'heroicon-o-minus-circle',
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'morning' => 'success',
+                        'evening' => 'warning',
+                        'night' => 'primary',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (?string $state): string => str($state ?? 'Not assigned')->headline()->toString())
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-                // staff status
-                // TextColumn::make('status')
-                //     ->label('Status')
-                //     ->sortable()
-                //     ->badge()
-                //     ->icon(fn ($state) => match ($state) {
-                //         'online' => 'heroicon-o-check-circle',
-                //         'offline' => 'heroicon-o-exclamation-circle',
-                //         'on_leave' => 'heroicon-o-clock',
-                //         'suspended' => 'heroicon-o-x-circle',
-                //     })
-                //     ->color(fn ($state) => match ($state) {
-                //         'online' => 'success',
-                //         'offline' => 'danger',
-                //         'on_leave' => 'warning',
-                //         'suspended' => 'info',
-                //         default => 'gray',
-                //     })
-                //     ->formatStateUsing(fn ($state) => str($state)->headline()),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->placeholder('Not set')
+                    ->icon(fn (?string $state): string => match ($state) {
+                        'online' => 'heroicon-o-check-circle',
+                        'offline' => 'heroicon-o-exclamation-circle',
+                        'on_leave' => 'heroicon-o-clock',
+                        'suspended' => 'heroicon-o-x-circle',
+                        default => 'heroicon-o-minus-circle',
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'online' => 'success',
+                        'offline' => 'danger',
+                        'on_leave' => 'warning',
+                        'suspended' => 'info',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (?string $state): string => str($state ?? 'Not set')->headline()->toString())
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->label('Created')
@@ -134,17 +136,8 @@ class UsersTable
                 Group::make('department')
                     ->label('Department')
                     ->collapsible(),
-                // ->defaultSort('role')
-                // Group::make('roles.name')
-                // ->label('Role')
-                // ->collapsible() // make the group collapsible
-                // ->getTitleFromRecordUsing(fn ($record) =>
-                //     str(optional($record->roles->first())->name ?? 'No Role')->headline()
-                // ) // get the title from the record using the role name
-                // ->formatStateUsing(fn ($state) => str($state)->headline()) // format the state using a headline
             ])
             ->filters([
-                //
                 SelectFilter::make('department')
                     ->options(User::getDepartments()),
 
@@ -153,18 +146,6 @@ class UsersTable
                     ->relationship('corporateOrganization', 'name')
                     ->searchable()
                     ->preload(),
-
-                // SelectFilter::make('role')
-                //     ->label('Role')
-                //     ->options(
-                //         Role::pluck('name', 'name')
-                //             ->map(fn ($role) => str($role)->headline())
-                //     )
-                //     ->query(function ($query, $data) {
-                //         if (!empty($data['value'])) {
-                //             $query->role($data['value']);
-                //         }
-                //     }),
 
                 SelectFilter::make('status')
                     ->options([
