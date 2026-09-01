@@ -25,4 +25,13 @@ class AdminPanelThemeTest extends TestCase
         self::assertStringContainsString("'resources/js/app.js'", $viteConfig);
         self::assertStringContainsString("'resources/js/calendar.js'", $viteConfig);
     }
+
+    public function test_public_stylesheet_retains_form_control_normalization(): void
+    {
+        $package = json_decode(file_get_contents(base_path('package.json')), true, flags: JSON_THROW_ON_ERROR);
+        $publicStylesheet = file_get_contents(resource_path('css/app.css'));
+
+        self::assertArrayHasKey('@tailwindcss/forms', $package['devDependencies']);
+        self::assertStringContainsString("@plugin '@tailwindcss/forms';", $publicStylesheet);
+    }
 }
