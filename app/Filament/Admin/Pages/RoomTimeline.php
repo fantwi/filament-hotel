@@ -13,7 +13,7 @@ class RoomTimeline extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTableCells;
 
-    protected string $view = 'filament.admin.pages.room-timeline';
+    protected string $view = 'filament.admin.pages.redirecting';
 
     protected static ?string $navigationLabel = 'Room Timeline';
 
@@ -25,5 +25,13 @@ class RoomTimeline extends Page
     public static function shouldRegisterNavigation(): bool
     {
         return false;
+    }
+
+    /**
+     * Redirects saved legacy URLs to the maintained unified booking calendar.
+     */
+    public function mount(): void
+    {
+        $this->redirect(BookingCalendar::getUrl());
     }
 }
