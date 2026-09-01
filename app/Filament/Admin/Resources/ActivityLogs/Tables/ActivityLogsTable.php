@@ -98,7 +98,21 @@ class ActivityLogsTable
                         'payment_added' => 'Payment added',
                         'User logged in' => 'User logged in',
                         'User logged out' => 'User logged out',
-                    ]),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value'] ?? null) {
+                            'created', 'updated', 'deleted' => $query->where('event', $data['value']),
+                            'checked_in' => $query->where(fn (Builder $query): Builder => $query
+                                ->where('event', 'checked_in')
+                                ->orWhere('description', 'like', 'Checked in guest %')),
+                            'checked_out' => $query->where(fn (Builder $query): Builder => $query
+                                ->where('event', 'checked_out')
+                                ->orWhere('description', 'like', 'Checked out guest %')),
+                            'payment_added', 'User logged in', 'User logged out' => $query
+                                ->where('description', $data['value']),
+                            default => $query,
+                        };
+                    }),
 
                 SelectFilter::make('causer_id')
                     ->label('Acting user')
