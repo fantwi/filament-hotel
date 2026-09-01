@@ -9,7 +9,9 @@
 /.idea
 /.nova
 /.phpunit.cache
+/.superpowers
 /.vscode
+/.worktrees
 /.zed
 /auth.json
 /node_modules
