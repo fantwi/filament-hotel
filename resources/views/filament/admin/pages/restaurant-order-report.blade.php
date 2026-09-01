@@ -93,14 +93,15 @@
             <div class="hidden md:block">
                 <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-white/10">
                     <table class="w-full min-w-[760px] divide-y divide-gray-200 text-left text-sm dark:divide-white/10">
+                        <caption class="sr-only">Restaurant order register</caption>
                         <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-white/5 dark:text-gray-400">
                             <tr>
-                                <th class="px-4 py-3 font-semibold">Order and guest</th>
-                                <th class="px-4 py-3 font-semibold">Items and channel</th>
-                                <th class="px-4 py-3 font-semibold">Fulfillment</th>
-                                <th class="px-4 py-3 font-semibold">Payment</th>
-                                <th class="px-4 py-3 text-right font-semibold">Total</th>
-                                <th class="px-4 py-3 font-semibold">Created</th>
+                                <th scope="col" class="px-4 py-3 font-semibold">Order and guest</th>
+                                <th scope="col" class="px-4 py-3 font-semibold">Items and channel</th>
+                                <th scope="col" class="px-4 py-3 font-semibold">Fulfillment</th>
+                                <th scope="col" class="px-4 py-3 font-semibold">Payment</th>
+                                <th scope="col" class="px-4 py-3 text-right font-semibold">Total</th>
+                                <th scope="col" class="px-4 py-3 font-semibold">Created</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-white/10">
@@ -116,10 +117,10 @@
                                     $paymentColor = $order->payment_status === 'completed' ? 'success' : ($order->payment_status === 'pending' ? 'warning' : 'gray');
                                 @endphp
                                 <tr class="align-top hover:bg-gray-50 dark:hover:bg-white/5">
-                                    <td class="px-4 py-4">
+                                    <th scope="row" class="px-4 py-4">
                                         <p class="font-semibold">{{ $order->order_number }}</p>
                                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $order->guest?->full_name ?: $order->customer_email ?: 'Walk-in guest' }}</p>
-                                    </td>
+                                    </th>
                                     <td class="px-4 py-4">
                                         <p class="font-medium">{{ number_format($order->items->sum('quantity')) }} item(s)</p>
                                         <p class="mt-1 text-xs capitalize text-gray-500 dark:text-gray-400">{{ $order->ordering_channel ?: 'web' }} order</p>

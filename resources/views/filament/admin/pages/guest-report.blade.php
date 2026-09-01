@@ -44,18 +44,19 @@
             <x-filament::section heading="Top guests by spend" description="Paid spend recorded during {{ strtolower($this->periodLabel()) }}" class="lg:col-span-2">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-white/10">
+                        <caption class="sr-only">Top guests by paid spend</caption>
                         <thead class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                             <tr>
-                                <th class="px-3 py-3 font-semibold">Guest</th>
-                                <th class="px-3 py-3 font-semibold">Email</th>
-                                <th class="px-3 py-3 text-right font-semibold">Payments</th>
-                                <th class="px-3 py-3 text-right font-semibold">Paid spend</th>
+                                <th scope="col" class="px-3 py-3 font-semibold">Guest</th>
+                                <th scope="col" class="px-3 py-3 font-semibold">Email</th>
+                                <th scope="col" class="px-3 py-3 text-right font-semibold">Payments</th>
+                                <th scope="col" class="px-3 py-3 text-right font-semibold">Paid spend</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-white/5">
                             @forelse ($report['topGuests'] as $payment)
                                 <tr>
-                                    <td class="px-3 py-3 font-semibold">{{ $payment->guest?->full_name ?? 'Guest not recorded' }}</td>
+                                    <th scope="row" class="px-3 py-3 font-semibold">{{ $payment->guest?->full_name ?? 'Guest not recorded' }}</th>
                                     <td class="px-3 py-3 text-gray-500 dark:text-gray-400">{{ $payment->guest?->email ?? '-' }}</td>
                                     <td class="px-3 py-3 text-right">{{ number_format($payment->payment_count) }}</td>
                                     <td class="px-3 py-3 text-right font-semibold">GHS {{ number_format($payment->total_spend, 2) }}</td>

@@ -75,14 +75,15 @@
 
             <div class="hidden overflow-x-auto md:block">
                 <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-white/10">
+                    <caption class="sr-only">Corporate account credit positions</caption>
                     <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500 dark:bg-white/5 dark:text-gray-400">
                         <tr>
-                            <th class="px-4 py-3 font-semibold">Organisation</th>
-                            <th class="px-4 py-3 font-semibold">Linked guests</th>
-                            <th class="px-4 py-3 text-right font-semibold">Credit limit</th>
-                            <th class="px-4 py-3 text-right font-semibold">Outstanding</th>
-                            <th class="px-4 py-3 text-right font-semibold">Available</th>
-                            <th class="px-4 py-3 font-semibold">Credit utilisation</th>
+                            <th scope="col" class="px-4 py-3 font-semibold">Organisation</th>
+                            <th scope="col" class="px-4 py-3 font-semibold">Linked guests</th>
+                            <th scope="col" class="px-4 py-3 text-right font-semibold">Credit limit</th>
+                            <th scope="col" class="px-4 py-3 text-right font-semibold">Outstanding</th>
+                            <th scope="col" class="px-4 py-3 text-right font-semibold">Available</th>
+                            <th scope="col" class="px-4 py-3 font-semibold">Credit utilisation</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-white/5">
@@ -94,7 +95,7 @@
                                         : min(100, ($account['outstanding'] / max(1, $account['credit_limit'])) * 100);
                                 @endphp
                                 <tr>
-                                    <td class="px-4 py-4 font-semibold text-gray-900 dark:text-white">{{ $account['name'] }}</td>
+                                    <th scope="row" class="px-4 py-4 font-semibold text-gray-900 dark:text-white">{{ $account['name'] }}</th>
                                     <td class="px-4 py-4">{{ number_format($account['linked_guests']) }}</td>
                                     <td class="px-4 py-4 text-right">{{ $account['credit_limit'] === null ? 'No limit' : 'GHS '.number_format($account['credit_limit'], 2) }}</td>
                                     <td class="px-4 py-4 text-right font-semibold text-warning-700 dark:text-warning-300">GHS {{ number_format($account['outstanding'], 2) }}</td>

@@ -160,20 +160,21 @@
             @else
                 <div class="hidden overflow-x-auto md:block">
                     <table class="w-full min-w-[800px] text-left text-sm">
+                        <caption class="sr-only">Outstanding corporate transactions awaiting settlement</caption>
                         <thead class="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500 dark:border-white/10 dark:text-gray-400">
                             <tr>
-                                <th class="px-3 py-3 font-semibold">Transaction</th>
-                                <th class="px-3 py-3 font-semibold">Organisation</th>
-                                <th class="px-3 py-3 font-semibold">Guest</th>
-                                <th class="px-3 py-3 text-right font-semibold">Outstanding</th>
-                                <th class="px-3 py-3 font-semibold">Created</th>
-                                <th class="px-3 py-3 font-semibold">Clear payment</th>
+                                <th scope="col" class="px-3 py-3 font-semibold">Transaction</th>
+                                <th scope="col" class="px-3 py-3 font-semibold">Organisation</th>
+                                <th scope="col" class="px-3 py-3 font-semibold">Guest</th>
+                                <th scope="col" class="px-3 py-3 text-right font-semibold">Outstanding</th>
+                                <th scope="col" class="px-3 py-3 font-semibold">Created</th>
+                                <th scope="col" class="px-3 py-3 font-semibold">Clear payment</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-white/10">
                             @foreach ($receivables as $item)
                                 <tr class="align-top hover:bg-gray-50 dark:hover:bg-white/5">
-                                    <td class="px-3 py-4 font-semibold text-gray-950 dark:text-white">{{ $item['label'] }} #{{ $item['id'] }}<span class="mt-1 block text-xs font-normal text-gray-500">{{ ucfirst($item['status']) }}</span></td>
+                                    <th scope="row" class="px-3 py-4 font-semibold text-gray-950 dark:text-white">{{ $item['label'] }} #{{ $item['id'] }}<span class="mt-1 block text-xs font-normal text-gray-500">{{ ucfirst($item['status']) }}</span></th>
                                     <td class="px-3 py-4 text-gray-700 dark:text-gray-300">{{ $item['organization'] }}</td>
                                     <td class="px-3 py-4 text-gray-700 dark:text-gray-300">{{ $item['guest'] }}</td>
                                     <td class="px-3 py-4 text-right font-bold text-danger-600 dark:text-danger-400">GHS {{ number_format($item['amount'], 2) }}</td>
