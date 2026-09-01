@@ -170,11 +170,13 @@ class FilamentNavigationGroupingTest extends TestCase
     {
         $admin = User::factory()->create(['department' => 'admin']);
 
-        $this->actingAs($admin)
-            ->get(PaymentResource::getUrl('index'))
-            ->assertOk()
-            ->assertSee('__filamentAdminNavigationActiveLabels', false)
-            ->assertSee('Finance', false);
+        $response = $this->actingAs($admin)->get(PaymentResource::getUrl('index'));
+
+        $response->assertOk();
+        self::assertMatchesRegularExpression(
+            '/const activeLabels\s*=\s*JSON\.parse\([^)]*Finance[^)]*\)/',
+            $response->getContent(),
+        );
     }
 
     public function test_resource_navigation_icons_are_domain_specific_and_unique(): void

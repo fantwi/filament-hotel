@@ -15,10 +15,21 @@ class StorageStub {
     }
 }
 
+class DocumentStub extends EventTarget {
+    listenerCounts = new Map();
+
+    addEventListener(type, listener, options) {
+        this.listenerCounts.set(type, (this.listenerCounts.get(type) ?? 0) + 1);
+
+        super.addEventListener(type, listener, options);
+    }
+}
+
 class WindowStub extends EventTarget {
     localStorage = new StorageStub();
     sidebarStore = null;
     listenerCounts = new Map();
+    document = new DocumentStub();
 
     addEventListener(type, listener, options) {
         this.listenerCounts.set(type, (this.listenerCounts.get(type) ?? 0) + 1);
@@ -31,15 +42,21 @@ class WindowStub extends EventTarget {
     };
 }
 
-test('opens active persisted group while preserving inactive collapsed choices', () => {
+test('reconciles before Filament early-hide and updates the later Alpine store', () => {
     const windowObject = new WindowStub();
     windowObject.localStorage.setItem('collapsedGroups', JSON.stringify(['Finance', 'Reports']));
-    windowObject.sidebarStore = { collapsedGroups: ['Finance', 'Reports'] };
 
     synchronizeFilamentNavigationGroups(windowObject, ['Finance']);
 
+    // Model Filament's ordinary sidebar script running immediately after the hook.
     assert.deepEqual(JSON.parse(windowObject.localStorage.getItem('collapsedGroups')), ['Reports']);
+
+    windowObject.sidebarStore = { collapsedGroups: null };
+    windowObject.document.dispatchEvent(new Event('alpine:initialized'));
+
     assert.deepEqual(windowObject.sidebarStore.collapsedGroups, ['Reports']);
+    assert.equal(windowObject.listenerCounts.get('livewire:navigated'), 1);
+    assert.equal(windowObject.document.listenerCounts.get('alpine:initialized'), 1);
 });
 
 test('reconciles on Livewire navigation with one idempotent listener', () => {
