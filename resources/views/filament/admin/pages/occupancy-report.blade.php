@@ -21,11 +21,24 @@
                         <option value="this_year">This Year</option>
                         <option value="all">All Time</option>
                     </select>
+                    <p
+                        wire:loading.delay
+                        wire:target="period"
+                        role="status"
+                        aria-live="polite"
+                        class="mt-2 text-sm font-medium text-primary-600 dark:text-primary-400"
+                    >
+                        Updating occupancy report&hellip;
+                    </p>
                 </div>
             </div>
         </x-filament::section>
 
-        <section aria-label="Occupancy overview">
+        <section
+            aria-label="Occupancy overview"
+            wire:loading.class="opacity-60"
+            wire:target="period"
+        >
             @livewire(\App\Filament\Admin\Widgets\OccupancyStats::class, ['period' => $this->period], key('occupancy-stats-'.$this->period))
         </section>
 

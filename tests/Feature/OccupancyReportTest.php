@@ -65,8 +65,75 @@ class OccupancyReportTest extends TestCase
 
         self::assertSame(1, $report['hotelBookings']);
         self::assertSame(3, $report['bookedRoomNights']);
-        self::assertSame(31, $report['roomNightCapacity']);
-        self::assertEqualsWithDelta(9.677, $report['occupancyRate'], 0.001);
+        self::assertSame(now()->daysInMonth, $report['roomNightCapacity']);
+        self::assertEqualsWithDelta((3 / now()->daysInMonth) * 100, $report['occupancyRate'], 0.001);
+    }
+
+    public function test_occupancy_clamps_stays_to_the_period_and_excludes_cancelled_records(): void
+    {
+        $this->travelTo('2026-08-15 12:00:00');
+        [$guest, $room] = $this->occupancyBookingDependencies();
+
+        Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-07-30',
+            'check_out' => '2026-08-03',
+            'total_price' => 400,
+            'status' => 'pending',
+        ]);
+        Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-08-05',
+            'check_out' => '2026-08-08',
+            'total_price' => 300,
+            'status' => 'cancelled',
+        ]);
+
+        $page = new OccupancyReport;
+        $page->period = 'this_month';
+
+        self::assertSame(2, $page->report()['bookedRoomNights']);
+        self::assertSame(1, $page->report()['hotelBookings']);
+    }
+
+    public function test_occupancy_report_uses_a_memory_bounded_booking_iterator(): void
+    {
+        $source = file_get_contents(app_path('Filament/Admin/Pages/OccupancyReport.php'));
+
+        self::assertMatchesRegularExpression('/lazyById|cursor/', $source);
+        self::assertStringNotContainsString("->get(['id', 'check_in', 'check_out'])", $source);
+    }
+
+    public function test_occupancy_report_processes_a_large_booking_set(): void
+    {
+        $this->travelTo('2026-08-15 12:00:00');
+        [$guest, $room] = $this->occupancyBookingDependencies();
+
+        Booking::query()->insert(collect(range(1, 1100))->map(fn (int $index): array => [
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-08-02',
+            'check_out' => '2026-08-03',
+            'total_price' => 100,
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])->all());
+
+        $report = (new OccupancyReport)->report();
+
+        self::assertSame(1100, $report['hotelBookings']);
+        self::assertSame(1100, $report['bookedRoomNights']);
+    }
+
+    public function test_occupancy_page_exposes_loading_feedback_while_the_period_changes(): void
+    {
+        $view = file_get_contents(resource_path('views/filament/admin/pages/occupancy-report.blade.php'));
+
+        self::assertStringContainsString('wire:loading', $view);
+        self::assertStringContainsString('wire:target="period"', $view);
     }
 
     public function test_occupancy_stats_widget_uses_period_aware_overview_stats(): void
@@ -81,5 +148,30 @@ class OccupancyReportTest extends TestCase
         $stats = $method->invoke($widget);
 
         self::assertCount(5, $stats);
+    }
+
+    /**
+     * @return array{0: Guest, 1: Room}
+     */
+    private function occupancyBookingDependencies(): array
+    {
+        $roomType = RoomType::query()->create([
+            'name' => 'Occupancy test room',
+            'price_per_night' => 100,
+            'capacity' => 2,
+        ]);
+        $room = Room::query()->create([
+            'room_type_id' => $roomType->id,
+            'room_number' => 'OCCUPANCY-'.Room::query()->count(),
+            'status' => 'available',
+        ]);
+        $guest = Guest::query()->create([
+            'first_name' => 'Test',
+            'last_name' => 'Guest',
+            'phone_number' => '024'.str_pad((string) Guest::query()->count(), 7, '0', STR_PAD_LEFT),
+            'email' => 'occupancy'.Guest::query()->count().'@example.test',
+        ]);
+
+        return [$guest, $room];
     }
 }

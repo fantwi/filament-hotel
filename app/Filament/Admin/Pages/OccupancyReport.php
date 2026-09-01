@@ -63,14 +63,9 @@ class OccupancyReport extends Page
             ->whereDate('check_in', '<', $periodEnd->toDateString())
             ->whereDate('check_out', '>', $periodStart->toDateString())
             ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
-            ->get(['id', 'check_in', 'check_out']);
+            ->count();
 
-        $bookedRoomNights = $hotelBookings->sum(function (Booking $booking) use ($periodStart, $periodEnd): int {
-            $checkIn = Carbon::parse($booking->check_in)->max($periodStart);
-            $checkOut = Carbon::parse($booking->check_out)->min($periodEnd);
-
-            return max(0, $checkIn->diffInDays($checkOut));
-        });
+        $bookedRoomNights = $this->bookedRoomNights($periodStart, $periodEnd);
 
         $periodDays = max(1, (int) $periodStart->diffInDays($periodEnd));
         $roomNightCapacity = $roomsInService * $periodDays;
@@ -102,7 +97,7 @@ class OccupancyReport extends Page
             'periodEnd' => $periodEnd,
             'roomStatus' => $roomStatus,
             'roomsInService' => $roomsInService,
-            'hotelBookings' => $hotelBookings->count(),
+            'hotelBookings' => $hotelBookings,
             'bookedRoomNights' => $bookedRoomNights,
             'roomNightCapacity' => $roomNightCapacity,
             'occupancyRate' => $roomNightCapacity > 0 ? ($bookedRoomNights / $roomNightCapacity) * 100 : 0,
@@ -111,6 +106,28 @@ class OccupancyReport extends Page
             'conferenceAvailability' => $conferenceAvailability,
             'tableStatus' => $tableStatus,
         ];
+    }
+
+    /**
+     * Streams overlapping stays and clamps each stay to the selected period.
+     *
+     * This keeps memory usage stable even when an all-time report covers a
+     * large booking history.
+     */
+    private function bookedRoomNights(Carbon $periodStart, Carbon $periodEnd): int
+    {
+        return Booking::query()
+            ->whereDate('check_in', '<', $periodEnd->toDateString())
+            ->whereDate('check_out', '>', $periodStart->toDateString())
+            ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
+            ->select(['id', 'check_in', 'check_out'])
+            ->lazyById()
+            ->sum(function (Booking $booking) use ($periodStart, $periodEnd): int {
+                $checkIn = Carbon::parse($booking->check_in)->max($periodStart);
+                $checkOut = Carbon::parse($booking->check_out)->min($periodEnd);
+
+                return max(0, $checkIn->diffInDays($checkOut));
+            });
     }
 
     /**
