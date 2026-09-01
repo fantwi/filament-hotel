@@ -63,18 +63,30 @@ class BookingCalendarTest extends TestCase
     public function test_booking_calendar_view_has_responsive_sidebar_and_calendar_states(): void
     {
         $view = file_get_contents(resource_path('views/filament/admin/pages/booking-calendar.blade.php'));
+        $calendarModule = file_get_contents(resource_path('js/calendar.js'));
+        $layoutHelper = file_get_contents(resource_path('js/booking-calendar-layout.js'));
         $viteConfig = file_get_contents(base_path('vite.config.js'));
 
         self::assertStringContainsString('lg:grid-cols-[minmax(0,1fr)_18rem]', $view);
+        self::assertStringContainsString('lg:sticky lg:top-6', $view);
+        self::assertStringContainsString('grid-cols-1 gap-2 text-center text-xs sm:grid-cols-3', $view);
         self::assertStringContainsString('Calendar guide', $view);
         self::assertStringContainsString('No reservations in this range', $view);
+        self::assertStringContainsString('Calendar unavailable', $view);
         self::assertStringContainsString('aria-label="Booking calendar"', $view);
         self::assertStringContainsString('booking-calendar-event-modal', $view);
         self::assertStringContainsString('Open reservation record', $view);
         self::assertStringContainsString('Payment', $view);
         self::assertStringContainsString('booking-calendar-event-selected', $view);
+        self::assertStringContainsString('window.calendarLayout(window.innerWidth)', $view);
+        self::assertStringContainsString('calendar.changeView(nextLayout.initialView)', $view);
+        self::assertStringContainsString("calendar.setOption('headerToolbar', nextLayout.headerToolbar)", $view);
+        self::assertStringContainsString("import { calendarLayout } from './booking-calendar-layout';", $calendarModule);
+        self::assertStringContainsString('window.calendarLayout = calendarLayout;', $calendarModule);
+        self::assertStringContainsString("initialView: 'dayGridDay'", $layoutHelper);
         self::assertStringNotContainsString('window.alert', $view);
         self::assertStringNotContainsString('window.location.assign', $view);
+        self::assertStringNotContainsString("window.innerWidth < 640 ? 'dayGridWeek'", $view);
         self::assertStringContainsString('livewire:navigating', $view);
         self::assertStringContainsString('element.__bookingCalendar.destroy()', $view);
         self::assertStringContainsString("@vite('resources/js/calendar.js')", $view);

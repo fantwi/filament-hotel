@@ -3,7 +3,9 @@
 import { Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import { calendarLayout } from './booking-calendar-layout';
 
 window.Calendar = Calendar;
 window.dayGridPlugin = dayGridPlugin;
 window.interactionPlugin = interactionPlugin;
+window.calendarLayout = calendarLayout;

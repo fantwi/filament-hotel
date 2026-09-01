@@ -1,6 +1,40 @@
 <x-filament::page>
     @vite('resources/js/calendar.js')
 
+    <style>
+        @media (max-width: 639px) {
+            #booking-calendar .fc-header-toolbar {
+                align-items: stretch;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            #booking-calendar .fc-toolbar-chunk {
+                display: flex;
+                justify-content: center;
+            }
+
+            #booking-calendar .fc-toolbar-title {
+                font-size: 1.125rem;
+                text-align: center;
+            }
+
+            #booking-calendar .fc-button {
+                font-size: 0.8125rem;
+            }
+
+            #booking-calendar .fc-daygrid-event {
+                padding: 0.125rem 0.1875rem;
+                white-space: normal;
+            }
+
+            #booking-calendar .fc-event-title {
+                overflow-wrap: anywhere;
+                white-space: normal;
+            }
+        }
+    </style>
+
     <div class="space-y-6">
         <section class="overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 px-5 py-6 text-white shadow-sm sm:px-8">
             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -10,7 +44,7 @@
                     <p class="mt-2 text-sm leading-6 text-primary-100 sm:text-base">Select an event to review its guest, timing, and status before opening the full record.</p>
                 </div>
 
-                <div class="grid grid-cols-3 gap-2 text-center text-xs sm:gap-3 sm:text-sm">
+                <div class="grid grid-cols-1 gap-2 text-center text-xs sm:grid-cols-3 sm:gap-3 sm:text-sm">
                     <div class="rounded-xl bg-white/10 px-3 py-3 ring-1 ring-white/15">
                         <x-filament::icon icon="heroicon-o-building-office-2" class="mx-auto h-5 w-5 text-primary-100" />
                         <span class="mt-1 block">Hotel stays</span>
@@ -210,6 +244,7 @@
 
                 element.__bookingCalendar.destroy();
                 delete element.__bookingCalendar;
+                delete element.__bookingCalendarResize;
                 delete element.dataset.initialized;
             };
 
@@ -233,25 +268,21 @@
                     }
                 };
 
-                if (typeof window.Calendar !== 'function' || ! window.dayGridPlugin || ! window.interactionPlugin) {
+                if (typeof window.Calendar !== 'function' || ! window.dayGridPlugin || ! window.interactionPlugin || typeof window.calendarLayout !== 'function') {
                     showState('error', 'Calendar library unavailable');
                     return;
                 }
 
                 element.dataset.initialized = 'true';
+                let layout = window.calendarLayout(window.innerWidth);
 
                 const calendar = new window.Calendar(element, {
                     plugins: [window.dayGridPlugin, window.interactionPlugin],
-                    initialView: window.innerWidth < 640 ? 'dayGridWeek' : 'dayGridMonth',
+                    ...layout,
                     height: 'auto',
                     expandRows: true,
                     dayMaxEvents: true,
                     fixedWeekCount: false,
-                    headerToolbar: {
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,dayGridWeek',
-                    },
                     buttonText: {
                         today: 'Today',
                         month: 'Month',
@@ -288,16 +319,29 @@
                 });
 
                 element.__bookingCalendar = calendar;
+                element.__bookingCalendarResize = () => {
+                    const nextLayout = window.calendarLayout(window.innerWidth);
+
+                    if (nextLayout.initialView === layout.initialView) {
+                        return;
+                    }
+
+                    calendar.changeView(nextLayout.initialView);
+                    calendar.setOption('headerToolbar', nextLayout.headerToolbar);
+                    layout = nextLayout;
+                };
                 calendar.render();
             };
 
             controller.initialize = initializeBookingCalendar;
             controller.destroy = destroyBookingCalendar;
+            controller.handleResize = () => document.getElementById('booking-calendar')?.__bookingCalendarResize?.();
 
             if (! controller.listenersRegistered) {
                 document.addEventListener('DOMContentLoaded', initializeBookingCalendar, { once: true });
                 document.addEventListener('livewire:navigating', destroyBookingCalendar);
                 document.addEventListener('livewire:navigated', initializeBookingCalendar);
+                window.addEventListener('resize', controller.handleResize);
                 controller.listenersRegistered = true;
             }
 
