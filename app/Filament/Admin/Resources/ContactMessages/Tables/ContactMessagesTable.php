@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\ContactMessages\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -20,6 +21,18 @@ class ContactMessagesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No contact messages found')
+            ->emptyStateDescription('Messages submitted through the public contact page will appear here. Reset filters to show every message.')
+            ->emptyStateIcon('heroicon-o-envelope')
+            ->emptyStateActions([
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFilters();
+                    }),
+            ])
             ->columns([
                 TextColumn::make('name')
                     ->label('Name')

@@ -32,6 +32,18 @@ class RestaurantOrdersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No food orders found')
+            ->emptyStateDescription('New website, table QR, and staff-entered orders will appear here. Reset filters to restore the full queue.')
+            ->emptyStateIcon('heroicon-o-shopping-bag')
+            ->emptyStateActions([
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFilters();
+                    }),
+            ])
             ->poll('10s')
             ->columns([
                 TextColumn::make('order_number')->label('Order')->searchable()->sortable(),

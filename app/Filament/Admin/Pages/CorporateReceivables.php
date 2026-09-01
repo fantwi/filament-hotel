@@ -41,6 +41,14 @@ class CorporateReceivables extends Page
     public int $perPage = 25;
 
     /**
+     * Summarizes the purpose of the corporate settlement queue.
+     */
+    public function getSubheading(): ?string
+    {
+        return 'Track corporate credit transactions and record payments received outside the online checkout.';
+    }
+
+    /**
      * Determines whether the current user may access this feature.
      */
     public static function canAccess(): bool

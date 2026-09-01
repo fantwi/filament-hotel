@@ -38,6 +38,18 @@ class BookingsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No hotel bookings found')
+            ->emptyStateDescription('Create a booking or reset the active filters to see matching hotel stays.')
+            ->emptyStateIcon('heroicon-o-calendar-days')
+            ->emptyStateActions([
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFilters();
+                    }),
+            ])
             ->columns([
                 //
                 // TextColumn::make('id')

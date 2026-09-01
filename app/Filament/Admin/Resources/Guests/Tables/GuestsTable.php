@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Guests\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -24,6 +25,18 @@ class GuestsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No guests found')
+            ->emptyStateDescription('Guest profiles created through bookings or staff entry will appear here. Reset filters to show every guest.')
+            ->emptyStateIcon('heroicon-o-users')
+            ->emptyStateActions([
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFilters();
+                    }),
+            ])
             ->columns([
                 //
                 // Tables\Columns\TextColumn::make('first_name')

@@ -22,6 +22,14 @@ class BookingCalendar extends Page
     protected string $view = 'filament.admin.pages.booking-calendar';
 
     /**
+     * Explains the three reservation sources shown on the calendar.
+     */
+    public function getSubheading(): ?string
+    {
+        return 'See hotel stays, conference bookings, and restaurant reservations together.';
+    }
+
+    /**
      * Determines whether the current user may access this feature.
      */
     public static function canAccess(): bool

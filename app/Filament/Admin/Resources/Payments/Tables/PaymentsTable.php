@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\Payments\Tables;
 use App\Filament\Admin\Resources\Payments\Pages\ListPayments;
 use App\Models\Payment;
 use App\Services\PaymentReportFilters;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -24,6 +25,18 @@ class PaymentsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No payments found')
+            ->emptyStateDescription('Completed, pending, and refunded transactions will appear here. Reset filters to restore the full payment register.')
+            ->emptyStateIcon('heroicon-o-credit-card')
+            ->emptyStateActions([
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFilters();
+                    }),
+            ])
             ->modifyQueryUsing(function (Builder $query, Table $table): Builder {
                 $livewire = $table->getLivewire();
                 $filters = $livewire instanceof ListPayments ? ($livewire->filters ?? []) : [];

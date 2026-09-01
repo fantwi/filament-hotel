@@ -32,6 +32,18 @@ class RestaurantReservationsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No table reservations found')
+            ->emptyStateDescription('Create a reservation or reset the active filters to see matching dining reservations.')
+            ->emptyStateIcon('heroicon-o-calendar-date-range')
+            ->emptyStateActions([
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFilters();
+                    }),
+            ])
             ->columns([
                 //
                 TextColumn::make('id')

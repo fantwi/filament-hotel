@@ -23,8 +23,8 @@
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div class="max-w-2xl">
                     <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-100">Finance</p>
-                    <h1 class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Corporate receivables</h1>
-                    <p class="mt-2 text-sm leading-6 text-primary-100 sm:text-base">Track credit transactions and record offline payments received by your finance team.</p>
+                    <h2 class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Credit settlement overview</h2>
+                    <p class="mt-2 text-sm leading-6 text-primary-100 sm:text-base">Review outstanding balances and record offline payments received by your finance team.</p>
                 </div>
                 <div class="rounded-xl bg-white/10 px-4 py-3 text-sm ring-1 ring-white/15">
                     <span class="block text-primary-100">Settlement workflow</span>

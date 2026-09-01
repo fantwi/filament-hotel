@@ -6,8 +6,8 @@
             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div class="max-w-2xl">
                     <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-100">Reservations</p>
-                    <h1 class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Booking calendar</h1>
-                    <p class="mt-2 text-sm leading-6 text-primary-100 sm:text-base">See hotel stays, conference bookings, and restaurant reservations together. Select an event to open its record.</p>
+                    <h2 class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">All reservation channels</h2>
+                    <p class="mt-2 text-sm leading-6 text-primary-100 sm:text-base">Select an event to review its guest, timing, and status before opening the full record.</p>
                 </div>
 
                 <div class="grid grid-cols-3 gap-2 text-center text-xs sm:gap-3 sm:text-sm">
