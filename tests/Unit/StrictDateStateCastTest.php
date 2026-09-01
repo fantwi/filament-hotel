@@ -42,6 +42,11 @@ class StrictDateStateCastTest extends TestCase
                 '2026-09-10',
                 '2026-09-10 05:15:30',
             ],
+            'zero-negative ISO offset' => [
+                '2026-09-10T12:15:30-00:00',
+                '2026-09-10',
+                '2026-09-10 12:15:30',
+            ],
             'database state' => [
                 '2026-09-10 08:30:00',
                 '2026-09-10',

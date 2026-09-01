@@ -83,7 +83,9 @@ class StrictDateStateCast implements StateCast
             $roundTrip .= '.'.substr($date->format('u'), 0, strlen($fraction));
         }
 
-        $roundTrip .= $date->format($offset === 'Z' ? 'p' : 'P');
+        $roundTrip .= $offset === '-00:00'
+            ? $offset
+            : $date->format($offset === 'Z' ? 'p' : 'P');
 
         return $roundTrip === $state ? $date : null;
     }
