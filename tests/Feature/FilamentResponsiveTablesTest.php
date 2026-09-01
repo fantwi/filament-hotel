@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Resources\Bookings\Tables\BookingsTable;
+use App\Filament\Admin\Resources\ConferenceRooms\Tables\ConferenceRoomsTable;
 use App\Filament\Admin\Resources\MenuItems\Tables\MenuItemsTable;
 use App\Filament\Admin\Resources\Payments\Tables\PaymentsTable;
 use App\Filament\Admin\Resources\RestaurantReservations\Tables\RestaurantReservationsTable;
@@ -50,6 +51,21 @@ class FilamentResponsiveTablesTest extends TestCase
         }
     }
 
+    public function test_conference_room_descriptions_are_bounded_and_prices_use_ghs_formatting(): void
+    {
+        $table = ConferenceRoomsTable::configure(Table::make($this->createMock(HasTable::class)));
+        $description = $table->getColumn('description');
+        $price = $table->getColumn('price_per_hour');
+
+        self::assertNotNull($description);
+        self::assertSame(80, $description->getCharacterLimit());
+        self::assertTrue($description->canWrap());
+        self::assertNotNull($price);
+        self::assertTrue($price->isMoney());
+        self::assertStringContainsString('GHS', (string) $price->formatState(100));
+        self::assertTrue($table->getColumn('capacity')?->isNumeric());
+    }
+
     public static function responsiveTables(): array
     {
         return [
@@ -82,6 +98,11 @@ class FilamentResponsiveTablesTest extends TestCase
                 PaymentsTable::class,
                 ['transaction_reference', 'created_at'],
                 ['transaction_id', 'transaction_guest', 'amount', 'method'],
+            ],
+            'conference rooms' => [
+                ConferenceRoomsTable::class,
+                ['id', 'description'],
+                ['name', 'capacity', 'price_per_hour', 'is_available', 'is_published'],
             ],
         ];
     }

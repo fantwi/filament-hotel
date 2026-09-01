@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Resources\ConferenceRooms\Tables\ConferenceRoomsTable;
 use App\Filament\Admin\Resources\Guests\Tables\GuestsTable;
 use App\Filament\Admin\Resources\MenuCategories\Tables\MenuCategoriesTable;
 use App\Filament\Admin\Resources\MenuItems\Tables\MenuItemsTable;
@@ -80,6 +81,18 @@ class FilamentOperationalTableFiltersTest extends TestCase
             ->assertCanNotSeeTableRecords([$maintenance]);
     }
 
+    public function test_conference_room_capacity_filter_exposes_non_overlapping_bands(): void
+    {
+        $table = ConferenceRoomsTable::configure(Table::make($this->createMock(HasTable::class)));
+
+        self::assertSame([
+            '1-20' => '1-20',
+            '21-50' => '21-50',
+            '51-100' => '51-100',
+            '100+' => '100+',
+        ], $table->getFilter('capacity')?->getOptions());
+    }
+
     public static function operationalFilters(): array
     {
         return [
@@ -90,6 +103,7 @@ class FilamentOperationalTableFiltersTest extends TestCase
             'restaurant order items' => [RestaurantOrderItemsTable::class, ['order', 'menu_item']],
             'guests' => [GuestsTable::class, ['corporate_account', 'created_at']],
             'restaurant reservations' => [RestaurantReservationsTable::class, ['restaurant', 'table', 'reservation_date', 'status', 'payment_status']],
+            'conference rooms' => [ConferenceRoomsTable::class, ['is_available', 'is_published', 'capacity']],
         ];
     }
 }

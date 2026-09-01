@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Resources\Bookings\Tables\BookingsTable;
+use App\Filament\Admin\Resources\ConferenceRooms\Tables\ConferenceRoomsTable;
 use App\Filament\Admin\Resources\ContactMessages\Tables\ContactMessagesTable;
 use App\Filament\Admin\Resources\Guests\Tables\GuestsTable;
 use App\Filament\Admin\Resources\Payments\Tables\PaymentsTable;
@@ -47,6 +48,7 @@ class FilamentEmptyStatesTest extends TestCase
             'contact messages' => [ContactMessagesTable::class, 'No contact messages found', 'heroicon-o-envelope'],
             'guests' => [GuestsTable::class, 'No guests found', 'heroicon-o-users'],
             'payments' => [PaymentsTable::class, 'No payments found', 'heroicon-o-credit-card'],
+            'conference rooms' => [ConferenceRoomsTable::class, 'No conference rooms found', 'heroicon-o-presentation-chart-bar'],
         ];
     }
 }
