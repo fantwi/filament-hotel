@@ -37,55 +37,68 @@
             <form wire:submit="applyFilters" class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
                 <div class="xl:col-span-2">
                     <label for="receivables-search" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">Search</label>
-                    <input id="receivables-search" wire:model.live.debounce.400ms="search" type="search" placeholder="Organisation, guest, or service" class="w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-white/10 dark:bg-gray-900">
+                    <x-filament::input.wrapper>
+                        <x-filament::input id="receivables-search" wire:model="draftSearch" type="search" placeholder="Organisation, guest, or service" />
+                    </x-filament::input.wrapper>
                 </div>
 
                 <div>
                     <label for="receivables-type" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">Service</label>
-                    <select id="receivables-type" wire:model.live="transactionType" class="w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-white/10 dark:bg-gray-900">
-                        <option value="all">All services</option>
-                        @foreach ($typeLabels as $type => $label)
-                            <option value="{{ $type }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
+                    <x-filament::input.wrapper>
+                        <x-filament::input.select id="receivables-type" wire:model="draftTransactionType">
+                            <option value="all">All services</option>
+                            @foreach ($typeLabels as $type => $label)
+                                <option value="{{ $type }}">{{ $label }}</option>
+                            @endforeach
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
                 </div>
 
                 <div>
                     <label for="receivables-organization" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">Organisation</label>
-                    <select id="receivables-organization" wire:model.live="organizationId" class="w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-white/10 dark:bg-gray-900">
-                        <option value="">All organisations</option>
-                        @foreach ($this->organizationOptions() as $organizationId => $organizationName)
-                            <option value="{{ $organizationId }}">{{ $organizationName }}</option>
-                        @endforeach
-                    </select>
+                    <x-filament::input.wrapper>
+                        <x-filament::input.select id="receivables-organization" wire:model="draftOrganizationId">
+                            <option value="">All organisations</option>
+                            @foreach ($this->organizationOptions() as $organizationId => $organizationName)
+                                <option value="{{ $organizationId }}">{{ $organizationName }}</option>
+                            @endforeach
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
                 </div>
 
                 <div>
                     <label for="receivables-per-page" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">Rows per page</label>
-                    <select id="receivables-per-page" wire:model.live="perPage" class="w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-white/10 dark:bg-gray-900">
-                        <option value="25">25</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                    </select>
+                    <x-filament::input.wrapper>
+                        <x-filament::input.select id="receivables-per-page" wire:model.live="perPage">
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </x-filament::input.select>
+                    </x-filament::input.wrapper>
                 </div>
 
                 <div>
                     <label for="receivables-from" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">Created from</label>
-                    <input id="receivables-from" wire:model.live="fromDate" type="date" class="w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-white/10 dark:bg-gray-900">
+                    <x-filament::input.wrapper>
+                        <x-filament::input id="receivables-from" wire:model="draftFromDate" type="date" />
+                    </x-filament::input.wrapper>
                 </div>
 
                 <div>
                     <label for="receivables-until" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">Created until</label>
-                    <input id="receivables-until" wire:model.live="untilDate" type="date" class="w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-white/10 dark:bg-gray-900">
+                    <x-filament::input.wrapper>
+                        <x-filament::input id="receivables-until" wire:model="draftUntilDate" type="date" />
+                    </x-filament::input.wrapper>
                 </div>
 
                 <div class="flex items-end gap-2 md:col-span-2 xl:col-span-6">
-                    <x-filament::button type="submit">Apply filters</x-filament::button>
-                    <x-filament::button type="button" color="gray" wire:click="clearFilters">Clear</x-filament::button>
+                    <x-filament::button type="submit" wire:loading.attr="disabled" wire:target="applyFilters">Apply filters</x-filament::button>
+                    <x-filament::button type="button" color="gray" wire:click="clearFilters" wire:loading.attr="disabled" wire:target="clearFilters">Clear</x-filament::button>
                 </div>
             </form>
-            @error('fromDate')<p class="mt-3 text-sm text-danger-600">{{ $message }}</p>@enderror
-            @error('untilDate')<p class="mt-1 text-sm text-danger-600">{{ $message }}</p>@enderror
+            @error('draftFromDate')<p class="mt-3 text-sm text-danger-600">{{ $message }}</p>@enderror
+            @error('draftUntilDate')<p class="mt-1 text-sm text-danger-600">{{ $message }}</p>@enderror
+            <p wire:loading.delay wire:target="applyFilters,clearFilters" role="status" aria-live="polite" class="mt-3 text-sm font-medium text-primary-600 dark:text-primary-400">Updating receivables&hellip;</p>
         </x-filament::section>
 
         <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Receivables summary">

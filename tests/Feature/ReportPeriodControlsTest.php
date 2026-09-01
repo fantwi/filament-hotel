@@ -68,6 +68,19 @@ class ReportPeriodControlsTest extends TestCase
         self::assertStringContainsString('<x-filament.report-period-controls', $source);
     }
 
+    public function test_shared_report_period_controls_use_filament_inputs_without_live_filter_bindings(): void
+    {
+        $source = file_get_contents(resource_path('views/components/filament/report-period-controls.blade.php'));
+
+        self::assertStringContainsString('<x-filament::input.wrapper', $source);
+        self::assertStringContainsString('<x-filament::input.select', $source);
+        self::assertStringContainsString('wire:model="draftPeriod"', $source);
+        self::assertStringContainsString('<x-filament::input wire:model="draftStartDate"', $source);
+        self::assertStringContainsString('<x-filament::input wire:model="draftEndDate"', $source);
+        self::assertStringNotContainsString('class="fi-input', $source);
+        self::assertStringNotContainsString('wire:model.live', $source);
+    }
+
     public static function reportPages(): array
     {
         return [

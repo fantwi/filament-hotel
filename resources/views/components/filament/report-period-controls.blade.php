@@ -10,11 +10,13 @@
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
             Report period
-            <select wire:model="draftPeriod" class="fi-input mt-1 w-full">
-                @foreach (\App\Support\Reporting\ReportPeriod::options() as $value => $label)
-                    <option value="{{ $value }}">{{ $label }}</option>
-                @endforeach
-            </select>
+            <x-filament::input.wrapper class="mt-1">
+                <x-filament::input.select wire:model="draftPeriod">
+                    @foreach (\App\Support\Reporting\ReportPeriod::options() as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                </x-filament::input.select>
+            </x-filament::input.wrapper>
             @error('draftPeriod')
                 <span class="mt-1 block text-xs text-danger-600 dark:text-danger-400">{{ $message }}</span>
             @enderror
@@ -22,7 +24,9 @@
 
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
             {{ $fromLabel }}
-            <input wire:model="draftStartDate" type="date" class="fi-input mt-1 w-full">
+            <x-filament::input.wrapper class="mt-1">
+                <x-filament::input wire:model="draftStartDate" type="date" />
+            </x-filament::input.wrapper>
             @error('draftStartDate')
                 <span class="mt-1 block text-xs text-danger-600 dark:text-danger-400">{{ $message }}</span>
             @enderror
@@ -30,7 +34,9 @@
 
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
             {{ $untilLabel }}
-            <input wire:model="draftEndDate" type="date" class="fi-input mt-1 w-full">
+            <x-filament::input.wrapper class="mt-1">
+                <x-filament::input wire:model="draftEndDate" type="date" />
+            </x-filament::input.wrapper>
             @error('draftEndDate')
                 <span class="mt-1 block text-xs text-danger-600 dark:text-danger-400">{{ $message }}</span>
             @enderror

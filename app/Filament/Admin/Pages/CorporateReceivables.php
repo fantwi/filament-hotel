@@ -28,6 +28,16 @@ class CorporateReceivables extends Page
 
     protected string $view = 'filament.admin.pages.corporate-receivables';
 
+    public string $draftTransactionType = 'all';
+
+    public string $draftSearch = '';
+
+    public string $draftOrganizationId = '';
+
+    public string $draftFromDate = '';
+
+    public string $draftUntilDate = '';
+
     public string $transactionType = 'all';
 
     public string $search = '';
@@ -142,15 +152,21 @@ class CorporateReceivables extends Page
     }
 
     /**
-     * Validates the current date filters and returns the first page.
+     * Validates draft filters, applies them, and returns the first page.
      */
     public function applyFilters(): void
     {
         $this->validate([
-            'fromDate' => ['nullable', 'date', 'before_or_equal:untilDate'],
-            'untilDate' => ['nullable', 'date', 'after_or_equal:fromDate'],
+            'draftFromDate' => ['nullable', 'date', 'before_or_equal:draftUntilDate'],
+            'draftUntilDate' => ['nullable', 'date', 'after_or_equal:draftFromDate'],
             'perPage' => ['required', 'integer', 'min:10', 'max:100'],
         ]);
+
+        $this->transactionType = $this->draftTransactionType;
+        $this->search = $this->draftSearch;
+        $this->organizationId = $this->draftOrganizationId;
+        $this->fromDate = $this->draftFromDate;
+        $this->untilDate = $this->draftUntilDate;
 
         $this->resetPage('receivables_page');
     }
@@ -160,6 +176,11 @@ class CorporateReceivables extends Page
      */
     public function clearFilters(): void
     {
+        $this->draftTransactionType = 'all';
+        $this->draftSearch = '';
+        $this->draftOrganizationId = '';
+        $this->draftFromDate = '';
+        $this->draftUntilDate = '';
         $this->transactionType = 'all';
         $this->search = '';
         $this->organizationId = '';
@@ -170,20 +191,11 @@ class CorporateReceivables extends Page
     }
 
     /**
-     * Resets pagination whenever a filter changes through Livewire.
+     * Resets pagination when the live pagination preference changes.
      */
-    public function updated($property): void
+    public function updatedPerPage(): void
     {
-        if (in_array($property, [
-            'transactionType',
-            'search',
-            'organizationId',
-            'fromDate',
-            'untilDate',
-            'perPage',
-        ], true)) {
-            $this->resetPage('receivables_page');
-        }
+        $this->resetPage('receivables_page');
     }
 
     /**

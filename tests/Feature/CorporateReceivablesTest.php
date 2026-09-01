@@ -13,6 +13,8 @@ use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\ValidationException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class CorporateReceivablesTest extends TestCase
@@ -89,6 +91,25 @@ class CorporateReceivablesTest extends TestCase
         self::assertStringContainsString('Receivable details', $view);
     }
 
+    public function test_receivables_filter_controls_use_filament_inputs_without_live_query_bindings(): void
+    {
+        $view = file_get_contents(resource_path('views/filament/admin/pages/corporate-receivables.blade.php'));
+
+        self::assertStringContainsString('<x-filament::input.wrapper', $view);
+        self::assertStringContainsString('<x-filament::input.select', $view);
+        self::assertStringContainsString('wire:model="draftTransactionType"', $view);
+        self::assertStringContainsString('<x-filament::input ', $view);
+        self::assertStringContainsString('wire:model="draftSearch"', $view);
+        self::assertStringContainsString('wire:model="draftFromDate"', $view);
+        self::assertStringContainsString('wire:model="draftUntilDate"', $view);
+        self::assertStringNotContainsString('class="fi-input', $view);
+        self::assertStringNotContainsString('wire:model.live="search"', $view);
+        self::assertStringNotContainsString('wire:model.live="transactionType"', $view);
+        self::assertStringNotContainsString('wire:model.live="organizationId"', $view);
+        self::assertStringNotContainsString('wire:model.live="fromDate"', $view);
+        self::assertStringNotContainsString('wire:model.live="untilDate"', $view);
+    }
+
     public function test_mark_paid_requires_an_accessible_payment_review_before_submission(): void
     {
         $view = file_get_contents(resource_path('views/filament/admin/pages/corporate-receivables.blade.php'));
@@ -151,6 +172,84 @@ class CorporateReceivablesTest extends TestCase
         self::assertSame(1, $summary['organizations']);
         self::assertSame(1, $summary['by_type']['booking']);
         self::assertSame(100.0, $summary['by_type_amount']['booking']);
+    }
+
+    #[DataProvider('draftFilters')]
+    public function test_draft_receivables_filters_do_not_change_the_summary_until_they_are_applied(string $property, string $value, ?string $companionProperty, ?string $companionValue): void
+    {
+        $this->bookingFixture();
+
+        $page = new CorporateReceivables;
+        $beforeApplying = $page->summary();
+
+        $page->{$property} = $value;
+
+        if ($companionProperty !== null) {
+            $page->{$companionProperty} = $companionValue;
+        }
+
+        self::assertSame($beforeApplying, $page->summary());
+
+        $page->applyFilters();
+
+        self::assertSame(0, $page->summary()['count']);
+    }
+
+    public function test_invalid_draft_date_ranges_leave_the_applied_receivables_query_unchanged(): void
+    {
+        $this->bookingFixture();
+
+        $page = new CorporateReceivables;
+        $page->draftTransactionType = 'conference';
+        $page->applyFilters();
+        $appliedSummary = $page->summary();
+
+        $page->draftFromDate = '2026-09-20';
+        $page->draftUntilDate = '2026-09-10';
+
+        try {
+            $page->applyFilters();
+            self::fail('An invalid draft date range should not be applied.');
+        } catch (ValidationException) {
+            self::assertSame('conference', $page->transactionType);
+            self::assertSame($appliedSummary, $page->summary());
+        }
+    }
+
+    public function test_clear_filters_resets_draft_and_applied_receivables_state(): void
+    {
+        $page = new CorporateReceivables;
+        $page->draftTransactionType = 'conference';
+        $page->draftSearch = 'unapplied query';
+        $page->draftOrganizationId = '999';
+        $page->draftFromDate = '2026-09-01';
+        $page->draftUntilDate = '2026-09-30';
+        $page->applyFilters();
+
+        $page->clearFilters();
+
+        self::assertSame('all', $page->draftTransactionType);
+        self::assertSame('', $page->draftSearch);
+        self::assertSame('', $page->draftOrganizationId);
+        self::assertSame('', $page->draftFromDate);
+        self::assertSame('', $page->draftUntilDate);
+        self::assertSame('all', $page->transactionType);
+        self::assertSame('', $page->search);
+        self::assertSame('', $page->organizationId);
+        self::assertSame('', $page->fromDate);
+        self::assertSame('', $page->untilDate);
+        self::assertSame(25, $page->perPage);
+    }
+
+    public static function draftFilters(): array
+    {
+        return [
+            'transaction type' => ['draftTransactionType', 'conference', null, null],
+            'search' => ['draftSearch', 'No matching receivable', null, null],
+            'organization' => ['draftOrganizationId', '999999', null, null],
+            'from date' => ['draftFromDate', '2099-01-01', 'draftUntilDate', '2100-01-01'],
+            'until date' => ['draftUntilDate', '2000-01-01', 'draftFromDate', '1999-01-01'],
+        ];
     }
 
     /**
