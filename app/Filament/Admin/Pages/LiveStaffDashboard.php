@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
-use App\Models\User;
+use App\Filament\Admin\Resources\Users\UserResource;
 use BackedEnum;
 use Filament\Pages\Page;
 
@@ -21,9 +21,7 @@ class LiveStaffDashboard extends Page
 
     protected static ?int $navigationSort = 30;
 
-    protected string $view = 'filament.admin.pages.live-staff-dashboard';
-
-    public $staff;
+    protected string $view = 'filament.admin.pages.redirecting';
 
     /**
      * Controls whether this feature appears in the Filament navigation.
@@ -36,10 +34,8 @@ class LiveStaffDashboard extends Page
     /**
      * Initializes component state before it is rendered.
      */
-    public function mount()
+    public function mount(): void
     {
-        $this->staff = User::with(['roles', 'activities'])
-            ->whereHas('roles') // only staff
-            ->get();
+        $this->redirect(UserResource::getUrl('index'));
     }
 }

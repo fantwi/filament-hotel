@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Pages;
 
-use App\Filament\Admin\Widgets\StatsOverview;
+use App\Filament\Admin\Pages\Dashboards\RoleDashboard;
 use Filament\Pages\Page;
 
 /**
@@ -14,7 +14,7 @@ class Dashboard extends Page
 
     protected static bool $shouldRegisterNavigation = false;
 
-    protected string $view = 'filament.admin.pages.dashboard';
+    protected string $view = 'filament.admin.pages.redirecting';
 
     protected static ?string $title = 'Dashboard';
 
@@ -23,12 +23,18 @@ class Dashboard extends Page
     protected static ?int $navigationSort = 0;
 
     /**
-     * Builds and returns header widgets.
+     * Redirects saved legacy URLs to the maintained role dashboard.
      */
-    protected function getHeaderWidgets(): array
+    public function mount(): void
     {
-        return [
-            StatsOverview::class,
-        ];
+        $this->redirect(RoleDashboard::getUrl());
+    }
+
+    /**
+     * Controls whether this feature appears in the Filament navigation.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
     }
 }
