@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\MenuCategories\Tables;
 
+use App\Filament\Admin\Resources\MenuCategories\MenuCategoryResource;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -21,6 +23,23 @@ class MenuCategoriesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No menu categories found')
+            ->emptyStateDescription('Create a menu category or reset filters to organize the available dishes.')
+            ->emptyStateIcon('heroicon-o-tag')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('Create menu category')
+                    ->icon('heroicon-o-plus')
+                    ->url(fn (): string => MenuCategoryResource::getUrl('create'))
+                    ->visible(fn (): bool => MenuCategoryResource::canCreate()),
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFiltersForm();
+                    }),
+            ])
             ->columns([
                 TextColumn::make('sort_order')->sortable(),
                 TextColumn::make('name')->searchable()->sortable(),

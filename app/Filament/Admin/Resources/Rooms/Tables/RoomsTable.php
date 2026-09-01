@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\Rooms\Tables;
 
+use App\Filament\Admin\Resources\Rooms\RoomResource;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -20,6 +22,16 @@ class RoomsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No rooms found')
+            ->emptyStateDescription('Create a room to make accommodation inventory available for booking.')
+            ->emptyStateIcon('heroicon-o-home')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('Create room')
+                    ->icon('heroicon-o-plus')
+                    ->url(fn (): string => RoomResource::getUrl('create'))
+                    ->visible(fn (): bool => RoomResource::canCreate()),
+            ])
             ->columns([
                 //
                 Tables\Columns\TextColumn::make('room_number')

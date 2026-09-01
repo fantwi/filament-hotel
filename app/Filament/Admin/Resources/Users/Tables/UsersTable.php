@@ -2,7 +2,9 @@
 
 namespace App\Filament\Admin\Resources\Users\Tables;
 
+use App\Filament\Admin\Resources\Users\UserResource;
 use App\Models\User;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -22,6 +24,23 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No staff users found')
+            ->emptyStateDescription('Create a staff user or reset filters to manage team access.')
+            ->emptyStateIcon('heroicon-o-user-group')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('Create staff user')
+                    ->icon('heroicon-o-plus')
+                    ->url(fn (): string => UserResource::getUrl('create'))
+                    ->visible(fn (): bool => UserResource::canCreate()),
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFiltersForm();
+                    }),
+            ])
             ->columns([
                 TextColumn::make('name')
                     ->label('Staff Name')

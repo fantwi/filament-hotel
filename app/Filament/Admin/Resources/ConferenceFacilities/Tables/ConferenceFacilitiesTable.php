@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\ConferenceFacilities\Tables;
 
+use App\Filament\Admin\Resources\ConferenceFacilities\ConferenceFacilityResource;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -20,6 +22,16 @@ class ConferenceFacilitiesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No conference facilities found')
+            ->emptyStateDescription('Create a conference facility to describe the amenities available for events.')
+            ->emptyStateIcon('heroicon-o-building-office-2')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('Create conference facility')
+                    ->icon('heroicon-o-plus')
+                    ->url(fn (): string => ConferenceFacilityResource::getUrl('create'))
+                    ->visible(fn (): bool => ConferenceFacilityResource::canCreate()),
+            ])
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
                 IconColumn::make('is_published')->label('Published')->boolean(),

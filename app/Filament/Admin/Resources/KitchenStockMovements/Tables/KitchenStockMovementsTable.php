@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\KitchenStockMovements\Tables;
 
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -20,6 +21,18 @@ class KitchenStockMovementsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No kitchen stock movements found')
+            ->emptyStateDescription('Stock receipts, consumption, and adjustments will appear here. Reset filters to review the full stock history.')
+            ->emptyStateIcon('heroicon-o-arrows-right-left')
+            ->emptyStateActions([
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFiltersForm();
+                    }),
+            ])
             ->columns([
                 TextColumn::make('occurred_at')->dateTime('M d, Y g:i A')->sortable(),
                 TextColumn::make('ingredient.name')->label('Ingredient')->searchable()->sortable(),

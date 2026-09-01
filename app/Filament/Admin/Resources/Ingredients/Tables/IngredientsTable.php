@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Ingredients\Tables;
 
+use App\Filament\Admin\Resources\Ingredients\IngredientResource;
 use App\Models\Ingredient;
 use App\Services\KitchenStockService;
 use Filament\Actions\Action;
@@ -28,6 +29,23 @@ class IngredientsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No ingredients found')
+            ->emptyStateDescription('Add an ingredient to begin tracking kitchen stock.')
+            ->emptyStateIcon('heroicon-o-beaker')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('Add ingredient')
+                    ->icon('heroicon-o-plus')
+                    ->url(fn (): string => IngredientResource::getUrl('create'))
+                    ->visible(fn (): bool => IngredientResource::canCreate()),
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFiltersForm();
+                    }),
+            ])
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
                 TextColumn::make('restaurant.name')->label('Restaurant')->toggleable()->visibleFrom('md'),

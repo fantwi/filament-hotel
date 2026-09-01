@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\MenuItems\Tables;
 
+use App\Filament\Admin\Resources\MenuItems\MenuItemResource;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -23,6 +25,23 @@ class MenuItemsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No menu items found')
+            ->emptyStateDescription('Create a menu item or reset filters to restore the full menu.')
+            ->emptyStateIcon('heroicon-o-clipboard-document-list')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('Create menu item')
+                    ->icon('heroicon-o-plus')
+                    ->url(fn (): string => MenuItemResource::getUrl('create'))
+                    ->visible(fn (): bool => MenuItemResource::canCreate()),
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFiltersForm();
+                    }),
+            ])
             ->columns([
                 ImageColumn::make('image')
                     ->square()

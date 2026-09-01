@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\RoomTypes\Tables;
 
+use App\Filament\Admin\Resources\RoomTypes\RoomTypeResource;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -21,6 +23,16 @@ class RoomTypesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No room types found')
+            ->emptyStateDescription('Create a room type to define the accommodations guests can book.')
+            ->emptyStateIcon('heroicon-o-home-modern')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('Create room type')
+                    ->icon('heroicon-o-plus')
+                    ->url(fn (): string => RoomTypeResource::getUrl('create'))
+                    ->visible(fn (): bool => RoomTypeResource::canCreate()),
+            ])
             ->columns([
                 TextColumn::make('name')
                     ->searchable(),

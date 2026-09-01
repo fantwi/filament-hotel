@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\RestaurantOrderItems\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -20,6 +21,18 @@ class RestaurantOrderItemsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No restaurant order items found')
+            ->emptyStateDescription('Items will appear as restaurant orders are placed. Reset filters to review the complete order detail.')
+            ->emptyStateIcon('heroicon-o-queue-list')
+            ->emptyStateActions([
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFiltersForm();
+                    }),
+            ])
             ->columns([
                 TextColumn::make('order.order_number')->label('Order')->searchable(),
                 TextColumn::make('menuItem.name')->label('Menu item')->searchable(),

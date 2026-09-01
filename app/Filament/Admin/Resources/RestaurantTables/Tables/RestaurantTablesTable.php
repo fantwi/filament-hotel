@@ -2,14 +2,15 @@
 
 namespace App\Filament\Admin\Resources\RestaurantTables\Tables;
 
+use App\Filament\Admin\Resources\RestaurantTables\RestaurantTableResource;
 use App\Models\RestaurantTable;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Notifications\Notification;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -29,6 +30,23 @@ class RestaurantTablesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading('No restaurant tables found')
+            ->emptyStateDescription('Create a restaurant table or reset filters to manage dining capacity.')
+            ->emptyStateIcon('heroicon-o-table-cells')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('Create restaurant table')
+                    ->icon('heroicon-o-plus')
+                    ->url(fn (): string => RestaurantTableResource::getUrl('create'))
+                    ->visible(fn (): bool => RestaurantTableResource::canCreate()),
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function ($livewire): void {
+                        $livewire->resetTableFiltersForm();
+                    }),
+            ])
             ->columns([
                 ImageColumn::make('image')
                     ->disk('public')
