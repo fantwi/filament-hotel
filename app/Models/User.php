@@ -38,7 +38,6 @@ class User extends Authenticatable implements FilamentUser
         'password',
         // 'role',
         'status',
-        'shift',
         'profile_photo',
     ];
 
@@ -229,14 +228,6 @@ class User extends Authenticatable implements FilamentUser
     const STATUS_ON_LEAVE = 'on_leave';
 
     const STATUS_SUSPENDED = 'suspended';
-
-    const SHIFT_MORNING = 'morning';
-
-    const SHIFT_EVENING = 'evening';
-
-    const SHIFT_NIGHT = 'night';
-
-    const SHIFT_OFF_DUTY = 'off_duty';
 
     public const DEPARTMENTS = [
         'super_admin' => 'Super Admin',

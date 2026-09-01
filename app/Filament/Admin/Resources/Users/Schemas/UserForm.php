@@ -57,16 +57,6 @@ class UserForm
                 ])
                 ->default('online')
                 ->required(),
-            Select::make('shift')
-                ->label('Work Shift')
-                ->options([
-                    'morning' => 'Morning Shift',
-                    'evening' => 'Evening Shift',
-                    'night' => 'Night Shift',
-                    'off_duty' => 'Off Duty',
-                ])
-                ->default('off_duty')
-                ->required(),
         ]);
     }
 }

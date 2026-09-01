@@ -13,23 +13,24 @@ class UsersTableConfigurationTest extends TestCase
     {
         $table = UsersTable::configure(Table::make($this->createMock(HasTable::class)));
 
-        foreach (['department_label', 'shift', 'status'] as $name) {
+        foreach (['department_label', 'status'] as $name) {
             self::assertNotNull($table->getColumn($name), "Missing [{$name}] Users column.");
             self::assertTrue($table->getColumn($name)->isToggleable(), "[{$name}] should be toggleable.");
         }
 
-        foreach (['department', 'shift', 'status'] as $name) {
+        foreach (['department', 'status'] as $name) {
             self::assertNotNull($table->getFilter($name), "Missing [{$name}] Users filter.");
         }
 
         self::assertSame('department', $table->getDefaultGroup()?->getId());
     }
 
-    public function test_shift_is_optional_but_department_and_status_remain_visible_by_default(): void
+    public function test_users_table_no_longer_exposes_work_shift_controls(): void
     {
         $table = UsersTable::configure(Table::make($this->createMock(HasTable::class)));
 
-        self::assertTrue($table->getColumn('shift')->isToggledHiddenByDefault());
+        self::assertNull($table->getColumn('shift'));
+        self::assertNull($table->getFilter('shift'));
         self::assertFalse($table->getColumn('department_label')->isToggledHiddenByDefault());
         self::assertFalse($table->getColumn('status')->isToggledHiddenByDefault());
     }

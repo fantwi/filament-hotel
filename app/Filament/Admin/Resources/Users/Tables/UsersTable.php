@@ -83,27 +83,6 @@ class UsersTable
                     })
                     ->sortable(),
 
-                TextColumn::make('shift')
-                    ->label('Shift')
-                    ->badge()
-                    ->placeholder('Not assigned')
-                    ->icon(fn (?string $state): string => match ($state) {
-                        'morning' => 'heroicon-o-sun',
-                        'evening' => 'heroicon-o-cloud',
-                        'night' => 'heroicon-o-moon',
-                        'off_duty' => 'heroicon-o-x-circle',
-                        default => 'heroicon-o-minus-circle',
-                    })
-                    ->color(fn (?string $state): string => match ($state) {
-                        'morning' => 'success',
-                        'evening' => 'warning',
-                        'night' => 'primary',
-                        default => 'gray',
-                    })
-                    ->formatStateUsing(fn (?string $state): string => str($state ?? 'Not assigned')->headline()->toString())
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
@@ -155,13 +134,6 @@ class UsersTable
                         'suspended' => 'Suspended',
                     ]),
 
-                SelectFilter::make('shift')
-                    ->options([
-                        'morning' => 'Morning Shift',
-                        'evening' => 'Evening Shift',
-                        'night' => 'Night Shift',
-                        'off_duty' => 'Off Duty',
-                    ]),
             ])
             ->recordActions([
                 EditAction::make(),
