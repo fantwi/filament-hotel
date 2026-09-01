@@ -50,7 +50,7 @@ class AdminPanelProvider extends PanelProvider
             ->profile(EditProfile::class, isSimple: false)
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
-            // ->viteTheme('resources/css/app.css') // FAA added this
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandName(fn (): string => $this->hotelBrandName())
             ->brandLogo(fn (): ?string => $this->hotelBrandLogo())
             ->brandLogoHeight('2.25rem')
