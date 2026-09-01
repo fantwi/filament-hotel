@@ -12,10 +12,13 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -39,11 +42,16 @@ class RestaurantReservationsTable
                 TextColumn::make('table.table_number'),
 
                 TextColumn::make('reservation_date')
-                    ->date(),
+                    ->date()
+                    ->sortable(),
 
-                TextColumn::make('reservation_time'),
+                TextColumn::make('reservation_time')
+                    ->time('H:i')
+                    ->sortable(),
 
-                TextColumn::make('number_of_guests'),
+                TextColumn::make('number_of_guests')
+                    ->numeric()
+                    ->sortable(),
 
                 TextColumn::make('status')
                     ->badge()
@@ -87,7 +95,30 @@ class RestaurantReservationsTable
                     ->since(),
             ])
             ->filters([
-                //
+                SelectFilter::make('restaurant')
+                    ->relationship('restaurant', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('table')
+                    ->relationship('table', 'table_number')
+                    ->searchable()
+                    ->preload(),
+                Filter::make('reservation_date')
+                    ->label('Reservation date')
+                    ->schema([
+                        DatePicker::make('from')->label('From'),
+                        DatePicker::make('until')->label('Until'),
+                    ])
+                    ->columns(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['from'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('reservation_date', '>=', $date),
+                        )
+                        ->when(
+                            $data['until'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('reservation_date', '<=', $date),
+                        )),
                 SelectFilter::make('status')
                     ->options([
 

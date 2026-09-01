@@ -6,8 +6,12 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Tables;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Configures Filament administration for guests table.
@@ -39,11 +43,13 @@ class GuestsTable
 
                 Tables\Columns\TextColumn::make('phone_number')
                     ->label('Phone Number')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('email')
                     ->label('Email')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -51,7 +57,36 @@ class GuestsTable
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                //
+                SelectFilter::make('corporate_account')
+                    ->label('Account type')
+                    ->options([
+                        'corporate' => 'Corporate-linked',
+                        'personal' => 'Personal',
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        $data['value'] ?? null,
+                        fn (Builder $query, string $accountType): Builder => $accountType === 'corporate'
+                            ? $query->whereHas('user', fn (Builder $userQuery): Builder => $userQuery->whereNotNull('corporate_organization_id'))
+                            : $query->where(fn (Builder $guestQuery): Builder => $guestQuery
+                                ->whereDoesntHave('user')
+                                ->orWhereHas('user', fn (Builder $userQuery): Builder => $userQuery->whereNull('corporate_organization_id'))),
+                    )),
+                Filter::make('created_at')
+                    ->label('Joined date')
+                    ->schema([
+                        DatePicker::make('from')->label('From'),
+                        DatePicker::make('until')->label('Until'),
+                    ])
+                    ->columns(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['from'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['until'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '<=', $date),
+                        )),
             ])
             ->recordActions([
                 ViewAction::make(),

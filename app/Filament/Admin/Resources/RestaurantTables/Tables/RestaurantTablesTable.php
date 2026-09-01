@@ -9,9 +9,13 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
+use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 /**
@@ -27,11 +31,23 @@ class RestaurantTablesTable
         return $table
             ->columns([
                 ImageColumn::make('image')->disk('public')->square(),
-                TextColumn::make('table_number'),
-                TextColumn::make('restaurant.name'),
-                TextColumn::make('capacity'),
-                TextColumn::make('reservation_fee')->money('GHS'),
-                TextColumn::make('location'),
+                TextColumn::make('table_number')
+                    ->label('Table')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('restaurant.name')
+                    ->label('Restaurant')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('capacity')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('reservation_fee')
+                    ->money('GHS')
+                    ->sortable(),
+                TextColumn::make('location')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
@@ -44,7 +60,39 @@ class RestaurantTablesTable
                     }),
             ])
             ->filters([
-                //
+                SelectFilter::make('restaurant')
+                    ->relationship('restaurant', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('status')
+                    ->options([
+                        'available' => 'Available',
+                        'reserved' => 'Reserved',
+                        'occupied' => 'Occupied',
+                        'cleaning' => 'Cleaning',
+                        'maintenance' => 'Maintenance',
+                    ]),
+                Filter::make('capacity')
+                    ->schema([
+                        TextInput::make('minimum')
+                            ->label('Minimum seats')
+                            ->numeric()
+                            ->minValue(1),
+                        TextInput::make('maximum')
+                            ->label('Maximum seats')
+                            ->numeric()
+                            ->minValue(1),
+                    ])
+                    ->columns(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['minimum'] ?? null,
+                            fn (Builder $query, int|string $capacity): Builder => $query->where('capacity', '>=', $capacity),
+                        )
+                        ->when(
+                            $data['maximum'] ?? null,
+                            fn (Builder $query, int|string $capacity): Builder => $query->where('capacity', '<=', $capacity),
+                        )),
             ])
             ->recordActions([
                 ActionGroup::make([

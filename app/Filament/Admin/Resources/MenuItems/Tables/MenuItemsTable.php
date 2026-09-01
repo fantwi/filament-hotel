@@ -8,6 +8,8 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 /**
@@ -33,7 +35,18 @@ class MenuItemsTable
                 TextColumn::make('sort_order')->sortable(),
             ])
             ->defaultSort('sort_order')
-            ->filters([])
+            ->filters([
+                SelectFilter::make('category')
+                    ->relationship('category', 'name')
+                    ->searchable()
+                    ->preload(),
+                TernaryFilter::make('is_available')
+                    ->label('Available'),
+                TernaryFilter::make('is_featured')
+                    ->label('Featured'),
+                TernaryFilter::make('is_published')
+                    ->label('Published'),
+            ])
             ->recordActions([
                 EditAction::make(),
             ])

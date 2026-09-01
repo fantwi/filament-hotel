@@ -7,6 +7,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 /**
@@ -29,7 +30,12 @@ class MenuCategoriesTable
                 TextColumn::make('created_at')->dateTime()->sortable(),
             ])
             ->defaultSort('sort_order')
-            ->filters([])
+            ->filters([
+                TernaryFilter::make('is_active')
+                    ->label('Active'),
+                TernaryFilter::make('is_published')
+                    ->label('Published'),
+            ])
             ->recordActions([
                 EditAction::make(),
             ])

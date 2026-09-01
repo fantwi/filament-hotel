@@ -6,6 +6,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 /**
@@ -23,10 +24,18 @@ class RestaurantOrderItemsTable
                 TextColumn::make('order.order_number')->label('Order')->searchable(),
                 TextColumn::make('menuItem.name')->label('Menu item')->searchable(),
                 TextColumn::make('quantity')->sortable(),
-                TextColumn::make('unit_price')->money('GHS'),
-                TextColumn::make('total_price')->money('GHS'),
+                TextColumn::make('unit_price')->money('GHS')->sortable(),
+                TextColumn::make('total_price')->money('GHS')->sortable(),
             ])
-            ->filters([])
+            ->filters([
+                SelectFilter::make('order')
+                    ->relationship('order', 'order_number')
+                    ->searchable(),
+                SelectFilter::make('menu_item')
+                    ->relationship('menuItem', 'name')
+                    ->searchable()
+                    ->preload(),
+            ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([
                 BulkActionGroup::make([DeleteBulkAction::make()]),
