@@ -30,6 +30,7 @@ use App\Filament\Admin\Resources\Rooms\RoomResource;
 use App\Filament\Admin\Resources\RoomTypes\RoomTypeResource;
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Providers\Filament\AdminPanelProvider;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\Support\Icons\Heroicon;
 use Tests\TestCase;
@@ -88,7 +89,44 @@ class FilamentNavigationGroupingTest extends TestCase
             'Reports',
             'Access & Administration',
             'Hotel Configuration',
-        ], $panel->getNavigationGroups());
+        ], array_map(
+            fn (NavigationGroup|string $group): string => $group instanceof NavigationGroup
+                ? (string) $group->getLabel()
+                : $group,
+            $panel->getNavigationGroups(),
+        ));
+    }
+
+    public function test_admin_navigation_groups_define_their_initial_collapsed_state(): void
+    {
+        $panel = (new AdminPanelProvider($this->app))->panel(Panel::make());
+        $groups = $panel->getNavigationGroups();
+
+        foreach ($groups as $group) {
+            if (! $group instanceof NavigationGroup) {
+                self::fail('Navigation groups must be registered as NavigationGroup objects.');
+            }
+        }
+
+        /** @var array<string, NavigationGroup> $groupsByLabel */
+        $groupsByLabel = collect($groups)->keyBy(fn (NavigationGroup $group): string => (string) $group->getLabel())->all();
+
+        self::assertFalse($groupsByLabel['Dashboards']->isCollapsed());
+        self::assertFalse($groupsByLabel['Accommodation']->isCollapsed());
+
+        foreach ([
+            'Conferences',
+            'Restaurant Sales',
+            'Kitchen & Inventory',
+            'Guests & Communications',
+            'Finance',
+            'Reports',
+            'Access & Administration',
+            'Hotel Configuration',
+        ] as $label) {
+            self::assertTrue($groupsByLabel[$label]->isCollapsible(), $label);
+            self::assertTrue($groupsByLabel[$label]->isCollapsed(), $label);
+        }
     }
 
     public function test_resource_navigation_icons_are_domain_specific_and_unique(): void

@@ -20,6 +20,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Widgets\AccountWidget;
@@ -59,16 +60,16 @@ class AdminPanelProvider extends PanelProvider
                 'info' => $this->hotelBrandColor('secondary_color', '#0EA5E9'),
             ])
             ->navigationGroups([
-                'Dashboards',
-                'Accommodation',
-                'Conferences',
-                'Restaurant Sales',
-                'Kitchen & Inventory',
-                'Guests & Communications',
-                'Finance',
-                'Reports',
-                'Access & Administration',
-                'Hotel Configuration',
+                NavigationGroup::make('Dashboards'),
+                NavigationGroup::make('Accommodation'),
+                NavigationGroup::make('Conferences')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
+                NavigationGroup::make('Restaurant Sales')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
+                NavigationGroup::make('Kitchen & Inventory')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
+                NavigationGroup::make('Guests & Communications')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
+                NavigationGroup::make('Finance')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
+                NavigationGroup::make('Reports')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
+                NavigationGroup::make('Access & Administration')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
+                NavigationGroup::make('Hotel Configuration')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
             ])
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\Filament\Admin\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
