@@ -269,7 +269,6 @@
                 };
 
                 if (typeof window.Calendar !== 'function' || ! window.dayGridPlugin || ! window.interactionPlugin || typeof window.calendarLayout !== 'function') {
-                    showState('error', 'Calendar library unavailable');
                     return;
                 }
 

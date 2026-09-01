@@ -65,6 +65,7 @@ class BookingCalendarTest extends TestCase
         $view = file_get_contents(resource_path('views/filament/admin/pages/booking-calendar.blade.php'));
         $calendarModule = file_get_contents(resource_path('js/calendar.js'));
         $layoutHelper = file_get_contents(resource_path('js/booking-calendar-layout.js'));
+        $startupModule = file_get_contents(resource_path('js/booking-calendar-startup.js'));
         $viteConfig = file_get_contents(base_path('vite.config.js'));
 
         self::assertStringContainsString('lg:grid-cols-[minmax(0,1fr)_18rem]', $view);
@@ -83,10 +84,13 @@ class BookingCalendarTest extends TestCase
         self::assertStringContainsString("calendar.setOption('headerToolbar', nextLayout.headerToolbar)", $view);
         self::assertStringContainsString("import { calendarLayout } from './booking-calendar-layout';", $calendarModule);
         self::assertStringContainsString('window.calendarLayout = calendarLayout;', $calendarModule);
+        self::assertStringContainsString('synchronizeBookingCalendarStartup(window);', $calendarModule);
+        self::assertStringContainsString("BOOKING_CALENDAR_MODULE_READY_EVENT = 'booking-calendar-module-ready'", $startupModule);
         self::assertStringContainsString("initialView: 'dayGridDay'", $layoutHelper);
         self::assertStringNotContainsString('window.alert', $view);
         self::assertStringNotContainsString('window.location.assign', $view);
         self::assertStringNotContainsString("window.innerWidth < 640 ? 'dayGridWeek'", $view);
+        self::assertStringNotContainsString("showState('error', 'Calendar library unavailable')", $view);
         self::assertStringContainsString('livewire:navigating', $view);
         self::assertStringContainsString('element.__bookingCalendar.destroy()', $view);
         self::assertStringContainsString("@vite('resources/js/calendar.js')", $view);
