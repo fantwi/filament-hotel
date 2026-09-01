@@ -49,29 +49,59 @@ class StrictDateStateCast implements StateCast
             return null;
         }
 
-        if (preg_match('/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})\z/', $state)) {
-            try {
-                return Carbon::parse($state);
-            } catch (\Throwable) {
-                return null;
-            }
+        if (preg_match(
+            '/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.(?<fraction>\d{1,6}))?(?<offset>Z|[+-]\d{2}:\d{2})\z/',
+            $state,
+            $matches,
+        )) {
+            return $this->parseIso($state, $matches['fraction'] ?? '', $matches['offset']);
         }
 
         foreach ([$this->internalFormat, $this->format] as $format) {
-            try {
-                $date = Carbon::createFromFormat("!{$format}", $state, $this->timezone);
-            } catch (\Throwable) {
-                continue;
-            }
+            $date = $this->parseExact("!{$format}", $state, $this->timezone);
 
-            $errors = Carbon::getLastErrors();
-
-            if (($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))
-                && $date->format($format) === $state) {
+            if ($date?->format($format) === $state) {
                 return $date;
             }
         }
 
         return null;
+    }
+
+    private function parseIso(string $state, string $fraction, string $offset): ?Carbon
+    {
+        $format = '!Y-m-d\TH:i:s'.($fraction === '' ? '' : '.u').'P';
+        $date = $this->parseExact($format, $state);
+
+        if (! $date) {
+            return null;
+        }
+
+        $roundTrip = $date->format('Y-m-d\TH:i:s');
+
+        if ($fraction !== '') {
+            $roundTrip .= '.'.substr($date->format('u'), 0, strlen($fraction));
+        }
+
+        $roundTrip .= $date->format($offset === 'Z' ? 'p' : 'P');
+
+        return $roundTrip === $state ? $date : null;
+    }
+
+    private function parseExact(string $format, string $state, ?string $timezone = null): ?Carbon
+    {
+        try {
+            $date = Carbon::createFromFormat($format, $state, $timezone);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $errors = Carbon::getLastErrors();
+
+        if ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0)) {
+            return null;
+        }
+
+        return $date;
     }
 }
