@@ -33,7 +33,7 @@ class ConferenceRoomsTable
                     ->icon('heroicon-o-arrow-path')
                     ->color('gray')
                     ->action(function ($livewire): void {
-                        $livewire->resetTableFilters();
+                        $livewire->resetTableFiltersForm();
                     }),
             ])
             ->columns([

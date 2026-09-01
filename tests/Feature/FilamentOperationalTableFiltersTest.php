@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Resources\ConferenceRooms\Pages\ListConferenceRooms;
 use App\Filament\Admin\Resources\ConferenceRooms\Tables\ConferenceRoomsTable;
 use App\Filament\Admin\Resources\Guests\Tables\GuestsTable;
 use App\Filament\Admin\Resources\MenuCategories\Tables\MenuCategoriesTable;
@@ -11,6 +12,7 @@ use App\Filament\Admin\Resources\RestaurantReservations\Tables\RestaurantReserva
 use App\Filament\Admin\Resources\Restaurants\Tables\RestaurantsTable;
 use App\Filament\Admin\Resources\RestaurantTables\Pages\ListRestaurantTables;
 use App\Filament\Admin\Resources\RestaurantTables\Tables\RestaurantTablesTable;
+use App\Models\ConferenceRoom;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\User;
@@ -91,6 +93,28 @@ class FilamentOperationalTableFiltersTest extends TestCase
             '51-100' => '51-100',
             '100+' => '100+',
         ], $table->getFilter('capacity')?->getOptions());
+    }
+
+    public function test_conference_room_empty_state_action_resets_active_filters_and_recovers_rows(): void
+    {
+        $admin = User::factory()->create(['department' => 'admin']);
+        $room = ConferenceRoom::query()->create([
+            'name' => 'Recovery Conference Room',
+            'description' => 'Room used to verify empty-state recovery.',
+            'capacity' => 20,
+            'price_per_hour' => 500,
+            'is_available' => true,
+            'is_published' => true,
+        ]);
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::actingAs($admin)
+            ->test(ListConferenceRooms::class)
+            ->filterTable('capacity', '100+')
+            ->assertCanNotSeeTableRecords([$room])
+            ->callTableAction('resetFilters')
+            ->assertCanSeeTableRecords([$room]);
     }
 
     public static function operationalFilters(): array
