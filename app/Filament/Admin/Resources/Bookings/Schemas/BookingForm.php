@@ -2,16 +2,17 @@
 
 namespace App\Filament\Admin\Resources\Bookings\Schemas;
 
-use App\Models\Booking;
+use App\Filament\Forms\Components\StrictDatePicker;
 use App\Models\Room;
 use App\Models\User;
+use App\Services\RoomAvailabilityService;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Filament\Actions\Action;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -69,113 +70,57 @@ class BookingForm
                 //     ->required(),
 
                 Select::make('room_id')
-                    // ->relationship(
-                    //     name: 'room',
-                    //     titleAttribute: 'room_number',
-                    //     modifyQueryUsing: fn ($query) => $query->where('status', '!=', 'maintenance')
-                    // )
-                    ->relationship('room', 'room_number')
+                    ->options(function (Get $get, $record): array {
+                        $dates = self::validStayDates($get);
+
+                        if (! $dates) {
+                            return [];
+                        }
+
+                        return app(RoomAvailabilityService::class)
+                            ->query($dates['checkIn'], $dates['checkOut'], $record?->id)
+                            ->orderBy('room_number')
+                            ->pluck('room_number', 'id')
+                            ->all();
+                    })
                     ->default(
                         request('room_id')
                     )
                     ->searchable()
-                    ->reactive()
                     ->required()
                     ->disabled(fn ($record) => $record?->status === 'checked_in') // disable the room selection if the status is "Check-in Now"
-                    ->live() // to update the total price when the room is changed
-                    ->afterStateUpdated(function ($state, $get, $set) {
-                        $checkIn = $get('check_in');
-                        $checkOut = $get('check_out');
+                    ->live()
+                    ->afterStateUpdated(fn (Get $get, Set $set, $record) => self::updateTotal($get, $set, $record))
+                    ->rule(function (Get $get, $record) {
+                        return function (string $attribute, $value, \Closure $fail) use ($get, $record): void {
+                            $dates = self::validStayDates($get);
 
-                        if (! $state || ! $checkIn || ! $checkOut) {
-                            return;
-                        }
-
-                        $room = Room::find($state);
-
-                        if (! $room) {
-                            return;
-                        }
-
-                        $days = Carbon::parse($checkIn)
-                            ->diffInDays(Carbon::parse($checkOut));
-
-                        $set('total_price', max($days, 1) * $room->roomType->price_per_night);
-                    })
-                    ->rule(function ($get, $record) {
-                        return function (string $attribute, $value, \Closure $fail) use ($get, $record) {
-                            $checkIn = $get('check_in');
-                            $checkOut = $get('check_out');
-
-                            if (! $checkIn || ! $checkOut) {
+                            if (! $dates) {
                                 return;
                             }
 
-                            $query = Booking::where('room_id', $value)
-                                ->whereNotIn('status', ['cancelled', 'no_show'])
-                                ->where(function ($activeBookingQuery) {
-                                    $activeBookingQuery->whereNull('hold_status')
-                                        ->orWhere('hold_status', '!=', 'expired');
-                                })
-                                ->overlapping($checkIn, $checkOut);
+                            $roomId = self::effectiveRoomId($get, $record);
 
-                            if ($record) {
-                                $query->where('id', '!=', $record->id);
-                            }
-
-                            if ($query->exists()) {
-                                $fail('This room is already booked for the selected dates.');
+                            if (! $roomId || ! app(RoomAvailabilityService::class)->isAvailable($roomId, $dates['checkIn'], $dates['checkOut'], $record?->id)) {
+                                $fail('This room is unavailable for the selected dates.');
                             }
                         };
                     }),
 
-                DatePicker::make('check_in')
-                    ->reactive()
+                StrictDatePicker::make('check_in')
+                    ->minDate(today())
+                    ->live()
                     ->required()
                     ->native(false)
-                    ->afterStateUpdated(function ($get, $set) {
-                        $roomId = $get('room_id');
-                        $checkOut = $get('check_out');
+                    ->afterStateUpdated(fn (Get $get, Set $set, $record) => self::refreshRoomSelection($get, $set, $record)),
 
-                        if (! $roomId || ! $checkOut) {
-                            return;
-                        }
-
-                        $room = Room::find($roomId);
-
-                        if (! $room) {
-                            return;
-                        }
-
-                        $days = Carbon::parse($get('check_in'))
-                            ->diffInDays(Carbon::parse($checkOut));
-
-                        $set('total_price', max($days, 1) * $room->roomType->price_per_night);
-                    }),
-
-                DatePicker::make('check_out')
-                    ->reactive()
+                StrictDatePicker::make('check_out')
+                    ->minDate(fn (Get $get) => self::dateFromState($get('check_in'))?->addDay() ?? today()->addDay())
+                    ->after('check_in')
+                    ->live()
                     ->required()
                     ->native(false)
-                    ->afterStateUpdated(function ($get, $set) {
-                        $roomId = $get('room_id');
-                        $checkIn = $get('check_in');
-
-                        if (! $roomId || ! $checkIn) {
-                            return;
-                        }
-
-                        $room = Room::find($roomId);
-
-                        if (! $room) {
-                            return;
-                        }
-
-                        $days = Carbon::parse($checkIn)
-                            ->diffInDays(Carbon::parse($get('check_out')));
-
-                        $set('total_price', max($days, 1) * $room->roomType->price_per_night);
-                    }),
+                    ->afterStateUpdated(fn (Get $get, Set $set, $record) => self::refreshRoomSelection($get, $set, $record)),
 
                 /**
                  * NEW: STATUS FIELD
@@ -195,31 +140,101 @@ class BookingForm
                     ->numeric()
                     ->disabled()
                     ->dehydrated(true)
-                    ->live() // to update the total price when the check in or check out is changed
-                    ->required()
-                    ->afterStateUpdated(function (Set $set, Get $get) {
-
-                        $checkIn = $get('check_in');
-                        $checkOut = $get('check_out');
-                        $roomId = $get('room_id');
-
-                        if (! $checkIn || ! $checkOut || ! $roomId) {
-                            return;
-                        }
-
-                        $room = Room::with('roomType')->find($roomId);
-
-                        if (! $room) {
-                            return;
-                        }
-
-                        $nights = Carbon::parse($checkIn)
-                            ->diffInDays($checkOut);
-
-                        $price = $room->roomType->price_per_night * max($nights, 1);
-
-                        $set('total_price', $price);
-                    }),
+                    ->dehydrateStateUsing(fn (Get $get, $record): float => self::calculateTotal($get, $record) ?? 0)
+                    ->required(),
             ]);
+    }
+
+    private static function refreshRoomSelection(Get $get, Set $set, $record): void
+    {
+        if (filled($get('check_in')) && ! self::dateFromState($get('check_in'))) {
+            $set('check_in', null);
+        }
+
+        if (filled($get('check_out')) && ! self::dateFromState($get('check_out'))) {
+            $set('check_out', null);
+        }
+
+        $roomId = self::effectiveRoomId($get, $record);
+        $dates = self::validStayDates($get);
+
+        if ($record?->status === 'checked_in') {
+            $set('room_id', $roomId);
+        } elseif (! $roomId || ! $dates
+            || ! app(RoomAvailabilityService::class)->isAvailable($roomId, $dates['checkIn'], $dates['checkOut'], $record?->id)) {
+            $set('room_id', null);
+        }
+
+        self::updateTotal($get, $set, $record);
+    }
+
+    private static function updateTotal(Get $get, Set $set, $record): void
+    {
+        if (($total = self::calculateTotal($get, $record)) === null) {
+            return;
+        }
+
+        $set('total_price', $total);
+    }
+
+    private static function calculateTotal(Get $get, $record): ?float
+    {
+        $roomId = self::effectiveRoomId($get, $record);
+        $dates = self::validStayDates($get);
+
+        if (! $roomId || ! $dates) {
+            return null;
+        }
+
+        $room = Room::query()->with('roomType')->find($roomId);
+
+        if (! $room?->roomType) {
+            return null;
+        }
+
+        return $dates['checkIn']->diffInDays($dates['checkOut']) * $room->roomType->price_per_night;
+    }
+
+    private static function effectiveRoomId(Get $get, $record): ?int
+    {
+        $roomId = $record?->status === 'checked_in'
+            ? $record->room_id
+            : $get('room_id');
+
+        return filled($roomId) ? (int) $roomId : null;
+    }
+
+    /**
+     * @return array{checkIn: Carbon, checkOut: Carbon}|null
+     */
+    private static function validStayDates(Get $get): ?array
+    {
+        $checkIn = self::dateFromState($get('check_in'));
+        $checkOut = self::dateFromState($get('check_out'));
+
+        if (! $checkIn || ! $checkOut || ! $checkOut->greaterThan($checkIn)) {
+            return null;
+        }
+
+        return compact('checkIn', 'checkOut');
+    }
+
+    private static function dateFromState(mixed $value): ?Carbon
+    {
+        if ($value instanceof CarbonInterface) {
+            return Carbon::instance($value)->startOfDay();
+        }
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        try {
+            $date = Carbon::createFromFormat('!Y-m-d', $value);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $date->format('Y-m-d') === $value ? $date : null;
     }
 }

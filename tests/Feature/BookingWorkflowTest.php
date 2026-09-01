@@ -6,6 +6,8 @@ use App\Models\Booking;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\User;
+use App\Services\RoomAssignmentService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -107,6 +109,27 @@ class BookingWorkflowTest extends TestCase
                 'success' => false,
                 'message' => 'Only pending bookings can move.',
             ]);
+    }
+
+    public function test_automatic_assignment_uses_a_room_available_for_an_adjacent_stay(): void
+    {
+        [$room, $guest] = $this->makeBookingFixtures();
+        $checkIn = Carbon::today()->addDays(10);
+        $checkOut = $checkIn->copy()->addDays(2);
+
+        Booking::create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'status' => 'pending',
+            'total_price' => 0,
+        ]);
+
+        self::assertSame(
+            $room->id,
+            RoomAssignmentService::assignRoom($room->room_type_id, $checkOut, $checkOut->copy()->addDay())?->id,
+        );
     }
 
     private function makeAdminUser(): User

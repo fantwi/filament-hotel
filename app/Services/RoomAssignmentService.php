@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Booking;
 use App\Models\Room;
 
 /**
@@ -13,28 +12,12 @@ class RoomAssignmentService
     /**
      * Selects an available physical room for the requested room type and stay dates.
      */
-    public static function assignRoom($roomTypeId, $checkIn, $checkOut)
+    public static function assignRoom($roomTypeId, $checkIn, $checkOut): ?Room
     {
-        $rooms = Room::where('room_type_id', $roomTypeId)
-            ->where('status', '!=', 'maintenance')
+        return app(RoomAvailabilityService::class)
+            ->query($checkIn, $checkOut)
+            ->where('room_type_id', $roomTypeId)
             ->orderBy('room_number')
-            ->get();
-
-        foreach ($rooms as $room) {
-            $conflict = Booking::where('room_id', $room->id)
-                ->whereNotIn('status', ['cancelled', 'no_show'])
-                ->where(function ($query) {
-                    $query->whereNull('hold_status')
-                        ->orWhere('hold_status', '!=', 'expired');
-                })
-                ->overlapping($checkIn, $checkOut)
-                ->exists();
-
-            if (! $conflict) {
-                return $room;
-            }
-        }
-
-        return null;
+            ->first();
     }
 }
