@@ -187,6 +187,8 @@ class User extends Authenticatable implements FilamentUser
                         $user->department
                     ] ?? 'guest';
 
+                Role::findOrCreate($role, 'web');
+
                 $user->syncRoles([
                     $role,
                 ]);
@@ -246,7 +248,7 @@ class User extends Authenticatable implements FilamentUser
         'super_admin' => 'super_admin',
         'admin' => 'admin',
         'reception' => 'receptionist',
-        'housekeeping' => 'housekeeper',
+        'housekeeping' => 'housekeeping',
         'accounting' => 'accountant',
         'management' => 'manager',
         'kitchen' => 'kitchen_staff',
@@ -273,16 +275,7 @@ class User extends Authenticatable implements FilamentUser
 
     public static function getDepartments(): array
     {
-        return [
-            'super_admin' => 'Super Admin',
-            'admin' => 'Admin',
-            'reception' => 'Reception',
-            'housekeeping' => 'Housekeeping',
-            'accounting' => 'Accounting',
-            'management' => 'Management',
-            'kitchen' => 'Kitchen',
-            'guest' => 'Guest',
-        ];
+        return self::DEPARTMENTS;
     }
 
     public static function getGuestDepartment(): array

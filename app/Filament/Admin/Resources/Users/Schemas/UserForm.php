@@ -25,8 +25,8 @@ class UserForm
             TextInput::make('phone_number')->required(),
             Select::make('department')
                 ->options(fn (): array => auth()->user()?->hasRole('super_admin')
-                    ? User::getDepartments()
-                    : collect(User::getDepartments())->except(['super_admin', 'admin'])->all())
+                    ? User::DEPARTMENTS
+                    : collect(User::DEPARTMENTS)->except(['super_admin', 'admin'])->all())
                 ->required(),
             Select::make('corporate_organization_id')
                 ->label('Corporate Account')
