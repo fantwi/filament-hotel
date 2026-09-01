@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Admin\Pages\Auth\EditProfile;
 use App\Filament\Admin\Pages\Dashboards\RoleDashboard;
 use App\Filament\Admin\Widgets\BestSellingMenuItems;
 use App\Filament\Admin\Widgets\BookingTrendChart;
@@ -46,6 +47,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login() // newly added by FAA
+            ->profile(EditProfile::class, isSimple: false)
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
             // ->viteTheme('resources/css/app.css') // FAA added this
