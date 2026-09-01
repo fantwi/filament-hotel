@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Schema;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -135,7 +136,7 @@ class PaymentReportStatsTest extends TestCase
             ]);
     }
 
-    private function paymentPage(): \Livewire\Features\SupportTesting\Testable
+    private function paymentPage(): Testable
     {
         Role::findOrCreate('admin', 'web');
         $admin = User::factory()->create(['department' => 'admin']);

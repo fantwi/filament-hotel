@@ -16,6 +16,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Spatie\Permission\Models\Role;
+use Symfony\Component\Process\ExecutableFinder;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 class CorporateReceivablesTest extends TestCase
@@ -121,6 +124,96 @@ class CorporateReceivablesTest extends TestCase
         self::assertStringContainsString('Confirm and mark paid', $view);
         self::assertStringContainsString('aria-modal="true"', $view);
         self::assertStringContainsString('Outstanding amount', $view);
+    }
+
+    public function test_rendered_payment_review_owns_its_alpine_scope_and_controller_lifecycle(): void
+    {
+        [, $admin] = $this->bookingFixture();
+        Role::findOrCreate('accountant', 'web');
+        $admin->assignRole('accountant');
+
+        $response = $this->actingAs($admin)->get(CorporateReceivables::getUrl());
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $dialog = $xpath->query('//*[@role="dialog" and @aria-labelledby="corporate-payment-review-title"]')->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $dialog);
+        self::assertTrue($dialog->hasAttribute('x-cloak'));
+        self::assertSame('open', $dialog->getAttribute('x-show'));
+
+        $scope = $xpath->query('ancestor::*[@x-data="corporatePaymentReview()"]', $dialog)->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $scope, 'The rendered dialog must remain inside the corporate payment Alpine scope.');
+        self::assertSame('closeReview()', $scope->getAttribute('x-on:keydown.escape.window'));
+        self::assertGreaterThan(0, $xpath->query('.//button[normalize-space()="Review payment"]', $scope)->count());
+        self::assertSame(0, $xpath->query('ancestor::*[@x-data="corporatePaymentReview()"]', $document->getElementById('receivables-search'))->count());
+
+        $controllerScript = collect(iterator_to_array($document->getElementsByTagName('script')))
+            ->map(fn (\DOMElement $script): string => $script->textContent)
+            ->first(fn (string $script): bool => str_contains($script, 'function corporatePaymentReview()'));
+
+        self::assertIsString($controllerScript);
+
+        $process = $this->runJavaScript(<<<JS
+{$controllerScript}
+
+let submitted = false;
+let focused = false;
+const method = {
+    selectedIndex: 1,
+    options: [{ text: 'Cash' }, { text: 'Bank transfer' }],
+};
+const reference = { value: ' BANK-REVIEW-001 ' };
+const form = {
+    id: 'payment-form-booking-1',
+    dataset: {
+        label: 'Room booking #1',
+        amount: 'GHS 75.00',
+        organization: 'Receivables Test Ltd',
+        guest: 'Test Guest',
+    },
+    querySelector(selector) {
+        return selector.includes('method') ? method : reference;
+    },
+    submit() {
+        submitted = true;
+    },
+};
+globalThis.document = { getElementById: (id) => id === form.id ? form : null };
+
+const controller = corporatePaymentReview();
+controller.\$refs = { confirmButton: { focus: () => { focused = true; } } };
+controller.\$nextTick = (callback) => callback();
+
+if (controller.open) {
+    throw new Error('Payment review was visible before staff opened it.');
+}
+
+controller.openReview(form);
+
+if (! controller.open || ! focused || controller.transaction.method !== 'Bank transfer' || controller.transaction.reference !== 'BANK-REVIEW-001') {
+    throw new Error('Payment review did not open with populated transaction details.');
+}
+
+controller.closeReview();
+
+if (controller.open) {
+    throw new Error('Payment review did not close.');
+}
+
+controller.openReview(form);
+controller.confirmPayment();
+
+if (controller.open || ! submitted) {
+    throw new Error('Payment review did not submit the selected settlement.');
+}
+JS);
+
+        self::assertSame(0, $process->getExitCode(), $process->getErrorOutput());
     }
 
     public function test_transactions_section_uses_a_stats_overview_widget(): void
@@ -326,6 +419,23 @@ class CorporateReceivablesTest extends TestCase
             'non-ISO date' => ['09/01/2026', '09/30/2026'],
             'impossible date' => ['2026-02-30', '2026-03-01'],
         ];
+    }
+
+    private function runJavaScript(string $script): Process
+    {
+        $node = (new ExecutableFinder)->find('node');
+
+        if ($node === null && is_executable('/mnt/c/Program Files/nodejs/node.exe')) {
+            $node = '/mnt/c/Program Files/nodejs/node.exe';
+        }
+
+        self::assertNotNull($node, 'Node.js is required to execute rendered Filament JavaScript regressions.');
+
+        $process = new Process([$node, '--input-type=commonjs']);
+        $process->setInput($script);
+        $process->run();
+
+        return $process;
     }
 
     /**

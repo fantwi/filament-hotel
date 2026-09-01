@@ -36,6 +36,8 @@ use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\Process\ExecutableFinder;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 class FilamentNavigationGroupingTest extends TestCase
@@ -166,17 +168,47 @@ class FilamentNavigationGroupingTest extends TestCase
         self::assertTrue($inactiveSecondaryGroup->isCollapsible());
     }
 
-    public function test_sidebar_render_includes_the_current_active_group_labels_for_client_reconciliation(): void
+    public function test_rendered_sidebar_initializer_executes_before_initially_showing_the_active_secondary_group(): void
     {
         $admin = User::factory()->create(['department' => 'admin']);
 
-        $response = $this->actingAs($admin)->get(PaymentResource::getUrl('index'));
+        $response = $this->actingAs($admin)->get(ActivityLogResource::getUrl('index'));
 
         $response->assertOk();
-        self::assertMatchesRegularExpression(
-            '/const activeLabels\s*=\s*JSON\.parse\([^)]*Finance[^)]*\)/',
-            $response->getContent(),
-        );
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $initializer = collect(iterator_to_array($document->getElementsByTagName('script')))
+            ->map(fn (\DOMElement $script): string => $script->textContent)
+            ->first(fn (string $script): bool => str_contains($script, 'const activeLabels'));
+
+        self::assertIsString($initializer);
+        self::assertStringContainsString('Activity Logs', $response->getContent());
+
+        $process = $this->runJavaScript(<<<JS
+const values = new Map([
+    ['collapsedGroups', JSON.stringify(['Access & Administration', 'Reports'])],
+]);
+globalThis.localStorage = {
+    getItem: (key) => values.has(key) ? values.get(key) : null,
+    setItem: (key, value) => values.set(key, String(value)),
+};
+globalThis.window = {};
+
+{$initializer}
+
+const collapsedGroups = JSON.parse(localStorage.getItem('collapsedGroups'));
+
+if (collapsedGroups.includes('Access & Administration') || ! collapsedGroups.includes('Reports')) {
+    throw new Error('The active secondary group was not made visible before Filament initialized.');
+}
+
+if (! window.__filamentAdminNavigationActiveLabels.includes('Access & Administration')) {
+    throw new Error('The rendered initializer did not publish the active secondary group.');
+}
+JS);
+
+        self::assertSame(0, $process->getExitCode(), $process->getErrorOutput());
     }
 
     public function test_resource_navigation_icons_are_domain_specific_and_unique(): void
@@ -207,5 +239,22 @@ class FilamentNavigationGroupingTest extends TestCase
 
         self::assertCount(count($resources), array_unique($icons));
         self::assertNotContains(Heroicon::OutlinedRectangleStack->value, $icons);
+    }
+
+    private function runJavaScript(string $script): Process
+    {
+        $node = (new ExecutableFinder)->find('node');
+
+        if ($node === null && is_executable('/mnt/c/Program Files/nodejs/node.exe')) {
+            $node = '/mnt/c/Program Files/nodejs/node.exe';
+        }
+
+        self::assertNotNull($node, 'Node.js is required to execute rendered Filament JavaScript regressions.');
+
+        $process = new Process([$node, '--input-type=commonjs']);
+        $process->setInput($script);
+        $process->run();
+
+        return $process;
     }
 }

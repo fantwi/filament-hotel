@@ -139,7 +139,8 @@
             </x-filament::section>
         </section>
 
-        <x-filament::section heading="Transactions awaiting payment" description="Record the remaining balance received through cash, mobile money, card, or bank transfer." x-data="corporatePaymentReview()" x-on:keydown.escape.window="closeReview()">
+        <div x-data="corporatePaymentReview()" x-on:keydown.escape.window="closeReview()">
+        <x-filament::section heading="Transactions awaiting payment" description="Record the remaining balance received through cash, mobile money, card, or bank transfer.">
             <div class="mb-6">
                 <h2 class="mb-3 text-sm font-semibold text-gray-950 dark:text-white">Receivables by service</h2>
                 @livewire(\App\Filament\Admin\Widgets\CorporateReceivablesStats::class, ['filters' => [
@@ -260,6 +261,7 @@
                 </div>
             </div>
         </x-filament::section>
+        </div>
     </div>
 
     <script>

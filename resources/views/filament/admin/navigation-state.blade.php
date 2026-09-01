@@ -4,7 +4,7 @@
 
 <script>
     (() => {
-        const activeLabels = @js($activeGroupLabels)
+        const activeLabels = @js($activeGroupLabels);
         const activeLabelSet = new Set(activeLabels)
         const storageKey = 'collapsedGroups'
         let collapsedGroups = []
