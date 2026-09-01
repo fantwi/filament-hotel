@@ -157,8 +157,8 @@ class CorporateReceivables extends Page
     public function applyFilters(): void
     {
         $this->validate([
-            'draftFromDate' => ['nullable', 'date', 'before_or_equal:draftUntilDate'],
-            'draftUntilDate' => ['nullable', 'date', 'after_or_equal:draftFromDate'],
+            'draftFromDate' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:draftUntilDate'],
+            'draftUntilDate' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:draftFromDate'],
             'perPage' => ['required', 'integer', 'min:10', 'max:100'],
         ]);
 
@@ -188,6 +188,7 @@ class CorporateReceivables extends Page
         $this->untilDate = '';
         $this->perPage = 25;
         $this->resetPage('receivables_page');
+        $this->resetValidation();
     }
 
     /**

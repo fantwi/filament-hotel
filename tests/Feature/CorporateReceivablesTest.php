@@ -14,6 +14,7 @@ use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -216,6 +217,73 @@ class CorporateReceivablesTest extends TestCase
         }
     }
 
+    #[DataProvider('invalidDraftDateFormats')]
+    public function test_invalid_draft_date_formats_leave_every_applied_predicate_query_and_paginator_unchanged(string $draftFromDate, string $draftUntilDate): void
+    {
+        [$booking] = $this->bookingFixture();
+
+        $page = new CorporateReceivables;
+        $page->draftTransactionType = 'booking';
+        $page->draftSearch = 'Receivables Test';
+        $page->draftOrganizationId = (string) $booking->corporate_organization_id;
+        $page->draftFromDate = today()->toDateString();
+        $page->draftUntilDate = today()->toDateString();
+        $page->applyFilters();
+        $page->setPage(3, 'receivables_page');
+        $appliedState = [
+            'transactionType' => $page->transactionType,
+            'search' => $page->search,
+            'organizationId' => $page->organizationId,
+            'fromDate' => $page->fromDate,
+            'untilDate' => $page->untilDate,
+        ];
+        $appliedSummary = $page->summary();
+
+        $page->draftFromDate = $draftFromDate;
+        $page->draftUntilDate = $draftUntilDate;
+
+        try {
+            $page->applyFilters();
+            self::fail('Invalid draft date formats must not be applied.');
+        } catch (ValidationException $exception) {
+            self::assertArrayHasKey('draftFromDate', $exception->errors());
+            self::assertSame($appliedState['transactionType'], $page->transactionType);
+            self::assertSame($appliedState['search'], $page->search);
+            self::assertSame($appliedState['organizationId'], $page->organizationId);
+            self::assertSame($appliedState['fromDate'], $page->fromDate);
+            self::assertSame($appliedState['untilDate'], $page->untilDate);
+            self::assertSame($appliedSummary, $page->summary());
+            self::assertSame(3, $page->getPage('receivables_page'));
+        }
+    }
+
+    public function test_clear_filters_removes_date_errors_and_resets_the_named_paginator(): void
+    {
+        [, $admin] = $this->bookingFixture();
+
+        $this->actingAs($admin);
+
+        Livewire::test(CorporateReceivables::class)
+            ->set('paginators.receivables_page', 3)
+            ->set('draftFromDate', '2026-02-30')
+            ->set('draftUntilDate', '2026-03-01')
+            ->call('applyFilters')
+            ->assertHasErrors(['draftFromDate' => 'date_format'])
+            ->call('clearFilters')
+            ->assertHasNoErrors()
+            ->assertSet('draftTransactionType', 'all')
+            ->assertSet('draftSearch', '')
+            ->assertSet('draftOrganizationId', '')
+            ->assertSet('draftFromDate', '')
+            ->assertSet('draftUntilDate', '')
+            ->assertSet('transactionType', 'all')
+            ->assertSet('search', '')
+            ->assertSet('organizationId', '')
+            ->assertSet('fromDate', '')
+            ->assertSet('untilDate', '')
+            ->assertSet('paginators.receivables_page', 1);
+    }
+
     public function test_clear_filters_resets_draft_and_applied_receivables_state(): void
     {
         $page = new CorporateReceivables;
@@ -249,6 +317,14 @@ class CorporateReceivablesTest extends TestCase
             'organization' => ['draftOrganizationId', '999999', null, null],
             'from date' => ['draftFromDate', '2099-01-01', 'draftUntilDate', '2100-01-01'],
             'until date' => ['draftUntilDate', '2000-01-01', 'draftFromDate', '1999-01-01'],
+        ];
+    }
+
+    public static function invalidDraftDateFormats(): array
+    {
+        return [
+            'non-ISO date' => ['09/01/2026', '09/30/2026'],
+            'impossible date' => ['2026-02-30', '2026-03-01'],
         ];
     }
 
