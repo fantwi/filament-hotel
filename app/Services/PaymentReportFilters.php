@@ -70,9 +70,9 @@ final class PaymentReportFilters
             return [$fallbackStart, $fallbackEnd];
         }
 
-        return $start->greaterThan($end)
-            ? [$end->copy()->startOfDay(), $start->copy()->endOfDay()]
-            : [$start, $end];
+        // Invalid ranges are rejected by the form. Fall back safely for a
+        // malformed URL or stale session instead of silently reversing dates.
+        return $start->greaterThan($end) ? [$fallbackStart, $fallbackEnd] : [$start, $end];
     }
 
     /**

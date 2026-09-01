@@ -4,10 +4,16 @@ namespace Tests\Feature;
 
 use App\Filament\Admin\Resources\Payments\Pages\ListPayments;
 use App\Filament\Admin\Widgets\PaymentReportStats;
+use App\Models\User;
 use App\Services\PaymentReportFilters;
+use Filament\Actions\Action;
+use Filament\Facades\Filament;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Schema;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class PaymentReportStatsTest extends TestCase
@@ -43,6 +49,21 @@ class PaymentReportStatsTest extends TestCase
         );
     }
 
+    public function test_reversed_payment_date_ranges_fall_back_instead_of_being_silently_swapped(): void
+    {
+        $this->travelTo('2026-08-20 12:00:00');
+
+        [$start, $end] = PaymentReportFilters::dateRange([
+            'period' => 'monthly',
+            'start_date' => '2026-07-15',
+            'end_date' => '2026-06-02',
+        ]);
+
+        self::assertSame('2026-08-01', $start->toDateString());
+        self::assertSame('2026-08-20', $end->toDateString());
+        self::assertTrue($start->lessThanOrEqualTo($end));
+    }
+
     public function test_payments_page_registers_the_report_widget_above_the_table(): void
     {
         $page = new ListPayments;
@@ -59,5 +80,68 @@ class PaymentReportStatsTest extends TestCase
         $section = $schema->getComponents()[0];
 
         self::assertSame(['default' => 'full'], $section->getColumnSpan());
+    }
+
+    public function test_payment_filter_form_defers_changes_and_exposes_apply_and_reset_actions(): void
+    {
+        $section = (new ListPayments)->filtersForm(Schema::make())->getComponents()[0];
+        $components = $section->getDefaultChildComponents();
+
+        self::assertSame([], $components[0]->getStateBindingModifiers());
+        self::assertSame([], $components[1]->getStateBindingModifiers());
+        self::assertSame([], $components[2]->getStateBindingModifiers());
+        self::assertSame([], $components[3]->getStateBindingModifiers());
+
+        $actions = collect($components)->first(
+            fn ($component): bool => $component instanceof Actions,
+        );
+
+        self::assertInstanceOf(Actions::class, $actions);
+        self::assertSame(['applyPaymentFilters', 'resetPaymentFilters'], array_map(
+            fn (Action $action): string => $action->getName(),
+            $actions->getDefaultChildComponents(),
+        ));
+    }
+
+    public function test_payment_filters_commit_only_after_apply_and_reset_to_monthly_defaults(): void
+    {
+        $component = $this->paymentPage()
+            ->assertSet('filters.transaction_type', 'all')
+            ->assertSet('filters.period', 'monthly')
+            ->set('draftFilters.transaction_type', 'food_orders')
+            ->set('draftFilters.period', 'daily')
+            ->assertSet('filters.transaction_type', 'all')
+            ->call('applyPaymentFilters')
+            ->assertHasNoErrors()
+            ->assertSet('filters.transaction_type', 'food_orders')
+            ->assertSet('filters.period', 'daily');
+
+        $component
+            ->call('resetPaymentFilters')
+            ->assertSet('filters.transaction_type', 'all')
+            ->assertSet('filters.period', 'monthly');
+    }
+
+    public function test_payment_filter_apply_rejects_a_reversed_custom_range(): void
+    {
+        $this->paymentPage()
+            ->set('draftFilters.start_date', '2026-08-20')
+            ->set('draftFilters.end_date', '2026-08-01')
+            ->call('applyPaymentFilters')
+            ->assertHasErrors([
+                'draftFilters.start_date' => 'before_or_equal',
+                'draftFilters.end_date' => 'after_or_equal',
+            ]);
+    }
+
+    private function paymentPage(): \Livewire\Features\SupportTesting\Testable
+    {
+        Role::findOrCreate('admin', 'web');
+        $admin = User::factory()->create(['department' => 'admin']);
+        $admin->assignRole('admin');
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        return Livewire::actingAs($admin)->test(ListPayments::class);
     }
 }
