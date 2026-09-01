@@ -29,14 +29,19 @@ use App\Filament\Admin\Resources\RestaurantTables\RestaurantTableResource;
 use App\Filament\Admin\Resources\Rooms\RoomResource;
 use App\Filament\Admin\Resources\RoomTypes\RoomTypeResource;
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
 use Filament\Navigation\NavigationGroup;
+use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class FilamentNavigationGroupingTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_admin_navigation_uses_domain_groups_for_pages_and_resources(): void
     {
         $groups = [
@@ -127,6 +132,49 @@ class FilamentNavigationGroupingTest extends TestCase
             self::assertTrue($groupsByLabel[$label]->isCollapsible(), $label);
             self::assertTrue($groupsByLabel[$label]->isCollapsed(), $label);
         }
+    }
+
+    public function test_all_navigation_groups_remain_collapsible_after_items_are_mounted(): void
+    {
+        $panel = (new AdminPanelProvider($this->app))->panel(Panel::make());
+        $groups = $panel->getNavigationGroups();
+
+        foreach ($groups as $index => $group) {
+            self::assertInstanceOf(NavigationGroup::class, $group);
+            $group->items([
+                NavigationItem::make("Navigation item {$index}")->url("/navigation-item-{$index}")->isActiveWhen(fn (): bool => false),
+            ]);
+            self::assertTrue($group->isCollapsible(), $group->getLabel());
+        }
+
+        $activeSecondaryGroup = $groups[2];
+        $activeSecondaryGroup->items([
+            NavigationItem::make('Active conference')->url('/active-conference')->isActiveWhen(fn (): bool => true),
+        ]);
+
+        self::assertTrue($activeSecondaryGroup->isActive());
+        self::assertFalse($activeSecondaryGroup->isCollapsed());
+        self::assertTrue($activeSecondaryGroup->isCollapsible());
+
+        $inactiveSecondaryGroup = $groups[3];
+        $inactiveSecondaryGroup->items([
+            NavigationItem::make('Inactive sale')->url('/inactive-sale')->isActiveWhen(fn (): bool => false),
+        ]);
+
+        self::assertFalse($inactiveSecondaryGroup->isActive());
+        self::assertTrue($inactiveSecondaryGroup->isCollapsed());
+        self::assertTrue($inactiveSecondaryGroup->isCollapsible());
+    }
+
+    public function test_sidebar_render_includes_the_current_active_group_labels_for_client_reconciliation(): void
+    {
+        $admin = User::factory()->create(['department' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(PaymentResource::getUrl('index'))
+            ->assertOk()
+            ->assertSee('__filamentAdminNavigationActiveLabels', false)
+            ->assertSee('Finance', false);
     }
 
     public function test_resource_navigation_icons_are_domain_specific_and_unique(): void

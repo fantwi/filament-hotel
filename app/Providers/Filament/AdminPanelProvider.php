@@ -23,6 +23,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -62,15 +63,26 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make('Dashboards'),
                 NavigationGroup::make('Accommodation'),
-                NavigationGroup::make('Conferences')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
-                NavigationGroup::make('Restaurant Sales')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
-                NavigationGroup::make('Kitchen & Inventory')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
-                NavigationGroup::make('Guests & Communications')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
-                NavigationGroup::make('Finance')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
-                NavigationGroup::make('Reports')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
-                NavigationGroup::make('Access & Administration')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
-                NavigationGroup::make('Hotel Configuration')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive()),
+                NavigationGroup::make('Conferences')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
+                NavigationGroup::make('Restaurant Sales')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
+                NavigationGroup::make('Kitchen & Inventory')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
+                NavigationGroup::make('Guests & Communications')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
+                NavigationGroup::make('Finance')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
+                NavigationGroup::make('Reports')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
+                NavigationGroup::make('Access & Administration')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
+                NavigationGroup::make('Hotel Configuration')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
             ])
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_NAV_START,
+                fn () => view('filament.admin.navigation-state', [
+                    'activeGroupLabels' => collect(filament()->getNavigation())
+                        ->filter(fn (NavigationGroup $group): bool => $group->isActive())
+                        ->map(fn (NavigationGroup $group): ?string => $group->getLabel())
+                        ->filter()
+                        ->values()
+                        ->all(),
+                ]),
+            )
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\Filament\Admin\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
             ->pages([
