@@ -2,12 +2,20 @@ const COLLAPSED_GROUPS_STORAGE_KEY = 'collapsedGroups';
 const CONTROLLER_KEY = '__filamentAdminNavigationGroupsController';
 
 const readCollapsedGroups = (windowObject) => {
-    try {
-        const value = JSON.parse(windowObject.localStorage.getItem(COLLAPSED_GROUPS_STORAGE_KEY) ?? '[]');
+    const rawValue = windowObject.localStorage.getItem(COLLAPSED_GROUPS_STORAGE_KEY);
 
-        return Array.isArray(value) ? value : [];
+    if (rawValue === null) {
+        return { groups: [], valid: true };
+    }
+
+    try {
+        const value = JSON.parse(rawValue);
+
+        return Array.isArray(value)
+            ? { groups: value, valid: true }
+            : { groups: [], valid: false };
     } catch {
-        return [];
+        return { groups: [], valid: false };
     }
 };
 
@@ -22,10 +30,11 @@ export const synchronizeFilamentNavigationGroups = (windowObject, activeGroupLab
     controller.activeGroupLabels = [...new Set(activeGroupLabels)];
     controller.reconcile ??= () => {
         const activeLabels = new Set(controller.activeGroupLabels);
-        const collapsedGroups = readCollapsedGroups(windowObject);
+        const storedState = readCollapsedGroups(windowObject);
+        const collapsedGroups = storedState.groups;
         const reconciledGroups = collapsedGroups.filter((label) => !activeLabels.has(label));
 
-        if (JSON.stringify(collapsedGroups) !== JSON.stringify(reconciledGroups)) {
+        if (! storedState.valid || JSON.stringify(collapsedGroups) !== JSON.stringify(reconciledGroups)) {
             windowObject.localStorage.setItem(
                 COLLAPSED_GROUPS_STORAGE_KEY,
                 JSON.stringify(reconciledGroups),

@@ -8,18 +8,27 @@
         const activeLabelSet = new Set(activeLabels)
         const storageKey = 'collapsedGroups'
         let collapsedGroups = []
+        let storedStateIsValid = true
 
-        try {
-            const storedGroups = JSON.parse(localStorage.getItem(storageKey) ?? '[]')
+        const storedValue = localStorage.getItem(storageKey)
 
-            collapsedGroups = Array.isArray(storedGroups) ? storedGroups : []
-        } catch {
-            collapsedGroups = []
+        if (storedValue !== null) {
+            try {
+                const storedGroups = JSON.parse(storedValue)
+
+                if (Array.isArray(storedGroups)) {
+                    collapsedGroups = storedGroups
+                } else {
+                    storedStateIsValid = false
+                }
+            } catch {
+                storedStateIsValid = false
+            }
         }
 
         const reconciledGroups = collapsedGroups.filter((label) => ! activeLabelSet.has(label))
 
-        if (JSON.stringify(collapsedGroups) !== JSON.stringify(reconciledGroups)) {
+        if (! storedStateIsValid || JSON.stringify(collapsedGroups) !== JSON.stringify(reconciledGroups)) {
             localStorage.setItem(storageKey, JSON.stringify(reconciledGroups))
         }
 

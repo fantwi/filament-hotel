@@ -5,12 +5,14 @@ import { synchronizeFilamentNavigationGroups } from '../../resources/js/filament
 
 class StorageStub {
     values = new Map();
+    setCalls = 0;
 
     getItem(key) {
         return this.values.get(key) ?? null;
     }
 
     setItem(key, value) {
+        this.setCalls++;
         this.values.set(key, String(value));
     }
 }
@@ -71,6 +73,34 @@ test('reconciles on Livewire navigation with one idempotent listener', () => {
     windowObject.dispatchEvent(new Event('livewire:navigated'));
 
     assert.equal(windowObject.listenerCounts.get('livewire:navigated'), 1);
+    assert.equal(windowObject.document.listenerCounts.get('alpine:initialized'), 1);
     assert.deepEqual(JSON.parse(windowObject.localStorage.getItem('collapsedGroups')), ['Finance']);
     assert.deepEqual(windowObject.sidebarStore.collapsedGroups, ['Finance']);
+});
+
+test('normalizes malformed and non-array persisted state before vendor reads it', () => {
+    for (const rawValue of ['{broken', '{}', '"Finance"', 'null']) {
+        const windowObject = new WindowStub();
+        windowObject.localStorage.setItem('collapsedGroups', rawValue);
+
+        synchronizeFilamentNavigationGroups(windowObject, []);
+
+        assert.doesNotThrow(() => {
+            const vendorGroups = JSON.parse(windowObject.localStorage.getItem('collapsedGroups'));
+
+            assert.ok(Array.isArray(vendorGroups));
+            vendorGroups.includes('Finance');
+        }, rawValue);
+    }
+});
+
+test('does not rewrite a valid array when no active label needs removal', () => {
+    const windowObject = new WindowStub();
+    windowObject.localStorage.setItem('collapsedGroups', JSON.stringify(['Reports']));
+    windowObject.localStorage.setCalls = 0;
+
+    synchronizeFilamentNavigationGroups(windowObject, ['Finance']);
+
+    assert.equal(windowObject.localStorage.setCalls, 0);
+    assert.deepEqual(JSON.parse(windowObject.localStorage.getItem('collapsedGroups')), ['Reports']);
 });
