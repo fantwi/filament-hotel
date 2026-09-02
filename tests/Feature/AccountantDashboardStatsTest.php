@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Filament\Admin\Pages\Dashboards\AccountantDashboard;
 use App\Filament\Admin\Widgets\AccountantReceivablesStats;
+use App\Filament\Admin\Widgets\AccountantStats;
 use Filament\Widgets\StatsOverviewWidget;
+use ReflectionMethod;
 use Tests\TestCase;
 
 class AccountantDashboardStatsTest extends TestCase
@@ -37,6 +39,16 @@ class AccountantDashboardStatsTest extends TestCase
             self::assertIsInt($detailIndex);
             self::assertLessThan($detailIndex, $cashIndex);
             self::assertLessThan($detailIndex, $receivablesIndex);
+        }
+    }
+
+    public function test_historical_accountant_stats_do_not_poll_automatically(): void
+    {
+        foreach ([AccountantStats::class, AccountantReceivablesStats::class] as $widgetClass) {
+            $method = new ReflectionMethod($widgetClass, 'getPollingInterval');
+            $method->setAccessible(true);
+
+            self::assertNull($method->invoke(new $widgetClass), $widgetClass);
         }
     }
 }

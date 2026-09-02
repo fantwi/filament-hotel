@@ -20,6 +20,8 @@ class AccountantReceivablesStats extends StatsOverviewWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected ?string $pollingInterval = null;
+
     /**
      * Determines whether the current user may view this feature.
      */
