@@ -61,7 +61,10 @@ class EditProfile extends BaseEditProfile
                             ->content(fn (): string => $this->getUser()->role_name),
                         Placeholder::make('status_display')
                             ->label('Status')
-                            ->content(fn (): string => $this->getUser()->status?->label() ?? 'Not set'),
+                            ->content(fn () => view(
+                                'filament.admin.components.staff-status',
+                                ['user' => $this->getUser()],
+                            )),
                     ])
                     ->columns([
                         'default' => 1,

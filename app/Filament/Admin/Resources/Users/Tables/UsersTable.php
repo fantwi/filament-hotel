@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Users\Tables;
 
+use App\Enums\StaffAccountStatus;
 use App\Filament\Admin\Resources\Users\UserResource;
 use App\Models\User;
 use Filament\Actions\Action;
@@ -9,6 +10,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
@@ -102,25 +104,9 @@ class UsersTable
                     })
                     ->sortable(),
 
-                TextColumn::make('status')
+                ViewColumn::make('status')
                     ->label('Status')
-                    ->badge()
-                    ->placeholder('Not set')
-                    ->icon(fn (?string $state): string => match ($state) {
-                        'online' => 'heroicon-o-check-circle',
-                        'offline' => 'heroicon-o-exclamation-circle',
-                        'on_leave' => 'heroicon-o-clock',
-                        'suspended' => 'heroicon-o-x-circle',
-                        default => 'heroicon-o-minus-circle',
-                    })
-                    ->color(fn (?string $state): string => match ($state) {
-                        'online' => 'success',
-                        'offline' => 'danger',
-                        'on_leave' => 'warning',
-                        'suspended' => 'info',
-                        default => 'gray',
-                    })
-                    ->formatStateUsing(fn (?string $state): string => str($state ?? 'Not set')->headline()->toString())
+                    ->view('filament.admin.components.staff-status')
                     ->sortable()
                     ->toggleable(),
 
@@ -146,12 +132,7 @@ class UsersTable
                     ->preload(),
 
                 SelectFilter::make('status')
-                    ->options([
-                        'online' => 'Online',
-                        'offline' => 'Offline',
-                        'on_leave' => 'On Leave',
-                        'suspended' => 'Suspended',
-                    ]),
+                    ->options(StaffAccountStatus::options()),
 
             ])
             ->recordActions([

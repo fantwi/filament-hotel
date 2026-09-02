@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Users\Schemas;
 
+use App\Enums\StaffAccountStatus;
 use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -49,13 +50,8 @@ class UserForm
                 ->helperText('Leave blank to keep the current password.'),
             Select::make('status')
                 ->label('Staff Status')
-                ->options([
-                    'online' => 'Online',
-                    'offline' => 'Offline',
-                    'on_leave' => 'On Leave',
-                    'suspended' => 'Suspended',
-                ])
-                ->default('online')
+                ->options(StaffAccountStatus::options())
+                ->default(StaffAccountStatus::Active->value)
                 ->required(),
         ]);
     }
