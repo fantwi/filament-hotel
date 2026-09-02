@@ -127,7 +127,8 @@ class CorporateBillingDashboardTest extends TestCase
 
         self::assertSame(1, $overview['active_accounts']);
         self::assertSame(1, $overview['linked_guests']);
-        self::assertSame(375.0, (float) $overview['billed_this_month']);
+        self::assertSame(375.0, (float) $overview['billed_in_period']);
+        self::assertSame(375.0, (float) $overview['period_outstanding']);
         self::assertSame(375.0, (float) $overview['outstanding']);
         self::assertSame(625.0, (float) $overview['available_credit']);
         self::assertSame('Dashboard Corporate Ltd', $overview['accounts']->first()['name']);

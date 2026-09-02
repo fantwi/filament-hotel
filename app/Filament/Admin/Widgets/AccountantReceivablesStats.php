@@ -54,7 +54,7 @@ class AccountantReceivablesStats extends StatsOverviewWidget
             ->whereIn('payment_status', ['pending', 'unpaid'])
             ->where('status', '!=', 'cancelled')
             ->sum('total');
-        $corporate = app(CorporateCreditService::class)->dashboardOverview($start, $end)['outstanding'];
+        $corporate = app(CorporateCreditService::class)->dashboardOverview($start, $end)['period_outstanding'];
 
         return [
             Stat::make('Hotel booking receivables', $this->formatAmount($hotel))

@@ -55,7 +55,10 @@ class CorporateCreditService
      */
     public function dashboardOverview(?Carbon $from = null, ?Carbon $until = null): array
     {
-        $accounts = $this->accountExposure($from, $until);
+        $periodStart = $from ?? now()->startOfMonth();
+        $periodEnd = $until ?? now();
+        $accounts = $this->accountExposure();
+        $periodOutstanding = array_sum($this->outstandingByOrganization($periodStart, $periodEnd));
         $totalCreditLimit = $accounts
             ->filter(fn (array $account): bool => $account['credit_limit'] !== null)
             ->sum('credit_limit');
@@ -68,9 +71,8 @@ class CorporateCreditService
                 ->where('department', 'guest')
                 ->whereHas('corporateOrganization', fn ($query) => $query->where('is_credit_enabled', true))
                 ->count(),
-            'billed_this_month' => $from && $until
-                ? $this->billedBetween($from, $until)
-                : $this->billedSince(now()->startOfMonth()),
+            'billed_in_period' => $this->billedBetween($periodStart, $periodEnd),
+            'period_outstanding' => $periodOutstanding,
             'outstanding' => $accounts->sum('outstanding'),
             'credit_limit' => $totalCreditLimit,
             'available_credit' => $accounts
@@ -83,9 +85,9 @@ class CorporateCreditService
     /**
      * Builds per-organisation outstanding balances and remaining credit amounts.
      */
-    public function accountExposure(?Carbon $from = null, ?Carbon $until = null): Collection
+    public function accountExposure(): Collection
     {
-        $outstanding = $this->outstandingByOrganization($from, $until);
+        $outstanding = $this->outstandingByOrganization();
 
         return CorporateOrganization::query()
             ->where('is_credit_enabled', true)
@@ -127,14 +129,6 @@ class CorporateCreditService
             $inRange(RestaurantReservation::query()->selectRaw('corporate_organization_id, SUM(reservation_fee) as total')->whereNotNull('corporate_organization_id')->where('payment_status', 'pending')->whereNotIn('status', ['cancelled', 'no_show']))->groupBy('corporate_organization_id')->pluck('total', 'corporate_organization_id')->all(),
             $inRange(RestaurantOrder::query()->selectRaw('corporate_organization_id, SUM(total) as total')->whereNotNull('corporate_organization_id')->where('payment_method', 'corporate_account')->where('payment_status', 'pending')->where('status', '!=', 'cancelled'))->groupBy('corporate_organization_id')->pluck('total', 'corporate_organization_id')->all(),
         ]);
-    }
-
-    /**
-     * Totals valid corporate transactions billed from the supplied date to now.
-     */
-    private function billedSince(Carbon $from): float
-    {
-        return $this->billedBetween($from, now());
     }
 
     /**

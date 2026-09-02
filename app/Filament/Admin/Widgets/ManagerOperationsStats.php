@@ -68,7 +68,7 @@ class ManagerOperationsStats extends StatsOverviewWidget
                 ->description($periodLabel)
                 ->icon('heroicon-o-archive-box')
                 ->color('warning'),
-            Stat::make('Corporate outstanding', 'GHS '.number_format($corporate['outstanding'], 2))
+            Stat::make('Corporate outstanding', 'GHS '.number_format($corporate['period_outstanding'], 2))
                 ->description($periodLabel)
                 ->icon('heroicon-o-building-office-2')
                 ->color('danger'),

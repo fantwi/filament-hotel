@@ -72,7 +72,7 @@ class SuperAdminFinanceStats extends StatsOverviewWidget
                 ->description('All valid unpaid transactions')
                 ->icon('heroicon-o-receipt-percent')
                 ->color('warning'),
-            Stat::make('Corporate Outstanding', 'GHS '.number_format($corporate['outstanding'], 2))
+            Stat::make('Corporate Outstanding', 'GHS '.number_format($corporate['period_outstanding'], 2))
                 ->description('Corporate subset of total receivables')
                 ->icon('heroicon-o-building-office')
                 ->color('danger'),

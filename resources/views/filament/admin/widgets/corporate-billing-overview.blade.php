@@ -5,7 +5,7 @@
                 <div>
                     <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Corporate finance</p>
                     <h2 class="mt-1 text-2xl font-bold tracking-tight">Corporate billing and credit exposure</h2>
-                    <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-300">Track deferred-payment billing, open receivables, and the remaining credit capacity of enabled corporate accounts.</p>
+                    <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-300">Compare billing raised during the selected period with current receivables and remaining credit capacity.</p>
                 </div>
                 <div class="shrink-0 rounded-xl bg-gray-100 px-4 py-3 dark:bg-white/10">
                     <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Reporting period</p>
@@ -17,14 +17,14 @@
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <article class="rounded-2xl border border-primary-100 bg-primary-50 p-5 shadow-sm dark:border-primary-500/20 dark:bg-primary-500/10">
                 <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Corporate billing raised</p>
-                <p class="mt-2 text-3xl font-bold text-primary-700 dark:text-primary-300">GHS {{ number_format($overview['billed_this_month'], 2) }}</p>
+                <p class="mt-2 text-3xl font-bold text-primary-700 dark:text-primary-300">GHS {{ number_format($overview['billed_in_period'], 2) }}</p>
                 <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Deferred-payment transactions created in range</p>
             </article>
 
             <article class="rounded-2xl border border-warning-100 bg-warning-50 p-5 shadow-sm dark:border-warning-500/20 dark:bg-warning-500/10">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Open receivables</p>
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Total outstanding</p>
                 <p class="mt-2 text-3xl font-bold text-warning-700 dark:text-warning-300">GHS {{ number_format($overview['outstanding'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Balances awaiting corporate settlement</p>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Current unpaid corporate balance across all periods</p>
             </article>
 
             <article class="rounded-2xl border border-success-100 bg-success-50 p-5 shadow-sm dark:border-success-500/20 dark:bg-success-500/10">
@@ -122,8 +122,8 @@
 
         <x-filament::section heading="Billing guidance">
             <div class="grid gap-4 text-sm text-gray-600 dark:text-gray-300 sm:grid-cols-2">
-                <p><span class="font-semibold text-gray-900 dark:text-white">Open receivables</span> include unpaid corporate hotel bookings, conference bookings, table reservations, and food orders created in the selected period.</p>
-                <p><span class="font-semibold text-gray-900 dark:text-white">Credit utilisation</span> measures each limited account's outstanding balance against its configured credit limit. Accounts without a limit are labelled as unlimited.</p>
+                <p><span class="font-semibold text-gray-900 dark:text-white">Corporate billing raised</span> includes valid deferred-payment transactions created during the selected reporting period.</p>
+                <p><span class="font-semibold text-gray-900 dark:text-white">Outstanding and credit utilisation</span> use current unpaid balances across all periods. Accounts without a limit are labelled as unlimited.</p>
             </div>
         </x-filament::section>
     </div>

@@ -52,7 +52,7 @@ class AdminFinanceStats extends StatsOverviewWidget
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('danger'),
             Stat::make('Corporate Outstanding', 'GHS '.number_format($corporate['outstanding'], 2))
-                ->description($periodLabel)
+                ->description('Current unpaid balance across all periods')
                 ->icon('heroicon-o-building-office-2')
                 ->color('info'),
         ];
