@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\StaffAccountStatus;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -27,7 +28,7 @@ class DatabaseSeeder extends Seeder
                 'first_name' => 'Test',
                 'last_name' => 'User',
                 'department' => 'guest',
-                'status' => User::STATUS_OFFLINE,
+                'status' => StaffAccountStatus::Active,
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
             ],

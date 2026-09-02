@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\StaffAccountStatus;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -211,6 +212,8 @@ class User extends Authenticatable implements FilamentUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_seen_at' => 'datetime',
+            'status' => StaffAccountStatus::class,
             'password' => 'hashed',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
@@ -222,14 +225,6 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->belongsTo(CorporateOrganization::class);
     }
-
-    const STATUS_ONLINE = 'online';
-
-    const STATUS_OFFLINE = 'offline';
-
-    const STATUS_ON_LEAVE = 'on_leave';
-
-    const STATUS_SUSPENDED = 'suspended';
 
     public const DEPARTMENTS = [
         'super_admin' => 'Super Admin',
@@ -376,6 +371,21 @@ class User extends Authenticatable implements FilamentUser
             $this->last_seen_at->gt(now()->subMinutes(5));
     }
 
+    public function hasActiveStaffAccount(): bool
+    {
+        return $this->status === StaffAccountStatus::Active;
+    }
+
+    public function isOnLeave(): bool
+    {
+        return $this->status === StaffAccountStatus::OnLeave;
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->status === StaffAccountStatus::Suspended;
+    }
+
     public function isStaff(): bool
     {
         return $this->hasAnyRole([
@@ -397,10 +407,6 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        if ($this->status === self::STATUS_SUSPENDED) {
-            return false;
-        }
-
         return $this->hasAnyRole([
             'super_admin',
             'admin',

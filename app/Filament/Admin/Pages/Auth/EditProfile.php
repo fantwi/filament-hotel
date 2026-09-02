@@ -61,7 +61,7 @@ class EditProfile extends BaseEditProfile
                             ->content(fn (): string => $this->getUser()->role_name),
                         Placeholder::make('status_display')
                             ->label('Status')
-                            ->content(fn (): string => str($this->getUser()->status ?? 'Not set')->headline()->toString()),
+                            ->content(fn (): string => $this->getUser()->status?->label() ?? 'Not set'),
                     ])
                     ->columns([
                         'default' => 1,

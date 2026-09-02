@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\StaffAccountStatus;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -22,7 +23,7 @@ class RestoreAdminSeeder extends Seeder
                 'first_name' => 'System',
                 'last_name' => 'Administrator',
                 'department' => 'super_admin',
-                'status' => User::STATUS_ONLINE,
+                'status' => StaffAccountStatus::Active,
                 'email_verified_at' => now(),
                 'password' => Hash::make('Admin@2026!'),
             ],

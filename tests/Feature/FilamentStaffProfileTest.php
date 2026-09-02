@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\StaffAccountStatus;
 use App\Filament\Admin\Pages\Auth\EditProfile;
 use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
@@ -38,7 +39,7 @@ class FilamentStaffProfileTest extends TestCase
 
     public function test_profile_form_uses_personal_fields_and_read_only_staff_metadata(): void
     {
-        $admin = User::factory()->create(['department' => 'admin', 'status' => User::STATUS_ONLINE]);
+        $admin = User::factory()->create(['department' => 'admin', 'status' => StaffAccountStatus::Active]);
 
         $this->profileComponent($admin)
             ->assertFormFieldExists('first_name')
@@ -62,7 +63,7 @@ class FilamentStaffProfileTest extends TestCase
             'email' => 'old-admin@example.test',
             'phone_number' => '0200000000',
             'department' => 'admin',
-            'status' => User::STATUS_ONLINE,
+            'status' => StaffAccountStatus::Active,
         ]);
 
         $this->profileComponent($admin)
@@ -73,7 +74,7 @@ class FilamentStaffProfileTest extends TestCase
                 'phone_number' => '0241112233',
             ])
             ->set('data.department', 'super_admin')
-            ->set('data.status', User::STATUS_SUSPENDED)
+            ->set('data.status', StaffAccountStatus::Suspended)
             ->call('save')
             ->assertHasNoFormErrors();
 
@@ -83,7 +84,7 @@ class FilamentStaffProfileTest extends TestCase
         self::assertSame('Administrator', $admin->last_name);
         self::assertSame('0241112233', $admin->phone_number);
         self::assertSame('admin', $admin->department);
-        self::assertSame(User::STATUS_ONLINE, $admin->status);
+        self::assertSame(StaffAccountStatus::Active, $admin->status);
         self::assertArrayNotHasKey('name', $admin->getAttributes());
     }
 

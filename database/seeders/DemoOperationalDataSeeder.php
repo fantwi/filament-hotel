@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\StaffAccountStatus;
 use App\Models\ActivityLog;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
@@ -73,7 +74,7 @@ class DemoOperationalDataSeeder extends Seeder
                 'first_name' => 'Ama',
                 'last_name' => 'Mensah',
                 'department' => 'guest',
-                'status' => User::STATUS_OFFLINE,
+                'status' => StaffAccountStatus::Active,
                 'password' => bcrypt('password'),
                 'email_verified_at' => now(),
             ],

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\StaffAccountStatus;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Guest;
@@ -61,7 +62,7 @@ class RegisteredUserController extends Controller
             'id_number' => $request->id_number,
             'password' => Hash::make($request->password),
             'department' => 'guest',
-            'status' => User::STATUS_OFFLINE,
+            'status' => StaffAccountStatus::Active,
         ]);
 
         // ✅ CREATE GUEST AUTOMATICALLY
