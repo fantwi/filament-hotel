@@ -19,6 +19,7 @@ use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class AccountantStatsTest extends TestCase
@@ -143,6 +144,22 @@ class AccountantStatsTest extends TestCase
         self::assertSame('GHS 200.00', $channels['Conference receivables']->getValue());
         self::assertSame('GHS 300.00', $channels['Table-reservation receivables']->getValue());
         self::assertSame('GHS 400.00', $channels['Food-order receivables']->getValue());
+    }
+
+    public function test_receivables_stats_uses_one_aggregate_query_per_transaction_channel(): void
+    {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $stats = $this->stats(new AccountantReceivablesStats);
+            $queryCount = count(DB::getQueryLog());
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        self::assertCount(5, $stats);
+        self::assertSame(4, $queryCount);
     }
 
     private function payment(string $status, string $reference, string $createdAt): void

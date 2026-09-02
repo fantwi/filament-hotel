@@ -7,9 +7,9 @@ use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
-use App\Services\CorporateCreditService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Provides receivables by transaction channel for the accountant dashboard.
@@ -37,41 +37,48 @@ class AccountantReceivablesStats extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
-        [$start, $end] = $this->dashboardDateRange();
         $periodLabel = $this->dashboardDateRangeLabel();
 
-        $hotel = $this->forDashboardDateRange(Booking::query())
-            ->whereIn('payment_status', ['pending', 'unpaid'])
-            ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
-            ->sum('total_price');
-        $conference = $this->forDashboardDateRange(ConferenceBooking::query())
-            ->whereIn('payment_status', ['pending', 'unpaid'])
-            ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
-            ->sum('total_price');
-        $tables = $this->forDashboardDateRange(RestaurantReservation::query())
-            ->whereIn('payment_status', ['pending', 'unpaid'])
-            ->whereNotIn('status', ['cancelled', 'no_show'])
-            ->sum('reservation_fee');
-        $food = $this->forDashboardDateRange(RestaurantOrder::query())
-            ->whereIn('payment_status', ['pending', 'unpaid'])
-            ->where('status', '!=', 'cancelled')
-            ->sum('total');
-        $corporate = app(CorporateCreditService::class)->dashboardOverview($start, $end)['period_outstanding'];
+        $hotel = $this->receivableTotals(
+            $this->forDashboardDateRange(Booking::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->whereNotIn('status', ['cancelled', 'expired', 'no_show']),
+            'total_price',
+        );
+        $conference = $this->receivableTotals(
+            $this->forDashboardDateRange(ConferenceBooking::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->whereNotIn('status', ['cancelled', 'expired', 'no_show']),
+            'total_price',
+        );
+        $tables = $this->receivableTotals(
+            $this->forDashboardDateRange(RestaurantReservation::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->whereNotIn('status', ['cancelled', 'no_show']),
+            'reservation_fee',
+        );
+        $food = $this->receivableTotals(
+            $this->forDashboardDateRange(RestaurantOrder::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->where('status', '!=', 'cancelled'),
+            'total',
+        );
+        $corporate = $hotel['corporate'] + $conference['corporate'] + $tables['corporate'] + $food['corporate'];
 
         return [
-            Stat::make('Hotel booking receivables', $this->formatAmount($hotel))
+            Stat::make('Hotel booking receivables', $this->formatAmount($hotel['total']))
                 ->description($periodLabel)
                 ->icon('heroicon-o-home-modern')
                 ->color('warning'),
-            Stat::make('Conference receivables', $this->formatAmount($conference))
+            Stat::make('Conference receivables', $this->formatAmount($conference['total']))
                 ->description($periodLabel)
                 ->icon('heroicon-o-building-office')
                 ->color('warning'),
-            Stat::make('Table-reservation receivables', $this->formatAmount($tables))
+            Stat::make('Table-reservation receivables', $this->formatAmount($tables['total']))
                 ->description($periodLabel)
                 ->icon('heroicon-o-calendar-days')
                 ->color('warning'),
-            Stat::make('Food-order receivables', $this->formatAmount($food))
+            Stat::make('Food-order receivables', $this->formatAmount($food['total']))
                 ->description($periodLabel)
                 ->icon('heroicon-o-shopping-bag')
                 ->color('warning'),
@@ -79,6 +86,24 @@ class AccountantReceivablesStats extends StatsOverviewWidget
                 ->description('Included in channel totals')
                 ->icon('heroicon-o-building-office-2')
                 ->color('danger'),
+        ];
+    }
+
+    /**
+     * Returns total and corporate receivables from a single aggregate query.
+     *
+     * @return array{total: float, corporate: float}
+     */
+    private function receivableTotals(Builder $query, string $amountColumn): array
+    {
+        $totals = $query
+            ->selectRaw("COALESCE(SUM({$amountColumn}), 0) as total_receivables")
+            ->selectRaw("COALESCE(SUM(CASE WHEN corporate_organization_id IS NOT NULL THEN {$amountColumn} ELSE 0 END), 0) as corporate_receivables")
+            ->first();
+
+        return [
+            'total' => (float) ($totals?->total_receivables ?? 0),
+            'corporate' => (float) ($totals?->corporate_receivables ?? 0),
         ];
     }
 
