@@ -3,7 +3,9 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
+use App\Filament\Admin\Resources\Payments\PaymentResource;
 use App\Models\Payment;
+use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -39,6 +41,11 @@ class RecentPayments extends TableWidget
             'restaurantReservation.guest',
             'restaurantOrder.guest',
         ])->latest())->columns([
+            TextColumn::make('transaction_id')
+                ->label('Transaction')
+                ->state(fn (Payment $record): string => $record->transactionLabel())
+                ->description(fn (Payment $record): ?string => $record->transaction_reference ? 'Ref: '.$record->transaction_reference : null)
+                ->wrap(),
             TextColumn::make('transaction_reference')
                 ->label('Reference')
                 ->searchable()
@@ -59,6 +66,12 @@ class RecentPayments extends TableWidget
                 ->sortable()
                 ->toggleable()
                 ->visibleFrom('md'),
+        ])->recordActions([
+            Action::make('details')
+                ->label('Details')
+                ->icon('heroicon-o-eye')
+                ->color('gray')
+                ->url(fn (Payment $record): string => PaymentResource::getUrl('view', ['record' => $record])),
         ])->defaultPaginationPageOption(10);
     }
 }
