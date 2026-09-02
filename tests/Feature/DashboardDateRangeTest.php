@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
@@ -137,8 +138,22 @@ class DashboardDateRangeTest extends TestCase
             $components = (new $dashboardClass)->content(Schema::make())->getComponents();
 
             self::assertInstanceOf(Grid::class, $components[1], $dashboardClass);
+        }
+
+        foreach ([
+            SuperAdminDashboard::class,
+            AdminDashboard::class,
+            ManagerDashboard::class,
+        ] as $dashboardClass) {
+            $components = (new $dashboardClass)->content(Schema::make())->getComponents();
+
             self::assertInstanceOf(Tabs::class, $components[2], $dashboardClass);
         }
+
+        $accountantComponents = (new AccountantDashboard)->content(Schema::make())->getComponents();
+
+        self::assertInstanceOf(Section::class, $accountantComponents[2]);
+        self::assertSame('Finance', $accountantComponents[2]->getHeading());
     }
 
     public function test_super_admin_dashboard_sections_are_named_for_their_operational_domains(): void
@@ -163,7 +178,6 @@ class DashboardDateRangeTest extends TestCase
         foreach ([
             SuperAdminDashboard::class,
             AdminDashboard::class,
-            AccountantDashboard::class,
             ManagerDashboard::class,
         ] as $dashboardClass) {
             $components = (new $dashboardClass)->content(Schema::make())->getComponents();

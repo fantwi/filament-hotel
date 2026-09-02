@@ -54,4 +54,17 @@ class AccountantDashboard extends TimeFilteredDashboard
             RecentPayments::class,
         ];
     }
+
+    /**
+     * Keeps the Accountant finance center and summary metrics above the
+     * detailed corporate billing, payment chart, and payment register.
+     */
+    protected function isPriorityDashboardWidget(string $widgetClass): bool
+    {
+        return in_array($widgetClass, [
+            RoleDashboardOverview::class,
+            AccountantStats::class,
+            AccountantReceivablesStats::class,
+        ], true);
+    }
 }
