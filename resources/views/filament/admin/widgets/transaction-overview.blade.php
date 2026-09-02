@@ -19,39 +19,74 @@
                 </div>
                 <div class="rounded-xl border border-success-200 bg-success-50 p-4 dark:border-success-500/20 dark:bg-success-500/10">
                     <p class="text-sm font-semibold text-success-800 dark:text-success-200">Payment activity</p>
-                    <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">Completed payments use the date the payment was recorded, so they can settle transactions created before the selected period.</p>
+                    <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">Completed payments use their recorded date. Refunds use their processed date, so either can relate to transactions created before the selected period.</p>
                 </div>
                 <div class="rounded-xl border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/20 dark:bg-warning-500/10">
                     <p class="text-sm font-semibold text-warning-800 dark:text-warning-200">Outstanding balances</p>
-                    <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">Receivables use the transaction creation date, exclude inactive records, and subtract every completed payment recorded against each transaction.</p>
+                    <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">Receivables use the transaction creation date and subtract all completed payments. Collection rate compares those payments with active gross value for the same transaction cohort.</p>
                 </div>
             </div>
         </x-filament::section>
 
-        <section class="grid gap-4 lg:grid-cols-3">
-            <x-filament::section heading="Outstanding follow-up" description="Unpaid transactions created in {{ $periodLabel }}">
-                <div class="space-y-4">
-                    <div class="rounded-xl bg-warning-50 p-4 dark:bg-warning-500/10">
-                        <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Corporate credit awaiting payment</p>
-                        <p class="mt-1 text-2xl font-bold text-warning-700 dark:text-warning-300">GHS {{ number_format($totals['corporate_outstanding'], 2) }}</p>
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($totals['corporate_outstanding_count']) }} corporate transaction(s)</p>
-                    </div>
-                    <p class="text-sm leading-6 text-gray-600 dark:text-gray-300">Corporate balances remain open until a payment is recorded or an accountant clears the transaction as paid.</p>
+        <x-filament::section heading="Collection performance" description="Payments and refunds processed in {{ $periodLabel }}, plus collection progress for transactions created in that period.">
+            <div class="grid gap-4 md:grid-cols-3">
+                <div @class([
+                    'rounded-xl border p-4',
+                    'border-success-200 bg-success-50 dark:border-success-500/20 dark:bg-success-500/10' => $totals['net_collections'] >= 0,
+                    'border-danger-200 bg-danger-50 dark:border-danger-500/20 dark:bg-danger-500/10' => $totals['net_collections'] < 0,
+                ])>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Net collections</p>
+                    <p @class([
+                        'mt-1 text-2xl font-bold',
+                        'text-success-700 dark:text-success-300' => $totals['net_collections'] >= 0,
+                        'text-danger-700 dark:text-danger-300' => $totals['net_collections'] < 0,
+                    ])>GHS {{ number_format($totals['net_collections'], 2) }}</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Completed payments less refunds processed</p>
                 </div>
-            </x-filament::section>
+                <div class="rounded-xl border border-danger-200 bg-danger-50 p-4 dark:border-danger-500/20 dark:bg-danger-500/10">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Refunds processed</p>
+                    <p class="mt-1 text-2xl font-bold text-danger-700 dark:text-danger-300">GHS {{ number_format($totals['refunds'], 2) }}</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($totals['refund_count']) }} refund(s)</p>
+                </div>
+                <div class="rounded-xl border border-info-200 bg-info-50 p-4 dark:border-info-500/20 dark:bg-info-500/10">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Collection rate</p>
+                    <p class="mt-1 text-2xl font-bold text-info-700 dark:text-info-300">{{ number_format($totals['collection_rate'], 1) }}%</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">GHS {{ number_format($totals['cohort_collections'], 2) }} collected against active period transactions</p>
+                </div>
+            </div>
+        </x-filament::section>
 
-            <x-filament::section heading="Transaction mix" description="Created during {{ $periodLabel }}" class="lg:col-span-2">
-                <div class="grid gap-3 sm:grid-cols-2">
-                    @foreach ($rows as $row)
-                        <div class="rounded-xl bg-gray-50 p-4 dark:bg-white/5">
-                            <p class="text-sm font-semibold">{{ $row['label'] }}</p>
-                            <p class="mt-2 text-2xl font-bold">{{ number_format($row['transactions']) }}</p>
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">GHS {{ number_format($row['gross'], 2) }} active gross value</p>
-                        </div>
-                    @endforeach
+        <x-filament::section heading="Outstanding follow-up" description="Unpaid transactions created in {{ $periodLabel }}">
+            <div class="grid gap-4 md:grid-cols-3">
+                <div class="rounded-xl border border-info-200 bg-info-50 p-4 dark:border-info-500/20 dark:bg-info-500/10">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Non-corporate outstanding</p>
+                    <p class="mt-1 text-2xl font-bold text-info-700 dark:text-info-300">GHS {{ number_format($totals['non_corporate_outstanding'], 2) }}</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($totals['non_corporate_outstanding_count']) }} guest transaction(s)</p>
                 </div>
-            </x-filament::section>
-        </section>
+                <div class="rounded-xl border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/20 dark:bg-warning-500/10">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Corporate outstanding</p>
+                    <p class="mt-1 text-2xl font-bold text-warning-700 dark:text-warning-300">GHS {{ number_format($totals['corporate_outstanding'], 2) }}</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($totals['corporate_outstanding_count']) }} corporate transaction(s)</p>
+                </div>
+                <div class="rounded-xl border border-danger-200 bg-danger-50 p-4 dark:border-danger-500/20 dark:bg-danger-500/10">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Overdue corporate</p>
+                    <p class="mt-1 text-2xl font-bold text-danger-700 dark:text-danger-300">GHS {{ number_format($totals['overdue_corporate_outstanding'], 2) }}</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($totals['overdue_corporate_outstanding_count']) }} past payment terms</p>
+                </div>
+            </div>
+        </x-filament::section>
+
+        <x-filament::section heading="Transaction mix" description="Created during {{ $periodLabel }}">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach ($rows as $row)
+                    <div class="rounded-xl bg-gray-50 p-4 dark:bg-white/5">
+                        <p class="text-sm font-semibold">{{ $row['label'] }}</p>
+                        <p class="mt-2 text-2xl font-bold">{{ number_format($row['transactions']) }}</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">GHS {{ number_format($row['gross'], 2) }} active gross value</p>
+                    </div>
+                @endforeach
+            </div>
+        </x-filament::section>
 
         <x-filament::section heading="Transaction breakdown" description="Compare activity, payments, and outstanding balances for each guest transaction workflow.">
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

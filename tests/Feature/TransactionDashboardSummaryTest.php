@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Admin\Widgets\TransactionOverview;
 use App\Filament\Admin\Widgets\TransactionStats;
 use App\Models\Booking;
+use App\Models\CorporateOrganization;
 use App\Models\Guest;
 use App\Models\Payment;
 use App\Models\Room;
@@ -60,20 +61,36 @@ class TransactionDashboardSummaryTest extends TestCase
             'gross' => 500.0,
             'payments' => 125.0,
             'payment_count' => 1,
+            'refunds' => 0.0,
+            'refund_count' => 0,
+            'cohort_collections' => 125.0,
             'outstanding' => 375.0,
             'outstanding_count' => 1,
+            'non_corporate_outstanding' => 375.0,
+            'non_corporate_outstanding_count' => 1,
             'corporate_outstanding' => 0.0,
             'corporate_outstanding_count' => 0,
+            'overdue_corporate_outstanding' => 0.0,
+            'overdue_corporate_outstanding_count' => 0,
         ], $rows['Hotel bookings']);
         self::assertSame([
             'transactions' => 1,
             'gross' => 500.0,
             'payments' => 125.0,
             'payment_count' => 1,
+            'refunds' => 0.0,
+            'refund_count' => 0,
+            'net_collections' => 125.0,
+            'cohort_collections' => 125.0,
+            'collection_rate' => 25.0,
             'outstanding' => 375.0,
             'outstanding_count' => 1,
+            'non_corporate_outstanding' => 375.0,
+            'non_corporate_outstanding_count' => 1,
             'corporate_outstanding' => 0.0,
             'corporate_outstanding_count' => 0,
+            'overdue_corporate_outstanding' => 0.0,
+            'overdue_corporate_outstanding_count' => 0,
         ], $summary['totals']);
     }
 
@@ -85,6 +102,76 @@ class TransactionDashboardSummaryTest extends TestCase
         ));
 
         self::assertSame(8, $queryCount);
+    }
+
+    public function test_financial_indicators_use_payment_dates_refund_dates_and_corporate_terms(): void
+    {
+        Carbon::setTestNow('2026-09-02 12:00:00');
+
+        try {
+            [$guest, $room] = $this->hotelFixture();
+            $overdueOrganization = CorporateOrganization::query()->create([
+                'name' => 'Overdue Corporate Account',
+                'payment_terms_days' => 15,
+                'is_credit_enabled' => true,
+            ]);
+            $currentOrganization = CorporateOrganization::query()->create([
+                'name' => 'Current Corporate Account',
+                'payment_terms_days' => 60,
+                'is_credit_enabled' => true,
+            ]);
+
+            $personalBooking = $this->booking($guest, $room, 1000, '2026-08-01 09:00:00');
+            $overdueCorporateBooking = $this->booking(
+                $guest,
+                $room,
+                2000,
+                '2026-08-01 10:00:00',
+                $overdueOrganization,
+            );
+            $currentCorporateBooking = $this->booking(
+                $guest,
+                $room,
+                1000,
+                '2026-08-15 10:00:00',
+                $currentOrganization,
+            );
+
+            $this->payment($guest, $personalBooking, 400, 'INDICATOR-COLLECTED-IN-PERIOD', 'completed', '2026-08-10', '2026-08-10');
+            $this->payment($guest, $overdueCorporateBooking, 500, 'INDICATOR-COLLECTED-BEFORE-PERIOD', 'completed', '2026-07-20', '2026-07-20');
+            $this->payment($guest, $personalBooking, 100, 'INDICATOR-REFUNDED-IN-PERIOD', 'refunded', '2026-07-15', '2026-08-20');
+            $this->payment($guest, $currentCorporateBooking, 50, 'INDICATOR-REFUNDED-AFTER-PERIOD', 'refunded', '2026-08-20', '2026-09-01');
+
+            $summary = app(TransactionDashboardSummary::class)->summarize(
+                Carbon::parse('2026-08-01')->startOfDay(),
+                Carbon::parse('2026-08-31')->endOfDay(),
+            );
+
+            self::assertSame(400.0, $summary['totals']['payments']);
+            self::assertSame(100.0, $summary['totals']['refunds'] ?? null);
+            self::assertSame(1, $summary['totals']['refund_count'] ?? null);
+            self::assertSame(300.0, $summary['totals']['net_collections'] ?? null);
+            self::assertSame(900.0, $summary['totals']['cohort_collections'] ?? null);
+            self::assertSame(22.5, $summary['totals']['collection_rate'] ?? null);
+            self::assertSame(600.0, $summary['totals']['non_corporate_outstanding'] ?? null);
+            self::assertSame(1, $summary['totals']['non_corporate_outstanding_count'] ?? null);
+            self::assertSame(2500.0, $summary['totals']['corporate_outstanding']);
+            self::assertSame(2, $summary['totals']['corporate_outstanding_count']);
+            self::assertSame(1500.0, $summary['totals']['overdue_corporate_outstanding'] ?? null);
+            self::assertSame(1, $summary['totals']['overdue_corporate_outstanding_count'] ?? null);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_empty_period_has_a_zero_collection_rate(): void
+    {
+        $summary = app(TransactionDashboardSummary::class)->summarize(
+            Carbon::parse('2026-08-01')->startOfDay(),
+            Carbon::parse('2026-08-31')->endOfDay(),
+        );
+
+        self::assertSame(0.0, $summary['totals']['collection_rate'] ?? null);
     }
 
     public function test_both_dashboard_widgets_stay_within_the_combined_query_budget(): void
@@ -130,6 +217,50 @@ class TransactionDashboardSummaryTest extends TestCase
         ]);
 
         return [$guest, $room];
+    }
+
+    private function booking(
+        Guest $guest,
+        Room $room,
+        float $amount,
+        string $createdAt,
+        ?CorporateOrganization $organization = null,
+    ): Booking {
+        return $this->createdAt(Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'corporate_organization_id' => $organization?->id,
+            'check_in' => '2026-10-10',
+            'check_out' => '2026-10-11',
+            'total_price' => $amount,
+            'status' => 'confirmed',
+            'payment_status' => 'pending',
+        ]), $createdAt);
+    }
+
+    private function payment(
+        Guest $guest,
+        Booking $booking,
+        float $amount,
+        string $reference,
+        string $status,
+        string $createdAt,
+        string $updatedAt,
+    ): Payment {
+        $payment = Payment::query()->create([
+            'guest_id' => $guest->id,
+            'booking_id' => $booking->id,
+            'amount' => $amount,
+            'method' => 'cash',
+            'payment_status' => $status,
+            'transaction_reference' => $reference,
+        ]);
+        $payment->forceFill([
+            'created_at' => Carbon::parse($createdAt),
+            'updated_at' => Carbon::parse($updatedAt),
+        ])->saveQuietly();
+
+        return $payment;
     }
 
     /**

@@ -145,9 +145,15 @@ class TransactionDashboardIntegrationTest extends TestCase
                 'Transaction activity',
                 'Payment activity',
                 'Outstanding balances',
+                'Collection performance',
                 'Outstanding follow-up',
                 'Transaction breakdown',
             ])
+            ->assertSee('Net collections')
+            ->assertSee('Refunds processed')
+            ->assertSee('Collection rate')
+            ->assertSee('Non-corporate outstanding')
+            ->assertSee('Overdue corporate')
             ->assertSee('Active gross value')
             ->assertSee('Completed payments recorded')
             ->assertSee('Outstanding from period')
@@ -196,10 +202,19 @@ class TransactionDashboardIntegrationTest extends TestCase
             'gross' => 1000.0,
             'payments' => 250.0,
             'payment_count' => 4,
+            'refunds' => 0.0,
+            'refund_count' => 0,
+            'net_collections' => 250.0,
+            'cohort_collections' => 250.0,
+            'collection_rate' => 25.0,
             'outstanding' => 750.0,
             'outstanding_count' => 4,
+            'non_corporate_outstanding' => 450.0,
+            'non_corporate_outstanding_count' => 3,
             'corporate_outstanding' => 300.0,
             'corporate_outstanding_count' => 1,
+            'overdue_corporate_outstanding' => 0.0,
+            'overdue_corporate_outstanding_count' => 0,
         ], $overview['totals']);
         self::assertSame([
             ['Hotel bookings', 1, 100.0, 25.0],
