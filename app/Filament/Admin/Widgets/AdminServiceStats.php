@@ -34,18 +34,34 @@ class AdminServiceStats extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
+        [$start, $end] = $this->dashboardDateRange();
+        $startDate = $start->toDateString();
+        $endDate = $end->toDateString();
+        $endExclusive = $end->copy()->addDay()->toDateString();
         $periodLabel = $this->dashboardDateRangeLabel();
 
         return [
-            Stat::make('Active Hotel Bookings', number_format($this->forDashboardDateRange(Booking::query())->whereIn('status', ['pending', 'confirmed', 'checked_in'])->count()))
+            Stat::make('Active Hotel Bookings', number_format(Booking::query()
+                ->whereDate('check_in', '<', $endExclusive)
+                ->whereDate('check_out', '>', $startDate)
+                ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                ->count()))
                 ->description($periodLabel)
                 ->icon('heroicon-o-home-modern')
                 ->color('primary'),
-            Stat::make('Conference Bookings', number_format($this->forDashboardDateRange(ConferenceBooking::query())->whereIn('status', ['pending', 'confirmed'])->count()))
+            Stat::make('Conference Bookings', number_format(ConferenceBooking::query()
+                ->whereDate('booking_date', '>=', $startDate)
+                ->whereDate('booking_date', '<=', $endDate)
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->count()))
                 ->description($periodLabel)
                 ->icon('heroicon-o-building-office-2')
                 ->color('info'),
-            Stat::make('Table Reservations', number_format($this->forDashboardDateRange(RestaurantReservation::query())->whereIn('status', ['pending', 'confirmed', 'checked_in'])->count()))
+            Stat::make('Table Reservations', number_format(RestaurantReservation::query()
+                ->whereDate('reservation_date', '>=', $startDate)
+                ->whereDate('reservation_date', '<=', $endDate)
+                ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                ->count()))
                 ->description($periodLabel)
                 ->icon('heroicon-o-rectangle-stack')
                 ->color('warning'),
