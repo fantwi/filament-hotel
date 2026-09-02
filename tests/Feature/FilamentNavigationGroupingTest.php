@@ -118,10 +118,9 @@ class FilamentNavigationGroupingTest extends TestCase
         /** @var array<string, NavigationGroup> $groupsByLabel */
         $groupsByLabel = collect($groups)->keyBy(fn (NavigationGroup $group): string => (string) $group->getLabel())->all();
 
-        self::assertFalse($groupsByLabel['Dashboards']->isCollapsed());
-        self::assertFalse($groupsByLabel['Accommodation']->isCollapsed());
-
         foreach ([
+            'Dashboards',
+            'Accommodation',
             'Conferences',
             'Restaurant Sales',
             'Kitchen & Inventory',
@@ -149,14 +148,16 @@ class FilamentNavigationGroupingTest extends TestCase
             self::assertTrue($group->isCollapsible(), $group->getLabel());
         }
 
-        $activeSecondaryGroup = $groups[2];
-        $activeSecondaryGroup->items([
-            NavigationItem::make('Active conference')->url('/active-conference')->isActiveWhen(fn (): bool => true),
-        ]);
+        foreach ([0 => 'dashboard', 1 => 'accommodation', 2 => 'conference'] as $index => $slug) {
+            $activeGroup = $groups[$index];
+            $activeGroup->items([
+                NavigationItem::make("Active {$slug}")->url("/active-{$slug}")->isActiveWhen(fn (): bool => true),
+            ]);
 
-        self::assertTrue($activeSecondaryGroup->isActive());
-        self::assertFalse($activeSecondaryGroup->isCollapsed());
-        self::assertTrue($activeSecondaryGroup->isCollapsible());
+            self::assertTrue($activeGroup->isActive(), $activeGroup->getLabel());
+            self::assertFalse($activeGroup->isCollapsed(), $activeGroup->getLabel());
+            self::assertTrue($activeGroup->isCollapsible(), $activeGroup->getLabel());
+        }
 
         $inactiveSecondaryGroup = $groups[3];
         $inactiveSecondaryGroup->items([

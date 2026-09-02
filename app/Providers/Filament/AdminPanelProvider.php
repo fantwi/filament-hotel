@@ -62,8 +62,8 @@ class AdminPanelProvider extends PanelProvider
                 'info' => $this->hotelBrandColor('secondary_color', '#0EA5E9'),
             ])
             ->navigationGroups([
-                NavigationGroup::make('Dashboards'),
-                NavigationGroup::make('Accommodation'),
+                NavigationGroup::make('Dashboards')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
+                NavigationGroup::make('Accommodation')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
                 NavigationGroup::make('Conferences')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
                 NavigationGroup::make('Restaurant Sales')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
                 NavigationGroup::make('Kitchen & Inventory')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
