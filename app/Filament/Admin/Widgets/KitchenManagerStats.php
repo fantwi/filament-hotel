@@ -23,8 +23,10 @@ class KitchenManagerStats extends StatsOverviewWidget
      */
     public static function canView(): bool
     {
-        return (auth()->user()?->hasRole('kitchen_manager') ?? false)
-            && (auth()->user()?->can('view kitchen dashboard') ?? false);
+        $user = auth()->user();
+
+        return (bool) ($user?->hasAnyRole(['super_admin', 'admin', 'kitchen_manager'])
+            && $user?->can('view kitchen dashboard'));
     }
 
     /**

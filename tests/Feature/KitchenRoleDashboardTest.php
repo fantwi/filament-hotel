@@ -12,6 +12,8 @@ use App\Models\User;
 use App\Services\StaffAccountAccess;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class KitchenRoleDashboardTest extends TestCase
@@ -56,5 +58,29 @@ class KitchenRoleDashboardTest extends TestCase
             'filament.admin.pages.kitchen-staff-dashboard',
             $access->dashboardRouteName($kitchenStaff),
         );
+    }
+
+    public function test_kitchen_manager_dashboard_is_visible_only_to_permitted_kitchen_managers_and_administrators(): void
+    {
+        $permission = Permission::findOrCreate('view kitchen dashboard', 'web');
+
+        foreach ([
+            ['super_admin', true, true],
+            ['admin', true, true],
+            ['kitchen_manager', true, true],
+            ['manager', true, false],
+            ['kitchen_staff', true, false],
+            ['admin', false, false],
+        ] as [$roleName, $hasPermission, $expected]) {
+            $role = Role::findOrCreate($roleName, 'web');
+            $role->syncPermissions($hasPermission ? [$permission] : []);
+
+            $user = User::factory()->create();
+            $user->assignRole($role);
+            $this->actingAs($user);
+
+            self::assertSame($expected, KitchenManagerDashboard::canAccess(), "Page access did not match for [{$roleName}].");
+            self::assertSame($expected, KitchenManagerStats::canView(), "Widget access did not match for [{$roleName}].");
+        }
     }
 }
