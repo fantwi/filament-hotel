@@ -32,9 +32,19 @@ class RecentPayments extends TableWidget
      */
     public function table(Table $table): Table
     {
-        return $table->query($this->forDashboardDateRange(Payment::query())->with('guest')->latest())->columns([
+        return $table->query($this->forDashboardDateRange(Payment::query())->with([
+            'guest',
+            'booking.guest',
+            'conferenceBooking.guest',
+            'restaurantReservation.guest',
+            'restaurantOrder.guest',
+        ])->latest())->columns([
             TextColumn::make('transaction_reference')->label('Reference')->searchable()->copyable(),
-            TextColumn::make('guest.email')->label('Guest')->placeholder('No guest'),
+            TextColumn::make('transaction_guest')
+                ->label('Guest')
+                ->state(fn (Payment $record): string => $record->transactionGuestName())
+                ->description(fn (Payment $record): ?string => $record->transactionGuest()?->email)
+                ->wrap(),
             TextColumn::make('amount')->money('GHS')->sortable(),
             TextColumn::make('method')->badge(),
             TextColumn::make('payment_status')->label('Status')->badge(),
