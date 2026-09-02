@@ -48,7 +48,23 @@
             </div>
         </section>
 
-        <x-filament::section heading="Account credit position" description="Outstanding balances and remaining credit for each enabled corporate account.">
+        <x-filament::section>
+            <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-gray-950 dark:text-white">Highest corporate exposures</h2>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Showing the five accounts with the highest outstanding balances.</p>
+                </div>
+                <x-filament::button
+                    tag="a"
+                    :href="$accountsUrl"
+                    color="gray"
+                    icon="heroicon-o-arrow-top-right-on-square"
+                    class="w-full sm:w-auto"
+                >
+                    View all corporate accounts
+                </x-filament::button>
+            </div>
+
             <div class="grid gap-3 md:hidden">
                 @if ($overview['accounts']->isNotEmpty())
                     @foreach ($overview['accounts'] as $account)

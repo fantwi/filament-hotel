@@ -62,6 +62,13 @@ class CorporateCreditService
         $totalCreditLimit = $accounts
             ->filter(fn (array $account): bool => $account['credit_limit'] !== null)
             ->sum('credit_limit');
+        $highestExposures = $accounts
+            ->sortBy([
+                ['outstanding', 'desc'],
+                ['name', 'asc'],
+            ])
+            ->take(5)
+            ->values();
 
         return [
             'active_accounts' => CorporateOrganization::query()
@@ -78,7 +85,7 @@ class CorporateCreditService
             'available_credit' => $accounts
                 ->whereNotNull('available_credit')
                 ->sum('available_credit'),
-            'accounts' => $accounts,
+            'accounts' => $highestExposures,
         ];
     }
 

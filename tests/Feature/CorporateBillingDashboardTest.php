@@ -146,4 +146,42 @@ class CorporateBillingDashboardTest extends TestCase
         self::assertSame('completed', $order->refresh()->payment_status);
         self::assertDatabaseCount('payments', 4);
     }
+
+    public function test_corporate_dashboard_lists_only_the_five_highest_exposures_without_truncating_totals(): void
+    {
+        $amounts = [100, 700, 300, 600, 200, 500, 400];
+
+        foreach ($amounts as $index => $amount) {
+            $organization = CorporateOrganization::query()->create([
+                'name' => 'Exposure '.($index + 1),
+                'credit_limit' => 1000,
+                'is_credit_enabled' => true,
+            ]);
+
+            RestaurantOrder::query()->create([
+                'corporate_organization_id' => $organization->id,
+                'order_number' => 'EXPOSURE-'.($index + 1),
+                'payment_method' => 'corporate_account',
+                'payment_status' => 'pending',
+                'status' => 'confirmed',
+                'total' => $amount,
+            ]);
+        }
+
+        $overview = app(CorporateCreditService::class)->dashboardOverview(
+            now()->subDay(),
+            now()->addDay(),
+        );
+
+        self::assertSame(7, $overview['active_accounts']);
+        self::assertSame(2800.0, (float) $overview['outstanding']);
+        self::assertSame(4200.0, (float) $overview['available_credit']);
+        self::assertSame([
+            'Exposure 2',
+            'Exposure 4',
+            'Exposure 6',
+            'Exposure 7',
+            'Exposure 3',
+        ], $overview['accounts']->pluck('name')->all());
+    }
 }

@@ -37,7 +37,7 @@ class CorporateOrganizationResource extends SecureResource
      */
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false;
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;
     }
 
     /**

@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Resources\CorporateOrganizations\CorporateOrganizationResource;
 use App\Filament\Admin\Widgets\CorporateBillingOverview;
+use App\Models\CorporateOrganization;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
@@ -26,7 +29,7 @@ class CorporateBillingDashboardWidgetTest extends TestCase
             ->get('/admin/super-admin-dashboard')
             ->assertOk()
             ->assertSee('Corporate billing and credit exposure')
-            ->assertSee('Account credit position');
+            ->assertSee('Highest corporate exposures');
     }
 
     public function test_corporate_billing_widget_uses_responsive_credit_cards_and_utilisation_indicators(): void
@@ -61,5 +64,45 @@ class CorporateBillingDashboardWidgetTest extends TestCase
                 'Available credit',
                 'Enabled accounts',
             ]);
+    }
+
+    public function test_corporate_billing_widget_links_its_bounded_exposure_summary_to_the_full_register(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $role = Role::findOrCreate('accountant', 'web');
+        $user = User::factory()->create(['department' => 'accountant']);
+        $user->assignRole($role);
+        $url = CorporateOrganizationResource::getUrl('index');
+
+        Livewire::actingAs($user)
+            ->test(CorporateBillingOverview::class)
+            ->assertSee('Highest corporate exposures')
+            ->assertSee('Showing the five accounts with the highest outstanding balances.')
+            ->assertSee('View all corporate accounts')
+            ->assertSeeHtml('href="'.$url.'"');
+    }
+
+    public function test_accountant_has_read_only_access_to_the_complete_corporate_account_register(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $role = Role::findOrCreate('accountant', 'web');
+        $user = User::factory()->create(['department' => 'accountant']);
+        $user->assignRole($role);
+        $organization = CorporateOrganization::query()->create([
+            'name' => 'Read-only Corporate Account',
+            'credit_limit' => 5000,
+            'is_credit_enabled' => true,
+        ]);
+
+        $this->actingAs($user);
+
+        self::assertTrue(CorporateOrganizationResource::canViewAny());
+        self::assertFalse(CorporateOrganizationResource::canCreate());
+        self::assertFalse(CorporateOrganizationResource::canEdit($organization));
+        self::assertFalse(CorporateOrganizationResource::canDelete($organization));
+
+        $this->get(CorporateOrganizationResource::getUrl('index'))
+            ->assertOk()
+            ->assertSee('Read-only Corporate Account');
     }
 }
