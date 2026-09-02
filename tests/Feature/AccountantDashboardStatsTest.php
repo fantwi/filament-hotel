@@ -7,6 +7,7 @@ use App\Filament\Admin\Pages\Dashboards\AccountantDashboard;
 use App\Filament\Admin\Widgets\AccountantPaymentActivityChart;
 use App\Filament\Admin\Widgets\AccountantReceivablesStats;
 use App\Filament\Admin\Widgets\AccountantStats;
+use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget;
 use ReflectionMethod;
 use Tests\TestCase;
@@ -51,5 +52,17 @@ class AccountantDashboardStatsTest extends TestCase
 
             self::assertNull($method->invoke(new $widgetClass), $widgetClass);
         }
+    }
+
+    public function test_admin_panel_does_not_discover_the_obsolete_accountant_period_widget(): void
+    {
+        $widgets = Filament::getPanel('admin')->getWidgets();
+
+        self::assertNotContains(
+            'App\\Filament\\Admin\\Widgets\\AccountantPeriodReport',
+            $widgets,
+        );
+        self::assertContains(AccountantStats::class, $widgets);
+        self::assertContains(AccountantReceivablesStats::class, $widgets);
     }
 }
