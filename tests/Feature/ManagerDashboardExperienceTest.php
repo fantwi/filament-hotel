@@ -11,6 +11,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -85,7 +86,6 @@ class ManagerDashboardExperienceTest extends TestCase
             'filters.occurred_at.from' => '2026-08-01',
             'filters.occurred_at.until' => '2026-08-15',
         ]);
-        $this->assertFilteredLink($stats['Corporate outstanding'], '/admin/corporate-receivables');
     }
 
     public function test_production_drill_down_filter_constrains_batches_to_the_selected_dates(): void
@@ -102,6 +102,25 @@ class ManagerDashboardExperienceTest extends TestCase
 
         self::assertStringContainsString('production_date', $query->toSql());
         self::assertSame(['2026-08-01', '2026-08-15'], $query->getBindings());
+    }
+
+    public function test_manager_operations_row_does_not_eagerly_query_the_corporate_overview(): void
+    {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $stats = $this->stats(new ManagerOperationsStats);
+        $queries = DB::getQueryLog();
+
+        DB::disableQueryLog();
+
+        self::assertSame([
+            'Active stays',
+            'Active kitchen orders',
+            'Production batches',
+            'Stock movements',
+        ], array_keys($stats));
+        self::assertCount(4, $queries);
     }
 
     /**

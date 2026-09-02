@@ -8,7 +8,6 @@ use App\Models\Booking;
 use App\Models\KitchenProduction;
 use App\Models\KitchenStockMovement;
 use App\Models\RestaurantOrder;
-use App\Services\CorporateCreditService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -39,7 +38,6 @@ class ManagerOperationsStats extends StatsOverviewWidget
     {
         [$start, $end] = $this->dashboardDateRange();
         $periodLabel = $this->dashboardDateRangeLabel();
-        $corporate = app(CorporateCreditService::class)->dashboardOverview($start, $end);
 
         return [
             $this->drillDown(
@@ -85,13 +83,6 @@ class ManagerOperationsStats extends StatsOverviewWidget
                     ->icon('heroicon-o-archive-box')
                     ->color('warning'),
                 $this->kitchenStockMovementDrillDownUrl(),
-            ),
-            $this->drillDown(
-                Stat::make('Corporate outstanding', 'GHS '.number_format($corporate['period_outstanding'], 2))
-                    ->description($periodLabel)
-                    ->icon('heroicon-o-building-office-2')
-                    ->color('danger'),
-                $this->corporateReceivablesDrillDownUrl(),
             ),
         ];
     }

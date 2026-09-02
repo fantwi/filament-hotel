@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Pages\Dashboards\SuperAdminDashboard;
 use App\Filament\Admin\Resources\CorporateOrganizations\CorporateOrganizationResource;
 use App\Filament\Admin\Widgets\CorporateBillingOverview;
 use App\Models\CorporateOrganization;
@@ -17,7 +18,15 @@ class CorporateBillingDashboardWidgetTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_super_admin_dashboard_renders_the_redesigned_corporate_billing_widget(): void
+    public function test_corporate_billing_widget_defers_its_expensive_data_queries_until_visible(): void
+    {
+        $widget = new CorporateBillingOverview;
+
+        self::assertTrue(CorporateBillingOverview::isLazy());
+        self::assertSame('32rem', $widget->getPlaceholderHeight());
+    }
+
+    public function test_super_admin_dashboard_registers_the_lazy_corporate_billing_widget(): void
     {
         Permission::findOrCreate('view super admin dashboard', 'web');
         $role = Role::findOrCreate('super_admin', 'web');
@@ -25,11 +34,11 @@ class CorporateBillingDashboardWidgetTest extends TestCase
         $user->givePermissionTo('view super admin dashboard');
         $user->assignRole($role);
 
+        self::assertContains(CorporateBillingOverview::class, (new SuperAdminDashboard)->getWidgets());
+
         $this->actingAs($user)
             ->get('/admin/super-admin-dashboard')
-            ->assertOk()
-            ->assertSee('Corporate billing and credit exposure')
-            ->assertSee('Highest corporate exposures');
+            ->assertOk();
     }
 
     public function test_corporate_billing_widget_uses_responsive_credit_cards_and_utilisation_indicators(): void
