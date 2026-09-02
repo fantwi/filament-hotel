@@ -12,6 +12,7 @@ use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Support\Colors\Color;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -114,6 +115,55 @@ class RecentPaymentsWidgetTest extends TestCase
             parse_url(PaymentResource::getUrl('view', ['record' => $payment]), PHP_URL_PATH),
             parse_url((string) $action->getUrl(), PHP_URL_PATH),
         );
+    }
+
+    public function test_recent_payment_status_badges_use_readable_labels_and_semantic_colors(): void
+    {
+        $column = $this->table()->getColumn('payment_status');
+
+        self::assertInstanceOf(TextColumn::class, $column);
+        self::assertTrue($column->isBadge());
+        self::assertSame('Partially Paid', $column->formatState('partially_paid'));
+
+        foreach ([
+            'paid' => 'success',
+            'completed' => 'success',
+            'pending' => 'warning',
+            'partial' => 'warning',
+            'partially_paid' => 'warning',
+            'unpaid' => 'danger',
+            'failed' => 'danger',
+            'cancelled' => 'danger',
+            'expired' => 'danger',
+            'refunded' => 'info',
+            'refund' => 'info',
+            'unexpected' => 'gray',
+        ] as $state => $color) {
+            self::assertSame($color, $column->getColor($state), $state);
+        }
+    }
+
+    public function test_recent_payment_method_badges_use_readable_labels_and_distinct_colors(): void
+    {
+        $column = $this->table()->getColumn('method');
+
+        self::assertInstanceOf(TextColumn::class, $column);
+        self::assertTrue($column->isBadge());
+        self::assertSame('Bank Transfer', $column->formatState('bank_transfer'));
+        self::assertSame('Corporate Account', $column->formatState('corporate_account'));
+
+        foreach ([
+            'cash' => 'success',
+            'momo' => 'info',
+            'paystack' => 'primary',
+            'card' => 'warning',
+            'bank_transfer' => 'warning',
+            'unexpected' => 'gray',
+        ] as $state => $color) {
+            self::assertSame($color, $column->getColor($state), $state);
+        }
+
+        self::assertSame(Color::Purple, $column->getColor('corporate_account'));
     }
 
     private function table(): Table

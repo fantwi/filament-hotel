@@ -6,6 +6,7 @@ use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Filament\Admin\Resources\Payments\PaymentResource;
 use App\Models\Payment;
 use Filament\Actions\Action;
+use Filament\Support\Colors\Color;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -58,8 +59,30 @@ class RecentPayments extends TableWidget
                 ->description(fn (Payment $record): ?string => $record->transactionGuest()?->email)
                 ->wrap(),
             TextColumn::make('amount')->money('GHS')->sortable(),
-            TextColumn::make('method')->badge()->toggleable()->visibleFrom('md'),
-            TextColumn::make('payment_status')->label('Status')->badge(),
+            TextColumn::make('method')
+                ->badge()
+                ->formatStateUsing(fn (?string $state): string => str($state ?? 'unknown')->replace('_', ' ')->headline()->toString())
+                ->color(fn (?string $state): array|string => match ($state) {
+                    'cash' => 'success',
+                    'momo' => 'info',
+                    'paystack' => 'primary',
+                    'card', 'bank_transfer' => 'warning',
+                    'corporate_account' => Color::Purple,
+                    default => 'gray',
+                })
+                ->toggleable()
+                ->visibleFrom('md'),
+            TextColumn::make('payment_status')
+                ->label('Status')
+                ->badge()
+                ->formatStateUsing(fn (?string $state): string => str($state ?? 'unknown')->replace('_', ' ')->headline()->toString())
+                ->color(fn (?string $state): string => match ($state) {
+                    'paid', 'completed' => 'success',
+                    'pending', 'partial', 'partially_paid' => 'warning',
+                    'unpaid', 'failed', 'cancelled', 'expired' => 'danger',
+                    'refunded', 'refund' => 'info',
+                    default => 'gray',
+                }),
             TextColumn::make('created_at')
                 ->label('Date')
                 ->dateTime('M d, Y g:i A')
