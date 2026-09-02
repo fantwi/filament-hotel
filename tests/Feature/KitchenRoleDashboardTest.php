@@ -83,4 +83,28 @@ class KitchenRoleDashboardTest extends TestCase
             self::assertSame($expected, KitchenManagerStats::canView(), "Widget access did not match for [{$roleName}].");
         }
     }
+
+    public function test_kitchen_staff_dashboard_is_visible_only_to_permitted_kitchen_staff_and_administrators(): void
+    {
+        $permission = Permission::findOrCreate('view kitchen dashboard', 'web');
+
+        foreach ([
+            ['super_admin', true, true],
+            ['admin', true, true],
+            ['kitchen_staff', true, true],
+            ['kitchen_manager', true, false],
+            ['manager', true, false],
+            ['admin', false, false],
+        ] as [$roleName, $hasPermission, $expected]) {
+            $role = Role::findOrCreate($roleName, 'web');
+            $role->syncPermissions($hasPermission ? [$permission] : []);
+
+            $user = User::factory()->create();
+            $user->assignRole($role);
+            $this->actingAs($user);
+
+            self::assertSame($expected, KitchenStaffDashboard::canAccess(), "Page access did not match for [{$roleName}].");
+            self::assertSame($expected, KitchenStaffStats::canView(), "Widget access did not match for [{$roleName}].");
+        }
+    }
 }

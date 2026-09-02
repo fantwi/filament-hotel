@@ -28,7 +28,8 @@ class KitchenStaffDashboard extends TimeFilteredDashboard
     {
         $user = auth()->user();
 
-        return (bool) ($user?->hasRole('kitchen_staff') && $user?->can('view kitchen dashboard'));
+        return (bool) ($user?->hasAnyRole(['super_admin', 'admin', 'kitchen_staff'])
+            && $user?->can('view kitchen dashboard'));
     }
 
     /**
