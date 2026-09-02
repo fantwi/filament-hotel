@@ -55,11 +55,53 @@ class ManagerOperationsChart extends ChartWidget
             ->all();
 
         return ['datasets' => [
-            ['label' => 'Hotel', 'data' => $series(Booking::class)],
-            ['label' => 'Conference', 'data' => $series(ConferenceBooking::class)],
-            ['label' => 'Restaurant Reservations', 'data' => $series(RestaurantReservation::class)],
-            ['label' => 'Food Orders', 'data' => $series(RestaurantOrder::class)],
+            $this->operationDataset(
+                'Hotel',
+                $series(Booking::class),
+                '#4F46E5',
+                'rgba(79, 70, 229, 0.18)',
+            ),
+            $this->operationDataset(
+                'Conference',
+                $series(ConferenceBooking::class),
+                '#0EA5E9',
+                'rgba(14, 165, 233, 0.18)',
+            ),
+            $this->operationDataset(
+                'Restaurant Reservations',
+                $series(RestaurantReservation::class),
+                '#F59E0B',
+                'rgba(245, 158, 11, 0.18)',
+            ),
+            $this->operationDataset(
+                'Food Orders',
+                $series(RestaurantOrder::class),
+                '#10B981',
+                'rgba(16, 185, 129, 0.18)',
+            ),
         ], 'labels' => $buckets->pluck('label')->all()];
+    }
+
+    /**
+     * Builds a consistently styled operational chart dataset.
+     *
+     * @param  array<int, int>  $data
+     * @return array<string, mixed>
+     */
+    private function operationDataset(string $label, array $data, string $color, string $backgroundColor): array
+    {
+        return [
+            'label' => $label,
+            'data' => $data,
+            'borderColor' => $color,
+            'backgroundColor' => $backgroundColor,
+            'pointBackgroundColor' => $color,
+            'pointBorderColor' => '#FFFFFF',
+            'pointRadius' => 3,
+            'borderWidth' => 3,
+            'tension' => 0.35,
+            'fill' => true,
+        ];
     }
 
     /**

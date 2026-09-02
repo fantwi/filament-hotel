@@ -49,6 +49,34 @@ class AdminDashboardChartBreakdownTest extends TestCase
         self::assertSame([1, 2, 0, 0, 0, 0, 0], $data['datasets'][3]['data']);
     }
 
+    public function test_operation_series_use_distinct_semantic_chart_colors(): void
+    {
+        $datasets = $this->chartData('monthly', '2026-08-01', '2026-08-31')['datasets'];
+
+        self::assertSame([
+            'Hotel' => '#4F46E5',
+            'Conference' => '#0EA5E9',
+            'Restaurant Reservations' => '#F59E0B',
+            'Food Orders' => '#10B981',
+        ], array_column($datasets, 'borderColor', 'label'));
+        self::assertSame([
+            'Hotel' => 'rgba(79, 70, 229, 0.18)',
+            'Conference' => 'rgba(14, 165, 233, 0.18)',
+            'Restaurant Reservations' => 'rgba(245, 158, 11, 0.18)',
+            'Food Orders' => 'rgba(16, 185, 129, 0.18)',
+        ], array_column($datasets, 'backgroundColor', 'label'));
+        self::assertCount(4, array_unique(array_column($datasets, 'borderColor')));
+
+        foreach ($datasets as $dataset) {
+            self::assertSame($dataset['borderColor'], $dataset['pointBackgroundColor']);
+            self::assertSame('#FFFFFF', $dataset['pointBorderColor']);
+            self::assertSame(3, $dataset['pointRadius']);
+            self::assertSame(3, $dataset['borderWidth']);
+            self::assertSame(0.35, $dataset['tension']);
+            self::assertTrue($dataset['fill']);
+        }
+    }
+
     /**
      * @return array<string, array{0: string, 1: string, 2: string, 3: int, 4: string, 5: string}>
      */
