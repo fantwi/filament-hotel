@@ -86,6 +86,20 @@ class KitchenOrderQueueStatusAccessTest extends TestCase
         self::assertSame(1, KitchenStockMovement::query()->count());
     }
 
+    public function test_active_view_only_kitchen_staff_can_read_the_queue_but_operational_actions_are_hidden(): void
+    {
+        $staff = $this->kitchenStaff('kitchen_staff', StaffAccountStatus::Active, canManageOrders: false);
+        [$confirmed] = $this->orderFixture('confirmed');
+        [$preparing] = $this->orderFixture('preparing');
+        [$ready] = $this->orderFixture('ready');
+
+        $this->queueFor($staff)
+            ->assertCanSeeTableRecords([$confirmed, $preparing, $ready])
+            ->assertTableActionHidden('start_preparing', $confirmed)
+            ->assertTableActionHidden('ready', $preparing)
+            ->assertTableActionHidden('served', $ready);
+    }
+
     #[DataProvider('kitchenServiceActions')]
     public function test_kitchen_service_rejects_on_leave_staff_before_any_transition(
         string $method,
@@ -100,6 +114,32 @@ class KitchenOrderQueueStatusAccessTest extends TestCase
         try {
             app(RestaurantKitchenService::class)->{$method}($order);
             self::fail("Expected [{$method}] to reject an on-leave staff account.");
+        } catch (HttpException $exception) {
+            self::assertSame(403, $exception->getStatusCode());
+        }
+
+        self::assertSame($initialStatus, $order->fresh()->status);
+        self::assertNull($order->fresh()->stock_deducted_at);
+        self::assertSame('10.000', $ingredient->fresh()->current_stock);
+        self::assertSame($originalOrderState, $order->fresh()->getRawOriginal());
+        self::assertSame($originalIngredientState, $ingredient->fresh()->getRawOriginal());
+        self::assertSame(0, KitchenStockMovement::query()->count());
+    }
+
+    #[DataProvider('kitchenServiceActions')]
+    public function test_kitchen_service_rejects_active_view_only_staff_before_any_transition(
+        string $method,
+        string $initialStatus,
+    ): void {
+        $staff = $this->kitchenStaff('kitchen_staff', StaffAccountStatus::Active, canManageOrders: false);
+        [$order, $ingredient] = $this->orderFixture($initialStatus);
+        $originalOrderState = $order->refresh()->getRawOriginal();
+        $originalIngredientState = $ingredient->refresh()->getRawOriginal();
+        $this->actingAs($staff);
+
+        try {
+            app(RestaurantKitchenService::class)->{$method}($order);
+            self::fail("Expected [{$method}] to reject a view-only kitchen staff account.");
         } catch (HttpException $exception) {
             self::assertSame(403, $exception->getStatusCode());
         }
@@ -141,8 +181,11 @@ class KitchenOrderQueueStatusAccessTest extends TestCase
         ];
     }
 
-    private function kitchenStaff(string $role, StaffAccountStatus $status): User
-    {
+    private function kitchenStaff(
+        string $role,
+        StaffAccountStatus $status,
+        bool $canManageOrders = true,
+    ): User {
         $staff = User::factory()->create([
             'department' => $role,
             'status' => $status,
@@ -151,6 +194,12 @@ class KitchenOrderQueueStatusAccessTest extends TestCase
         $staff->roles()->firstOrFail()->givePermissionTo(
             Permission::findOrCreate('view kitchen dashboard', 'web'),
         );
+
+        if ($canManageOrders) {
+            $staff->roles()->firstOrFail()->givePermissionTo(
+                Permission::findOrCreate('manage kitchen orders', 'web'),
+            );
+        }
 
         return $staff;
     }

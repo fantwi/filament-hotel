@@ -35,7 +35,7 @@ class RestaurantKitchenService
      */
     public function startPreparing(RestaurantOrder $order, ?string $kitchenNotes = null): RestaurantOrder
     {
-        $this->staffAccountAccess->authorizeOperationalActions(auth()->user());
+        $this->authorizeKitchenOrderActions();
 
         return DB::transaction(function () use ($order, $kitchenNotes): RestaurantOrder {
             $order = RestaurantOrder::query()->lockForUpdate()->findOrFail($order->id);
@@ -66,7 +66,7 @@ class RestaurantKitchenService
      */
     public function markReady(RestaurantOrder $order): RestaurantOrder
     {
-        $this->staffAccountAccess->authorizeOperationalActions(auth()->user());
+        $this->authorizeKitchenOrderActions();
         $this->ensureStatusIs($order, ['preparing']);
 
         return $this->updateOrder($order, ['status' => 'ready', 'ready_at' => now()], 'ready', 'Restaurant food order marked ready.');
@@ -77,7 +77,7 @@ class RestaurantKitchenService
      */
     public function markServed(RestaurantOrder $order): RestaurantOrder
     {
-        $this->staffAccountAccess->authorizeOperationalActions(auth()->user());
+        $this->authorizeKitchenOrderActions();
         $this->ensureStatusIs($order, ['ready']);
 
         return $this->updateOrder($order, [
@@ -135,6 +135,17 @@ class RestaurantKitchenService
 
             return $order->refresh();
         });
+    }
+
+    /**
+     * Requires both an active staff account and kitchen-order management access.
+     */
+    private function authorizeKitchenOrderActions(): void
+    {
+        $user = auth()->user();
+
+        $this->staffAccountAccess->authorizeOperationalActions($user);
+        abort_unless($user?->can('manage kitchen orders') ?? false, 403);
     }
 
     /**

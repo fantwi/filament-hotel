@@ -32,7 +32,7 @@ class KitchenOrderQueue extends TableWidget
      */
     public function callMountedAction(array $arguments = []): mixed
     {
-        app(StaffAccountAccess::class)->authorizeOperationalActions(auth()->user());
+        $this->authorizeOperationalActions();
 
         return parent::callMountedAction($arguments);
     }
@@ -124,6 +124,17 @@ class KitchenOrderQueue extends TableWidget
 
     private function allowsOperationalActions(): bool
     {
-        return app(StaffAccountAccess::class)->allowsOperationalActions(auth()->user());
+        $user = auth()->user();
+
+        return ($user?->can('manage kitchen orders') ?? false)
+            && app(StaffAccountAccess::class)->allowsOperationalActions($user);
+    }
+
+    private function authorizeOperationalActions(): void
+    {
+        $user = auth()->user();
+
+        app(StaffAccountAccess::class)->authorizeOperationalActions($user);
+        abort_unless($user?->can('manage kitchen orders') ?? false, 403);
     }
 }
