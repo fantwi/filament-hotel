@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Widgets;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
+use App\Models\CorporateOrganization;
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
@@ -44,6 +45,9 @@ class SuperAdminFinanceStats extends StatsOverviewWidget
         $payments = $this->forDashboardDateRange(Payment::query());
         $refunds = (clone $payments)->whereIn('payment_status', ['refunded', 'refund'])->sum('amount');
         $pending = (clone $payments)->where('payment_status', 'pending')->count();
+        $corporateAccountsAdded = $this->forDashboardDateRange(CorporateOrganization::query())
+            ->where('is_credit_enabled', true)
+            ->count();
         $receivables = $this->forDashboardDateRange(Booking::query())
             ->whereIn('payment_status', ['pending', 'unpaid'])
             ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
@@ -78,8 +82,8 @@ class SuperAdminFinanceStats extends StatsOverviewWidget
                 ->description($periodLabel)
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('info'),
-            Stat::make('Corporate Accounts', number_format($corporate['active_accounts']))
-                ->description('Currently credit-enabled')
+            Stat::make('Corporate Accounts Added', number_format($corporateAccountsAdded))
+                ->description($periodLabel)
                 ->icon('heroicon-o-building-office-2')
                 ->color('primary'),
         ];

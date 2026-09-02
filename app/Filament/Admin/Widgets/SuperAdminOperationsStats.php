@@ -7,7 +7,6 @@ use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
-use App\Models\Room;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -37,7 +36,16 @@ class SuperAdminOperationsStats extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
+        [$start, $end] = $this->dashboardDateRange();
         $periodLabel = $this->dashboardDateRangeLabel();
+        $endExclusive = $end->copy()->addDay()->startOfDay();
+        $roomsUsed = Booking::query()
+            ->whereDate('check_in', '<', $endExclusive->toDateString())
+            ->whereDate('check_out', '>', $start->toDateString())
+            ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
+            ->whereNotNull('room_id')
+            ->distinct()
+            ->count('room_id');
 
         return [
             Stat::make(
@@ -68,8 +76,8 @@ class SuperAdminOperationsStats extends StatsOverviewWidget
                 ->description($periodLabel)
                 ->icon('heroicon-o-fire')
                 ->color('success'),
-            Stat::make('Occupied Rooms', number_format(Room::query()->where('status', 'occupied')->count()))
-                ->description('Current property snapshot')
+            Stat::make('Rooms Used', number_format($roomsUsed))
+                ->description($periodLabel)
                 ->icon('heroicon-o-key')
                 ->color('danger'),
         ];
