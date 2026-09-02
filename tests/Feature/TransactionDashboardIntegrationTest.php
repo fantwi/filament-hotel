@@ -101,16 +101,16 @@ class TransactionDashboardIntegrationTest extends TestCase
         self::assertSame('4', $stats['Transactions created']->getValue());
         self::assertSame('GHS 1,000.00', $stats['Gross transaction value']->getValue());
         self::assertSame('GHS 250.00', $stats['Payments received']->getValue());
-        self::assertSame('GHS 1,000.00', $stats['Outstanding balance']->getValue());
-        self::assertSame('GHS 400.00', $stats['Corporate outstanding']->getValue());
+        self::assertSame('GHS 750.00', $stats['Outstanding balance']->getValue());
+        self::assertSame('GHS 300.00', $stats['Corporate outstanding']->getValue());
         self::assertSame([
             'transactions' => 4,
             'gross' => 1000.0,
             'payments' => 250.0,
             'payment_count' => 4,
-            'outstanding' => 1000.0,
+            'outstanding' => 750.0,
             'outstanding_count' => 4,
-            'corporate_outstanding' => 400.0,
+            'corporate_outstanding' => 300.0,
             'corporate_outstanding_count' => 1,
         ], $overview['totals']);
         self::assertSame([
@@ -153,6 +153,53 @@ class TransactionDashboardIntegrationTest extends TestCase
         self::assertSame('GHS 125.00', $stats['Payments received']->getValue());
         self::assertSame(125.0, $overview['totals']['payments']);
         self::assertSame(1, $overview['totals']['payment_count']);
+    }
+
+    public function test_outstanding_values_use_remaining_balances_for_partial_failed_and_overpaid_transactions(): void
+    {
+        [$guest, $room, $conferenceRoom, $restaurant, $table] = $this->serviceFixture();
+        $organization = CorporateOrganization::query()->create([
+            'name' => 'Partial Payment Corporate Account',
+            'is_credit_enabled' => true,
+        ]);
+
+        $hotel = $this->hotelBooking($guest, $room, 1000, '2026-08-05 09:00:00');
+        $hotel->forceFill(['payment_status' => 'partially_paid'])->saveQuietly();
+
+        $conference = $this->conferenceBooking($guest, $conferenceRoom, 800, '2026-08-10 09:00:00');
+        $conference->forceFill([
+            'corporate_organization_id' => $organization->id,
+            'payment_status' => 'partial',
+        ])->saveQuietly();
+
+        $reservation = $this->tableReservation($guest, $restaurant, $table, 600, '2026-08-15 09:00:00');
+        $reservation->forceFill(['payment_status' => 'partial'])->saveQuietly();
+
+        $food = $this->foodOrder($guest, 400, 'TXN-PARTIAL-FOOD', '2026-08-20 09:00:00', $organization);
+        $food->forceFill(['payment_status' => 'failed'])->saveQuietly();
+
+        $overpaid = $this->hotelBooking($guest, $room, 100, '2026-08-25 09:00:00');
+
+        $this->payment($guest, 'booking_id', $hotel->id, 250, 'TXN-HOTEL-PARTIAL', '2026-08-06 10:00:00');
+        $this->payment($guest, 'conference_booking_id', $conference->id, 300, 'TXN-CONFERENCE-PARTIAL', '2026-08-11 10:00:00');
+        $this->payment($guest, 'restaurant_reservation_id', $reservation->id, 100, 'TXN-TABLE-PARTIAL', '2026-08-16 10:00:00');
+        $this->payment($guest, 'restaurant_order_id', $food->id, 50, 'TXN-FOOD-PARTIAL', '2026-08-21 10:00:00');
+        $this->payment($guest, 'booking_id', $overpaid->id, 150, 'TXN-HOTEL-OVERPAID', '2026-08-26 10:00:00');
+
+        $stats = $this->stats();
+        $overview = $this->overview();
+        $rows = collect($overview['rows'])->keyBy('label');
+
+        self::assertSame('GHS 2,100.00', $stats['Outstanding balance']->getValue());
+        self::assertSame('GHS 850.00', $stats['Corporate outstanding']->getValue());
+        self::assertSame(2100.0, $overview['totals']['outstanding']);
+        self::assertSame(4, $overview['totals']['outstanding_count']);
+        self::assertSame(850.0, $overview['totals']['corporate_outstanding']);
+        self::assertSame(2, $overview['totals']['corporate_outstanding_count']);
+        self::assertSame(750.0, $rows['Hotel bookings']['outstanding']);
+        self::assertSame(500.0, $rows['Conference bookings']['outstanding']);
+        self::assertSame(500.0, $rows['Table reservations']['outstanding']);
+        self::assertSame(350.0, $rows['Food orders']['outstanding']);
     }
 
     public function test_cancelled_transactions_are_excluded_from_gross_and_outstanding_values(): void

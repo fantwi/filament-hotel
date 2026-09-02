@@ -11,6 +11,7 @@ use App\Models\RestaurantReservation;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Provides a transaction summary stats overview for the dashboard.
@@ -80,9 +81,27 @@ class TransactionStats extends StatsOverviewWidget
      */
     private function summary(Builder $transactions, string $amountColumn, string $paymentForeignKey, array $excludedStatuses): array
     {
+        $transactionTable = $transactions->getModel()->getTable();
+        $paidPaymentsAlias = $transactionTable.'_paid_payments';
+        $paidPayments = Payment::query()
+            ->select($paymentForeignKey)
+            ->selectRaw('SUM(amount) as paid_amount')
+            ->whereIn('payment_status', ['paid', 'completed'])
+            ->whereNotNull($paymentForeignKey)
+            ->groupBy($paymentForeignKey);
         $transactionsInRange = $this->forDashboardDateRange($transactions);
         $activeTransactions = (clone $transactionsInRange)->whereNotIn('status', $excludedStatuses);
-        $outstandingTransactions = (clone $activeTransactions)->whereIn('payment_status', ['pending', 'unpaid']);
+        $remainingBalance = "{$transactionTable}.{$amountColumn} - COALESCE({$paidPaymentsAlias}.paid_amount, 0)";
+        $outstandingTransactions = (clone $activeTransactions)
+            ->whereNotIn("{$transactionTable}.payment_status", ['paid', 'completed', 'refunded'])
+            ->leftJoinSub(
+                $paidPayments,
+                $paidPaymentsAlias,
+                "{$paidPaymentsAlias}.{$paymentForeignKey}",
+                '=',
+                "{$transactionTable}.id",
+            )
+            ->whereRaw("{$remainingBalance} > 0");
         $paymentsInRange = $this->forDashboardDateRange(Payment::query())
             ->whereNotNull($paymentForeignKey)
             ->whereIn('payment_status', ['paid', 'completed']);
@@ -91,10 +110,10 @@ class TransactionStats extends StatsOverviewWidget
             'transactions' => (clone $transactionsInRange)->count(),
             'gross' => (float) (clone $activeTransactions)->sum($amountColumn),
             'payments' => (float) (clone $paymentsInRange)->sum('amount'),
-            'outstanding' => (float) (clone $outstandingTransactions)->sum($amountColumn),
+            'outstanding' => (float) (clone $outstandingTransactions)->sum(DB::raw($remainingBalance)),
             'corporate_outstanding' => (float) (clone $outstandingTransactions)
-                ->whereNotNull('corporate_organization_id')
-                ->sum($amountColumn),
+                ->whereNotNull("{$transactionTable}.corporate_organization_id")
+                ->sum(DB::raw($remainingBalance)),
         ];
     }
 
