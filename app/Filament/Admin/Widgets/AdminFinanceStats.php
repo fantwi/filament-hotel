@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Widgets;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Payment;
 use App\Services\CorporateCreditService;
+use App\Services\PaymentReportFilters;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -42,7 +43,7 @@ class AdminFinanceStats extends StatsOverviewWidget
                 ->description($periodLabel)
                 ->icon('heroicon-o-banknotes')
                 ->color('success'),
-            Stat::make('Pending Payments', number_format((clone $payments)->where('payment_status', 'pending')->count()))
+            Stat::make('Pending Payments', number_format(PaymentReportFilters::applyStatus(clone $payments, 'pending')->count()))
                 ->description($periodLabel)
                 ->icon('heroicon-o-clock')
                 ->color('warning'),
