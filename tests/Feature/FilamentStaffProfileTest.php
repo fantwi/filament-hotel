@@ -6,6 +6,7 @@ use App\Enums\StaffAccountStatus;
 use App\Filament\Admin\Pages\Auth\EditProfile;
 use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
+use App\Services\StaffAccountAccess;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -53,6 +54,83 @@ class FilamentStaffProfileTest extends TestCase
             ->assertSchemaComponentExists('department_display')
             ->assertSchemaComponentExists('role_display')
             ->assertSchemaComponentExists('status_display');
+    }
+
+    public function test_suspended_staff_profile_is_view_only_and_shows_the_exact_notice(): void
+    {
+        $admin = User::factory()->create([
+            'department' => 'admin',
+            'status' => StaffAccountStatus::Suspended,
+        ]);
+        $admin->syncRoles(['admin']);
+
+        $this->actingAs($admin)
+            ->get('/admin/profile')
+            ->assertOk()
+            ->assertSee(StaffAccountAccess::SUSPENSION_MESSAGE)
+            ->assertDontSee('New password');
+
+        $component = $this->profileComponent($admin)
+            ->assertFormFieldDoesNotExist('first_name')
+            ->assertFormFieldDoesNotExist('last_name')
+            ->assertFormFieldDoesNotExist('email')
+            ->assertFormFieldDoesNotExist('phone_number')
+            ->assertFormFieldDoesNotExist('password')
+            ->assertFormFieldDoesNotExist('department')
+            ->assertFormFieldDoesNotExist('role')
+            ->assertFormFieldDoesNotExist('status')
+            ->assertSchemaComponentExists('first_name_display')
+            ->assertSchemaComponentExists('last_name_display')
+            ->assertSchemaComponentExists('email_display')
+            ->assertSchemaComponentExists('phone_display')
+            ->assertSchemaComponentExists('department_display')
+            ->assertSchemaComponentExists('role_display')
+            ->assertSchemaComponentExists('status_display')
+            ->assertDontSee('Save changes');
+
+        self::assertNull($component->instance()->getMultiFactorAuthenticationContentComponent());
+    }
+
+    public function test_suspended_staff_cannot_forge_a_profile_save(): void
+    {
+        $admin = User::factory()->create([
+            'first_name' => 'Suspended',
+            'department' => 'admin',
+            'status' => StaffAccountStatus::Suspended,
+        ]);
+        $admin->syncRoles(['admin']);
+
+        $this->profileComponent($admin)
+            ->set('data.first_name', 'Changed')
+            ->call('save')
+            ->assertForbidden();
+
+        self::assertSame('Suspended', $admin->fresh()->first_name);
+    }
+
+    public function test_on_leave_staff_retain_editable_personal_and_password_fields(): void
+    {
+        $admin = User::factory()->create([
+            'department' => 'admin',
+            'status' => StaffAccountStatus::OnLeave,
+        ]);
+        $admin->syncRoles(['admin']);
+
+        $this->profileComponent($admin)
+            ->assertFormFieldExists('first_name')
+            ->assertFormFieldExists('last_name')
+            ->assertFormFieldExists('email')
+            ->assertFormFieldExists('phone_number')
+            ->assertFormFieldExists('password')
+            ->assertFormFieldExists('passwordConfirmation')
+            ->assertFormFieldExists('currentPassword')
+            ->assertFormFieldDoesNotExist('department')
+            ->assertFormFieldDoesNotExist('role')
+            ->assertFormFieldDoesNotExist('status')
+            ->assertSchemaComponentExists('department_display')
+            ->assertSchemaComponentExists('role_display')
+            ->assertSchemaComponentExists('status_display')
+            ->assertSee('Save changes');
     }
 
     public function test_staff_can_update_personal_information_without_changing_access_fields(): void
