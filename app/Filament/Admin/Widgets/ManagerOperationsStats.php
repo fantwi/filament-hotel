@@ -42,14 +42,18 @@ class ManagerOperationsStats extends StatsOverviewWidget
         return [
             Stat::make(
                 'Active stays',
-                number_format($this->forDashboardDateRange(Booking::query())->whereIn('status', ['pending', 'confirmed', 'checked_in'])->count()),
+                number_format(Booking::query()
+                    ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                    ->whereDate('check_in', '<=', $end->toDateString())
+                    ->whereDate('check_out', '>', $start->toDateString())
+                    ->count()),
             )
                 ->description($periodLabel)
                 ->icon('heroicon-o-key')
                 ->color('primary'),
             Stat::make(
                 'Active kitchen orders',
-                number_format($this->forDashboardDateRange(RestaurantOrder::query())->whereIn('status', ['confirmed', 'preparing', 'ready'])->count()),
+                number_format($this->forDashboardDateRange(RestaurantOrder::query()->kitchenQueue())->count()),
             )
                 ->description($periodLabel)
                 ->icon('heroicon-o-fire')

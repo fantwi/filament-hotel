@@ -9,6 +9,7 @@ use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
 use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
@@ -39,15 +40,16 @@ class ManagerOperationsChart extends ChartWidget
     {
         [$start, $end] = $this->dashboardDateRange();
         $period = $this->selectedBreakdown();
-        $granularity = $this->granularityFor($period);
+        $granularity = $this->granularityFor($start, $end);
         $buckets = $this->chartBuckets($start, $end, $period, $granularity);
-        $totals = collect([
-            Booking::class,
-            ConferenceBooking::class,
-            RestaurantReservation::class,
-            RestaurantOrder::class,
-        ])->mapWithKeys(fn (string $model): array => [
-            $model => $this->operationTotals($model, $start, $end, $granularity),
+        $operations = [
+            Booking::class => 'check_in',
+            ConferenceBooking::class => 'booking_date',
+            RestaurantReservation::class => 'reservation_date',
+            RestaurantOrder::class => 'created_at',
+        ];
+        $totals = collect($operations)->mapWithKeys(fn (string $dateColumn, string $model): array => [
+            $model => $this->operationTotals($model, $dateColumn, $start, $end, $granularity),
         ]);
 
         $series = fn (string $model): array => $buckets
@@ -117,14 +119,18 @@ class ManagerOperationsChart extends ChartWidget
     }
 
     /**
-     * Maps dashboard periods to readable chart bucket sizes.
+     * Selects a readable bucket size without creating excessive chart points.
      */
-    private function granularityFor(string $period): string
+    private function granularityFor(Carbon $start, Carbon $end): string
     {
-        return match ($period) {
-            'daily' => 'hour',
-            'weekly', 'monthly' => 'day',
-            default => 'month',
+        $days = $start->copy()->startOfDay()->diffInDays($end->copy()->startOfDay());
+        $months = $start->copy()->startOfMonth()->diffInMonths($end->copy()->startOfMonth());
+
+        return match (true) {
+            $days <= 1 => 'hour',
+            $days <= 62 => 'day',
+            $months <= 60 => 'month',
+            default => 'year',
         };
     }
 
@@ -138,25 +144,27 @@ class ManagerOperationsChart extends ChartWidget
         $cursor = match ($granularity) {
             'hour' => $start->copy()->startOfHour(),
             'day' => $start->copy()->startOfDay(),
-            default => $start->copy()->startOfMonth(),
+            'month' => $start->copy()->startOfMonth(),
+            default => $start->copy()->startOfYear(),
         };
         $buckets = collect();
 
         while ($cursor->lessThanOrEqualTo($end)) {
             $buckets->push([
                 'key' => $this->bucketKey($cursor, $granularity),
-                'label' => match ($period) {
-                    'daily' => $cursor->format('g A'),
-                    'weekly' => $cursor->format('D M j'),
-                    'monthly' => $cursor->format('M j'),
-                    default => $cursor->format('M Y'),
+                'label' => match ($granularity) {
+                    'hour' => $cursor->format('g A'),
+                    'day' => $period === 'weekly' ? $cursor->format('D M j') : $cursor->format('M j'),
+                    'month' => $cursor->format('M Y'),
+                    default => $cursor->format('Y'),
                 },
             ]);
 
             match ($granularity) {
                 'hour' => $cursor->addHour(),
                 'day' => $cursor->addDay(),
-                default => $cursor->addMonth(),
+                'month' => $cursor->addMonth(),
+                default => $cursor->addYear(),
             };
         }
 
@@ -169,12 +177,16 @@ class ManagerOperationsChart extends ChartWidget
      * @param  class-string  $model
      * @return array<string, int>
      */
-    private function operationTotals(string $model, Carbon $start, Carbon $end, string $granularity): array
+    private function operationTotals(string $model, string $dateColumn, Carbon $start, Carbon $end, string $granularity): array
     {
-        $expression = $this->bucketExpression($model, $granularity);
+        $expression = $this->bucketExpression($model, $dateColumn, $granularity);
+        $query = $this->validOperationsQuery($model);
+        $range = $dateColumn === 'created_at'
+            ? [$start, $end]
+            : [$start->toDateString(), $end->toDateString()];
 
-        return $model::query()
-            ->whereBetween('created_at', [$start, $end])
+        return $query
+            ->whereBetween($dateColumn, $range)
             ->selectRaw("{$expression} as bucket")
             ->selectRaw('COUNT(*) as total')
             ->groupByRaw($expression)
@@ -184,29 +196,49 @@ class ManagerOperationsChart extends ChartWidget
     }
 
     /**
+     * Excludes records that no longer represent valid operational activity.
+     *
+     * @param  class-string  $model
+     */
+    private function validOperationsQuery(string $model): Builder
+    {
+        $query = $model::query();
+
+        return match ($model) {
+            Booking::class => $query->whereNotIn('status', ['cancelled', 'expired', 'no_show']),
+            ConferenceBooking::class => $query->where('status', '!=', 'cancelled'),
+            RestaurantReservation::class => $query->whereNotIn('status', ['cancelled', 'no_show']),
+            RestaurantOrder::class => $query->where('status', '!=', 'cancelled'),
+        };
+    }
+
+    /**
      * Returns a database-specific expression for each supported bucket size.
      *
      * @param  class-string  $model
      */
-    private function bucketExpression(string $model, string $granularity): string
+    private function bucketExpression(string $model, string $column, string $granularity): string
     {
         $driver = $model::query()->getModel()->getConnection()->getDriverName();
 
         return match ($driver) {
             'sqlite' => match ($granularity) {
-                'hour' => "strftime('%Y-%m-%d %H:00:00', created_at)",
-                'day' => "strftime('%Y-%m-%d', created_at)",
-                default => "strftime('%Y-%m-01', created_at)",
+                'hour' => "strftime('%Y-%m-%d %H:00:00', {$column})",
+                'day' => "strftime('%Y-%m-%d', {$column})",
+                'month' => "strftime('%Y-%m-01', {$column})",
+                default => "strftime('%Y-01-01', {$column})",
             },
             'pgsql' => match ($granularity) {
-                'hour' => "to_char(date_trunc('hour', created_at), 'YYYY-MM-DD HH24:00:00')",
-                'day' => "to_char(created_at, 'YYYY-MM-DD')",
-                default => "to_char(created_at, 'YYYY-MM-01')",
+                'hour' => "to_char(date_trunc('hour', {$column}), 'YYYY-MM-DD HH24:00:00')",
+                'day' => "to_char({$column}, 'YYYY-MM-DD')",
+                'month' => "to_char({$column}, 'YYYY-MM-01')",
+                default => "to_char({$column}, 'YYYY-01-01')",
             },
             default => match ($granularity) {
-                'hour' => "DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00')",
-                'day' => "DATE_FORMAT(created_at, '%Y-%m-%d')",
-                default => "DATE_FORMAT(created_at, '%Y-%m-01')",
+                'hour' => "DATE_FORMAT({$column}, '%Y-%m-%d %H:00:00')",
+                'day' => "DATE_FORMAT({$column}, '%Y-%m-%d')",
+                'month' => "DATE_FORMAT({$column}, '%Y-%m-01')",
+                default => "DATE_FORMAT({$column}, '%Y-01-01')",
             },
         };
     }
@@ -219,7 +251,8 @@ class ManagerOperationsChart extends ChartWidget
         return match ($granularity) {
             'hour' => $cursor->format('Y-m-d H:00:00'),
             'day' => $cursor->format('Y-m-d'),
-            default => $cursor->format('Y-m-01'),
+            'month' => $cursor->format('Y-m-01'),
+            default => $cursor->format('Y-01-01'),
         };
     }
 

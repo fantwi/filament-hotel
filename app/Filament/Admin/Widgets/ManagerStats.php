@@ -35,11 +35,11 @@ class ManagerStats extends StatsOverviewWidget
         [$start, $end] = $this->dashboardDateRange();
 
         return [
-            Stat::make('Hotel Arrivals', Booking::query()->whereBetween('check_in', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('primary'),
-            Stat::make('Conference Events', ConferenceBooking::query()->whereBetween('booking_date', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('info'),
-            Stat::make('Restaurant Reservations', RestaurantReservation::query()->whereBetween('reservation_date', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('warning'),
-            Stat::make('Food Orders', $this->forDashboardDateRange(RestaurantOrder::query())->count())->description('Created in selected range')->color('success'),
-            Stat::make('Active Kitchen Orders', $this->forDashboardDateRange(RestaurantOrder::query())->whereIn('status', ['confirmed', 'preparing', 'ready'])->count())->description('Created in selected range')->color('danger'),
+            Stat::make('Hotel Arrivals', Booking::query()->whereNotIn('status', ['cancelled', 'expired', 'no_show'])->whereBetween('check_in', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('primary'),
+            Stat::make('Conference Events', ConferenceBooking::query()->where('status', '!=', 'cancelled')->whereBetween('booking_date', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('info'),
+            Stat::make('Restaurant Reservations', RestaurantReservation::query()->whereNotIn('status', ['cancelled', 'no_show'])->whereBetween('reservation_date', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('warning'),
+            Stat::make('Food Orders', $this->forDashboardDateRange(RestaurantOrder::query()->where('status', '!=', 'cancelled'))->count())->description('Created in selected range')->color('success'),
+            Stat::make('Active Kitchen Orders', $this->forDashboardDateRange(RestaurantOrder::query()->kitchenQueue())->count())->description('Created in selected range')->color('danger'),
         ];
     }
 }
