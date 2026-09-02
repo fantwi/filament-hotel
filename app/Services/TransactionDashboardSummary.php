@@ -9,7 +9,6 @@ use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Calculates the transaction dashboard's channel rows and combined totals.
@@ -24,7 +23,7 @@ class TransactionDashboardSummary
      *     totals: array<string, int|float>
      * }
      */
-    public function summarize(CarbonInterface $start, CarbonInterface $end, bool $includeCounts = true): array
+    public function summarize(CarbonInterface $start, CarbonInterface $end): array
     {
         $rows = [
             $this->summarizeChannel(
@@ -35,7 +34,6 @@ class TransactionDashboardSummary
                 ['cancelled', 'expired', 'no_show'],
                 $start,
                 $end,
-                $includeCounts,
             ),
             $this->summarizeChannel(
                 'Conference bookings',
@@ -45,7 +43,6 @@ class TransactionDashboardSummary
                 ['cancelled', 'no_show'],
                 $start,
                 $end,
-                $includeCounts,
             ),
             $this->summarizeChannel(
                 'Table reservations',
@@ -55,7 +52,6 @@ class TransactionDashboardSummary
                 ['cancelled', 'no_show'],
                 $start,
                 $end,
-                $includeCounts,
             ),
             $this->summarizeChannel(
                 'Food orders',
@@ -65,7 +61,6 @@ class TransactionDashboardSummary
                 ['cancelled'],
                 $start,
                 $end,
-                $includeCounts,
             ),
         ];
         $rowCollection = collect($rows);
@@ -74,23 +69,12 @@ class TransactionDashboardSummary
             'transactions' => $rowCollection->sum('transactions'),
             'gross' => $rowCollection->sum('gross'),
             'payments' => $rowCollection->sum('payments'),
+            'payment_count' => $rowCollection->sum('payment_count'),
+            'outstanding' => $rowCollection->sum('outstanding'),
+            'outstanding_count' => $rowCollection->sum('outstanding_count'),
+            'corporate_outstanding' => $rowCollection->sum('corporate_outstanding'),
+            'corporate_outstanding_count' => $rowCollection->sum('corporate_outstanding_count'),
         ];
-
-        if ($includeCounts) {
-            $totals['payment_count'] = $rowCollection->sum('payment_count');
-        }
-
-        $totals['outstanding'] = $rowCollection->sum('outstanding');
-
-        if ($includeCounts) {
-            $totals['outstanding_count'] = $rowCollection->sum('outstanding_count');
-        }
-
-        $totals['corporate_outstanding'] = $rowCollection->sum('corporate_outstanding');
-
-        if ($includeCounts) {
-            $totals['corporate_outstanding_count'] = $rowCollection->sum('corporate_outstanding_count');
-        }
 
         return [
             'rows' => $rows,
@@ -112,7 +96,6 @@ class TransactionDashboardSummary
         array $excludedStatuses,
         CarbonInterface $start,
         CarbonInterface $end,
-        bool $includeCounts,
     ): array {
         $transactionTable = $transactions->getModel()->getTable();
         $paidPaymentsAlias = $transactionTable.'_paid_payments';
@@ -122,16 +105,16 @@ class TransactionDashboardSummary
             ->whereIn('payment_status', ['paid', 'completed'])
             ->whereNotNull($paymentForeignKey)
             ->groupBy($paymentForeignKey);
-        $transactionsInRange = $transactions->whereBetween('created_at', [$start, $end]);
-        $activeTransactions = (clone $transactionsInRange)
-            ->whereNotIn('status', $excludedStatuses);
-        $paymentsInRange = Payment::query()
-            ->whereBetween('created_at', [$start, $end])
-            ->whereNotNull($paymentForeignKey)
-            ->whereIn('payment_status', ['paid', 'completed']);
         $remainingBalance = "{$transactionTable}.{$amountColumn} - COALESCE({$paidPaymentsAlias}.paid_amount, 0)";
-        $outstandingTransactions = (clone $activeTransactions)
-            ->whereNotIn("{$transactionTable}.payment_status", ['paid', 'completed', 'refunded'])
+        $excludedStatusPlaceholders = implode(', ', array_fill(0, count($excludedStatuses), '?'));
+        $settledPaymentStatuses = ['paid', 'completed', 'refunded'];
+        $settledStatusPlaceholders = implode(', ', array_fill(0, count($settledPaymentStatuses), '?'));
+        $activeCondition = "{$transactionTable}.status NOT IN ({$excludedStatusPlaceholders})";
+        $outstandingCondition = "{$activeCondition} AND {$transactionTable}.payment_status NOT IN ({$settledStatusPlaceholders}) AND {$remainingBalance} > 0";
+        $corporateOutstandingCondition = "{$outstandingCondition} AND {$transactionTable}.corporate_organization_id IS NOT NULL";
+        $outstandingBindings = [...$excludedStatuses, ...$settledPaymentStatuses];
+        $transactionSummary = $transactions
+            ->whereBetween("{$transactionTable}.created_at", [$start, $end])
             ->leftJoinSub(
                 $paidPayments,
                 $paidPaymentsAlias,
@@ -139,35 +122,46 @@ class TransactionDashboardSummary
                 '=',
                 "{$transactionTable}.id",
             )
-            ->whereRaw("{$remainingBalance} > 0");
+            ->selectRaw("COUNT({$transactionTable}.id) as transactions")
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN {$activeCondition} THEN {$transactionTable}.{$amountColumn} ELSE 0 END), 0) as gross",
+                $excludedStatuses,
+            )
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN {$outstandingCondition} THEN {$remainingBalance} ELSE 0 END), 0) as outstanding",
+                $outstandingBindings,
+            )
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN {$outstandingCondition} THEN 1 ELSE 0 END), 0) as outstanding_count",
+                $outstandingBindings,
+            )
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN {$corporateOutstandingCondition} THEN {$remainingBalance} ELSE 0 END), 0) as corporate_outstanding",
+                $outstandingBindings,
+            )
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN {$corporateOutstandingCondition} THEN 1 ELSE 0 END), 0) as corporate_outstanding_count",
+                $outstandingBindings,
+            )
+            ->first();
+        $paymentSummary = Payment::query()
+            ->whereBetween('created_at', [$start, $end])
+            ->whereNotNull($paymentForeignKey)
+            ->whereIn('payment_status', ['paid', 'completed'])
+            ->selectRaw('COALESCE(SUM(amount), 0) as payments')
+            ->selectRaw('COUNT(*) as payment_count')
+            ->first();
 
-        $summary = [
+        return [
             'label' => $label,
-            'transactions' => (clone $transactionsInRange)->count(),
-            'gross' => (float) (clone $activeTransactions)->sum($amountColumn),
-            'payments' => (float) (clone $paymentsInRange)->sum('amount'),
+            'transactions' => (int) ($transactionSummary?->transactions ?? 0),
+            'gross' => (float) ($transactionSummary?->gross ?? 0),
+            'payments' => (float) ($paymentSummary?->payments ?? 0),
+            'payment_count' => (int) ($paymentSummary?->payment_count ?? 0),
+            'outstanding' => (float) ($transactionSummary?->outstanding ?? 0),
+            'outstanding_count' => (int) ($transactionSummary?->outstanding_count ?? 0),
+            'corporate_outstanding' => (float) ($transactionSummary?->corporate_outstanding ?? 0),
+            'corporate_outstanding_count' => (int) ($transactionSummary?->corporate_outstanding_count ?? 0),
         ];
-
-        if ($includeCounts) {
-            $summary['payment_count'] = (clone $paymentsInRange)->count();
-        }
-
-        $summary['outstanding'] = (float) (clone $outstandingTransactions)->sum(DB::raw($remainingBalance));
-
-        if ($includeCounts) {
-            $summary['outstanding_count'] = (clone $outstandingTransactions)->count();
-        }
-
-        $summary['corporate_outstanding'] = (float) (clone $outstandingTransactions)
-            ->whereNotNull("{$transactionTable}.corporate_organization_id")
-            ->sum(DB::raw($remainingBalance));
-
-        if ($includeCounts) {
-            $summary['corporate_outstanding_count'] = (clone $outstandingTransactions)
-                ->whereNotNull("{$transactionTable}.corporate_organization_id")
-                ->count();
-        }
-
-        return $summary;
     }
 }

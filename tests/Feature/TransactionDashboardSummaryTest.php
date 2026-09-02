@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Widgets\TransactionOverview;
+use App\Filament\Admin\Widgets\TransactionStats;
 use App\Models\Booking;
 use App\Models\Guest;
 use App\Models\Payment;
@@ -11,6 +13,8 @@ use App\Services\TransactionDashboardSummary;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use ReflectionMethod;
 use Tests\TestCase;
 
 class TransactionDashboardSummaryTest extends TestCase
@@ -73,6 +77,36 @@ class TransactionDashboardSummaryTest extends TestCase
         ], $summary['totals']);
     }
 
+    public function test_shared_summary_uses_two_aggregate_queries_per_transaction_channel(): void
+    {
+        $queryCount = $this->countQueries(fn (): array => app(TransactionDashboardSummary::class)->summarize(
+            Carbon::parse('2026-08-01')->startOfDay(),
+            Carbon::parse('2026-08-31')->endOfDay(),
+        ));
+
+        self::assertSame(8, $queryCount);
+    }
+
+    public function test_both_dashboard_widgets_stay_within_the_combined_query_budget(): void
+    {
+        $filters = [
+            'period' => 'custom',
+            'start_date' => '2026-08-01',
+            'end_date' => '2026-08-31',
+        ];
+        $stats = new TransactionStats;
+        $stats->pageFilters = $filters;
+        $overview = new TransactionOverview;
+        $overview->pageFilters = $filters;
+
+        $queryCount = $this->countQueries(function () use ($stats, $overview): void {
+            $this->invokeProtected($stats, 'getStats');
+            $this->invokeProtected($overview, 'getViewData');
+        });
+
+        self::assertSame(16, $queryCount);
+    }
+
     /**
      * @return array{0: Guest, 1: Room}
      */
@@ -112,5 +146,27 @@ class TransactionDashboardSummaryTest extends TestCase
         ])->saveQuietly();
 
         return $model;
+    }
+
+    private function countQueries(callable $callback): int
+    {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $callback();
+
+            return count(DB::getQueryLog());
+        } finally {
+            DB::disableQueryLog();
+        }
+    }
+
+    private function invokeProtected(object $target, string $methodName): mixed
+    {
+        $method = new ReflectionMethod($target, $methodName);
+        $method->setAccessible(true);
+
+        return $method->invoke($target);
     }
 }

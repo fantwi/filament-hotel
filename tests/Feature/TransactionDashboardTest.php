@@ -8,6 +8,7 @@ use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
 use App\Filament\Admin\Widgets\TransactionOverview;
 use App\Filament\Admin\Widgets\TransactionStats;
 use Filament\Widgets\StatsOverviewWidget;
+use ReflectionMethod;
 use Tests\TestCase;
 
 class TransactionDashboardTest extends TestCase
@@ -39,5 +40,13 @@ class TransactionDashboardTest extends TestCase
 
         self::assertSame('full', $stats->getColumnSpan());
         self::assertSame('full', $overview->getColumnSpan());
+    }
+
+    public function test_historical_transaction_stats_do_not_poll_automatically(): void
+    {
+        $method = new ReflectionMethod(new TransactionStats, 'getPollingInterval');
+        $method->setAccessible(true);
+
+        self::assertNull($method->invoke(new TransactionStats));
     }
 }

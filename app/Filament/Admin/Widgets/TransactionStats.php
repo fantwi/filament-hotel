@@ -16,6 +16,8 @@ class TransactionStats extends StatsOverviewWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected ?string $pollingInterval = null;
+
     /**
      * Determines whether the current user may view this feature.
      */
@@ -33,7 +35,7 @@ class TransactionStats extends StatsOverviewWidget
     {
         [$start, $end] = $this->dashboardDateRange();
         $totals = app(TransactionDashboardSummary::class)
-            ->summarize($start, $end, includeCounts: false)['totals'];
+            ->summarize($start, $end)['totals'];
         $periodLabel = $this->dashboardDateRangeLabel();
 
         return [
