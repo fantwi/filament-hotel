@@ -4,7 +4,9 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\RestaurantOrder;
+use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Collection;
 
 /**
  * Provides the restaurant revenue chart Filament dashboard widget.
@@ -30,22 +32,17 @@ class RestaurantRevenueChart extends ChartWidget
     protected function getData(): array
     {
         [$start, $end] = $this->dashboardDateRange();
-        $labels = [];
-        $revenueData = [];
-        $orderCountData = [];
-
-        for ($month = $start->copy()->startOfMonth(); $month->lessThanOrEqualTo($end); $month->addMonth()) {
-            $monthStart = $month->copy()->max($start);
-            $monthEnd = $month->copy()->endOfMonth()->min($end);
-            $labels[] = $month->format('M Y');
-
-            $monthQuery = RestaurantOrder::query()->whereBetween('created_at', [$monthStart, $monthEnd]);
-
-            $revenueData[] = (float) (clone $monthQuery)
-                ->where('payment_status', 'completed')
-                ->sum('total');
-            $orderCountData[] = (clone $monthQuery)->count();
-        }
+        $period = $this->selectedBreakdown();
+        $granularity = $this->granularityFor($period);
+        $buckets = $this->chartBuckets($start, $end, $period, $granularity);
+        $aggregates = $this->orderAggregates($start, $end, $granularity);
+        $labels = $buckets->pluck('label')->all();
+        $revenueData = $buckets
+            ->map(fn (array $bucket): float => (float) ($aggregates->get($bucket['key'])?->revenue ?? 0))
+            ->all();
+        $orderCountData = $buckets
+            ->map(fn (array $bucket): int => (int) ($aggregates->get($bucket['key'])?->order_count ?? 0))
+            ->all();
 
         return [
             'datasets' => [
@@ -74,6 +71,122 @@ class RestaurantRevenueChart extends ChartWidget
             ],
             'labels' => $labels,
         ];
+    }
+
+    /**
+     * Returns the validated dashboard breakdown selected by the user.
+     */
+    private function selectedBreakdown(): string
+    {
+        $period = (string) (($this->pageFilters ?? [])['period'] ?? 'monthly');
+
+        return in_array($period, ['daily', 'weekly', 'monthly', 'quarterly', 'yearly'], true)
+            ? $period
+            : 'monthly';
+    }
+
+    /**
+     * Maps dashboard periods to readable chart bucket sizes.
+     */
+    private function granularityFor(string $period): string
+    {
+        return match ($period) {
+            'daily' => 'hour',
+            'weekly', 'monthly' => 'day',
+            default => 'month',
+        };
+    }
+
+    /**
+     * Builds every chart bucket, including periods with no orders.
+     *
+     * @return Collection<int, array{key: string, label: string}>
+     */
+    private function chartBuckets(Carbon $start, Carbon $end, string $period, string $granularity): Collection
+    {
+        $cursor = match ($granularity) {
+            'hour' => $start->copy()->startOfHour(),
+            'day' => $start->copy()->startOfDay(),
+            default => $start->copy()->startOfMonth(),
+        };
+        $buckets = collect();
+
+        while ($cursor->lessThanOrEqualTo($end)) {
+            $buckets->push([
+                'key' => $this->bucketKey($cursor, $granularity),
+                'label' => match ($period) {
+                    'daily' => $cursor->format('g A'),
+                    'weekly' => $cursor->format('D M j'),
+                    'monthly' => $cursor->format('M j'),
+                    default => $cursor->format('M Y'),
+                },
+            ]);
+
+            match ($granularity) {
+                'hour' => $cursor->addHour(),
+                'day' => $cursor->addDay(),
+                default => $cursor->addMonth(),
+            };
+        }
+
+        return $buckets;
+    }
+
+    /**
+     * Aggregates revenue and order volume in one database query.
+     *
+     * @return Collection<string, object>
+     */
+    private function orderAggregates(Carbon $start, Carbon $end, string $granularity): Collection
+    {
+        $expression = $this->bucketExpression($granularity);
+
+        return RestaurantOrder::query()
+            ->whereBetween('created_at', [$start, $end])
+            ->selectRaw("{$expression} as bucket")
+            ->selectRaw('COUNT(*) as order_count')
+            ->selectRaw('SUM(CASE WHEN payment_status = ? THEN total ELSE 0 END) as revenue', ['completed'])
+            ->groupByRaw($expression)
+            ->get()
+            ->keyBy(fn (object $aggregate): string => (string) $aggregate->bucket);
+    }
+
+    /**
+     * Returns a database-specific expression for each supported bucket size.
+     */
+    private function bucketExpression(string $granularity): string
+    {
+        $driver = RestaurantOrder::query()->getModel()->getConnection()->getDriverName();
+
+        return match ($driver) {
+            'sqlite' => match ($granularity) {
+                'hour' => "strftime('%Y-%m-%d %H:00:00', created_at)",
+                'day' => "strftime('%Y-%m-%d', created_at)",
+                default => "strftime('%Y-%m-01', created_at)",
+            },
+            'pgsql' => match ($granularity) {
+                'hour' => "to_char(date_trunc('hour', created_at), 'YYYY-MM-DD HH24:00:00')",
+                'day' => "to_char(created_at, 'YYYY-MM-DD')",
+                default => "to_char(created_at, 'YYYY-MM-01')",
+            },
+            default => match ($granularity) {
+                'hour' => "DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00')",
+                'day' => "DATE_FORMAT(created_at, '%Y-%m-%d')",
+                default => "DATE_FORMAT(created_at, '%Y-%m-01')",
+            },
+        };
+    }
+
+    /**
+     * Formats a bucket cursor to match its database aggregate key.
+     */
+    private function bucketKey(Carbon $cursor, string $granularity): string
+    {
+        return match ($granularity) {
+            'hour' => $cursor->format('Y-m-d H:00:00'),
+            'day' => $cursor->format('Y-m-d'),
+            default => $cursor->format('Y-m-01'),
+        };
     }
 
     /**
