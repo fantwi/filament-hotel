@@ -158,6 +158,22 @@ class DashboardDateRangeTest extends TestCase
             $tabs->getDefaultChildComponents(),
         ));
     }
+
+    public function test_dashboard_tabs_use_responsive_overflow_dropdowns(): void
+    {
+        foreach ([
+            SuperAdminDashboard::class,
+            AdminDashboard::class,
+            AccountantDashboard::class,
+            ManagerDashboard::class,
+        ] as $dashboardClass) {
+            $components = (new $dashboardClass)->content(Schema::make())->getComponents();
+            $tabs = $components[2];
+
+            self::assertInstanceOf(Tabs::class, $tabs, $dashboardClass);
+            self::assertFalse($tabs->isScrollable(), $dashboardClass);
+        }
+    }
 }
 
 class DashboardDateRangeProbe

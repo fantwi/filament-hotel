@@ -66,6 +66,7 @@ abstract class TimeFilteredDashboard extends Dashboard
 
             $components[] = Tabs::make('Dashboard sections')
                 ->tabs($tabs)
+                ->scrollable(false)
                 ->persistTabInQueryString('dashboard-section')
                 ->columnSpanFull();
         }
