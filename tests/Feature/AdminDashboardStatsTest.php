@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\Dashboards\AdminDashboard;
+use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget;
 use Tests\TestCase;
 
@@ -28,5 +29,13 @@ class AdminDashboardStatsTest extends TestCase
         self::assertIsInt($firstDetailWidget);
         self::assertLessThan($firstDetailWidget, array_search($serviceStats, $widgets, true));
         self::assertLessThan($firstDetailWidget, array_search($financeStats, $widgets, true));
+    }
+
+    public function test_admin_panel_does_not_discover_the_obsolete_admin_stats_widget(): void
+    {
+        self::assertNotContains(
+            'App\\Filament\\Admin\\Widgets\\AdminStats',
+            Filament::getPanel('admin')->getWidgets(),
+        );
     }
 }
