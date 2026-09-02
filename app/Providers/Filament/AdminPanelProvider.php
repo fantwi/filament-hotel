@@ -16,6 +16,7 @@ use App\Filament\Admin\Widgets\RestaurantRevenueChart;
 use App\Filament\Admin\Widgets\RevenueStats;
 use App\Filament\Admin\Widgets\StaffStats;
 use App\Http\Middleware\EnforceStaffAccountStatus;
+use App\Http\Middleware\UpdateLastSeen;
 use App\Models\HotelSetting;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -127,9 +128,11 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                UpdateLastSeen::class,
                 EnforceStaffAccountStatus::class,
             ])
             ->persistentMiddleware([
+                UpdateLastSeen::class,
                 EnforceStaffAccountStatus::class,
             ]);
     }

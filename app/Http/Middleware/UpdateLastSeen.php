@@ -29,9 +29,8 @@ class UpdateLastSeen
             if (! auth()->user()->last_seen_at ||
                 auth()->user()->last_seen_at->lt(now()->subMinutes(1))) {
 
-                auth()->user()->update([
-                    'last_seen_at' => now(),
-                ]);
+                auth()->user()->last_seen_at = now();
+                auth()->user()->save();
             }
         }
 
