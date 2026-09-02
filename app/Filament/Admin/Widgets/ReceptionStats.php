@@ -19,6 +19,8 @@ class ReceptionStats extends StatsOverviewWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected ?string $pollingInterval = null;
+
     protected ?string $heading = 'Venue activity';
 
     protected int|array|null $columns = 2;
