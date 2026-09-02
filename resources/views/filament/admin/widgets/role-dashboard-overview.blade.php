@@ -17,7 +17,7 @@
 
             @unless ($compact)
                 <div class="shrink-0 rounded-xl bg-gray-100 px-4 py-3 dark:bg-white/10">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Reporting period</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Applied reporting period</p>
                     <p class="mt-1 text-sm font-bold text-gray-900 dark:text-white">{{ $periodLabel }}</p>
                 </div>
             @endunless

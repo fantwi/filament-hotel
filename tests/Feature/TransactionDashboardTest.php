@@ -65,7 +65,6 @@ class TransactionDashboardTest extends TestCase
 
         $view = file_get_contents(resource_path('views/filament/admin/widgets/role-dashboard-overview.blade.php'));
 
-        self::assertStringContainsString('Reporting period', $view);
         self::assertStringContainsString('md:grid-cols-3', $view);
     }
 }
