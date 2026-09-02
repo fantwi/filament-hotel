@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\Dashboards\SuperAdminDashboard;
+use App\Filament\Admin\Widgets\CorporateBillingOverview;
 use App\Filament\Admin\Widgets\KitchenStockStats;
+use App\Filament\Admin\Widgets\RestaurantRevenueChart;
 use App\Filament\Admin\Widgets\SuperAdminFinanceStats;
 use App\Filament\Admin\Widgets\SuperAdminOperationsStats;
 use App\Filament\Admin\Widgets\SuperAdminStats;
@@ -49,6 +51,22 @@ class SuperAdminDashboardStatsTest extends TestCase
         self::assertSame(SuperAdminOperationsStats::class, $sections['Operations'][0]);
         self::assertSame(SuperAdminFinanceStats::class, $sections['Finance'][0]);
         self::assertSame(KitchenStockStats::class, $sections['Kitchen'][0]);
+    }
+
+    public function test_restaurant_revenue_chart_is_grouped_with_restaurant_widgets(): void
+    {
+        [, $sections] = $this->dashboardWidgetLayout();
+
+        self::assertContains(RestaurantRevenueChart::class, $sections['Restaurant']);
+        self::assertNotContains(RestaurantRevenueChart::class, $sections['Finance']);
+    }
+
+    public function test_non_restaurant_financial_widgets_remain_in_the_finance_section(): void
+    {
+        [, $sections] = $this->dashboardWidgetLayout();
+
+        self::assertContains(SuperAdminFinanceStats::class, $sections['Finance']);
+        self::assertContains(CorporateBillingOverview::class, $sections['Finance']);
     }
 
     /**

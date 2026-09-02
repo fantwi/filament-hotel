@@ -137,14 +137,14 @@ abstract class TimeFilteredDashboard extends Dashboard
 
         return match (true) {
             $name === 'RoleDashboardOverview' => 'Guidance',
+            str_contains($name, 'Restaurant')
+                || str_contains($name, 'Menu')
+                || str_contains($name, 'BestSelling') => 'Restaurant',
             str_contains($name, 'Corporate')
                 || str_contains($name, 'Payment')
                 || str_contains($name, 'Receivable')
                 || str_contains($name, 'Revenue')
                 || str_contains($name, 'Transaction') => 'Finance',
-            str_contains($name, 'Restaurant')
-                || str_contains($name, 'Menu')
-                || str_contains($name, 'BestSelling') => 'Restaurant',
             str_contains($name, 'Kitchen') => 'Kitchen',
             default => 'Operations',
         };
