@@ -33,7 +33,6 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /**
@@ -154,7 +153,7 @@ class AdminPanelProvider extends PanelProvider
     {
         $logo = HotelSetting::current()->logo;
 
-        return filled($logo) ? Storage::disk('public')->url((string) $logo) : null;
+        return filled($logo) ? asset('storage/'.$logo) : null;
     }
 
     /**

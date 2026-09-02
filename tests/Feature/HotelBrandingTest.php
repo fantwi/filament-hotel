@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
 use Filament\Panel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -79,10 +80,32 @@ class HotelBrandingTest extends TestCase
 
         self::assertSame($branding->hotel_name, $panel->getBrandName());
         self::assertSame(
-            Storage::disk('public')->url($branding->logo),
+            'http://localhost/storage/hotel-branding/seaside-logo.png',
             $panel->getBrandLogo(),
         );
         self::assertSame('#C2410C', $panel->getColors()['primary']);
         self::assertSame('#F59E0B', $panel->getColors()['info']);
+    }
+
+    public function test_admin_panel_logo_uses_the_current_request_host_instead_of_the_storage_disk_url(): void
+    {
+        config(['filesystems.disks.public.url' => 'https://wrong-storage-host.test/storage']);
+
+        HotelSetting::create([
+            'hotel_name' => 'Seaside Grand Hotel',
+            'logo' => 'hotel-branding/seaside-logo.png',
+        ]);
+
+        Route::get('/_branding-logo-probe', function (): array {
+            $panel = (new AdminPanelProvider($this->app))->panel(Panel::make());
+
+            return ['logo' => $panel->getBrandLogo()];
+        });
+
+        $this->get('https://current-hotel.test/_branding-logo-probe')
+            ->assertOk()
+            ->assertExactJson([
+                'logo' => 'https://current-hotel.test/storage/hotel-branding/seaside-logo.png',
+            ]);
     }
 }
