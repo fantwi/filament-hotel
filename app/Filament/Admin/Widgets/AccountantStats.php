@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
@@ -17,6 +18,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class AccountantStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -60,10 +62,34 @@ class AccountantStats extends StatsOverviewWidget
         )->count();
 
         return [
-            Stat::make('Completed Revenue', 'GHS '.number_format($revenue, 2))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-banknotes')->color('success'),
-            Stat::make('Outstanding Balance', 'GHS '.number_format($outstanding, 2))->description('Created in selected range')->icon('heroicon-o-clock')->color('warning'),
-            Stat::make('Refunded', 'GHS '.number_format($refunds, 2))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-arrow-uturn-left')->color('danger'),
-            Stat::make('Payments Received', number_format($payments))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-credit-card')->color('info'),
+            $this->drillDown(
+                Stat::make('Completed Revenue', 'GHS '.number_format($revenue, 2))
+                    ->description($this->dashboardDateRangeLabel())
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success'),
+                $this->paymentDrillDownUrl('collected'),
+            ),
+            $this->drillDown(
+                Stat::make('Outstanding Balance', 'GHS '.number_format($outstanding, 2))
+                    ->description('Created in selected range')
+                    ->icon('heroicon-o-clock')
+                    ->color('warning'),
+                $this->transactionDashboardDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Refunded', 'GHS '.number_format($refunds, 2))
+                    ->description($this->dashboardDateRangeLabel())
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('danger'),
+                $this->paymentDrillDownUrl('refunded'),
+            ),
+            $this->drillDown(
+                Stat::make('Payments Received', number_format($payments))
+                    ->description($this->dashboardDateRangeLabel())
+                    ->icon('heroicon-o-credit-card')
+                    ->color('info'),
+                $this->paymentDrillDownUrl('collected'),
+            ),
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Concerns;
 
 use App\Filament\Admin\Pages\BookingCalendar;
 use App\Filament\Admin\Pages\CorporateReceivables;
+use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
 use App\Filament\Admin\Resources\Bookings\BookingResource;
 use App\Filament\Admin\Resources\Payments\PaymentResource;
 use App\Filament\Admin\Resources\RestaurantOrders\RestaurantOrderResource;
@@ -101,6 +102,22 @@ trait BuildsDashboardDrillDowns
 
         return RestaurantOrderResource::getUrl('index', [
             'filters' => $filters,
+        ]);
+    }
+
+    /**
+     * Links combined transaction metrics to the detailed channel breakdown.
+     */
+    protected function transactionDashboardDrillDownUrl(): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return TransactionDashboard::getUrl([
+            'filters' => [
+                'period' => (string) ($this->pageFilters['period'] ?? 'monthly'),
+                'start_date' => $start->toDateString(),
+                'end_date' => $end->toDateString(),
+            ],
         ]);
     }
 

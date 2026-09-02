@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class AccountantReceivablesStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -66,26 +68,41 @@ class AccountantReceivablesStats extends StatsOverviewWidget
         $corporate = $hotel['corporate'] + $conference['corporate'] + $tables['corporate'] + $food['corporate'];
 
         return [
-            Stat::make('Hotel booking receivables', $this->formatAmount($hotel['total']))
-                ->description($periodLabel)
-                ->icon('heroicon-o-home-modern')
-                ->color('primary'),
-            Stat::make('Conference receivables', $this->formatAmount($conference['total']))
-                ->description($periodLabel)
-                ->icon('heroicon-o-building-office')
-                ->color('info'),
-            Stat::make('Table-reservation receivables', $this->formatAmount($tables['total']))
-                ->description($periodLabel)
-                ->icon('heroicon-o-calendar-days')
-                ->color('warning'),
-            Stat::make('Food-order receivables', $this->formatAmount($food['total']))
-                ->description($periodLabel)
-                ->icon('heroicon-o-shopping-bag')
-                ->color('success'),
-            Stat::make('Corporate-billed receivables', $this->formatAmount($corporate))
-                ->description('Included in channel totals')
-                ->icon('heroicon-o-building-office-2')
-                ->color('danger'),
+            $this->drillDown(
+                Stat::make('Hotel booking receivables', $this->formatAmount($hotel['total']))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-home-modern')
+                    ->color('primary'),
+                $this->transactionDashboardDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Conference receivables', $this->formatAmount($conference['total']))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-building-office')
+                    ->color('info'),
+                $this->transactionDashboardDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Table-reservation receivables', $this->formatAmount($tables['total']))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-calendar-days')
+                    ->color('warning'),
+                $this->transactionDashboardDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Food-order receivables', $this->formatAmount($food['total']))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-shopping-bag')
+                    ->color('success'),
+                $this->transactionDashboardDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Corporate-billed receivables', $this->formatAmount($corporate))
+                    ->description('Included in channel totals')
+                    ->icon('heroicon-o-building-office-2')
+                    ->color('danger'),
+                $this->corporateReceivablesDrillDownUrl(),
+            ),
         ];
     }
 
