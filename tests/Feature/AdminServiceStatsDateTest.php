@@ -52,6 +52,21 @@ class AdminServiceStatsDateTest extends TestCase
         self::assertSame('2', $stats['Kitchen Orders']->getValue());
     }
 
+    public function test_admin_kitchen_order_stat_only_counts_orders_eligible_for_the_kitchen_queue(): void
+    {
+        [$guest] = $this->serviceFixture();
+
+        $this->restaurantOrder($guest, '2026-08-10 09:00:00');
+        $this->restaurantOrder($guest, '2026-08-11 09:00:00', 'pending', 'corporate_account');
+        $this->restaurantOrder($guest, '2026-08-11 10:00:00', 'pending');
+        $this->restaurantOrder($guest, '2026-08-11 11:00:00', 'completed', status: 'served');
+        $this->restaurantOrder($guest, '2026-07-31 09:00:00');
+
+        $stats = $this->statsFor('2026-08-10', '2026-08-12');
+
+        self::assertSame('2', $stats['Kitchen Orders']->getValue());
+    }
+
     /**
      * @return array{Guest, Room, ConferenceRoom, Restaurant, RestaurantTable}
      */
@@ -140,15 +155,21 @@ class AdminServiceStatsDateTest extends TestCase
         ]), $createdAt);
     }
 
-    private function restaurantOrder(Guest $guest, string $createdAt): void
-    {
+    private function restaurantOrder(
+        Guest $guest,
+        string $createdAt,
+        string $paymentStatus = 'completed',
+        ?string $paymentMethod = null,
+        string $status = 'confirmed',
+    ): void {
         $this->createdAt(RestaurantOrder::query()->create([
             'guest_id' => $guest->id,
             'order_number' => 'ADMIN-METRIC-'.str()->upper(str()->random(12)),
             'subtotal' => 25,
             'total' => 25,
-            'status' => 'confirmed',
-            'payment_status' => 'completed',
+            'status' => $status,
+            'payment_status' => $paymentStatus,
+            'payment_method' => $paymentMethod,
             'ordering_channel' => 'web',
         ]), $createdAt);
     }

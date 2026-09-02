@@ -65,7 +65,7 @@ class AdminServiceStats extends StatsOverviewWidget
                 ->description($periodLabel)
                 ->icon('heroicon-o-rectangle-stack')
                 ->color('warning'),
-            Stat::make('Kitchen Orders', number_format($this->forDashboardDateRange(RestaurantOrder::query())->whereIn('status', ['confirmed', 'preparing', 'ready'])->count()))
+            Stat::make('Kitchen Orders', number_format($this->forDashboardDateRange(RestaurantOrder::kitchenQueue())->count()))
                 ->description($periodLabel)
                 ->icon('heroicon-o-fire')
                 ->color('success'),
