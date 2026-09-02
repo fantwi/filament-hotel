@@ -3,15 +3,9 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
-use App\Models\Booking;
-use App\Models\ConferenceBooking;
-use App\Models\Payment;
-use App\Models\RestaurantOrder;
-use App\Models\RestaurantReservation;
+use App\Services\TransactionDashboardSummary;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Provides a transaction summary stats overview for the dashboard.
@@ -37,83 +31,32 @@ class TransactionStats extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
-        $hotel = $this->summary(Booking::query(), 'total_price', 'booking_id', ['cancelled', 'expired', 'no_show']);
-        $conference = $this->summary(ConferenceBooking::query(), 'total_price', 'conference_booking_id', ['cancelled', 'no_show']);
-        $tables = $this->summary(RestaurantReservation::query(), 'reservation_fee', 'restaurant_reservation_id', ['cancelled', 'no_show']);
-        $food = $this->summary(RestaurantOrder::query(), 'total', 'restaurant_order_id', ['cancelled']);
+        [$start, $end] = $this->dashboardDateRange();
+        $totals = app(TransactionDashboardSummary::class)
+            ->summarize($start, $end, includeCounts: false)['totals'];
         $periodLabel = $this->dashboardDateRangeLabel();
 
-        $transactions = $hotel['transactions'] + $conference['transactions'] + $tables['transactions'] + $food['transactions'];
-        $gross = $hotel['gross'] + $conference['gross'] + $tables['gross'] + $food['gross'];
-        $payments = $hotel['payments'] + $conference['payments'] + $tables['payments'] + $food['payments'];
-        $outstanding = $hotel['outstanding'] + $conference['outstanding'] + $tables['outstanding'] + $food['outstanding'];
-        $corporateOutstanding = $hotel['corporate_outstanding'] + $conference['corporate_outstanding'] + $tables['corporate_outstanding'] + $food['corporate_outstanding'];
-
         return [
-            Stat::make('Transactions created', number_format($transactions))
+            Stat::make('Transactions created', number_format($totals['transactions']))
                 ->description($periodLabel)
                 ->icon('heroicon-o-arrows-right-left')
                 ->color('primary'),
-            Stat::make('Gross transaction value', $this->formatAmount($gross))
+            Stat::make('Gross transaction value', $this->formatAmount($totals['gross']))
                 ->description('Excludes cancelled transactions')
                 ->icon('heroicon-o-banknotes')
                 ->color('info'),
-            Stat::make('Payments received', $this->formatAmount($payments))
+            Stat::make('Payments received', $this->formatAmount($totals['payments']))
                 ->description($periodLabel)
                 ->icon('heroicon-o-credit-card')
                 ->color('success'),
-            Stat::make('Outstanding balance', $this->formatAmount($outstanding))
+            Stat::make('Outstanding balance', $this->formatAmount($totals['outstanding']))
                 ->description('Unpaid transactions in range')
                 ->icon('heroicon-o-clock')
                 ->color('warning'),
-            Stat::make('Corporate outstanding', $this->formatAmount($corporateOutstanding))
+            Stat::make('Corporate outstanding', $this->formatAmount($totals['corporate_outstanding']))
                 ->description('Included in outstanding balance')
                 ->icon('heroicon-o-building-office-2')
                 ->color('danger'),
-        ];
-    }
-
-    /**
-     * Summarizes a transaction type and its linked payments for the selected period.
-     *
-     * @param  array<int, string>  $excludedStatuses
-     * @return array<string, int|float>
-     */
-    private function summary(Builder $transactions, string $amountColumn, string $paymentForeignKey, array $excludedStatuses): array
-    {
-        $transactionTable = $transactions->getModel()->getTable();
-        $paidPaymentsAlias = $transactionTable.'_paid_payments';
-        $paidPayments = Payment::query()
-            ->select($paymentForeignKey)
-            ->selectRaw('SUM(amount) as paid_amount')
-            ->whereIn('payment_status', ['paid', 'completed'])
-            ->whereNotNull($paymentForeignKey)
-            ->groupBy($paymentForeignKey);
-        $transactionsInRange = $this->forDashboardDateRange($transactions);
-        $activeTransactions = (clone $transactionsInRange)->whereNotIn('status', $excludedStatuses);
-        $remainingBalance = "{$transactionTable}.{$amountColumn} - COALESCE({$paidPaymentsAlias}.paid_amount, 0)";
-        $outstandingTransactions = (clone $activeTransactions)
-            ->whereNotIn("{$transactionTable}.payment_status", ['paid', 'completed', 'refunded'])
-            ->leftJoinSub(
-                $paidPayments,
-                $paidPaymentsAlias,
-                "{$paidPaymentsAlias}.{$paymentForeignKey}",
-                '=',
-                "{$transactionTable}.id",
-            )
-            ->whereRaw("{$remainingBalance} > 0");
-        $paymentsInRange = $this->forDashboardDateRange(Payment::query())
-            ->whereNotNull($paymentForeignKey)
-            ->whereIn('payment_status', ['paid', 'completed']);
-
-        return [
-            'transactions' => (clone $transactionsInRange)->count(),
-            'gross' => (float) (clone $activeTransactions)->sum($amountColumn),
-            'payments' => (float) (clone $paymentsInRange)->sum('amount'),
-            'outstanding' => (float) (clone $outstandingTransactions)->sum(DB::raw($remainingBalance)),
-            'corporate_outstanding' => (float) (clone $outstandingTransactions)
-                ->whereNotNull("{$transactionTable}.corporate_organization_id")
-                ->sum(DB::raw($remainingBalance)),
         ];
     }
 
