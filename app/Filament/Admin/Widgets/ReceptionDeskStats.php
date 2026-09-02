@@ -4,8 +4,10 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
+use App\Models\Payment;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Database\Query\JoinClause;
 
 /**
  * Provides actionable front-desk stats for the reception dashboard.
@@ -39,7 +41,7 @@ class ReceptionDeskStats extends StatsOverviewWidget
         $activeStays = Booking::query()
             ->where('status', 'checked_in')
             ->whereDate('check_in', '<=', $until)
-            ->whereDate('check_out', '>=', $from)
+            ->whereDate('check_out', '>', $from)
             ->count();
         $pendingArrivals = Booking::query()
             ->whereBetween('check_in', [$from, $until])
@@ -49,14 +51,10 @@ class ReceptionDeskStats extends StatsOverviewWidget
             ->whereBetween('check_out', [$from, $until])
             ->whereIn('status', ['confirmed', 'checked_in'])
             ->count();
-        $unpaidArrivals = Booking::query()
-            ->whereBetween('check_in', [$from, $until])
-            ->whereIn('status', ['pending', 'confirmed'])
-            ->whereIn('payment_status', ['pending', 'unpaid'])
-            ->sum('total_price');
+        $unpaidArrivals = $this->unpaidArrivalBalance($from, $until);
 
         return [
-            Stat::make('Guests currently checked in', number_format($activeStays))
+            Stat::make('Checked-in stays', number_format($activeStays))
                 ->description($periodLabel)
                 ->icon('heroicon-o-user-group')
                 ->color('success'),
@@ -73,5 +71,37 @@ class ReceptionDeskStats extends StatsOverviewWidget
                 ->icon('heroicon-o-credit-card')
                 ->color('danger'),
         ];
+    }
+
+    /**
+     * Calculate the remaining balance for valid arrivals in one aggregate query.
+     */
+    private function unpaidArrivalBalance(string $from, string $until): float
+    {
+        $paidPayments = Payment::query()
+            ->selectRaw('booking_id, SUM(amount) as paid_amount')
+            ->whereNotNull('booking_id')
+            ->whereIn('payment_status', ['paid', 'completed'])
+            ->groupBy('booking_id');
+
+        $balance = Booking::query()
+            ->leftJoinSub($paidPayments, 'reception_paid_payments', function (JoinClause $join): void {
+                $join->on('reception_paid_payments.booking_id', '=', 'bookings.id');
+            })
+            ->whereBetween('bookings.check_in', [$from, $until])
+            ->whereIn('bookings.status', ['pending', 'confirmed'])
+            ->selectRaw(<<<'SQL'
+                COALESCE(SUM(
+                    CASE
+                        WHEN bookings.total_price > COALESCE(reception_paid_payments.paid_amount, 0)
+                            THEN bookings.total_price - COALESCE(reception_paid_payments.paid_amount, 0)
+                        ELSE 0
+                    END
+                ), 0) as outstanding_balance
+                SQL)
+            ->toBase()
+            ->first();
+
+        return (float) ($balance?->outstanding_balance ?? 0);
     }
 }
