@@ -7,6 +7,7 @@ use App\Models\HotelSetting;
 use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
 use Filament\Panel;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -79,9 +80,11 @@ class HotelBrandingTest extends TestCase
         $panel = (new AdminPanelProvider($this->app))->panel(Panel::make());
 
         self::assertSame($branding->hotel_name, $panel->getBrandName());
-        self::assertSame(
+        self::assertInstanceOf(Htmlable::class, $panel->getBrandLogo());
+        self::assertStringContainsString('Seaside Grand Hotel', $panel->getBrandLogo()->toHtml());
+        self::assertStringContainsString(
             'http://localhost/storage/hotel-branding/seaside-logo.png',
-            $panel->getBrandLogo(),
+            $panel->getBrandLogo()->toHtml(),
         );
         self::assertSame('#C2410C', $panel->getColors()['primary']);
         self::assertSame('#F59E0B', $panel->getColors()['info']);
@@ -98,14 +101,17 @@ class HotelBrandingTest extends TestCase
 
         Route::get('/_branding-logo-probe', function (): array {
             $panel = (new AdminPanelProvider($this->app))->panel(Panel::make());
+            $brandLogo = $panel->getBrandLogo();
 
-            return ['logo' => $panel->getBrandLogo()];
+            return ['logo' => $brandLogo instanceof Htmlable ? $brandLogo->toHtml() : ''];
         });
 
-        $this->get('https://current-hotel.test/_branding-logo-probe')
-            ->assertOk()
-            ->assertExactJson([
-                'logo' => 'https://current-hotel.test/storage/hotel-branding/seaside-logo.png',
-            ]);
+        $response = $this->get('https://current-hotel.test/_branding-logo-probe');
+
+        $response->assertOk();
+        self::assertStringContainsString(
+            'https://current-hotel.test/storage/hotel-branding/seaside-logo.png',
+            $response->json('logo'),
+        );
     }
 }

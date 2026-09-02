@@ -28,6 +28,7 @@ use Filament\PanelProvider;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
+use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -55,7 +56,7 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotificationsPolling('30s')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandName(fn (): string => $this->hotelBrandName())
-            ->brandLogo(fn (): ?string => $this->hotelBrandLogo())
+            ->brandLogo(fn (): View => $this->hotelBrand())
             ->brandLogoHeight('2.25rem')
             ->colors(fn (): array => [
                 'primary' => $this->hotelBrandColor('primary_color', '#F59E0B'),
@@ -144,6 +145,17 @@ class AdminPanelProvider extends PanelProvider
         $name = HotelSetting::current()->hotel_name;
 
         return filled($name) ? (string) $name : (string) config('app.name', 'Laravel');
+    }
+
+    /**
+     * Builds the combined logo and hotel name displayed by the Filament shell.
+     */
+    private function hotelBrand(): View
+    {
+        return view('filament.admin.components.brand', [
+            'hotelName' => $this->hotelBrandName(),
+            'logoUrl' => $this->hotelBrandLogo(),
+        ]);
     }
 
     /**
