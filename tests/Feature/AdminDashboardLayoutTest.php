@@ -11,11 +11,69 @@ use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\ManagerOperationsChart;
 use App\Filament\Admin\Widgets\RecentPayments;
 use App\Filament\Admin\Widgets\RoleDashboardOverview;
+use App\Models\User;
+use Filament\Facades\Filament;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Schema;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use ReflectionMethod;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AdminDashboardLayoutTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+    }
+
+    public function test_authenticated_admin_sees_the_dashboard_hierarchy_in_reading_order(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->get('/admin/admin-dashboard')
+            ->assertOk()
+            ->assertSeeInOrder([
+                'Dashboard period',
+                RoleDashboardOverview::class,
+                AdminServiceStats::class,
+                AdminFinanceStats::class,
+                'Operations',
+                'Finance',
+                'Kitchen',
+            ], escape: false)
+            ->assertSee(ExecutiveKitchenQueueSummary::class, escape: false)
+            ->assertDontSee('Live Kitchen Order Queue');
+    }
+
+    public function test_dashboard_shell_preserves_responsive_columns_and_persistent_overflow_tabs(): void
+    {
+        $this->actingAsAdmin();
+        $dashboard = new AdminDashboard;
+        $components = $dashboard->content(Schema::make())->getComponents();
+
+        self::assertSame(['default' => 1, 'md' => 2, 'xl' => 3], $dashboard->getColumns());
+        self::assertInstanceOf(Grid::class, $components[1]);
+        self::assertInstanceOf(Tabs::class, $components[2]);
+        self::assertFalse($components[2]->isScrollable());
+        self::assertTrue($components[2]->isTabPersistedInQueryString());
+        self::assertSame('dashboard-section', $components[2]->getTabQueryStringKey());
+        self::assertSame([
+            'Operations',
+            'Finance',
+            'Kitchen',
+        ], array_map(
+            fn ($tab): string => $tab->getLabel(),
+            $components[2]->getDefaultChildComponents(),
+        ));
+    }
+
     public function test_command_center_metrics_are_prioritized_and_domain_widgets_are_grouped(): void
     {
         [$priorityWidgets, $sections] = $this->dashboardWidgetLayout();
@@ -44,13 +102,11 @@ class AdminDashboardLayoutTest extends TestCase
         self::assertCount(count(array_unique($allWidgets)), $allWidgets);
     }
 
-    public function test_dashboard_preserves_the_responsive_three_column_grid(): void
+    public function test_widgets_stack_full_width_at_mobile_breakpoints(): void
     {
-        self::assertSame([
-            'default' => 1,
-            'md' => 2,
-            'xl' => 3,
-        ], (new AdminDashboard)->getColumns());
+        foreach ((new AdminDashboard)->getWidgets() as $widgetClass) {
+            self::assertSame('full', (new $widgetClass)->getColumnSpan(), $widgetClass);
+        }
     }
 
     /**
@@ -63,5 +119,29 @@ class AdminDashboardLayoutTest extends TestCase
         $method->setAccessible(true);
 
         return $method->invoke($dashboard);
+    }
+
+    private function actingAsAdmin(): User
+    {
+        foreach ([
+            'view admin dashboard',
+            'view kitchen dashboard',
+            'view kitchen stock',
+        ] as $permission) {
+            Permission::findOrCreate($permission, 'web');
+        }
+
+        $role = Role::findOrCreate('admin', 'web');
+        $user = User::factory()->create(['department' => 'admin']);
+        $user->assignRole($role);
+        $user->givePermissionTo([
+            'view admin dashboard',
+            'view kitchen dashboard',
+            'view kitchen stock',
+        ]);
+
+        $this->actingAs($user);
+
+        return $user;
     }
 }
