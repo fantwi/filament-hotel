@@ -17,6 +17,10 @@ class RestaurantRevenueChart extends ChartWidget
 
     protected ?string $heading = 'Restaurant Revenue by Selected Date Range';
 
+    protected ?string $emptyStateHeading = 'No restaurant data for this period';
+
+    protected ?string $emptyStateDescription = 'Choose another dashboard period or date range to view restaurant activity.';
+
     protected ?string $pollingInterval = null;
 
     protected static ?int $sort = 20;
@@ -25,6 +29,16 @@ class RestaurantRevenueChart extends ChartWidget
         'default' => 'full',
         'lg' => 2,
     ];
+
+    /**
+     * Determines whether the selected period contains meaningful chart data.
+     */
+    public function isEmpty(): bool
+    {
+        return collect($this->getCachedData()['datasets'] ?? [])
+            ->flatMap(fn (array $dataset): array => $dataset['data'] ?? [])
+            ->every(fn (mixed $value): bool => (float) $value === 0.0);
+    }
 
     /**
      * Builds and returns data.
