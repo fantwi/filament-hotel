@@ -8,6 +8,7 @@ use App\Models\ConferenceBooking;
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
+use App\Services\PaymentReportFilters;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -39,7 +40,10 @@ class AccountantStats extends StatsOverviewWidget
             + $this->forDashboardDateRange(RestaurantReservation::query())->where('payment_status', 'pending')->sum('reservation_fee')
             + $this->forDashboardDateRange(RestaurantOrder::query())->where('payment_status', 'pending')->where('status', '!=', 'cancelled')->sum('total');
         $refunds = $this->forDashboardDateRange(Payment::query())->whereIn('payment_status', ['refunded', 'refund'])->sum('amount');
-        $payments = $this->forDashboardDateRange(Payment::query())->count();
+        $payments = PaymentReportFilters::applyStatus(
+            $this->forDashboardDateRange(Payment::query()),
+            'collected',
+        )->count();
 
         return [
             Stat::make('Completed Revenue', 'GHS '.number_format($revenue, 2))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-banknotes')->color('success'),
