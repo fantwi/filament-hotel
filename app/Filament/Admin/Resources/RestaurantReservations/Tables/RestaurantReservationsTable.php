@@ -110,6 +110,32 @@ class RestaurantReservationsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Filter::make('active_period')
+                    ->label('Active during period')
+                    ->schema([
+                        DatePicker::make('from')->label('Period starts'),
+                        DatePicker::make('until')->label('Period ends'),
+                    ])
+                    ->columns(2)
+                    ->query(function (Builder $query, array $data): Builder {
+                        $from = $data['from'] ?? null;
+                        $until = $data['until'] ?? null;
+
+                        if (blank($from) && blank($until)) {
+                            return $query;
+                        }
+
+                        return $query
+                            ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                            ->when(
+                                $from,
+                                fn (Builder $query, string $date): Builder => $query->whereDate('reservation_date', '>=', $date),
+                            )
+                            ->when(
+                                $until,
+                                fn (Builder $query, string $date): Builder => $query->whereDate('reservation_date', '<=', $date),
+                            );
+                    }),
                 SelectFilter::make('restaurant')
                     ->relationship('restaurant', 'name')
                     ->searchable()

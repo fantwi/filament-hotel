@@ -88,8 +88,31 @@ class BookingController extends Controller
     {
         $this->authorizeBookingAccess();
 
+        $filters = $request->validate([
+            'type' => ['nullable', Rule::in(['all', 'hotel', 'conference', 'restaurant'])],
+            'status_scope' => ['nullable', Rule::in(['all', 'active'])],
+            'range_start' => ['nullable', 'date_format:Y-m-d'],
+            'range_end' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:range_start'],
+        ]);
         $start = $request->date('start');
         $end = $request->date('end');
+        $rangeStart = filled($filters['range_start'] ?? null)
+            ? Carbon::parse($filters['range_start'])->startOfDay()
+            : null;
+        $rangeEnd = filled($filters['range_end'] ?? null)
+            ? Carbon::parse($filters['range_end'])->addDay()->startOfDay()
+            : null;
+
+        if ($rangeStart && (! $start || $rangeStart->greaterThan($start))) {
+            $start = $rangeStart;
+        }
+
+        if ($rangeEnd && (! $end || $rangeEnd->lessThan($end))) {
+            $end = $rangeEnd;
+        }
+
+        $type = $filters['type'] ?? 'all';
+        $activeOnly = ($filters['status_scope'] ?? 'all') === 'active';
 
         $colorForStatus = fn (?string $status): string => match ($status) {
             'confirmed' => '#22c55e',
@@ -101,101 +124,110 @@ class BookingController extends Controller
             default => '#9ca3af',
         };
 
-        $hotelBookings = Booking::query()
-            ->with(['guest', 'room'])
-            ->when($start && $end, fn ($query) => $query
-                ->whereDate('check_in', '<', $end)
-                ->whereDate('check_out', '>', $start))
-            ->get()
-            ->map(function (Booking $booking) use ($colorForStatus) {
-                if (! $booking->check_in || ! $booking->check_out) {
-                    return null;
-                }
+        $hotelBookings = in_array($type, ['all', 'hotel'], true)
+            ? Booking::query()
+                ->with(['guest', 'room'])
+                ->when($activeOnly, fn ($query) => $query->whereIn('status', ['pending', 'confirmed', 'checked_in']))
+                ->when($start && $end, fn ($query) => $query
+                    ->whereDate('check_in', '<', $end)
+                    ->whereDate('check_out', '>', $start))
+                ->get()
+                ->map(function (Booking $booking) use ($colorForStatus) {
+                    if (! $booking->check_in || ! $booking->check_out) {
+                        return null;
+                    }
 
-                return [
-                    'id' => "hotel-{$booking->id}",
-                    'title' => 'Hotel Room '.($booking->room?->room_number ?? 'Unknown'),
-                    'start' => $booking->check_in?->toDateString(),
-                    'end' => $booking->check_out?->toDateString(),
-                    'allDay' => true,
-                    'color' => $colorForStatus($booking->status),
-                    'url' => route('filament.admin.resources.bookings.view', $booking),
-                    'extendedProps' => [
-                        'type' => 'Hotel booking',
-                        'guest' => $booking->guest?->full_name ?? 'Unknown Guest',
-                        'status' => $booking->status,
-                        'payment_status' => $booking->payment_status,
-                        'details' => "Room {$booking->room?->room_number}; {$booking->check_in?->toDateString()} to {$booking->check_out?->toDateString()}",
-                    ],
-                ];
-            })
-            ->filter();
+                    return [
+                        'id' => "hotel-{$booking->id}",
+                        'title' => 'Hotel Room '.($booking->room?->room_number ?? 'Unknown'),
+                        'start' => $booking->check_in?->toDateString(),
+                        'end' => $booking->check_out?->toDateString(),
+                        'allDay' => true,
+                        'color' => $colorForStatus($booking->status),
+                        'url' => route('filament.admin.resources.bookings.view', $booking),
+                        'extendedProps' => [
+                            'type' => 'Hotel booking',
+                            'guest' => $booking->guest?->full_name ?? 'Unknown Guest',
+                            'status' => $booking->status,
+                            'payment_status' => $booking->payment_status,
+                            'details' => "Room {$booking->room?->room_number}; {$booking->check_in?->toDateString()} to {$booking->check_out?->toDateString()}",
+                        ],
+                    ];
+                })
+                ->filter()
+            : collect();
 
-        $conferenceBookings = ConferenceBooking::query()
-            ->with(['guest', 'room'])
-            ->when($start && $end, fn ($query) => $query
-                ->whereDate('booking_date', '>=', $start)
-                ->whereDate('booking_date', '<', $end))
-            ->get()
-            ->map(function (ConferenceBooking $booking) use ($colorForStatus) {
-                $date = $booking->booking_date?->toDateString();
+        $conferenceBookings = in_array($type, ['all', 'conference'], true)
+            ? ConferenceBooking::query()
+                ->with(['guest', 'room'])
+                ->when($activeOnly, fn ($query) => $query->whereIn('status', ['pending', 'confirmed']))
+                ->when($start && $end, fn ($query) => $query
+                    ->whereDate('booking_date', '>=', $start)
+                    ->whereDate('booking_date', '<', $end))
+                ->get()
+                ->map(function (ConferenceBooking $booking) use ($colorForStatus) {
+                    $date = $booking->booking_date?->toDateString();
 
-                if (! $date || ! $booking->start_time || ! $booking->end_time) {
-                    return null;
-                }
+                    if (! $date || ! $booking->start_time || ! $booking->end_time) {
+                        return null;
+                    }
 
-                return [
-                    'id' => "conference-{$booking->id}",
-                    'title' => $booking->room?->name ?? 'Unknown Room',
-                    'start' => "{$date} {$booking->start_time}",
-                    'end' => "{$date} {$booking->end_time}",
-                    'color' => $colorForStatus($booking->status),
-                    'extendedProps' => [
-                        'type' => 'Conference booking',
-                        'guest' => $booking->guest?->full_name ?? 'Unknown Guest',
-                        'status' => $booking->status,
-                        'payment_status' => $booking->payment_status,
-                        'details' => "{$booking->room?->name}; {$date} {$booking->start_time}–{$booking->end_time}",
-                    ],
-                ];
-            })
-            ->filter();
+                    return [
+                        'id' => "conference-{$booking->id}",
+                        'title' => $booking->room?->name ?? 'Unknown Room',
+                        'start' => "{$date} {$booking->start_time}",
+                        'end' => "{$date} {$booking->end_time}",
+                        'color' => $colorForStatus($booking->status),
+                        'extendedProps' => [
+                            'type' => 'Conference booking',
+                            'guest' => $booking->guest?->full_name ?? 'Unknown Guest',
+                            'status' => $booking->status,
+                            'payment_status' => $booking->payment_status,
+                            'details' => "{$booking->room?->name}; {$date} {$booking->start_time}–{$booking->end_time}",
+                        ],
+                    ];
+                })
+                ->filter()
+            : collect();
 
-        $restaurantReservations = RestaurantReservation::query()
-            ->with(['restaurant', 'table'])
-            ->when($start && $end, fn ($query) => $query
-                ->whereDate('reservation_date', '>=', $start)
-                ->whereDate('reservation_date', '<', $end))
-            ->get()
-            ->map(function (RestaurantReservation $reservation) use ($colorForStatus) {
-                $date = $reservation->reservation_date?->toDateString();
+        $restaurantReservations = in_array($type, ['all', 'restaurant'], true)
+            ? RestaurantReservation::query()
+                ->with(['restaurant', 'table'])
+                ->when($activeOnly, fn ($query) => $query->whereIn('status', ['pending', 'confirmed', 'checked_in']))
+                ->when($start && $end, fn ($query) => $query
+                    ->whereDate('reservation_date', '>=', $start)
+                    ->whereDate('reservation_date', '<', $end))
+                ->get()
+                ->map(function (RestaurantReservation $reservation) use ($colorForStatus) {
+                    $date = $reservation->reservation_date?->toDateString();
 
-                if (! $date || ! $reservation->reservation_time) {
-                    return null;
-                }
+                    if (! $date || ! $reservation->reservation_time) {
+                        return null;
+                    }
 
-                $time = $reservation->reservation_time instanceof Carbon
-                    ? $reservation->reservation_time->format('H:i:s')
-                    : (string) $reservation->reservation_time;
-                $startAt = Carbon::parse("{$date} {$time}");
+                    $time = $reservation->reservation_time instanceof Carbon
+                        ? $reservation->reservation_time->format('H:i:s')
+                        : (string) $reservation->reservation_time;
+                    $startAt = Carbon::parse("{$date} {$time}");
 
-                return [
-                    'id' => "restaurant-{$reservation->id}",
-                    'title' => $reservation->table?->table_number ?? 'Unknown Table',
-                    'start' => $startAt->toDateTimeString(),
-                    'end' => $startAt->copy()->addMinutes($reservation->duration_minutes ?? 120)->toDateTimeString(),
-                    'color' => $colorForStatus($reservation->status),
-                    'url' => route('filament.admin.resources.restaurant-reservations.edit', $reservation),
-                    'extendedProps' => [
-                        'type' => 'Restaurant reservation',
-                        'guest' => $reservation->guest_name,
-                        'status' => $reservation->status,
-                        'payment_status' => $reservation->payment_status,
-                        'details' => "{$reservation->restaurant?->name}; Table {$reservation->table?->table_number}",
-                    ],
-                ];
-            })
-            ->filter();
+                    return [
+                        'id' => "restaurant-{$reservation->id}",
+                        'title' => $reservation->table?->table_number ?? 'Unknown Table',
+                        'start' => $startAt->toDateTimeString(),
+                        'end' => $startAt->copy()->addMinutes($reservation->duration_minutes ?? 120)->toDateTimeString(),
+                        'color' => $colorForStatus($reservation->status),
+                        'url' => route('filament.admin.resources.restaurant-reservations.edit', $reservation),
+                        'extendedProps' => [
+                            'type' => 'Restaurant reservation',
+                            'guest' => $reservation->guest_name,
+                            'status' => $reservation->status,
+                            'payment_status' => $reservation->payment_status,
+                            'details' => "{$reservation->restaurant?->name}; Table {$reservation->table?->table_number}",
+                        ],
+                    ];
+                })
+                ->filter()
+            : collect();
 
         return response()->json(
             $hotelBookings

@@ -122,6 +122,32 @@ class BookingsTable
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
+                Filter::make('active_period')
+                    ->label('Active during period')
+                    ->schema([
+                        DatePicker::make('from')->label('Period starts'),
+                        DatePicker::make('until')->label('Period ends'),
+                    ])
+                    ->columns(2)
+                    ->query(function (Builder $query, array $data): Builder {
+                        $from = $data['from'] ?? null;
+                        $until = $data['until'] ?? null;
+
+                        if (blank($from) && blank($until)) {
+                            return $query;
+                        }
+
+                        return $query
+                            ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                            ->when(
+                                $from,
+                                fn (Builder $query, string $date): Builder => $query->whereDate('check_out', '>', $date),
+                            )
+                            ->when(
+                                $until,
+                                fn (Builder $query, string $date): Builder => $query->whereDate('check_in', '<=', $date),
+                            );
+                    }),
                 SelectFilter::make('status')
                     ->label('Booking status')
                     ->options([

@@ -36,6 +36,20 @@
     </style>
 
     <div class="space-y-6">
+        @if ($eventType !== 'all' || $statusScope !== 'all')
+            <section class="flex flex-col gap-3 rounded-2xl border border-primary-200 bg-primary-50 px-4 py-4 dark:border-primary-500/30 dark:bg-primary-500/10 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-primary-900 dark:text-primary-100">{{ $this->focusedScopeLabel() }}</p>
+                    @if ($this->focusedPeriodLabel())
+                        <p class="mt-1 text-xs text-primary-700 dark:text-primary-300">{{ $this->focusedPeriodLabel() }}</p>
+                    @endif
+                </div>
+                <a href="{{ route('filament.admin.pages.booking-calendar') }}" class="inline-flex items-center justify-center rounded-lg border border-primary-300 bg-white px-3 py-2 text-sm font-semibold text-primary-700 transition hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-primary-500/40 dark:bg-gray-900 dark:text-primary-300 dark:hover:bg-gray-800">
+                    Clear dashboard filter
+                </a>
+            </section>
+        @endif
+
         <section class="overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 px-5 py-6 text-white shadow-sm sm:px-8">
             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div class="max-w-2xl">
@@ -181,6 +195,11 @@
     <script>
         (() => {
             const controller = window.__bookingCalendarController ??= {};
+            const eventType = @js($eventType);
+            const statusScope = @js($statusScope);
+            const focusDate = @js($focusDate);
+            const filterEndDate = @js($filterEndDate);
+
 
             const formatEventDate = (value, allDay = false) => {
                 if (! value) {
@@ -278,6 +297,7 @@
                 const calendar = new window.Calendar(element, {
                     plugins: [window.dayGridPlugin, window.interactionPlugin],
                     ...layout,
+                    initialDate: focusDate || undefined,
                     height: 'auto',
                     expandRows: true,
                     dayMaxEvents: true,
@@ -289,6 +309,12 @@
                     },
                     events: {
                         url: @js(route('admin.calendar-events')),
+                        extraParams: {
+                            type: eventType,
+                            status_scope: statusScope,
+                            range_start: focusDate || undefined,
+                            range_end: filterEndDate || undefined,
+                        },
                         failure: () => showState('error', 'Unable to load reservations'),
                         success: (events) => {
                             showState(events.length ? 'ready' : 'empty');

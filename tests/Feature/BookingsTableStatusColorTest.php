@@ -52,6 +52,7 @@ class BookingsTableStatusColorTest extends TestCase
         $filters = $table->getFilters();
 
         self::assertSame([
+            'active_period',
             'status',
             'payment_status',
             'room_type_id',

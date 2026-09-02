@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
@@ -15,6 +16,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class AdminServiceStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -43,34 +45,46 @@ class AdminServiceStats extends StatsOverviewWidget
         $periodLabel = $this->dashboardDateRangeLabel();
 
         return [
-            Stat::make('Active Hotel Bookings', number_format(Booking::query()
-                ->whereDate('check_in', '<', $endExclusive)
-                ->whereDate('check_out', '>', $startDate)
-                ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
-                ->count()))
-                ->description($periodLabel)
-                ->icon('heroicon-o-home-modern')
-                ->color('primary'),
-            Stat::make('Conference Bookings', number_format(ConferenceBooking::query()
-                ->whereDate('booking_date', '>=', $startDate)
-                ->whereDate('booking_date', '<=', $endDate)
-                ->whereIn('status', ['pending', 'confirmed'])
-                ->count()))
-                ->description($periodLabel)
-                ->icon('heroicon-o-building-office-2')
-                ->color('info'),
-            Stat::make('Table Reservations', number_format(RestaurantReservation::query()
-                ->whereDate('reservation_date', '>=', $startDate)
-                ->whereDate('reservation_date', '<=', $endDate)
-                ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
-                ->count()))
-                ->description($periodLabel)
-                ->icon('heroicon-o-rectangle-stack')
-                ->color('warning'),
-            Stat::make('Kitchen Orders', number_format($this->forDashboardDateRange(RestaurantOrder::kitchenQueue())->count()))
-                ->description($periodLabel)
-                ->icon('heroicon-o-fire')
-                ->color('success'),
+            $this->drillDown(
+                Stat::make('Active Hotel Bookings', number_format(Booking::query()
+                    ->whereDate('check_in', '<', $endExclusive)
+                    ->whereDate('check_out', '>', $startDate)
+                    ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                    ->count()))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-home-modern')
+                    ->color('primary'),
+                $this->bookingDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Conference Bookings', number_format(ConferenceBooking::query()
+                    ->whereDate('booking_date', '>=', $startDate)
+                    ->whereDate('booking_date', '<=', $endDate)
+                    ->whereIn('status', ['pending', 'confirmed'])
+                    ->count()))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-building-office-2')
+                    ->color('info'),
+                $this->conferenceBookingDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Table Reservations', number_format(RestaurantReservation::query()
+                    ->whereDate('reservation_date', '>=', $startDate)
+                    ->whereDate('reservation_date', '<=', $endDate)
+                    ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                    ->count()))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-rectangle-stack')
+                    ->color('warning'),
+                $this->restaurantReservationDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Kitchen Orders', number_format($this->forDashboardDateRange(RestaurantOrder::kitchenQueue())->count()))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-fire')
+                    ->color('success'),
+                $this->restaurantOrderDrillDownUrl('kitchen_queue'),
+            ),
         ];
     }
 }
