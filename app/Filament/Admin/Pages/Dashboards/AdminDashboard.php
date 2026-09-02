@@ -58,4 +58,28 @@ class AdminDashboard extends TimeFilteredDashboard
             KitchenOrderQueue::class,
         ];
     }
+
+    /**
+     * Keeps the admin command center and its core service and finance metrics
+     * above the domain-specific dashboard tabs.
+     */
+    protected function isPriorityDashboardWidget(string $widgetClass): bool
+    {
+        return in_array($widgetClass, [
+            RoleDashboardOverview::class,
+            AdminServiceStats::class,
+            AdminFinanceStats::class,
+        ], true);
+    }
+
+    /**
+     * Keeps kitchen stock with the kitchen queue instead of the executive KPIs.
+     */
+    protected function dashboardSectionForWidget(string $widgetClass): string
+    {
+        return match ($widgetClass) {
+            KitchenStockStats::class => 'Kitchen',
+            default => parent::dashboardSectionForWidget($widgetClass),
+        };
+    }
 }
