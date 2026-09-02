@@ -52,7 +52,10 @@ class ManagerDashboardMetricsTest extends TestCase
         self::assertSame(1, $stats['Conference Events']->getValue());
         self::assertSame(1, $stats['Restaurant Reservations']->getValue());
         self::assertSame(1, $stats['Food Orders']->getValue());
-        self::assertSame(1, $stats['Active Kitchen Orders']->getValue());
+
+        $operations = $this->statsFor(ManagerOperationsStats::class, '2026-08-10', '2026-08-12');
+
+        self::assertSame('1', $operations['Active kitchen orders']->getValue());
     }
 
     public function test_active_stays_use_stay_overlap_instead_of_booking_creation_date(): void

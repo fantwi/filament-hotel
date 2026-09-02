@@ -6,6 +6,8 @@ use App\Filament\Admin\Pages\BookingCalendar;
 use App\Filament\Admin\Pages\CorporateReceivables;
 use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
 use App\Filament\Admin\Resources\Bookings\BookingResource;
+use App\Filament\Admin\Resources\KitchenProductions\KitchenProductionResource;
+use App\Filament\Admin\Resources\KitchenStockMovements\KitchenStockMovementResource;
 use App\Filament\Admin\Resources\Payments\PaymentResource;
 use App\Filament\Admin\Resources\RestaurantOrders\RestaurantOrderResource;
 use App\Filament\Admin\Resources\RestaurantReservations\RestaurantReservationResource;
@@ -16,6 +18,23 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 trait BuildsDashboardDrillDowns
 {
+    /**
+     * Links hotel arrivals to bookings whose check-in falls in the period.
+     */
+    protected function bookingArrivalsDrillDownUrl(): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return BookingResource::getUrl('index', [
+            'filters' => [
+                'check_in' => [
+                    'from' => $start->toDateString(),
+                    'until' => $end->toDateString(),
+                ],
+            ],
+        ]);
+    }
+
     /**
      * Links a statistic to active hotel stays overlapping the current period.
      */
@@ -49,6 +68,20 @@ trait BuildsDashboardDrillDowns
     }
 
     /**
+     * Links all conference events in the selected period to the calendar.
+     */
+    protected function conferenceEventsDrillDownUrl(): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return BookingCalendar::getUrl([
+            'type' => 'conference',
+            'start_date' => $start->toDateString(),
+            'end_date' => $end->toDateString(),
+        ]);
+    }
+
+    /**
      * Links a statistic to active table reservations in the current period.
      */
     protected function restaurantReservationDrillDownUrl(): string
@@ -58,6 +91,23 @@ trait BuildsDashboardDrillDowns
         return RestaurantReservationResource::getUrl('index', [
             'filters' => [
                 'active_period' => [
+                    'from' => $start->toDateString(),
+                    'until' => $end->toDateString(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Links restaurant activity to reservations dated within the period.
+     */
+    protected function restaurantReservationActivityDrillDownUrl(): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return RestaurantReservationResource::getUrl('index', [
+            'filters' => [
+                'reservation_date' => [
                     'from' => $start->toDateString(),
                     'until' => $end->toDateString(),
                 ],
@@ -102,6 +152,40 @@ trait BuildsDashboardDrillDowns
 
         return RestaurantOrderResource::getUrl('index', [
             'filters' => $filters,
+        ]);
+    }
+
+    /**
+     * Links production activity to batches recorded within the period.
+     */
+    protected function kitchenProductionDrillDownUrl(): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return KitchenProductionResource::getUrl('index', [
+            'filters' => [
+                'production_date' => [
+                    'from' => $start->toDateString(),
+                    'until' => $end->toDateString(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Links stock activity to movements recorded within the period.
+     */
+    protected function kitchenStockMovementDrillDownUrl(): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return KitchenStockMovementResource::getUrl('index', [
+            'filters' => [
+                'occurred_at' => [
+                    'from' => $start->toDateString(),
+                    'until' => $end->toDateString(),
+                ],
+            ],
         ]);
     }
 

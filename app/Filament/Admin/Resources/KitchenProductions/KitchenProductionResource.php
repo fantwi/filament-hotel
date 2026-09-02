@@ -24,6 +24,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -297,6 +298,24 @@ class KitchenProductionResource extends SecureResource
                     ->label('Produced By')
                     ->toggleable()
                     ->visibleFrom('lg'),
+            ])
+            ->filters([
+                Filter::make('production_date')
+                    ->label('Production date')
+                    ->schema([
+                        DatePicker::make('from')->label('From'),
+                        DatePicker::make('until')->label('Until'),
+                    ])
+                    ->columns(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['from'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('production_date', '>=', $date),
+                        )
+                        ->when(
+                            $data['until'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('production_date', '<=', $date),
+                        )),
             ])
             ->defaultSort('production_date', 'desc')
             ->recordActions([EditAction::make(), DeleteAction::make()]);

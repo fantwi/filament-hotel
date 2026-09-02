@@ -21,6 +21,12 @@ class ManagerOperationsChart extends ChartWidget
 
     protected ?string $heading = 'Operations by Selected Date Range';
 
+    protected ?string $description = 'Compare valid hotel, conference, table-reservation, and food-order activity across the selected period.';
+
+    protected ?string $emptyStateHeading = 'No operational activity for this period';
+
+    protected ?string $emptyStateDescription = 'Choose another dashboard period or date range to view hotel, conference, restaurant, and food-order activity.';
+
     protected int|string|array $columnSpan = 'full';
 
     protected ?string $pollingInterval = null;
@@ -31,6 +37,16 @@ class ManagerOperationsChart extends ChartWidget
     public static function canView(): bool
     {
         return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager']) ?? false;
+    }
+
+    /**
+     * Determines whether the selected period contains operational activity.
+     */
+    public function isEmpty(): bool
+    {
+        return collect($this->getCachedData()['datasets'] ?? [])
+            ->flatMap(fn (array $dataset): array => $dataset['data'] ?? [])
+            ->every(fn (mixed $value): bool => (float) $value === 0.0);
     }
 
     /**
@@ -99,10 +115,10 @@ class ManagerOperationsChart extends ChartWidget
             'backgroundColor' => $backgroundColor,
             'pointBackgroundColor' => $color,
             'pointBorderColor' => '#FFFFFF',
-            'pointRadius' => 3,
-            'borderWidth' => 3,
+            'pointRadius' => 2,
+            'borderWidth' => 2,
             'tension' => 0.35,
-            'fill' => true,
+            'fill' => false,
         ];
     }
 
@@ -262,5 +278,41 @@ class ManagerOperationsChart extends ChartWidget
     protected function getType(): string
     {
         return 'line';
+    }
+
+    /**
+     * Keeps four operational series readable on desktop and mobile screens.
+     */
+    protected function getOptions(): array
+    {
+        return [
+            'responsive' => true,
+            'interaction' => [
+                'mode' => 'index',
+                'intersect' => false,
+            ],
+            'plugins' => [
+                'legend' => [
+                    'position' => 'bottom',
+                    'labels' => [
+                        'usePointStyle' => true,
+                        'boxWidth' => 8,
+                    ],
+                ],
+            ],
+            'scales' => [
+                'x' => [
+                    'ticks' => [
+                        'autoSkip' => true,
+                        'maxTicksLimit' => 12,
+                        'maxRotation' => 0,
+                    ],
+                ],
+                'y' => [
+                    'beginAtZero' => true,
+                    'ticks' => ['precision' => 0],
+                ],
+            ],
+        ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
@@ -15,6 +16,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class ManagerStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -35,11 +37,22 @@ class ManagerStats extends StatsOverviewWidget
         [$start, $end] = $this->dashboardDateRange();
 
         return [
-            Stat::make('Hotel Arrivals', Booking::query()->whereNotIn('status', ['cancelled', 'expired', 'no_show'])->whereBetween('check_in', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('primary'),
-            Stat::make('Conference Events', ConferenceBooking::query()->where('status', '!=', 'cancelled')->whereBetween('booking_date', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('info'),
-            Stat::make('Restaurant Reservations', RestaurantReservation::query()->whereNotIn('status', ['cancelled', 'no_show'])->whereBetween('reservation_date', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('warning'),
-            Stat::make('Food Orders', $this->forDashboardDateRange(RestaurantOrder::query()->where('status', '!=', 'cancelled'))->count())->description('Created in selected range')->color('success'),
-            Stat::make('Active Kitchen Orders', $this->forDashboardDateRange(RestaurantOrder::query()->kitchenQueue())->count())->description('Created in selected range')->color('danger'),
+            $this->drillDown(
+                Stat::make('Hotel Arrivals', Booking::query()->whereNotIn('status', ['cancelled', 'expired', 'no_show'])->whereBetween('check_in', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('primary'),
+                $this->bookingArrivalsDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Conference Events', ConferenceBooking::query()->where('status', '!=', 'cancelled')->whereBetween('booking_date', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('info'),
+                $this->conferenceEventsDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Restaurant Reservations', RestaurantReservation::query()->whereNotIn('status', ['cancelled', 'no_show'])->whereBetween('reservation_date', [$start->toDateString(), $end->toDateString()])->count())->description($this->dashboardDateRangeLabel())->color('warning'),
+                $this->restaurantReservationActivityDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Food Orders', $this->forDashboardDateRange(RestaurantOrder::query()->where('status', '!=', 'cancelled'))->count())->description('Created in selected range')->color('success'),
+                $this->restaurantOrderDrillDownUrl(),
+            ),
         ];
     }
 }

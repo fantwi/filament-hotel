@@ -60,4 +60,15 @@ class ManagerDashboard extends TimeFilteredDashboard
             KitchenOrderQueue::class,
         ];
     }
+
+    /**
+     * Keeps role guidance and the core service summary above the tabs.
+     */
+    protected function isPriorityDashboardWidget(string $widgetClass): bool
+    {
+        return in_array($widgetClass, [
+            RoleDashboardOverview::class,
+            ManagerStats::class,
+        ], true);
+    }
 }

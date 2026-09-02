@@ -70,11 +70,45 @@ class AdminDashboardChartBreakdownTest extends TestCase
         foreach ($datasets as $dataset) {
             self::assertSame($dataset['borderColor'], $dataset['pointBackgroundColor']);
             self::assertSame('#FFFFFF', $dataset['pointBorderColor']);
-            self::assertSame(3, $dataset['pointRadius']);
-            self::assertSame(3, $dataset['borderWidth']);
+            self::assertSame(2, $dataset['pointRadius']);
+            self::assertSame(2, $dataset['borderWidth']);
             self::assertSame(0.35, $dataset['tension']);
-            self::assertTrue($dataset['fill']);
+            self::assertFalse($dataset['fill']);
         }
+    }
+
+    public function test_operations_chart_has_an_actionable_empty_state(): void
+    {
+        $widget = $this->chartWidget('monthly', '2026-08-01', '2026-08-31');
+
+        self::assertTrue(method_exists($widget, 'isEmpty'), 'The operations chart must detect an empty result set.');
+        self::assertTrue($widget->isEmpty());
+        self::assertSame('No operational activity for this period', $widget->getEmptyStateHeading());
+        self::assertSame(
+            'Choose another dashboard period or date range to view hotel, conference, restaurant, and food-order activity.',
+            $widget->getEmptyStateDescription(),
+        );
+    }
+
+    public function test_operations_chart_uses_a_low_density_readable_presentation(): void
+    {
+        $widget = $this->chartWidget('monthly', '2026-08-01', '2026-08-31');
+        $datasets = $this->chartData('monthly', '2026-08-01', '2026-08-31')['datasets'];
+
+        foreach ($datasets as $dataset) {
+            self::assertFalse($dataset['fill']);
+            self::assertSame(2, $dataset['pointRadius']);
+            self::assertSame(2, $dataset['borderWidth']);
+        }
+
+        $method = new ReflectionMethod($widget, 'getOptions');
+        $method->setAccessible(true);
+        $options = $method->invoke($widget);
+
+        self::assertSame('bottom', data_get($options, 'plugins.legend.position'));
+        self::assertSame(12, data_get($options, 'scales.x.ticks.maxTicksLimit'));
+        self::assertSame('index', data_get($options, 'interaction.mode'));
+        self::assertFalse(data_get($options, 'interaction.intersect'));
     }
 
     /**
@@ -93,6 +127,16 @@ class AdminDashboardChartBreakdownTest extends TestCase
 
     private function chartData(string $period, string $startDate, string $endDate): array
     {
+        $widget = $this->chartWidget($period, $startDate, $endDate);
+
+        $method = new ReflectionMethod($widget, 'getData');
+        $method->setAccessible(true);
+
+        return $method->invoke($widget);
+    }
+
+    private function chartWidget(string $period, string $startDate, string $endDate): ManagerOperationsChart
+    {
         $widget = new ManagerOperationsChart;
         $widget->pageFilters = [
             'period' => $period,
@@ -100,10 +144,7 @@ class AdminDashboardChartBreakdownTest extends TestCase
             'end_date' => $endDate,
         ];
 
-        $method = new ReflectionMethod($widget, 'getData');
-        $method->setAccessible(true);
-
-        return $method->invoke($widget);
+        return $widget;
     }
 
     private function createOrder(string $number, string $createdAt): RestaurantOrder

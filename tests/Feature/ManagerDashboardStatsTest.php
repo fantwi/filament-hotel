@@ -4,8 +4,17 @@ namespace Tests\Feature;
 
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Filament\Admin\Pages\Dashboards\ManagerDashboard;
+use App\Filament\Admin\Widgets\CorporateBillingOverview;
+use App\Filament\Admin\Widgets\KitchenOrderQueue;
+use App\Filament\Admin\Widgets\KitchenProductionStats;
+use App\Filament\Admin\Widgets\KitchenStockStats;
+use App\Filament\Admin\Widgets\ManagerOperationsChart;
 use App\Filament\Admin\Widgets\ManagerOperationsStats;
+use App\Filament\Admin\Widgets\ManagerStats;
+use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
+use App\Filament\Admin\Widgets\RoleDashboardOverview;
 use Filament\Widgets\StatsOverviewWidget;
+use ReflectionMethod;
 use Tests\TestCase;
 
 class ManagerDashboardStatsTest extends TestCase
@@ -44,5 +53,36 @@ class ManagerDashboardStatsTest extends TestCase
             self::assertLessThan($detailIndex, $activityIndex);
             self::assertLessThan($detailIndex, $operationsIndex);
         }
+    }
+
+    public function test_manager_guidance_and_core_kpis_are_prioritized_while_detail_widgets_are_grouped(): void
+    {
+        $dashboard = new ManagerDashboard;
+        $method = new ReflectionMethod($dashboard, 'dashboardWidgetLayout');
+        $method->setAccessible(true);
+
+        [$priorityWidgets, $sections] = $method->invoke($dashboard);
+
+        self::assertSame([
+            RoleDashboardOverview::class,
+            ManagerStats::class,
+        ], $priorityWidgets);
+        self::assertSame([
+            'Operations' => [
+                ManagerOperationsStats::class,
+                ManagerOperationsChart::class,
+            ],
+            'Finance' => [
+                CorporateBillingOverview::class,
+            ],
+            'Restaurant' => [
+                RestaurantOrderStatusChart::class,
+            ],
+            'Kitchen' => [
+                KitchenProductionStats::class,
+                KitchenStockStats::class,
+                KitchenOrderQueue::class,
+            ],
+        ], $sections);
     }
 }

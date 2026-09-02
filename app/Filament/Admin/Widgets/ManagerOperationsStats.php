@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\KitchenProduction;
@@ -16,6 +17,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class ManagerOperationsStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -40,42 +42,57 @@ class ManagerOperationsStats extends StatsOverviewWidget
         $corporate = app(CorporateCreditService::class)->dashboardOverview($start, $end);
 
         return [
-            Stat::make(
-                'Active stays',
-                number_format(Booking::query()
-                    ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
-                    ->whereDate('check_in', '<=', $end->toDateString())
-                    ->whereDate('check_out', '>', $start->toDateString())
-                    ->count()),
-            )
-                ->description($periodLabel)
-                ->icon('heroicon-o-key')
-                ->color('primary'),
-            Stat::make(
-                'Active kitchen orders',
-                number_format($this->forDashboardDateRange(RestaurantOrder::query()->kitchenQueue())->count()),
-            )
-                ->description($periodLabel)
-                ->icon('heroicon-o-fire')
-                ->color('success'),
-            Stat::make(
-                'Production batches',
-                number_format($this->forDashboardDateRange(KitchenProduction::query(), 'production_date')->count()),
-            )
-                ->description($periodLabel)
-                ->icon('heroicon-o-clipboard-document-list')
-                ->color('info'),
-            Stat::make(
-                'Stock movements',
-                number_format($this->forDashboardDateRange(KitchenStockMovement::query(), 'occurred_at')->count()),
-            )
-                ->description($periodLabel)
-                ->icon('heroicon-o-archive-box')
-                ->color('warning'),
-            Stat::make('Corporate outstanding', 'GHS '.number_format($corporate['period_outstanding'], 2))
-                ->description($periodLabel)
-                ->icon('heroicon-o-building-office-2')
-                ->color('danger'),
+            $this->drillDown(
+                Stat::make(
+                    'Active stays',
+                    number_format(Booking::query()
+                        ->whereIn('status', ['pending', 'confirmed', 'checked_in'])
+                        ->whereDate('check_in', '<=', $end->toDateString())
+                        ->whereDate('check_out', '>', $start->toDateString())
+                        ->count()),
+                )
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-key')
+                    ->color('primary'),
+                $this->bookingDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make(
+                    'Active kitchen orders',
+                    number_format($this->forDashboardDateRange(RestaurantOrder::query()->kitchenQueue())->count()),
+                )
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-fire')
+                    ->color('success'),
+                $this->restaurantOrderDrillDownUrl('kitchen_queue'),
+            ),
+            $this->drillDown(
+                Stat::make(
+                    'Production batches',
+                    number_format($this->forDashboardDateRange(KitchenProduction::query(), 'production_date')->count()),
+                )
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->color('info'),
+                $this->kitchenProductionDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make(
+                    'Stock movements',
+                    number_format($this->forDashboardDateRange(KitchenStockMovement::query(), 'occurred_at')->count()),
+                )
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-archive-box')
+                    ->color('warning'),
+                $this->kitchenStockMovementDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Corporate outstanding', 'GHS '.number_format($corporate['period_outstanding'], 2))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-building-office-2')
+                    ->color('danger'),
+                $this->corporateReceivablesDrillDownUrl(),
+            ),
         ];
     }
 }
