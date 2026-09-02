@@ -38,14 +38,26 @@ class SuperAdminStats extends StatsOverviewWidget
     protected function getStats(): array
     {
         $revenue = $this->forDashboardDateRange(Payment::query())->whereIn('payment_status', ['paid', 'completed'])->sum('amount');
-        $reservations = $this->forDashboardDateRange(Booking::query())->count()
-            + $this->forDashboardDateRange(ConferenceBooking::query())->count()
-            + $this->forDashboardDateRange(RestaurantReservation::query())->count();
+        $hotelReservations = $this->forDashboardDateRange(Booking::query());
+        $conferenceReservations = $this->forDashboardDateRange(ConferenceBooking::query());
+        $tableReservations = $this->forDashboardDateRange(RestaurantReservation::query());
+        $reservations = (clone $hotelReservations)->count()
+            + (clone $conferenceReservations)->count()
+            + (clone $tableReservations)->count();
+        $cancelledReservations = (clone $hotelReservations)->where('status', 'cancelled')->count()
+            + (clone $conferenceReservations)->where('status', 'cancelled')->count()
+            + (clone $tableReservations)->where('status', 'cancelled')->count();
+        $cancellationRate = $reservations > 0
+            ? ($cancelledReservations / $reservations) * 100
+            : 0;
 
         return [
             Stat::make('New System Users', number_format($this->forDashboardDateRange(User::query())->count()))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-users')->color('primary'),
             Stat::make('Registered Guests', number_format($this->forDashboardDateRange(Guest::query())->count()))->description('Added in selected range')->icon('heroicon-o-user-group')->color('info'),
-            Stat::make('All Reservations', number_format($reservations))->description('Created in selected range')->icon('heroicon-o-calendar-days')->color('warning'),
+            Stat::make('Cancellation Rate', number_format($cancellationRate, 1).'%')
+                ->description(number_format($cancelledReservations).' of '.number_format($reservations).' reservations cancelled')
+                ->icon('heroicon-o-x-circle')
+                ->color($cancelledReservations > 0 ? 'danger' : 'success'),
             Stat::make('Restaurant Orders', number_format($this->forDashboardDateRange(RestaurantOrder::query())->count()))->description('Created in selected range')->icon('heroicon-o-shopping-bag')->color('gray'),
             Stat::make('Total Revenue', 'GHS '.number_format($revenue, 2))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-banknotes')->color('success'),
         ];

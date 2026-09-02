@@ -3,7 +3,11 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
+use App\Models\Booking;
+use App\Models\ConferenceBooking;
 use App\Models\Payment;
+use App\Models\RestaurantOrder;
+use App\Models\RestaurantReservation;
 use App\Services\CorporateCreditService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -38,19 +42,34 @@ class SuperAdminFinanceStats extends StatsOverviewWidget
         $periodLabel = $this->dashboardDateRangeLabel();
         $corporate = app(CorporateCreditService::class)->dashboardOverview($start, $end);
         $payments = $this->forDashboardDateRange(Payment::query());
-        $revenue = (clone $payments)->whereIn('payment_status', ['paid', 'completed'])->sum('amount');
         $refunds = (clone $payments)->whereIn('payment_status', ['refunded', 'refund'])->sum('amount');
         $pending = (clone $payments)->where('payment_status', 'pending')->count();
+        $receivables = $this->forDashboardDateRange(Booking::query())
+            ->whereIn('payment_status', ['pending', 'unpaid'])
+            ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
+            ->sum('total_price')
+            + $this->forDashboardDateRange(ConferenceBooking::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->where('status', '!=', 'cancelled')
+                ->sum('total_price')
+            + $this->forDashboardDateRange(RestaurantReservation::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->whereNotIn('status', ['cancelled', 'no_show'])
+                ->sum('reservation_fee')
+            + $this->forDashboardDateRange(RestaurantOrder::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->where('status', '!=', 'cancelled')
+                ->sum('total');
 
         return [
-            Stat::make('Paid Revenue', 'GHS '.number_format($revenue, 2))
-                ->description($periodLabel)
-                ->icon('heroicon-o-banknotes')
-                ->color('success'),
-            Stat::make('Corporate Outstanding', 'GHS '.number_format($corporate['outstanding'], 2))
-                ->description($periodLabel)
-                ->icon('heroicon-o-building-office')
+            Stat::make('Total Receivables', 'GHS '.number_format($receivables, 2))
+                ->description('All valid unpaid transactions')
+                ->icon('heroicon-o-receipt-percent')
                 ->color('warning'),
+            Stat::make('Corporate Outstanding', 'GHS '.number_format($corporate['outstanding'], 2))
+                ->description('Corporate subset of total receivables')
+                ->icon('heroicon-o-building-office')
+                ->color('danger'),
             Stat::make('Pending Payments', number_format($pending))
                 ->description($periodLabel)
                 ->icon('heroicon-o-clock')
