@@ -4,7 +4,7 @@ namespace App\Filament\Admin\Pages\Dashboards;
 
 use App\Filament\Admin\Widgets\BestSellingMenuItems;
 use App\Filament\Admin\Widgets\CorporateBillingOverview;
-use App\Filament\Admin\Widgets\KitchenOrderQueue;
+use App\Filament\Admin\Widgets\ExecutiveKitchenQueueSummary;
 use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
 use App\Filament\Admin\Widgets\RestaurantRevenueChart;
@@ -59,7 +59,7 @@ class SuperAdminDashboard extends TimeFilteredDashboard
             RestaurantRevenueChart::class,
             RestaurantOrderStatusChart::class,
             BestSellingMenuItems::class,
-            KitchenOrderQueue::class,
+            ExecutiveKitchenQueueSummary::class,
         ];
     }
 
