@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\StaffAccountStatus;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Models\RoomType;
@@ -136,7 +137,7 @@ class BookingWorkflowTest extends TestCase
     {
         $user = User::factory()->create([
             'department' => 'admin',
-            'status' => 'online',
+            'status' => StaffAccountStatus::Active,
         ]);
 
         return $user;
