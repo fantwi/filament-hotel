@@ -39,16 +39,26 @@ class RecentPayments extends TableWidget
             'restaurantReservation.guest',
             'restaurantOrder.guest',
         ])->latest())->columns([
-            TextColumn::make('transaction_reference')->label('Reference')->searchable()->copyable(),
+            TextColumn::make('transaction_reference')
+                ->label('Reference')
+                ->searchable()
+                ->copyable()
+                ->toggleable()
+                ->visibleFrom('md'),
             TextColumn::make('transaction_guest')
                 ->label('Guest')
                 ->state(fn (Payment $record): string => $record->transactionGuestName())
                 ->description(fn (Payment $record): ?string => $record->transactionGuest()?->email)
                 ->wrap(),
             TextColumn::make('amount')->money('GHS')->sortable(),
-            TextColumn::make('method')->badge(),
+            TextColumn::make('method')->badge()->toggleable()->visibleFrom('md'),
             TextColumn::make('payment_status')->label('Status')->badge(),
-            TextColumn::make('created_at')->label('Date')->dateTime('M d, Y g:i A')->sortable(),
+            TextColumn::make('created_at')
+                ->label('Date')
+                ->dateTime('M d, Y g:i A')
+                ->sortable()
+                ->toggleable()
+                ->visibleFrom('md'),
         ])->defaultPaginationPageOption(10);
     }
 }

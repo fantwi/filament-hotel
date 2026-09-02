@@ -62,7 +62,9 @@ class KitchenOrderQueue extends TableWidget
                     ->label('Table')
                     ->state(fn (RestaurantOrder $record): string => $record->table?->table_number ?? $record->reservation?->table?->table_number ?? 'No Table')
                     ->badge()
-                    ->color(fn (RestaurantOrder $record): string => $record->restaurant_table_id ? 'success' : 'gray'),
+                    ->color(fn (RestaurantOrder $record): string => $record->restaurant_table_id ? 'success' : 'gray')
+                    ->toggleable()
+                    ->visibleFrom('md'),
                 TextColumn::make('ordering_channel')
                     ->label('Channel')
                     ->badge()
@@ -71,13 +73,28 @@ class KitchenOrderQueue extends TableWidget
                     })
                     ->color(fn (string $state): string => match ($state) {
                         'qr' => 'success', 'web' => 'info', 'staff' => 'warning', default => 'gray',
-                    }),
+                    })
+                    ->toggleable()
+                    ->visibleFrom('lg'),
                 TextColumn::make('status')->badge()->color(fn (string $state): string => match ($state) {
                     'confirmed' => 'info', 'preparing' => 'warning', 'ready' => 'success', default => 'gray',
                 }),
-                TextColumn::make('preparedBy.name')->label('Chef')->placeholder('Unassigned'),
-                TextColumn::make('created_at')->label('Waiting')->since(),
-                TextColumn::make('kitchen_notes')->label('Notes')->placeholder('No kitchen notes')->wrap(),
+                TextColumn::make('preparedBy.name')
+                    ->label('Chef')
+                    ->placeholder('Unassigned')
+                    ->toggleable()
+                    ->visibleFrom('lg'),
+                TextColumn::make('created_at')
+                    ->label('Waiting')
+                    ->since()
+                    ->toggleable()
+                    ->visibleFrom('md'),
+                TextColumn::make('kitchen_notes')
+                    ->label('Notes')
+                    ->placeholder('No kitchen notes')
+                    ->wrap()
+                    ->toggleable()
+                    ->visibleFrom('xl'),
             ])
             ->recordActions([
                 Action::make('start_preparing')

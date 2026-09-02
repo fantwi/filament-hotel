@@ -6,7 +6,7 @@ use App\Filament\Admin\Pages\Dashboards\AdminDashboard;
 use App\Filament\Admin\Widgets\AdminFinanceStats;
 use App\Filament\Admin\Widgets\AdminServiceStats;
 use App\Filament\Admin\Widgets\CorporateBillingOverview;
-use App\Filament\Admin\Widgets\KitchenOrderQueue;
+use App\Filament\Admin\Widgets\ExecutiveKitchenQueueSummary;
 use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\ManagerOperationsChart;
 use App\Filament\Admin\Widgets\RecentPayments;
@@ -35,7 +35,7 @@ class AdminDashboardLayoutTest extends TestCase
             ],
             'Kitchen' => [
                 KitchenStockStats::class,
-                KitchenOrderQueue::class,
+                ExecutiveKitchenQueueSummary::class,
             ],
         ], $sections);
 

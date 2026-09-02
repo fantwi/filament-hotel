@@ -5,7 +5,7 @@ namespace App\Filament\Admin\Pages\Dashboards;
 use App\Filament\Admin\Widgets\AdminFinanceStats;
 use App\Filament\Admin\Widgets\AdminServiceStats;
 use App\Filament\Admin\Widgets\CorporateBillingOverview;
-use App\Filament\Admin\Widgets\KitchenOrderQueue;
+use App\Filament\Admin\Widgets\ExecutiveKitchenQueueSummary;
 use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\ManagerOperationsChart;
 use App\Filament\Admin\Widgets\RecentPayments;
@@ -55,7 +55,7 @@ class AdminDashboard extends TimeFilteredDashboard
             KitchenStockStats::class,
             ManagerOperationsChart::class,
             RecentPayments::class,
-            KitchenOrderQueue::class,
+            ExecutiveKitchenQueueSummary::class,
         ];
     }
 
