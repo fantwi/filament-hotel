@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -14,6 +15,7 @@ use Illuminate\Database\Query\JoinClause;
  */
 class ReceptionDeskStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -54,22 +56,34 @@ class ReceptionDeskStats extends StatsOverviewWidget
         $unpaidArrivals = $this->unpaidArrivalBalance($from, $until);
 
         return [
-            Stat::make('Checked-in stays', number_format($activeStays))
-                ->description($periodLabel)
-                ->icon('heroicon-o-user-group')
-                ->color('success'),
-            Stat::make('Pending arrivals', number_format($pendingArrivals))
-                ->description($periodLabel)
-                ->icon('heroicon-o-arrow-right-end-on-rectangle')
-                ->color('primary'),
-            Stat::make('Pending departures', number_format($pendingDepartures))
-                ->description($periodLabel)
-                ->icon('heroicon-o-arrow-left-start-on-rectangle')
-                ->color('warning'),
-            Stat::make('Unpaid arrival balance', 'GHS '.number_format((float) $unpaidArrivals, 2))
-                ->description('Requires payment follow-up')
-                ->icon('heroicon-o-credit-card')
-                ->color('danger'),
+            $this->drillDown(
+                Stat::make('Checked-in stays', number_format($activeStays))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-user-group')
+                    ->color('success'),
+                $this->bookingDrillDownUrl('checked_in'),
+            ),
+            $this->drillDown(
+                Stat::make('Pending arrivals', number_format($pendingArrivals))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-arrow-right-end-on-rectangle')
+                    ->color('primary'),
+                $this->bookingArrivalsDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Pending departures', number_format($pendingDepartures))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-arrow-left-start-on-rectangle')
+                    ->color('warning'),
+                $this->bookingDeparturesDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Unpaid arrival balance', 'GHS '.number_format((float) $unpaidArrivals, 2))
+                    ->description('Requires payment follow-up')
+                    ->icon('heroicon-o-credit-card')
+                    ->color('danger'),
+                $this->bookingOutstandingArrivalsDrillDownUrl(),
+            ),
         ];
     }
 

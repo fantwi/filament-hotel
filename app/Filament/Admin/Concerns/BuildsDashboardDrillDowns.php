@@ -38,15 +38,57 @@ trait BuildsDashboardDrillDowns
     /**
      * Links a statistic to active hotel stays overlapping the current period.
      */
-    protected function bookingDrillDownUrl(): string
+    protected function bookingDrillDownUrl(?string $status = null): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+        $filters = [
+            'active_period' => [
+                'from' => $start->toDateString(),
+                'until' => $end->toDateString(),
+            ],
+        ];
+
+        if ($status !== null) {
+            $filters['status'] = ['value' => $status];
+        }
+
+        return BookingResource::getUrl('index', [
+            'filters' => $filters,
+        ]);
+    }
+
+    /**
+     * Links hotel departures to bookings whose check-out falls in the period.
+     */
+    protected function bookingDeparturesDrillDownUrl(): string
     {
         [$start, $end] = $this->dashboardDateRange();
 
         return BookingResource::getUrl('index', [
             'filters' => [
-                'active_period' => [
+                'check_out' => [
                     'from' => $start->toDateString(),
                     'until' => $end->toDateString(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Links arrival balances to bookings that still require payment.
+     */
+    protected function bookingOutstandingArrivalsDrillDownUrl(): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return BookingResource::getUrl('index', [
+            'filters' => [
+                'check_in' => [
+                    'from' => $start->toDateString(),
+                    'until' => $end->toDateString(),
+                ],
+                'balance' => [
+                    'value' => 'outstanding',
                 ],
             ],
         ]);

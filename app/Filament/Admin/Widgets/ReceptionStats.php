@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\ConferenceBooking;
 use App\Models\RestaurantReservation;
@@ -13,6 +14,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class ReceptionStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -39,20 +41,26 @@ class ReceptionStats extends StatsOverviewWidget
         $until = $end->toDateString();
 
         return [
-            Stat::make(
-                'Conference events',
-                ConferenceBooking::query()
-                    ->whereBetween('booking_date', [$from, $until])
-                    ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
-                    ->count(),
-            )->description($this->dashboardDateRangeLabel())->icon('heroicon-o-building-office')->color('info'),
-            Stat::make(
-                'Table reservations',
-                RestaurantReservation::query()
-                    ->whereBetween('reservation_date', [$from, $until])
-                    ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
-                    ->count(),
-            )->description($this->dashboardDateRangeLabel())->icon('heroicon-o-calendar-days')->color('success'),
+            $this->drillDown(
+                Stat::make(
+                    'Conference events',
+                    ConferenceBooking::query()
+                        ->whereBetween('booking_date', [$from, $until])
+                        ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
+                        ->count(),
+                )->description($this->dashboardDateRangeLabel())->icon('heroicon-o-building-office')->color('info'),
+                $this->conferenceBookingDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make(
+                    'Table reservations',
+                    RestaurantReservation::query()
+                        ->whereBetween('reservation_date', [$from, $until])
+                        ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
+                        ->count(),
+                )->description($this->dashboardDateRangeLabel())->icon('heroicon-o-calendar-days')->color('success'),
+                $this->restaurantReservationDrillDownUrl(),
+            ),
         ];
     }
 }

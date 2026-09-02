@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Widgets\ReceptionArrivals;
+use App\Filament\Admin\Widgets\ReceptionDepartures;
 use App\Filament\Admin\Widgets\ReceptionDeskStats;
 use App\Filament\Admin\Widgets\ReceptionStats;
 use App\Models\Booking;
@@ -15,6 +16,7 @@ use App\Models\RestaurantReservation;
 use App\Models\RestaurantTable;
 use App\Models\Room;
 use App\Models\RoomType;
+use Filament\Facades\Filament;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -25,6 +27,13 @@ use Tests\TestCase;
 class ReceptionDashboardMetricsTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+    }
 
     public function test_unpaid_arrival_balance_uses_the_remaining_balance_for_partially_paid_valid_bookings(): void
     {
@@ -159,6 +168,71 @@ class ReceptionDashboardMetricsTest extends TestCase
         self::assertSame('Scheduled arrivals for Aug 1, 2026 - Aug 31, 2026', $table->getDescription());
     }
 
+    public function test_front_desk_stats_link_to_the_matching_booking_workflows(): void
+    {
+        $stats = $this->stats(new ReceptionDeskStats, '2026-08-01', '2026-08-15');
+
+        $this->assertFilteredLink($stats['Checked-in stays'], '/admin/bookings', [
+            'filters.active_period.from' => '2026-08-01',
+            'filters.active_period.until' => '2026-08-15',
+            'filters.status.value' => 'checked_in',
+        ]);
+        $this->assertFilteredLink($stats['Pending arrivals'], '/admin/bookings', [
+            'filters.check_in.from' => '2026-08-01',
+            'filters.check_in.until' => '2026-08-15',
+        ]);
+        $this->assertFilteredLink($stats['Pending departures'], '/admin/bookings', [
+            'filters.check_out.from' => '2026-08-01',
+            'filters.check_out.until' => '2026-08-15',
+        ]);
+        $this->assertFilteredLink($stats['Unpaid arrival balance'], '/admin/bookings', [
+            'filters.check_in.from' => '2026-08-01',
+            'filters.check_in.until' => '2026-08-15',
+            'filters.balance.value' => 'outstanding',
+        ]);
+    }
+
+    public function test_venue_stats_link_to_active_conferences_and_table_reservations(): void
+    {
+        $stats = $this->stats(new ReceptionStats, '2026-08-01', '2026-08-15');
+
+        $this->assertFilteredLink($stats['Conference events'], '/admin/booking-calendar', [
+            'type' => 'conference',
+            'status_scope' => 'active',
+            'start_date' => '2026-08-01',
+            'end_date' => '2026-08-15',
+        ]);
+        $this->assertFilteredLink($stats['Table reservations'], '/admin/restaurant-reservations', [
+            'filters.active_period.from' => '2026-08-01',
+            'filters.active_period.until' => '2026-08-15',
+        ]);
+    }
+
+    public function test_departures_table_lists_only_actionable_departures_in_the_selected_period(): void
+    {
+        [$guest, $room] = $this->hotelFixture();
+        $confirmed = $this->booking($guest, $room, 100, 'confirmed', 'paid', '2026-08-08', '2026-08-10');
+        $checkedIn = $this->booking($guest, $room, 100, 'checked_in', 'paid', '2026-08-09', '2026-08-11');
+        $this->booking($guest, $room, 100, 'cancelled', 'paid', '2026-08-10', '2026-08-12');
+        $this->booking($guest, $room, 100, 'confirmed', 'paid', '2026-08-31', '2026-09-01');
+
+        $widget = new ReceptionDepartures;
+        $widget->pageFilters = [
+            'period' => 'custom',
+            'start_date' => '2026-08-01',
+            'end_date' => '2026-08-31',
+        ];
+
+        $table = $widget->table(Table::make($this->createMock(HasTable::class)));
+
+        self::assertSame('Hotel Departures', $table->getHeading());
+        self::assertSame('Scheduled departures for Aug 1, 2026 - Aug 31, 2026', $table->getDescription());
+        self::assertSame(
+            [$confirmed->id, $checkedIn->id],
+            $table->getQuery()->pluck('bookings.id')->all(),
+        );
+    }
+
     /**
      * @return array{Guest, Room}
      */
@@ -221,5 +295,21 @@ class ReceptionDashboardMetricsTest extends TestCase
         return collect($method->invoke($widget))
             ->mapWithKeys(fn (Stat $stat): array => [(string) $stat->getLabel() => $stat])
             ->all();
+    }
+
+    /**
+     * @param  array<string, string>  $expectedQuery
+     */
+    private function assertFilteredLink(Stat $stat, string $path, array $expectedQuery): void
+    {
+        $url = (string) $stat->getUrl();
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        self::assertSame($path, parse_url($url, PHP_URL_PATH));
+        self::assertSame('heroicon-m-arrow-top-right-on-square', $stat->getDescriptionIcon());
+
+        foreach ($expectedQuery as $key => $value) {
+            self::assertSame($value, data_get($query, $key), $key);
+        }
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Pages\Dashboards;
 
 use App\Filament\Admin\Widgets\ReceptionArrivals;
+use App\Filament\Admin\Widgets\ReceptionDepartures;
 use App\Filament\Admin\Widgets\ReceptionDeskStats;
 use App\Filament\Admin\Widgets\ReceptionStats;
 use App\Filament\Admin\Widgets\RoleDashboardOverview;
@@ -43,6 +44,23 @@ class ReceptionDashboard extends TimeFilteredDashboard
      */
     public function getWidgets(): array
     {
-        return [RoleDashboardOverview::class, ReceptionStats::class, ReceptionDeskStats::class, ReceptionArrivals::class];
+        return [
+            RoleDashboardOverview::class,
+            ReceptionDeskStats::class,
+            ReceptionStats::class,
+            ReceptionArrivals::class,
+            ReceptionDepartures::class,
+        ];
+    }
+
+    /**
+     * Keeps reception guidance and front-desk priorities above operations.
+     */
+    protected function isPriorityDashboardWidget(string $widgetClass): bool
+    {
+        return in_array($widgetClass, [
+            RoleDashboardOverview::class,
+            ReceptionDeskStats::class,
+        ], true);
     }
 }
