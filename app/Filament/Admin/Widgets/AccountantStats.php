@@ -35,10 +35,22 @@ class AccountantStats extends StatsOverviewWidget
     protected function getStats(): array
     {
         $revenue = $this->forDashboardDateRange(Payment::query())->whereIn('payment_status', ['paid', 'completed'])->sum('amount');
-        $outstanding = $this->forDashboardDateRange(Booking::query())->whereIn('payment_status', ['pending', 'unpaid'])->sum('total_price')
-            + $this->forDashboardDateRange(ConferenceBooking::query())->where('payment_status', 'pending')->sum('total_price')
-            + $this->forDashboardDateRange(RestaurantReservation::query())->where('payment_status', 'pending')->sum('reservation_fee')
-            + $this->forDashboardDateRange(RestaurantOrder::query())->where('payment_status', 'pending')->where('status', '!=', 'cancelled')->sum('total');
+        $outstanding = $this->forDashboardDateRange(Booking::query())
+            ->whereIn('payment_status', ['pending', 'unpaid'])
+            ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
+            ->sum('total_price')
+            + $this->forDashboardDateRange(ConferenceBooking::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
+                ->sum('total_price')
+            + $this->forDashboardDateRange(RestaurantReservation::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->whereNotIn('status', ['cancelled', 'no_show'])
+                ->sum('reservation_fee')
+            + $this->forDashboardDateRange(RestaurantOrder::query())
+                ->whereIn('payment_status', ['pending', 'unpaid'])
+                ->where('status', '!=', 'cancelled')
+                ->sum('total');
         $refunds = $this->forDashboardDateRange(Payment::query())->whereIn('payment_status', ['refunded', 'refund'])->sum('amount');
         $payments = PaymentReportFilters::applyStatus(
             $this->forDashboardDateRange(Payment::query()),
