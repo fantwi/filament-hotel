@@ -152,7 +152,6 @@ class DashboardDateRangeTest extends TestCase
             'Finance',
             'Restaurant',
             'Kitchen',
-            'Guidance',
         ], array_map(
             fn ($tab): string => $tab->getLabel(),
             $tabs->getDefaultChildComponents(),

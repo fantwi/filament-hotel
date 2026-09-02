@@ -6,6 +6,7 @@ use App\Filament\Admin\Pages\Dashboards\SuperAdminDashboard;
 use App\Filament\Admin\Widgets\CorporateBillingOverview;
 use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Filament\Admin\Widgets\RestaurantRevenueChart;
+use App\Filament\Admin\Widgets\RoleDashboardOverview;
 use App\Filament\Admin\Widgets\SuperAdminFinanceStats;
 use App\Filament\Admin\Widgets\SuperAdminOperationsStats;
 use App\Filament\Admin\Widgets\SuperAdminStats;
@@ -37,11 +38,14 @@ class SuperAdminDashboardStatsTest extends TestCase
         self::assertLessThan($firstDetailWidget, array_search($financeStats, $widgets, true));
     }
 
-    public function test_only_executive_stats_are_prioritized_above_super_admin_dashboard_sections(): void
+    public function test_command_center_and_executive_stats_are_prioritized_above_super_admin_dashboard_sections(): void
     {
         [$priorityWidgets] = $this->dashboardWidgetLayout();
 
-        self::assertSame([SuperAdminStats::class], $priorityWidgets);
+        self::assertSame([
+            RoleDashboardOverview::class,
+            SuperAdminStats::class,
+        ], $priorityWidgets);
     }
 
     public function test_specialized_super_admin_stats_start_their_domain_sections(): void

@@ -40,6 +40,7 @@ class RoleDashboardOverview extends Widget
         return [
             'dashboard' => $this->dashboardDetails(),
             'periodLabel' => $this->dashboardDateRangeLabel(),
+            'compact' => auth()->user()?->hasRole('super_admin') ?? false,
         ];
     }
 

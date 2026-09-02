@@ -69,7 +69,10 @@ class SuperAdminDashboard extends TimeFilteredDashboard
      */
     protected function isPriorityDashboardWidget(string $widgetClass): bool
     {
-        return $widgetClass === SuperAdminStats::class;
+        return in_array($widgetClass, [
+            RoleDashboardOverview::class,
+            SuperAdminStats::class,
+        ], true);
     }
 
     /**
