@@ -62,4 +62,26 @@ class SuperAdminDashboard extends TimeFilteredDashboard
             KitchenOrderQueue::class,
         ];
     }
+
+    /**
+     * Keeps the executive summary above the tabs and moves specialized
+     * operational, financial, and kitchen metrics into their own sections.
+     */
+    protected function isPriorityDashboardWidget(string $widgetClass): bool
+    {
+        return $widgetClass === SuperAdminStats::class;
+    }
+
+    /**
+     * Places each specialized metric row before the detail widgets in its domain.
+     */
+    protected function dashboardSectionForWidget(string $widgetClass): string
+    {
+        return match ($widgetClass) {
+            SuperAdminOperationsStats::class => 'Operations',
+            SuperAdminFinanceStats::class => 'Finance',
+            KitchenStockStats::class => 'Kitchen',
+            default => parent::dashboardSectionForWidget($widgetClass),
+        };
+    }
 }

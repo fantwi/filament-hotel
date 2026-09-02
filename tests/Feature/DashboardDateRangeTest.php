@@ -148,6 +148,7 @@ class DashboardDateRangeTest extends TestCase
 
         self::assertInstanceOf(Tabs::class, $tabs);
         self::assertSame([
+            'Operations',
             'Finance',
             'Restaurant',
             'Kitchen',

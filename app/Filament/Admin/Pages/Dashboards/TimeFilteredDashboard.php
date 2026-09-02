@@ -113,32 +113,49 @@ abstract class TimeFilteredDashboard extends Dashboard
 
         foreach ($this->getWidgets() as $widget) {
             $widgetClass = $this->normalizeWidgetClass($widget);
-            $name = class_basename($widgetClass);
 
-            if (str_ends_with($name, 'Stats')) {
+            if ($this->isPriorityDashboardWidget($widgetClass)) {
                 $priorityWidgets[] = $widget;
 
                 continue;
             }
 
-            $section = match (true) {
-                $name === 'RoleDashboardOverview' => 'Guidance',
-                str_contains($name, 'Corporate')
-                    || str_contains($name, 'Payment')
-                    || str_contains($name, 'Receivable')
-                    || str_contains($name, 'Revenue')
-                    || str_contains($name, 'Transaction') => 'Finance',
-                str_contains($name, 'Restaurant')
-                    || str_contains($name, 'Menu')
-                    || str_contains($name, 'BestSelling') => 'Restaurant',
-                str_contains($name, 'Kitchen') => 'Kitchen',
-                default => 'Operations',
-            };
+            $section = $this->dashboardSectionForWidget($widgetClass);
 
             $sections[$section][] = $widget;
         }
 
         return [$priorityWidgets, array_filter($sections, filled(...))];
+    }
+
+    /**
+     * Assigns a secondary widget to its dashboard section.
+     */
+    protected function dashboardSectionForWidget(string $widgetClass): string
+    {
+        $name = class_basename($widgetClass);
+
+        return match (true) {
+            $name === 'RoleDashboardOverview' => 'Guidance',
+            str_contains($name, 'Corporate')
+                || str_contains($name, 'Payment')
+                || str_contains($name, 'Receivable')
+                || str_contains($name, 'Revenue')
+                || str_contains($name, 'Transaction') => 'Finance',
+            str_contains($name, 'Restaurant')
+                || str_contains($name, 'Menu')
+                || str_contains($name, 'BestSelling') => 'Restaurant',
+            str_contains($name, 'Kitchen') => 'Kitchen',
+            default => 'Operations',
+        };
+    }
+
+    /**
+     * Determines whether a widget belongs in the dashboard's executive KPI row.
+     */
+    protected function isPriorityDashboardWidget(string $widgetClass): bool
+    {
+        return str_ends_with(class_basename($widgetClass), 'Stats');
     }
 
     /**
