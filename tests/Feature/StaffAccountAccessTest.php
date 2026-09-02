@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Livewire\Component;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -111,6 +112,21 @@ class StaffAccountAccessTest extends TestCase
         $this->get(route('filament.admin.pages.admin-dashboard'))
             ->assertRedirect(route('filament.admin.pages.manager-dashboard'))
             ->assertSessionHas('staff_account_notice', StaffAccountAccess::LEAVE_MESSAGE);
+    }
+
+    #[DataProvider('kitchenDashboardRoutes')]
+    public function test_on_leave_kitchen_staff_can_view_their_assigned_dashboard(
+        string $role,
+        string $routeName,
+    ): void {
+        $staff = $this->staff($role, StaffAccountStatus::OnLeave);
+
+        $this->actingAs($staff)
+            ->get(route($routeName))
+            ->assertOk()
+            ->assertSeeText(StaffAccountAccess::LEAVE_MESSAGE)
+            ->assertSeeText('Dashboard period')
+            ->assertSeeText('Breakdown');
     }
 
     public function test_suspended_staff_are_redirected_to_profile_with_the_exact_notice(): void
@@ -247,8 +263,7 @@ class StaffAccountAccessTest extends TestCase
         $staff->syncRoles([$role]);
 
         $dashboardPermission = match ($role) {
-            'kitchen_manager' => 'view kitchen manager dashboard',
-            'kitchen_staff' => 'view kitchen staff dashboard',
+            'kitchen_manager', 'kitchen_staff' => 'view kitchen dashboard',
             'super_admin' => 'view super admin dashboard',
             'admin' => 'view admin dashboard',
             'accountant' => 'view accountant dashboard',
@@ -264,6 +279,20 @@ class StaffAccountAccessTest extends TestCase
         }
 
         return $staff;
+    }
+
+    public static function kitchenDashboardRoutes(): array
+    {
+        return [
+            'kitchen manager' => [
+                'kitchen_manager',
+                'filament.admin.pages.kitchen-manager-dashboard',
+            ],
+            'kitchen staff' => [
+                'kitchen_staff',
+                'filament.admin.pages.kitchen-staff-dashboard',
+            ],
+        ];
     }
 
     private function booking(): Booking

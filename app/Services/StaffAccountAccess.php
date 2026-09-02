@@ -43,6 +43,16 @@ final class StaffAccountAccess
         ], true);
     }
 
+    public function allowsOperationalActions(?User $user): bool
+    {
+        return $user === null || ! $user->isStaff() || $user->hasActiveStaffAccount();
+    }
+
+    public function authorizeOperationalActions(?User $user): void
+    {
+        abort_unless($this->allowsOperationalActions($user), 403);
+    }
+
     public function dashboardRouteName(User $user): ?string
     {
         foreach (self::DASHBOARD_ROUTES as $role => $routeName) {

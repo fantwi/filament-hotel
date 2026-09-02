@@ -14,7 +14,10 @@ class RestaurantKitchenService
     /**
      * Initializes the dependencies required by this component.
      */
-    public function __construct(private readonly KitchenStockService $stockService) {}
+    public function __construct(
+        private readonly KitchenStockService $stockService,
+        private readonly StaffAccountAccess $staffAccountAccess,
+    ) {}
 
     /**
      * Confirms an eligible restaurant order for kitchen fulfilment.
@@ -32,6 +35,8 @@ class RestaurantKitchenService
      */
     public function startPreparing(RestaurantOrder $order, ?string $kitchenNotes = null): RestaurantOrder
     {
+        $this->staffAccountAccess->authorizeOperationalActions(auth()->user());
+
         return DB::transaction(function () use ($order, $kitchenNotes): RestaurantOrder {
             $order = RestaurantOrder::query()->lockForUpdate()->findOrFail($order->id);
             $this->ensurePaymentCompleted($order);
@@ -61,6 +66,7 @@ class RestaurantKitchenService
      */
     public function markReady(RestaurantOrder $order): RestaurantOrder
     {
+        $this->staffAccountAccess->authorizeOperationalActions(auth()->user());
         $this->ensureStatusIs($order, ['preparing']);
 
         return $this->updateOrder($order, ['status' => 'ready', 'ready_at' => now()], 'ready', 'Restaurant food order marked ready.');
@@ -71,6 +77,7 @@ class RestaurantKitchenService
      */
     public function markServed(RestaurantOrder $order): RestaurantOrder
     {
+        $this->staffAccountAccess->authorizeOperationalActions(auth()->user());
         $this->ensureStatusIs($order, ['ready']);
 
         return $this->updateOrder($order, [

@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Widgets;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\RestaurantOrder;
 use App\Services\RestaurantKitchenService;
+use App\Services\StaffAccountAccess;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -24,6 +25,17 @@ class KitchenOrderQueue extends TableWidget
     protected static ?int $sort = 5;
 
     protected int|string|array $columnSpan = 'full';
+
+    /**
+     * Re-authorizes an already-mounted action before Filament can short-circuit
+     * it as hidden after the staff account status changes.
+     */
+    public function callMountedAction(array $arguments = []): mixed
+    {
+        app(StaffAccountAccess::class)->authorizeOperationalActions(auth()->user());
+
+        return parent::callMountedAction($arguments);
+    }
 
     /**
      * Configures the table data source, columns, and actions.
@@ -72,7 +84,7 @@ class KitchenOrderQueue extends TableWidget
                     ->label('Prepare')
                     ->icon('heroicon-o-fire')
                     ->color('warning')
-                    ->visible(fn (RestaurantOrder $record): bool => $record->status === 'confirmed')
+                    ->visible(fn (RestaurantOrder $record): bool => $record->status === 'confirmed' && $this->allowsOperationalActions())
                     ->schema([Textarea::make('kitchen_notes')->label('Kitchen Notes')->rows(3)])
                     ->action(function (RestaurantOrder $record, array $data, RestaurantKitchenService $kitchen): void {
                         $kitchen->startPreparing($record, $data['kitchen_notes'] ?? null);
@@ -82,7 +94,7 @@ class KitchenOrderQueue extends TableWidget
                     ->label('Ready')
                     ->icon('heroicon-o-bell-alert')
                     ->color('success')
-                    ->visible(fn (RestaurantOrder $record): bool => $record->status === 'preparing')
+                    ->visible(fn (RestaurantOrder $record): bool => $record->status === 'preparing' && $this->allowsOperationalActions())
                     ->requiresConfirmation()
                     ->action(function (RestaurantOrder $record, RestaurantKitchenService $kitchen): void {
                         $kitchen->markReady($record);
@@ -92,7 +104,7 @@ class KitchenOrderQueue extends TableWidget
                     ->label('Served')
                     ->icon('heroicon-o-check')
                     ->color('gray')
-                    ->visible(fn (RestaurantOrder $record): bool => $record->status === 'ready')
+                    ->visible(fn (RestaurantOrder $record): bool => $record->status === 'ready' && $this->allowsOperationalActions())
                     ->requiresConfirmation()
                     ->action(function (RestaurantOrder $record, RestaurantKitchenService $kitchen): void {
                         $kitchen->markServed($record);
@@ -108,5 +120,10 @@ class KitchenOrderQueue extends TableWidget
     public static function canView(): bool
     {
         return auth()->user()?->can('view kitchen dashboard') ?? false;
+    }
+
+    private function allowsOperationalActions(): bool
+    {
+        return app(StaffAccountAccess::class)->allowsOperationalActions(auth()->user());
     }
 }
