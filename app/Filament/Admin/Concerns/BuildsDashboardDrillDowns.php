@@ -58,6 +58,23 @@ trait BuildsDashboardDrillDowns
     }
 
     /**
+     * Links transaction metrics to hotel bookings created in the period.
+     */
+    protected function bookingTransactionsDrillDownUrl(): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return BookingResource::getUrl('index', [
+            'filters' => [
+                'created_at' => [
+                    'created_from' => $start->toDateString(),
+                    'created_until' => $end->toDateString(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
      * Links hotel departures to bookings whose check-out falls in the period.
      */
     protected function bookingDeparturesDrillDownUrl(): string
@@ -160,17 +177,34 @@ trait BuildsDashboardDrillDowns
     /**
      * Links a statistic to the payments register with the current period applied.
      */
-    protected function paymentDrillDownUrl(string $status): string
+    protected function paymentDrillDownUrl(string $status, string $transactionType = 'all'): string
     {
         [$start, $end] = $this->dashboardDateRange();
 
         return PaymentResource::getUrl('index', [
             'filters' => [
-                'transaction_type' => 'all',
+                'transaction_type' => $transactionType,
                 'payment_status' => $status,
                 'period' => (string) ($this->pageFilters['period'] ?? 'monthly'),
                 'start_date' => $start->toDateString(),
                 'end_date' => $end->toDateString(),
+            ],
+        ]);
+    }
+
+    /**
+     * Links transaction metrics to table reservations created in the period.
+     */
+    protected function restaurantReservationTransactionsDrillDownUrl(): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return RestaurantReservationResource::getUrl('index', [
+            'filters' => [
+                'created_at' => [
+                    'created_from' => $start->toDateString(),
+                    'created_until' => $end->toDateString(),
+                ],
             ],
         ]);
     }
@@ -256,6 +290,28 @@ trait BuildsDashboardDrillDowns
     }
 
     /**
+     * Links period receivables to the corporate settlement queue.
+     */
+    protected function corporateReceivablesPeriodDrillDownUrl(string $transactionType = 'all'): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return CorporateReceivables::getUrl([
+            'transaction_type' => $transactionType,
+            'from_date' => $start->toDateString(),
+            'until_date' => $end->toDateString(),
+        ]);
+    }
+
+    /**
+     * Links a combined metric to its detailed section on this dashboard.
+     */
+    protected function transactionDashboardSectionDrillDownUrl(string $section): string
+    {
+        return $this->transactionDashboardDrillDownUrl().'#'.ltrim($section, '#');
+    }
+
+    /**
      * Makes an actionable statistic visibly and accessibly clickable.
      */
     protected function drillDown(Stat $stat, string $url): Stat
@@ -263,5 +319,15 @@ trait BuildsDashboardDrillDowns
         return $stat
             ->url($url)
             ->descriptionIcon('heroicon-m-arrow-top-right-on-square');
+    }
+
+    /**
+     * Makes a statistic navigate to supporting details on the same dashboard.
+     */
+    protected function dashboardSectionDrillDown(Stat $stat, string $section): Stat
+    {
+        return $stat
+            ->url($this->transactionDashboardSectionDrillDownUrl($section))
+            ->descriptionIcon('heroicon-m-arrow-down');
     }
 }

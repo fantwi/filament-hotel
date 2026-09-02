@@ -67,6 +67,32 @@ class CorporateReceivables extends Page
     }
 
     /**
+     * Applies a validated transaction-dashboard scope from the query string.
+     */
+    public function mount(): void
+    {
+        $transactionType = (string) request()->query('transaction_type', 'all');
+        $fromDate = (string) request()->query('from_date', '');
+        $untilDate = (string) request()->query('until_date', '');
+
+        if (! in_array($transactionType, ['all', 'booking', 'conference', 'reservation', 'order'], true)) {
+            $transactionType = 'all';
+        }
+
+        $fromDate = $this->isDate($fromDate) ? $fromDate : '';
+        $untilDate = $this->isDate($untilDate) ? $untilDate : '';
+
+        if ($fromDate !== '' && $untilDate !== '' && $fromDate > $untilDate) {
+            $fromDate = '';
+            $untilDate = '';
+        }
+
+        $this->draftTransactionType = $this->transactionType = $transactionType;
+        $this->draftFromDate = $this->fromDate = $fromDate;
+        $this->draftUntilDate = $this->untilDate = $untilDate;
+    }
+
+    /**
      * Returns the current page of receivables as a paginator.
      *
      * The query combines the four transaction sources in SQL, allowing the

@@ -110,6 +110,22 @@ class RestaurantReservationsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Filter::make('created_at')
+                    ->label('Created date')
+                    ->schema([
+                        DatePicker::make('created_from')->label('Created from'),
+                        DatePicker::make('created_until')->label('Created until'),
+                    ])
+                    ->columns(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['created_from'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['created_until'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '<=', $date),
+                        )),
                 Filter::make('active_period')
                     ->label('Active during period')
                     ->schema([
