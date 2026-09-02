@@ -120,6 +120,40 @@ class TransactionDashboardIntegrationTest extends TestCase
         self::assertFalse(Role::findByName('receptionist', 'web')->hasPermissionTo('view transaction dashboard'));
     }
 
+    public function test_metric_scopes_are_explained_where_staff_interpret_the_figures(): void
+    {
+        $staff = $this->staff('accounting');
+        $stats = $this->stats();
+
+        self::assertSame([
+            'All transactions created',
+            'Active transaction value',
+            'Completed payments recorded',
+            'Outstanding from period',
+            'Corporate outstanding from period',
+        ], array_keys($stats));
+        self::assertSame('All statuses · transaction date: Aug 1, 2026 - Aug 31, 2026', $stats['All transactions created']->getDescription());
+        self::assertSame('Active statuses · transaction date: Aug 1, 2026 - Aug 31, 2026', $stats['Active transaction value']->getDescription());
+        self::assertSame('Completed only · payment date: Aug 1, 2026 - Aug 31, 2026', $stats['Completed payments recorded']->getDescription());
+        self::assertSame('Active unpaid · transaction date: Aug 1, 2026 - Aug 31, 2026', $stats['Outstanding from period']->getDescription());
+        self::assertSame('Corporate subset · transaction date: Aug 1, 2026 - Aug 31, 2026', $stats['Corporate outstanding from period']->getDescription());
+
+        Livewire::actingAs($staff)
+            ->test(TransactionOverview::class, ['pageFilters' => self::FILTERS])
+            ->assertSeeInOrder([
+                'How metrics are scoped',
+                'Transaction activity',
+                'Payment activity',
+                'Outstanding balances',
+                'Outstanding follow-up',
+                'Transaction breakdown',
+            ])
+            ->assertSee('Active gross value')
+            ->assertSee('Completed payments recorded')
+            ->assertSee('Outstanding from period')
+            ->assertSee('Corporate outstanding from period');
+    }
+
     public function test_both_widgets_render_the_same_date_filtered_four_channel_totals(): void
     {
         $staff = $this->staff('accounting');
@@ -152,11 +186,11 @@ class TransactionDashboardIntegrationTest extends TestCase
         $stats = $this->stats();
         $overview = $this->overview();
 
-        self::assertSame('4', $stats['Transactions created']->getValue());
-        self::assertSame('GHS 1,000.00', $stats['Gross transaction value']->getValue());
-        self::assertSame('GHS 250.00', $stats['Payments received']->getValue());
-        self::assertSame('GHS 750.00', $stats['Outstanding balance']->getValue());
-        self::assertSame('GHS 300.00', $stats['Corporate outstanding']->getValue());
+        self::assertSame('4', $stats['All transactions created']->getValue());
+        self::assertSame('GHS 1,000.00', $stats['Active transaction value']->getValue());
+        self::assertSame('GHS 250.00', $stats['Completed payments recorded']->getValue());
+        self::assertSame('GHS 750.00', $stats['Outstanding from period']->getValue());
+        self::assertSame('GHS 300.00', $stats['Corporate outstanding from period']->getValue());
         self::assertSame([
             'transactions' => 4,
             'gross' => 1000.0,
@@ -178,7 +212,7 @@ class TransactionDashboardIntegrationTest extends TestCase
 
         Livewire::actingAs($staff)
             ->test(TransactionStats::class, ['pageFilters' => self::FILTERS])
-            ->assertSee('Transactions created')
+            ->assertSee('All transactions created')
             ->assertSee('GHS 1,000.00')
             ->assertSee('GHS 250.00')
             ->assertSee('Aug 1, 2026 - Aug 31, 2026');
@@ -204,7 +238,7 @@ class TransactionDashboardIntegrationTest extends TestCase
         $stats = $this->stats();
         $overview = $this->overview();
 
-        self::assertSame('GHS 125.00', $stats['Payments received']->getValue());
+        self::assertSame('GHS 125.00', $stats['Completed payments recorded']->getValue());
         self::assertSame(125.0, $overview['totals']['payments']);
         self::assertSame(1, $overview['totals']['payment_count']);
     }
@@ -244,8 +278,8 @@ class TransactionDashboardIntegrationTest extends TestCase
         $overview = $this->overview();
         $rows = collect($overview['rows'])->keyBy('label');
 
-        self::assertSame('GHS 2,100.00', $stats['Outstanding balance']->getValue());
-        self::assertSame('GHS 850.00', $stats['Corporate outstanding']->getValue());
+        self::assertSame('GHS 2,100.00', $stats['Outstanding from period']->getValue());
+        self::assertSame('GHS 850.00', $stats['Corporate outstanding from period']->getValue());
         self::assertSame(2100.0, $overview['totals']['outstanding']);
         self::assertSame(4, $overview['totals']['outstanding_count']);
         self::assertSame(850.0, $overview['totals']['corporate_outstanding']);
@@ -265,8 +299,8 @@ class TransactionDashboardIntegrationTest extends TestCase
         $stats = $this->stats();
         $overview = $this->overview();
 
-        self::assertSame('GHS 100.00', $stats['Gross transaction value']->getValue());
-        self::assertSame('GHS 100.00', $stats['Outstanding balance']->getValue());
+        self::assertSame('GHS 100.00', $stats['Active transaction value']->getValue());
+        self::assertSame('GHS 100.00', $stats['Outstanding from period']->getValue());
         self::assertSame(100.0, $overview['totals']['gross']);
         self::assertSame(100.0, $overview['totals']['outstanding']);
         self::assertSame(1, $overview['totals']['outstanding_count']);

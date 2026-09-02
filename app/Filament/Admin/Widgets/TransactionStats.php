@@ -39,24 +39,24 @@ class TransactionStats extends StatsOverviewWidget
         $periodLabel = $this->dashboardDateRangeLabel();
 
         return [
-            Stat::make('Transactions created', number_format($totals['transactions']))
-                ->description($periodLabel)
+            Stat::make('All transactions created', number_format($totals['transactions']))
+                ->description("All statuses · transaction date: {$periodLabel}")
                 ->icon('heroicon-o-arrows-right-left')
                 ->color('primary'),
-            Stat::make('Gross transaction value', $this->formatAmount($totals['gross']))
-                ->description('Excludes cancelled transactions')
+            Stat::make('Active transaction value', $this->formatAmount($totals['gross']))
+                ->description("Active statuses · transaction date: {$periodLabel}")
                 ->icon('heroicon-o-banknotes')
                 ->color('info'),
-            Stat::make('Payments received', $this->formatAmount($totals['payments']))
-                ->description($periodLabel)
+            Stat::make('Completed payments recorded', $this->formatAmount($totals['payments']))
+                ->description("Completed only · payment date: {$periodLabel}")
                 ->icon('heroicon-o-credit-card')
                 ->color('success'),
-            Stat::make('Outstanding balance', $this->formatAmount($totals['outstanding']))
-                ->description('Unpaid transactions in range')
+            Stat::make('Outstanding from period', $this->formatAmount($totals['outstanding']))
+                ->description("Active unpaid · transaction date: {$periodLabel}")
                 ->icon('heroicon-o-clock')
                 ->color('warning'),
-            Stat::make('Corporate outstanding', $this->formatAmount($totals['corporate_outstanding']))
-                ->description('Included in outstanding balance')
+            Stat::make('Corporate outstanding from period', $this->formatAmount($totals['corporate_outstanding']))
+                ->description("Corporate subset · transaction date: {$periodLabel}")
                 ->icon('heroicon-o-building-office-2')
                 ->color('danger'),
         ];
