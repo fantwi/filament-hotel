@@ -25,7 +25,7 @@ class TransactionDashboard extends TimeFilteredDashboard
      */
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;
+        return auth()->user()?->can('view transaction dashboard') ?? false;
     }
 
     /**

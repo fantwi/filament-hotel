@@ -22,7 +22,7 @@ class TransactionOverview extends Widget
      */
     public static function canView(): bool
     {
-        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant']) ?? false;
+        return auth()->user()?->can('view transaction dashboard') ?? false;
     }
 
     /**

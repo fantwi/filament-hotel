@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
 use App\Filament\Admin\Widgets\TransactionOverview;
 use App\Filament\Admin\Widgets\TransactionStats;
 use App\Models\Booking;
@@ -18,6 +19,7 @@ use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\User;
 use Carbon\Carbon;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +27,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionMethod;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class TransactionDashboardIntegrationTest extends TestCase
@@ -64,6 +69,55 @@ class TransactionDashboardIntegrationTest extends TestCase
         $this->actingAs($this->staff('reception'))
             ->get('/admin/transaction-dashboard')
             ->assertForbidden();
+    }
+
+    public function test_role_name_does_not_bypass_missing_transaction_dashboard_permission(): void
+    {
+        $permission = Permission::findOrCreate('view transaction dashboard', 'web');
+        $staff = $this->staff('accounting');
+        Role::findByName('accountant', 'web')->revokePermissionTo($permission);
+
+        $this->actingAs($staff);
+
+        self::assertFalse(TransactionDashboard::canAccess());
+        self::assertFalse(TransactionStats::canView());
+        self::assertFalse(TransactionOverview::canView());
+        $this->get('/admin/transaction-dashboard')->assertForbidden();
+    }
+
+    public function test_staff_with_transaction_dashboard_permission_can_access_the_page_and_widgets(): void
+    {
+        $staff = $this->staff('reception');
+        $staff->givePermissionTo(Permission::findOrCreate('view transaction dashboard', 'web'));
+
+        $this->actingAs($staff);
+
+        self::assertTrue(TransactionDashboard::canAccess());
+        self::assertTrue(TransactionStats::canView());
+        self::assertTrue(TransactionOverview::canView());
+        $this->get('/admin/transaction-dashboard')->assertOk();
+    }
+
+    public function test_roles_and_permissions_seeder_assigns_transaction_dashboard_access_to_finance_roles(): void
+    {
+        Permission::query()
+            ->where('name', 'view transaction dashboard')
+            ->where('guard_name', 'web')
+            ->delete();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $this->assertDatabaseHas('permissions', [
+            'name' => 'view transaction dashboard',
+            'guard_name' => 'web',
+        ]);
+
+        foreach (['super_admin', 'admin', 'manager', 'accountant'] as $roleName) {
+            self::assertTrue(Role::findByName($roleName, 'web')->hasPermissionTo('view transaction dashboard'));
+        }
+
+        self::assertFalse(Role::findByName('receptionist', 'web')->hasPermissionTo('view transaction dashboard'));
     }
 
     public function test_both_widgets_render_the_same_date_filtered_four_channel_totals(): void
