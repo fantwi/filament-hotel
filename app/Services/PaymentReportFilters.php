@@ -38,6 +38,21 @@ final class PaymentReportFilters
     }
 
     /**
+     * Returns payment-state groupings used by the register and dashboard links.
+     *
+     * @return array<string, string>
+     */
+    public static function statusOptions(): array
+    {
+        return [
+            'all' => 'All statuses',
+            'collected' => 'Collected',
+            'pending' => 'Pending or unpaid',
+            'refunded' => 'Refunded',
+        ];
+    }
+
+    /**
      * Resolves a preset or custom date range for payment reporting.
      *
      * @param  array<string, mixed>  $filters
@@ -78,10 +93,31 @@ final class PaymentReportFilters
     }
 
     /**
+     * Applies the normalized payment-state grouping selected by staff.
+     */
+    public static function applyStatus(Builder $query, string $status): Builder
+    {
+        return match ($status) {
+            'collected' => $query->whereIn('payment_status', ['paid', 'completed']),
+            'pending' => $query->whereIn('payment_status', ['pending', 'unpaid']),
+            'refunded' => $query->whereIn('payment_status', ['refunded', 'refund']),
+            default => $query,
+        };
+    }
+
+    /**
      * Returns a display label for the selected transaction type.
      */
     public static function typeLabel(string $type): string
     {
         return self::typeOptions()[$type] ?? self::typeOptions()['all'];
+    }
+
+    /**
+     * Returns a display label for the selected payment-state grouping.
+     */
+    public static function statusLabel(string $status): string
+    {
+        return self::statusOptions()[$status] ?? self::statusOptions()['all'];
     }
 }

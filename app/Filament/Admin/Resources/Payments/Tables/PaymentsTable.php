@@ -44,9 +44,14 @@ class PaymentsTable
 
                 $query->whereBetween('created_at', [$start, $end]);
 
-                return PaymentReportFilters::applyType(
+                $query = PaymentReportFilters::applyType(
                     $query,
                     (string) ($filters['transaction_type'] ?? 'all'),
+                );
+
+                return PaymentReportFilters::applyStatus(
+                    $query,
+                    (string) ($filters['payment_status'] ?? 'all'),
                 );
             })
             ->columns([

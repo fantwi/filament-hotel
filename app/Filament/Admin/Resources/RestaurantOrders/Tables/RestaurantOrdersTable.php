@@ -77,13 +77,22 @@ class RestaurantOrdersTable
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('status')->options([
+                    'kitchen_queue' => 'Kitchen queue',
                     'pending' => 'Pending',
                     'confirmed' => 'Confirmed',
                     'preparing' => 'Preparing',
                     'ready' => 'Ready',
                     'served' => 'Served',
                     'cancelled' => 'Cancelled',
-                ]),
+                ])->query(function (Builder $query, array $data): Builder {
+                    $status = $data['value'] ?? null;
+
+                    return match ($status) {
+                        'kitchen_queue' => $query->kitchenQueue(),
+                        null, '' => $query,
+                        default => $query->where('status', $status),
+                    };
+                }),
                 SelectFilter::make('payment_status')
                     ->label('Payment Status')
                     ->options([

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
@@ -15,6 +16,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class SuperAdminOperationsStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -69,13 +71,16 @@ class SuperAdminOperationsStats extends StatsOverviewWidget
                 ->description($periodLabel)
                 ->icon('heroicon-o-rectangle-stack')
                 ->color('warning'),
-            Stat::make(
-                'Kitchen Queue',
-                number_format($this->forDashboardDateRange(RestaurantOrder::query())->whereIn('status', ['confirmed', 'preparing', 'ready'])->count()),
-            )
-                ->description($periodLabel)
-                ->icon('heroicon-o-fire')
-                ->color('success'),
+            $this->drillDown(
+                Stat::make(
+                    'Kitchen Queue',
+                    number_format($this->forDashboardDateRange(RestaurantOrder::kitchenQueue())->count()),
+                )
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-fire')
+                    ->color('success'),
+                $this->restaurantOrderDrillDownUrl('kitchen_queue'),
+            ),
             Stat::make('Rooms Used', number_format($roomsUsed))
                 ->description($periodLabel)
                 ->icon('heroicon-o-key')

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
@@ -18,6 +19,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class SuperAdminFinanceStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -44,7 +46,7 @@ class SuperAdminFinanceStats extends StatsOverviewWidget
         $corporate = app(CorporateCreditService::class)->dashboardOverview($start, $end);
         $payments = $this->forDashboardDateRange(Payment::query());
         $refunds = (clone $payments)->whereIn('payment_status', ['refunded', 'refund'])->sum('amount');
-        $pending = (clone $payments)->where('payment_status', 'pending')->count();
+        $pending = (clone $payments)->whereIn('payment_status', ['pending', 'unpaid'])->count();
         $corporateAccountsAdded = $this->forDashboardDateRange(CorporateOrganization::query())
             ->where('is_credit_enabled', true)
             ->count();
@@ -74,14 +76,20 @@ class SuperAdminFinanceStats extends StatsOverviewWidget
                 ->description('Corporate subset of total receivables')
                 ->icon('heroicon-o-building-office')
                 ->color('danger'),
-            Stat::make('Pending Payments', number_format($pending))
-                ->description($periodLabel)
-                ->icon('heroicon-o-clock')
-                ->color('danger'),
-            Stat::make('Refunds', 'GHS '.number_format($refunds, 2))
-                ->description($periodLabel)
-                ->icon('heroicon-o-arrow-uturn-left')
-                ->color('info'),
+            $this->drillDown(
+                Stat::make('Pending Payments', number_format($pending))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-clock')
+                    ->color('danger'),
+                $this->paymentDrillDownUrl('pending'),
+            ),
+            $this->drillDown(
+                Stat::make('Refunds', 'GHS '.number_format($refunds, 2))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('info'),
+                $this->paymentDrillDownUrl('refunded'),
+            ),
             Stat::make('Corporate Accounts Added', number_format($corporateAccountsAdded))
                 ->description($periodLabel)
                 ->icon('heroicon-o-building-office-2')

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
@@ -18,6 +19,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class SuperAdminStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -58,8 +60,20 @@ class SuperAdminStats extends StatsOverviewWidget
                 ->description(number_format($cancelledReservations).' of '.number_format($reservations).' reservations cancelled')
                 ->icon('heroicon-o-x-circle')
                 ->color($cancelledReservations > 0 ? 'danger' : 'success'),
-            Stat::make('Restaurant Orders', number_format($this->forDashboardDateRange(RestaurantOrder::query())->count()))->description('Created in selected range')->icon('heroicon-o-shopping-bag')->color('gray'),
-            Stat::make('Total Revenue', 'GHS '.number_format($revenue, 2))->description($this->dashboardDateRangeLabel())->icon('heroicon-o-banknotes')->color('success'),
+            $this->drillDown(
+                Stat::make('Restaurant Orders', number_format($this->forDashboardDateRange(RestaurantOrder::query())->count()))
+                    ->description('Created in selected range')
+                    ->icon('heroicon-o-shopping-bag')
+                    ->color('gray'),
+                $this->restaurantOrderDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Total Revenue', 'GHS '.number_format($revenue, 2))
+                    ->description($this->dashboardDateRangeLabel())
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success'),
+                $this->paymentDrillDownUrl('collected'),
+            ),
         ];
     }
 }

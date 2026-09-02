@@ -35,7 +35,12 @@ class PaymentReportStats extends StatsOverviewWidget
             Payment::query()->whereBetween('created_at', [$start, $end]),
             (string) ($filters['transaction_type'] ?? 'all'),
         );
+        $query = PaymentReportFilters::applyStatus(
+            $query,
+            (string) ($filters['payment_status'] ?? 'all'),
+        );
         $scope = PaymentReportFilters::typeLabel((string) ($filters['transaction_type'] ?? 'all'));
+        $status = PaymentReportFilters::statusLabel((string) ($filters['payment_status'] ?? 'all'));
         $period = PaymentReportFilters::periodOptions()[(string) ($filters['period'] ?? 'monthly')] ?? 'Monthly';
 
         $count = (clone $query)->count();
@@ -45,7 +50,7 @@ class PaymentReportStats extends StatsOverviewWidget
 
         return [
             Stat::make('Payment count', number_format($count))
-                ->description("{$scope} · {$period}"),
+                ->description("{$scope} · {$status} · {$period}"),
             Stat::make('Total collected', 'GHS '.number_format((float) $collected, 2))
                 ->description('Paid and completed payments')
                 ->color('success'),
