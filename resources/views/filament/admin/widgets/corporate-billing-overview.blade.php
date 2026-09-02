@@ -8,36 +8,44 @@
                     <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-300">Compare billing raised during the selected period with current receivables and remaining credit capacity.</p>
                 </div>
                 <div class="shrink-0 rounded-xl bg-gray-100 px-4 py-3 dark:bg-white/10">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Reporting period</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Applied reporting period</p>
                     <p class="mt-1 text-sm font-bold text-gray-900 dark:text-white">{{ $periodLabel }}</p>
                 </div>
             </div>
         </x-filament::section>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="rounded-2xl border border-primary-100 bg-primary-50 p-5 shadow-sm dark:border-primary-500/20 dark:bg-primary-500/10">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Corporate billing raised</p>
-                <p class="mt-2 text-3xl font-bold text-primary-700 dark:text-primary-300">GHS {{ number_format($overview['billed_in_period'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Deferred-payment transactions created in range</p>
-            </article>
+        <section class="grid gap-5 lg:grid-cols-4">
+            <div class="space-y-3 lg:col-span-1">
+                <p class="text-xs font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Selected-period activity</p>
+                <article class="rounded-2xl border border-primary-100 bg-primary-50 p-5 shadow-sm dark:border-primary-500/20 dark:bg-primary-500/10">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Corporate billing raised</p>
+                    <p class="mt-2 text-3xl font-bold text-primary-700 dark:text-primary-300">GHS {{ number_format($overview['billed_in_period'], 2) }}</p>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Deferred-payment transactions created in the applied period</p>
+                </article>
+            </div>
 
-            <article class="rounded-2xl border border-warning-100 bg-warning-50 p-5 shadow-sm dark:border-warning-500/20 dark:bg-warning-500/10">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Total outstanding</p>
-                <p class="mt-2 text-3xl font-bold text-warning-700 dark:text-warning-300">GHS {{ number_format($overview['outstanding'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Current unpaid corporate balance across all periods</p>
-            </article>
+            <div class="space-y-3 lg:col-span-3">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Current exposure — all periods</p>
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <article class="rounded-2xl border border-warning-100 bg-warning-50 p-5 shadow-sm dark:border-warning-500/20 dark:bg-warning-500/10">
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Total outstanding</p>
+                        <p class="mt-2 text-3xl font-bold text-warning-700 dark:text-warning-300">GHS {{ number_format($overview['outstanding'], 2) }}</p>
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Current unpaid corporate balance across all periods</p>
+                    </article>
 
-            <article class="rounded-2xl border border-success-100 bg-success-50 p-5 shadow-sm dark:border-success-500/20 dark:bg-success-500/10">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Available credit</p>
-                <p class="mt-2 text-3xl font-bold text-success-700 dark:text-success-300">GHS {{ number_format($overview['available_credit'], 2) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Across accounts with a configured limit</p>
-            </article>
+                    <article class="rounded-2xl border border-success-100 bg-success-50 p-5 shadow-sm dark:border-success-500/20 dark:bg-success-500/10">
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Available credit</p>
+                        <p class="mt-2 text-3xl font-bold text-success-700 dark:text-success-300">GHS {{ number_format($overview['available_credit'], 2) }}</p>
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Across accounts with a configured limit</p>
+                    </article>
 
-            <article class="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Enabled accounts</p>
-                <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($overview['active_accounts']) }}</p>
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ number_format($overview['linked_guests']) }} linked guest account(s)</p>
-            </article>
+                    <article class="rounded-2xl border border-gray-200 bg-gray-50 p-5 shadow-sm dark:border-white/10 dark:bg-white/5 sm:col-span-2 lg:col-span-1">
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Enabled accounts</p>
+                        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($overview['active_accounts']) }}</p>
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ number_format($overview['linked_guests']) }} linked guest account(s)</p>
+                    </article>
+                </div>
+            </div>
         </section>
 
         <x-filament::section heading="Account credit position" description="Outstanding balances and remaining credit for each enabled corporate account.">
