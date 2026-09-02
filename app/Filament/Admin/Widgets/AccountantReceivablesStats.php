@@ -69,11 +69,11 @@ class AccountantReceivablesStats extends StatsOverviewWidget
             Stat::make('Hotel booking receivables', $this->formatAmount($hotel['total']))
                 ->description($periodLabel)
                 ->icon('heroicon-o-home-modern')
-                ->color('warning'),
+                ->color('primary'),
             Stat::make('Conference receivables', $this->formatAmount($conference['total']))
                 ->description($periodLabel)
                 ->icon('heroicon-o-building-office')
-                ->color('warning'),
+                ->color('info'),
             Stat::make('Table-reservation receivables', $this->formatAmount($tables['total']))
                 ->description($periodLabel)
                 ->icon('heroicon-o-calendar-days')
@@ -81,7 +81,7 @@ class AccountantReceivablesStats extends StatsOverviewWidget
             Stat::make('Food-order receivables', $this->formatAmount($food['total']))
                 ->description($periodLabel)
                 ->icon('heroicon-o-shopping-bag')
-                ->color('warning'),
+                ->color('success'),
             Stat::make('Corporate-billed receivables', $this->formatAmount($corporate))
                 ->description('Included in channel totals')
                 ->icon('heroicon-o-building-office-2')

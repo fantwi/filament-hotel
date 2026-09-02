@@ -2,11 +2,11 @@
 
 namespace App\Filament\Admin\Pages\Dashboards;
 
+use App\Filament\Admin\Widgets\AccountantPaymentActivityChart;
 use App\Filament\Admin\Widgets\AccountantReceivablesStats;
 use App\Filament\Admin\Widgets\AccountantStats;
 use App\Filament\Admin\Widgets\CorporateBillingOverview;
 use App\Filament\Admin\Widgets\RecentPayments;
-use App\Filament\Admin\Widgets\RestaurantRevenueChart;
 use App\Filament\Admin\Widgets\RoleDashboardOverview;
 
 /**
@@ -50,7 +50,7 @@ class AccountantDashboard extends TimeFilteredDashboard
             AccountantStats::class,
             AccountantReceivablesStats::class,
             CorporateBillingOverview::class,
-            RestaurantRevenueChart::class,
+            AccountantPaymentActivityChart::class,
             RecentPayments::class,
         ];
     }

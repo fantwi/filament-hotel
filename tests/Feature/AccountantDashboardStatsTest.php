@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Filament\Admin\Pages\Dashboards\AccountantDashboard;
+use App\Filament\Admin\Widgets\AccountantPaymentActivityChart;
 use App\Filament\Admin\Widgets\AccountantReceivablesStats;
 use App\Filament\Admin\Widgets\AccountantStats;
 use Filament\Widgets\StatsOverviewWidget;
@@ -19,7 +20,7 @@ class AccountantDashboardStatsTest extends TestCase
         $cashStats = 'App\\Filament\\Admin\\Widgets\\AccountantStats';
         $receivablesStats = 'App\\Filament\\Admin\\Widgets\\AccountantReceivablesStats';
         $corporateBilling = 'App\\Filament\\Admin\\Widgets\\CorporateBillingOverview';
-        $revenueChart = 'App\\Filament\\Admin\\Widgets\\RestaurantRevenueChart';
+        $revenueChart = AccountantPaymentActivityChart::class;
         $recentPayments = 'App\\Filament\\Admin\\Widgets\\RecentPayments';
 
         self::assertContains($cashStats, $widgets);
