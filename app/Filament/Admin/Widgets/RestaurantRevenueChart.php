@@ -15,6 +15,8 @@ class RestaurantRevenueChart extends ChartWidget
 
     protected ?string $heading = 'Restaurant Revenue by Selected Date Range';
 
+    protected ?string $pollingInterval = null;
+
     protected static ?int $sort = 20;
 
     protected int|string|array $columnSpan = [
@@ -47,8 +49,28 @@ class RestaurantRevenueChart extends ChartWidget
 
         return [
             'datasets' => [
-                ['label' => 'Revenue (GHS)', 'data' => $revenueData, 'yAxisID' => 'y'],
-                ['label' => 'Orders', 'data' => $orderCountData, 'type' => 'line', 'yAxisID' => 'y1'],
+                [
+                    'label' => 'Revenue (GHS)',
+                    'data' => $revenueData,
+                    'yAxisID' => 'y',
+                    'borderColor' => '#D97706',
+                    'backgroundColor' => 'rgba(245, 158, 11, 0.72)',
+                    'borderWidth' => 1,
+                    'borderRadius' => 6,
+                ],
+                [
+                    'label' => 'Orders',
+                    'data' => $orderCountData,
+                    'type' => 'line',
+                    'yAxisID' => 'y1',
+                    'borderColor' => '#0EA5E9',
+                    'backgroundColor' => 'rgba(14, 165, 233, 0.18)',
+                    'pointBackgroundColor' => '#0284C7',
+                    'pointBorderColor' => '#FFFFFF',
+                    'pointRadius' => 3,
+                    'borderWidth' => 3,
+                    'tension' => 0.35,
+                ],
             ],
             'labels' => $labels,
         ];

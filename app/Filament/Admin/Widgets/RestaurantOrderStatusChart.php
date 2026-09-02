@@ -15,6 +15,8 @@ class RestaurantOrderStatusChart extends ChartWidget
 
     protected ?string $heading = 'Order Status Distribution';
 
+    protected ?string $pollingInterval = null;
+
     protected static ?int $sort = 30;
 
     protected int|string|array $columnSpan = [
@@ -47,6 +49,16 @@ class RestaurantOrderStatusChart extends ChartWidget
                 'data' => collect(array_keys($statuses))
                     ->map(fn (string $status): int => (int) ($counts[$status] ?? 0))
                     ->all(),
+                'backgroundColor' => [
+                    '#F59E0B',
+                    '#3B82F6',
+                    '#F97316',
+                    '#22C55E',
+                    '#14B8A6',
+                    '#EF4444',
+                ],
+                'borderColor' => 'rgba(255, 255, 255, 0.9)',
+                'borderWidth' => 2,
             ]],
             'labels' => array_values($statuses),
         ];
