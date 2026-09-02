@@ -15,6 +15,7 @@ use App\Filament\Admin\Widgets\RestaurantOrderStatusChart;
 use App\Filament\Admin\Widgets\RestaurantRevenueChart;
 use App\Filament\Admin\Widgets\RevenueStats;
 use App\Filament\Admin\Widgets\StaffStats;
+use App\Http\Middleware\EnforceStaffAccountStatus;
 use App\Models\HotelSetting;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -72,6 +73,15 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Access & Administration')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
                 NavigationGroup::make('Hotel Configuration')->collapsed(fn (NavigationGroup $group): bool => ! $group->isActive())->collapsible(),
             ])
+            ->navigation(function (): bool {
+                $user = auth()->user();
+
+                return ! $user?->isStaff() || $user->hasActiveStaffAccount();
+            })
+            ->renderHook(
+                PanelsRenderHook::PAGE_START,
+                fn () => view('filament.admin.staff-account-notice'),
+            )
             ->renderHook(
                 PanelsRenderHook::SIDEBAR_NAV_START,
                 fn () => view('filament.admin.navigation-state', [
@@ -117,6 +127,10 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnforceStaffAccountStatus::class,
+            ])
+            ->persistentMiddleware([
+                EnforceStaffAccountStatus::class,
             ]);
     }
 

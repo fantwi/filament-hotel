@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Pages\Dashboards;
 
+use App\Models\User;
+use App\Services\StaffAccountAccess;
 use Filament\Pages\Dashboard;
 
 /**
@@ -20,19 +22,12 @@ class RoleDashboard extends Dashboard
     {
         $user = auth()->user();
 
-        $dashboard = match (true) {
-            $user?->hasRole('kitchen_manager') => KitchenManagerDashboard::class,
-            $user?->hasRole('kitchen_staff') => KitchenStaffDashboard::class,
-            $user?->hasRole('super_admin') => SuperAdminDashboard::class,
-            $user?->hasRole('admin') => AdminDashboard::class,
-            $user?->hasRole('accountant') => AccountantDashboard::class,
-            $user?->hasRole('manager') => ManagerDashboard::class,
-            $user?->hasRole('receptionist') => ReceptionDashboard::class,
-            default => null,
-        };
+        abort_unless($user instanceof User, 403, 'You do not have access to an admin dashboard.');
 
-        abort_unless($dashboard, 403, 'You do not have access to an admin dashboard.');
-        $this->redirect($dashboard::getUrl());
+        $dashboardRouteName = app(StaffAccountAccess::class)->dashboardRouteName($user);
+
+        abort_unless($dashboardRouteName, 403, 'You do not have access to an admin dashboard.');
+        $this->redirect(route($dashboardRouteName));
     }
 
     /**

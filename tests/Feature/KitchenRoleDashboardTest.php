@@ -8,11 +8,16 @@ use App\Filament\Admin\Pages\Dashboards\KitchenStaffDashboard;
 use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
 use App\Filament\Admin\Widgets\KitchenManagerStats;
 use App\Filament\Admin\Widgets\KitchenStaffStats;
+use App\Models\User;
+use App\Services\StaffAccountAccess;
 use Filament\Widgets\StatsOverviewWidget;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class KitchenRoleDashboardTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_kitchen_dashboards_use_shared_filters_and_role_specific_stats_first(): void
     {
         foreach ([
@@ -39,11 +44,17 @@ class KitchenRoleDashboardTest extends TestCase
 
     public function test_role_dashboard_routes_kitchen_roles_to_separate_pages(): void
     {
-        $source = file_get_contents(app_path('Filament/Admin/Pages/Dashboards/RoleDashboard.php'));
+        $kitchenManager = User::factory()->create(['department' => 'kitchen_manager']);
+        $kitchenStaff = User::factory()->create(['department' => 'kitchen_staff']);
+        $access = app(StaffAccountAccess::class);
 
-        self::assertStringContainsString("hasRole('kitchen_manager')", $source);
-        self::assertStringContainsString('KitchenManagerDashboard::class', $source);
-        self::assertStringContainsString("hasRole('kitchen_staff')", $source);
-        self::assertStringContainsString('KitchenStaffDashboard::class', $source);
+        self::assertSame(
+            'filament.admin.pages.kitchen-manager-dashboard',
+            $access->dashboardRouteName($kitchenManager),
+        );
+        self::assertSame(
+            'filament.admin.pages.kitchen-staff-dashboard',
+            $access->dashboardRouteName($kitchenStaff),
+        );
     }
 }

@@ -12,6 +12,20 @@ use Illuminate\Database\Eloquent\Model;
 abstract class SecureResource extends Resource
 {
     /**
+     * Determines whether the current user may access this resource.
+     */
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        if ($user?->isStaff() && ! $user->hasActiveStaffAccount()) {
+            return false;
+        }
+
+        return parent::canAccess();
+    }
+
+    /**
      * Determines whether the current user may view these records.
      */
     public static function canViewAny(): bool
