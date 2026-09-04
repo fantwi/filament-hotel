@@ -51,6 +51,15 @@
                 key('occupancy-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate)
             )
 
+            @livewire(
+                \App\Filament\Admin\Widgets\OccupancyTrendChart::class,
+                [
+                    'trend' => $report['occupancyTrend'],
+                    'periodLabel' => $this->periodLabel(),
+                ],
+                key('occupancy-trend-'.$this->period.'-'.$this->startDate.'-'.$this->endDate)
+            )
+
             <x-filament::section heading="Scheduled use" description="{{ $this->periodLabel() }} reservations and bookings">
                 @if ($report['hasScheduledActivity'])
                 <ul aria-label="Scheduled use metrics" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

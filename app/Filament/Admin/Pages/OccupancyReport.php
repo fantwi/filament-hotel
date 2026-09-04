@@ -52,14 +52,14 @@ class OccupancyReport extends Page
             ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
             ->count();
 
-        $bookedRoomNights = $this->bookedRoomNights($periodStart, $periodEndExclusive);
-
-        $roomNightCapacity = $this->roomNightCapacity(
+        $occupancyTrend = $this->occupancyTrend(
             $periodStart,
             $periodEndExclusive,
             $roomStatus['total'],
             $roomsInService,
         );
+        $bookedRoomNights = array_sum($occupancyTrend['bookedRoomNights']);
+        $roomNightCapacity = array_sum($occupancyTrend['roomNightCapacities']);
 
         $conferenceBookings = ConferenceBooking::query()
             ->whereBetween('booking_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
@@ -89,6 +89,7 @@ class OccupancyReport extends Page
             'bookedRoomNights' => $bookedRoomNights,
             'roomNightCapacity' => $roomNightCapacity,
             'occupancyRate' => $roomNightCapacity > 0 ? ($bookedRoomNights / $roomNightCapacity) * 100 : null,
+            'occupancyTrend' => $occupancyTrend,
             'conferenceBookings' => $conferenceBookings,
             'tableReservations' => $tableReservations,
             'hasScheduledActivity' => $hasScheduledActivity,
@@ -113,25 +114,114 @@ class OccupancyReport extends Page
     }
 
     /**
-     * Streams overlapping stays and clamps each stay to the selected period.
+     * Streams overlapping stays into readable date buckets and calculates their capacity.
      *
-     * This keeps memory usage stable even when an all-time report covers a
-     * large booking history.
+     * @return array{
+     *     granularity: string,
+     *     labels: list<string>,
+     *     bookedRoomNights: list<int>,
+     *     roomNightCapacities: list<int>,
+     *     occupancyRates: list<float|null>
+     * }
      */
-    private function bookedRoomNights(Carbon $periodStart, Carbon $periodEnd): int
-    {
-        return Booking::query()
+    private function occupancyTrend(
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        int $totalRooms,
+        int $currentRoomsInService,
+    ): array {
+        $granularity = $this->occupancyTrendGranularity($periodStart, $periodEnd);
+        $buckets = [];
+        $cursor = $periodStart->copy()->startOfDay();
+
+        while ($cursor->lessThan($periodEnd)) {
+            $bucketStart = $cursor->copy();
+            $nextBoundary = match ($granularity) {
+                'day' => $cursor->copy()->addDay(),
+                'week' => $cursor->copy()->startOfWeek()->addWeek(),
+                'month' => $cursor->copy()->startOfMonth()->addMonth(),
+                default => $cursor->copy()->startOfYear()->addYear(),
+            };
+            $bucketEnd = $nextBoundary->lessThan($periodEnd) ? $nextBoundary : $periodEnd->copy();
+
+            $buckets[] = [
+                'start' => $bucketStart,
+                'end' => $bucketEnd,
+                'label' => $this->occupancyTrendLabel($bucketStart, $bucketEnd, $granularity),
+                'bookedRoomNights' => 0,
+                'roomNightCapacity' => $this->roomNightCapacity(
+                    $bucketStart,
+                    $bucketEnd,
+                    $totalRooms,
+                    $currentRoomsInService,
+                ),
+            ];
+
+            $cursor = $bucketEnd->copy();
+        }
+
+        Booking::query()
             ->where('check_in', '<', $periodEnd->toDateString())
             ->where('check_out', '>', $periodStart->toDateString())
             ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
             ->select(['id', 'check_in', 'check_out'])
             ->lazyById()
-            ->sum(function (Booking $booking) use ($periodStart, $periodEnd): int {
+            ->each(function (Booking $booking) use (&$buckets, $periodStart, $periodEnd): void {
                 $checkIn = Carbon::parse($booking->check_in)->max($periodStart);
                 $checkOut = Carbon::parse($booking->check_out)->min($periodEnd);
 
-                return max(0, $checkIn->diffInDays($checkOut));
+                foreach ($buckets as &$bucket) {
+                    $overlapStart = $checkIn->greaterThan($bucket['start']) ? $checkIn : $bucket['start'];
+                    $overlapEnd = $checkOut->lessThan($bucket['end']) ? $checkOut : $bucket['end'];
+
+                    if ($overlapEnd->greaterThan($overlapStart)) {
+                        $bucket['bookedRoomNights'] += (int) $overlapStart->diffInDays($overlapEnd);
+                    }
+                }
+
+                unset($bucket);
             });
+
+        return [
+            'granularity' => $granularity,
+            'labels' => array_column($buckets, 'label'),
+            'bookedRoomNights' => array_column($buckets, 'bookedRoomNights'),
+            'roomNightCapacities' => array_column($buckets, 'roomNightCapacity'),
+            'occupancyRates' => array_map(
+                fn (array $bucket): ?float => $bucket['roomNightCapacity'] > 0
+                    ? ($bucket['bookedRoomNights'] / $bucket['roomNightCapacity']) * 100
+                    : null,
+                $buckets,
+            ),
+        ];
+    }
+
+    /**
+     * Selects a chart resolution that remains useful on small screens.
+     */
+    private function occupancyTrendGranularity(Carbon $periodStart, Carbon $periodEnd): string
+    {
+        $days = (int) $periodStart->copy()->startOfDay()->diffInDays($periodEnd->copy()->startOfDay());
+
+        return match (true) {
+            $days <= 62 => 'day',
+            $days <= 183 => 'week',
+            $days <= 730 => 'month',
+            default => 'year',
+        };
+    }
+
+    /**
+     * Formats each occupancy bucket without hiding partial weeks.
+     */
+    private function occupancyTrendLabel(Carbon $bucketStart, Carbon $bucketEnd, string $granularity): string
+    {
+        return match ($granularity) {
+            'day' => $bucketStart->format('M j'),
+            'week' => $bucketStart->format('M j').' - '.$bucketEnd->copy()->subDay()->format('M j'),
+            'month' => $bucketStart->format('M Y'),
+            default => $bucketStart->format('Y'),
+        };
     }
 
     /**

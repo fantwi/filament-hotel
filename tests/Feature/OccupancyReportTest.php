@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\OccupancyReport;
 use App\Filament\Admin\Widgets\OccupancyStats;
+use App\Filament\Admin\Widgets\OccupancyTrendChart;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\ConferenceRoom;
@@ -16,10 +17,12 @@ use App\Models\RoomType;
 use App\Models\User;
 use App\Services\CurrentVenueAvailability;
 use Carbon\CarbonInterface;
+use Filament\Widgets\ChartWidget;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class OccupancyReportTest extends TestCase
@@ -308,6 +311,66 @@ class OccupancyReportTest extends TestCase
         self::assertSame(3, $report['bookedRoomNights']);
         self::assertSame(now()->day, $report['roomNightCapacity']);
         self::assertEqualsWithDelta((3 / now()->day) * 100, $report['occupancyRate'], 0.001);
+    }
+
+    public function test_occupancy_trend_splits_a_stay_across_daily_buckets_and_preserves_empty_dates(): void
+    {
+        $this->travelTo('2026-09-04 12:00:00');
+        [$guest, $room] = $this->occupancyBookingDependencies();
+
+        Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-09-02',
+            'check_out' => '2026-09-04',
+            'total_price' => 200,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+
+        $page = new OccupancyReport;
+        $page->period = 'custom';
+        $page->startDate = '2026-09-01';
+        $page->endDate = '2026-09-04';
+
+        $report = $page->report();
+        $trend = $report['occupancyTrend'];
+
+        self::assertSame('day', $trend['granularity']);
+        self::assertSame(['Sep 1', 'Sep 2', 'Sep 3', 'Sep 4'], $trend['labels']);
+        self::assertSame([0, 1, 1, 0], $trend['bookedRoomNights']);
+        self::assertSame([1, 1, 1, 1], $trend['roomNightCapacities']);
+        self::assertSame([0.0, 100.0, 100.0, 0.0], $trend['occupancyRates']);
+        self::assertSame($report['bookedRoomNights'], array_sum($trend['bookedRoomNights']));
+        self::assertSame($report['roomNightCapacity'], array_sum($trend['roomNightCapacities']));
+    }
+
+    public function test_occupancy_trend_uses_readable_buckets_for_longer_ranges(): void
+    {
+        $this->travelTo('2026-09-30 12:00:00');
+
+        $quarterlyPage = new OccupancyReport;
+        $quarterlyPage->period = 'quarterly';
+        $quarterlyTrend = $quarterlyPage->report()['occupancyTrend'];
+
+        self::assertSame('week', $quarterlyTrend['granularity']);
+        self::assertCount(14, $quarterlyTrend['labels']);
+
+        $yearlyPage = new OccupancyReport;
+        $yearlyPage->period = 'yearly';
+        $yearlyTrend = $yearlyPage->report()['occupancyTrend'];
+
+        self::assertSame('month', $yearlyTrend['granularity']);
+        self::assertSame(['Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'May 2026', 'Jun 2026', 'Jul 2026', 'Aug 2026', 'Sep 2026'], $yearlyTrend['labels']);
+
+        $longRangePage = new OccupancyReport;
+        $longRangePage->period = 'custom';
+        $longRangePage->startDate = '2023-01-01';
+        $longRangePage->endDate = '2026-09-30';
+        $longRangeTrend = $longRangePage->report()['occupancyTrend'];
+
+        self::assertSame('year', $longRangeTrend['granularity']);
+        self::assertCount(4, $longRangeTrend['labels']);
     }
 
     public function test_occupancy_clamps_stays_to_the_period_and_excludes_cancelled_records(): void
@@ -609,6 +672,92 @@ class OccupancyReportTest extends TestCase
             'Room-night capacity',
         ], array_map(fn ($stat): string => $stat->getLabel(), $stats));
         self::assertSame('Quarterly', $stats[0]->getDescription());
+    }
+
+    public function test_occupancy_trend_widget_presents_rates_nights_and_capacity_without_requerying(): void
+    {
+        self::assertTrue(is_subclass_of(OccupancyTrendChart::class, ChartWidget::class));
+
+        $widget = new OccupancyTrendChart;
+        $widget->trend = [
+            'granularity' => 'day',
+            'labels' => ['Sep 1', 'Sep 2'],
+            'bookedRoomNights' => [0, 1],
+            'roomNightCapacities' => [2, 2],
+            'occupancyRates' => [0.0, 50.0],
+        ];
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $dataMethod = new \ReflectionMethod($widget, 'getData');
+        $dataMethod->setAccessible(true);
+        $data = $dataMethod->invoke($widget);
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        self::assertCount(0, $queries);
+        self::assertSame(['Sep 1', 'Sep 2'], $data['labels']);
+        self::assertSame(
+            ['Occupancy rate', 'Booked room nights', 'Room-night capacity'],
+            array_column($data['datasets'], 'label'),
+        );
+        self::assertSame('line', $data['datasets'][0]['type']);
+        self::assertSame('yPercentage', $data['datasets'][0]['yAxisID']);
+        self::assertSame('yNights', $data['datasets'][1]['yAxisID']);
+        self::assertSame('yNights', $data['datasets'][2]['yAxisID']);
+
+        $optionsMethod = new \ReflectionMethod($widget, 'getOptions');
+        $optionsMethod->setAccessible(true);
+        $options = $optionsMethod->invoke($widget);
+
+        self::assertSame(100, $options['scales']['yPercentage']['suggestedMax']);
+        self::assertSame(12, $options['scales']['x']['ticks']['maxTicksLimit']);
+        self::assertSame('bottom', $options['plugins']['legend']['position']);
+    }
+
+    public function test_occupancy_page_places_the_trend_between_summary_metrics_and_scheduled_use(): void
+    {
+        $user = User::factory()->create(['department' => 'management']);
+
+        $response = $this->actingAs($user)->get('/admin/occupancy-report');
+
+        $response->assertOk()->assertSeeInOrder([
+            'Room occupancy',
+            'Occupancy trend',
+            'Scheduled use',
+        ]);
+    }
+
+    public function test_occupancy_trend_empty_state_depends_on_room_night_capacity(): void
+    {
+        $emptyWidget = new OccupancyTrendChart;
+        $emptyWidget->trend['roomNightCapacities'] = [0, 0];
+
+        self::assertTrue($emptyWidget->isEmpty());
+
+        $availableWidget = new OccupancyTrendChart;
+        $availableWidget->trend['roomNightCapacities'] = [0, 1];
+
+        self::assertFalse($availableWidget->isEmpty());
+    }
+
+    public function test_occupancy_trend_visibility_matches_the_report_roles(): void
+    {
+        foreach (['super_admin', 'admin', 'manager', 'receptionist'] as $roleName) {
+            $user = User::factory()->create();
+            $user->assignRole(Role::findOrCreate($roleName, 'web'));
+
+            $this->actingAs($user);
+
+            self::assertTrue(OccupancyTrendChart::canView(), "Expected [{$roleName}] to see the occupancy trend.");
+        }
+
+        $accountant = User::factory()->create();
+        $accountant->assignRole(Role::findOrCreate('accountant', 'web'));
+
+        $this->actingAs($accountant);
+
+        self::assertFalse(OccupancyTrendChart::canView());
     }
 
     public function test_occupancy_stats_widget_stacks_cards_before_using_three_desktop_columns(): void
