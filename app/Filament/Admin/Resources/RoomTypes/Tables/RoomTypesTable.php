@@ -112,12 +112,26 @@ class RoomTypesTable
                     ->onIcon('heroicon-m-eye')
                     ->offIcon('heroicon-m-eye-slash')
                     ->disabled(fn (RoomType $record): bool => ! RoomTypeResource::canEdit($record))
-                    ->afterStateUpdated(function (RoomType $record, bool $state): void {
+                    ->updateStateUsing(function (RoomType $record, bool $state): bool {
+                        if ($state && ! $record->isReadyForPublication()) {
+                            Notification::make()
+                                ->title('Room type is not ready to publish')
+                                ->body('Complete: '.implode(', ', $record->publicationReadinessIssues()).'.')
+                                ->danger()
+                                ->send();
+
+                            return false;
+                        }
+
+                        $record->update(['is_published' => $state]);
+
                         Notification::make()
                             ->title($state ? 'Room type published' : 'Room type unpublished')
                             ->body("{$record->name} is now ".($state ? 'visible to guests.' : 'hidden from guests.'))
                             ->success()
                             ->send();
+
+                        return $state;
                     }),
                 TextColumn::make('created_at')
                     ->dateTime()
@@ -167,15 +181,48 @@ class RoomTypesTable
                         ->color('success')
                         ->requiresConfirmation()
                         ->modalHeading('Publish selected room types?')
-                        ->modalDescription('Published room types are visible to guests when they have bookable rooms.')
+                        ->modalDescription('Only room types with complete guest-facing details and a cover image will be published.')
                         ->visible($canManagePublication)
                         ->authorize($canManagePublication)
                         ->authorizeIndividualRecords(
                             fn (RoomType $record): bool => RoomTypeResource::canEdit($record)
                         )
-                        ->action(fn (Collection $records) => $records->each->update(['is_published' => true]))
-                        ->deselectRecordsAfterCompletion()
-                        ->successNotificationTitle('Selected room types published'),
+                        ->action(function (Collection $records): void {
+                            $publishable = $records->filter(
+                                fn (RoomType $record): bool => $record->isReadyForPublication()
+                            );
+                            $skipped = $records->reject(
+                                fn (RoomType $record): bool => $record->isReadyForPublication()
+                            );
+
+                            $publishable->each->update(['is_published' => true]);
+
+                            if ($skipped->isNotEmpty()) {
+                                $details = $skipped
+                                    ->map(fn (RoomType $record): string => sprintf(
+                                        '%s (%s)',
+                                        $record->name ?: 'Unnamed room type',
+                                        implode(', ', $record->publicationReadinessIssues()),
+                                    ))
+                                    ->implode('; ');
+
+                                Notification::make()
+                                    ->title($publishable->isEmpty()
+                                        ? 'No room types were published'
+                                        : sprintf('%d published, %d skipped', $publishable->count(), $skipped->count()))
+                                    ->body('Complete the skipped room types: '.$details.'.')
+                                    ->warning()
+                                    ->send();
+
+                                return;
+                            }
+
+                            Notification::make()
+                                ->title('Selected room types published')
+                                ->success()
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     BulkAction::make('unpublish')
                         ->label('Unpublish selected')
                         ->icon('heroicon-o-eye-slash')

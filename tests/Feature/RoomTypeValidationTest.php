@@ -89,6 +89,24 @@ class RoomTypeValidationTest extends TestCase
         ]);
     }
 
+    public function test_create_form_rejects_published_room_type_without_guest_content(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(CreateRoomType::class)
+            ->fillForm($this->validFormData([
+                'description' => null,
+                'image' => null,
+                'is_published' => true,
+            ]))
+            ->call('create')
+            ->assertHasFormErrors([
+                'description' => 'required',
+                'image' => 'required',
+            ]);
+
+        $this->assertDatabaseCount('room_types', 0);
+    }
+
     public function test_database_rejects_duplicate_room_type_names(): void
     {
         $this->createRoomType(['name' => 'Family Room']);

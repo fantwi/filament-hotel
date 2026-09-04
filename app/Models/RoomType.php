@@ -59,6 +59,46 @@ class RoomType extends Model
     }
 
     /**
+     * Lists the guest-facing information that must be completed before publication.
+     *
+     * @return array<int, string>
+     */
+    public function publicationReadinessIssues(): array
+    {
+        $issues = [];
+
+        if (blank(trim((string) $this->name))) {
+            $issues[] = 'room name';
+        }
+
+        if (! is_numeric($this->price_per_night) || (float) $this->price_per_night <= 0) {
+            $issues[] = 'positive nightly price';
+        }
+
+        if (! is_numeric($this->capacity) || (int) $this->capacity < 1) {
+            $issues[] = 'guest capacity';
+        }
+
+        if (blank(trim((string) $this->description))) {
+            $issues[] = 'description';
+        }
+
+        if (blank($this->image)) {
+            $issues[] = 'cover image';
+        }
+
+        return $issues;
+    }
+
+    /**
+     * Determines whether this room type has enough information to be shown to guests.
+     */
+    public function isReadyForPublication(): bool
+    {
+        return $this->publicationReadinessIssues() === [];
+    }
+
+    /**
      * Builds and returns activitylog options.
      */
     public function getActivitylogOptions(): LogOptions

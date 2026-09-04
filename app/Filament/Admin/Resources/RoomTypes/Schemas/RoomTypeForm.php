@@ -8,6 +8,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -46,6 +47,7 @@ class RoomTypeForm
                             ->step(1),
                         Textarea::make('description')
                             ->default(null)
+                            ->required(fn (Get $get): bool => (bool) $get('is_published'))
                             ->columnSpanFull(),
                     ])
                     ->columns([
@@ -57,6 +59,7 @@ class RoomTypeForm
                     ->schema([
                         FileUpload::make('image')
                             ->label('Cover image')
+                            ->required(fn (Get $get): bool => (bool) $get('is_published'))
                             ->directory('room-types')
                             ->image()
                             ->disk('public')
@@ -93,9 +96,10 @@ class RoomTypeForm
                             ->searchable(),
                         Toggle::make('is_published')
                             ->label('Published for guests')
-                            ->helperText('Unpublish room types that are no longer offered. This preserves their room, booking, and payment history.')
+                            ->helperText('Publishing requires a name, positive nightly price, guest capacity, description, and cover image. Unpublishing preserves booking and payment history.')
                             ->onIcon('heroicon-m-eye')
                             ->offIcon('heroicon-m-eye-slash')
+                            ->live()
                             ->default(false),
                     ])
                     ->columns([

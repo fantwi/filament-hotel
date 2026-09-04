@@ -9,6 +9,7 @@ use Filament\Facades\Filament;
 use Filament\Tables\Columns\ToggleColumn;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -78,6 +79,38 @@ class RoomTypePublicationManagementTest extends TestCase
         self::assertFalse($second->fresh()->is_published);
     }
 
+    #[DataProvider('incompletePublicationValues')]
+    public function test_admin_cannot_publish_incomplete_room_type_from_the_list(array $invalidValues): void
+    {
+        $admin = $this->createStaff('admin', 'admin');
+        $roomType = $this->createRoomType($admin, false, 'Incomplete Draft Room');
+        $roomType->update($invalidValues);
+
+        Livewire::actingAs($admin)
+            ->test(ListRoomTypes::class)
+            ->call('updateTableColumnState', 'is_published', (string) $roomType->getKey(), true);
+
+        self::assertFalse($roomType->fresh()->is_published);
+    }
+
+    public function test_bulk_publish_skips_incomplete_room_types(): void
+    {
+        $admin = $this->createStaff('admin', 'admin');
+        $complete = $this->createRoomType($admin, false, 'Complete Draft Room');
+        $incomplete = $this->createRoomType($admin, false, 'Incomplete Draft Room');
+        $incomplete->update([
+            'description' => null,
+            'image' => null,
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ListRoomTypes::class)
+            ->callTableBulkAction('publish', [$complete, $incomplete]);
+
+        self::assertTrue($complete->fresh()->is_published);
+        self::assertFalse($incomplete->fresh()->is_published);
+    }
+
     public function test_receptionist_cannot_access_publication_bulk_actions(): void
     {
         $receptionist = $this->createStaff('receptionist', 'reception');
@@ -100,6 +133,17 @@ class RoomTypePublicationManagementTest extends TestCase
         return $user;
     }
 
+    public static function incompletePublicationValues(): array
+    {
+        return [
+            'blank name' => [['name' => '']],
+            'zero nightly price' => [['price_per_night' => 0]],
+            'zero guest capacity' => [['capacity' => 0]],
+            'missing description' => [['description' => null]],
+            'missing cover image' => [['image' => null]],
+        ];
+    }
+
     private function createRoomType(User $creator, bool $published, string $name = 'Publication Test Room'): RoomType
     {
         return RoomType::query()->create([
@@ -107,6 +151,7 @@ class RoomTypePublicationManagementTest extends TestCase
             'price_per_night' => 300,
             'capacity' => 2,
             'description' => 'A room type used to verify list publication controls.',
+            'image' => 'room-types/publication-test.jpg',
             'is_published' => $published,
             'created_by' => $creator->id,
         ]);
