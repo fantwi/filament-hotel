@@ -84,7 +84,7 @@
         <x-filament::section heading="Report notes">
             <div class="grid gap-4 text-sm text-gray-600 dark:text-gray-300 sm:grid-cols-2 lg:grid-cols-3">
                 <p><span class="font-semibold text-gray-900 dark:text-white">Room occupancy</span> measures active hotel bookings overlapping the selected period, excluding cancelled, expired, and no-show stays.</p>
-                <p><span class="font-semibold text-gray-900 dark:text-white">Room-night capacity</span> uses total inventory for completed historical dates and today's in-service inventory for current or future dates, because past maintenance intervals are not stored.</p>
+                <p><span class="font-semibold text-gray-900 dark:text-white">Room-night capacity</span> uses total inventory for completed historical dates and today's in-service inventory for current or future dates, because past maintenance intervals are not stored. Occupancy is shown as N/A when this capacity is zero.</p>
                 <p><span class="font-semibold text-gray-900 dark:text-white">Live availability</span> combines operational status with bookings active at the current time. Future bookings remain visible in scheduled use without reducing availability now.</p>
             </div>
         </x-filament::section>

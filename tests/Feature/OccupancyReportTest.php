@@ -36,6 +36,41 @@ class OccupancyReportTest extends TestCase
         self::assertArrayHasKey('tableStatus', $report);
     }
 
+    public function test_occupancy_rate_is_undefined_when_selected_period_has_no_capacity(): void
+    {
+        $report = (new OccupancyReport)->report();
+
+        self::assertSame(0, $report['roomNightCapacity']);
+        self::assertNull($report['occupancyRate']);
+    }
+
+    public function test_available_capacity_without_bookings_remains_zero_percent_occupancy(): void
+    {
+        $roomType = RoomType::query()->create([
+            'name' => 'Empty occupancy room',
+            'price_per_night' => 100,
+            'capacity' => 2,
+        ]);
+        Room::query()->create([
+            'room_type_id' => $roomType->id,
+            'room_number' => 'EMPTY-1',
+            'status' => 'available',
+        ]);
+
+        $report = (new OccupancyReport)->report();
+
+        self::assertGreaterThan(0, $report['roomNightCapacity']);
+        self::assertEqualsWithDelta(0, $report['occupancyRate'], 0.001);
+
+        $widget = new OccupancyStats;
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+        $occupancy = collect($method->invoke($widget))
+            ->first(fn ($stat): bool => $stat->getLabel() === 'Room occupancy');
+
+        self::assertSame('0.0%', $occupancy->getValue());
+    }
+
     public function test_current_conference_booking_blocks_room_while_future_booking_does_not(): void
     {
         $this->travelTo('2026-09-04 11:00:00');
@@ -383,6 +418,20 @@ class OccupancyReportTest extends TestCase
         $stats = $method->invoke($widget);
 
         self::assertCount(5, $stats);
+    }
+
+    public function test_occupancy_stats_widget_labels_zero_capacity_as_not_available(): void
+    {
+        $widget = new OccupancyStats;
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+
+        $occupancy = collect($method->invoke($widget))
+            ->first(fn ($stat): bool => $stat->getLabel() === 'Room occupancy');
+
+        self::assertSame('N/A', $occupancy->getValue());
+        self::assertSame('No room-night capacity in Monthly', $occupancy->getDescription());
+        self::assertSame('gray', $occupancy->getColor());
     }
 
     /**

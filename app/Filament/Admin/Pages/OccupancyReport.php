@@ -82,7 +82,7 @@ class OccupancyReport extends Page
             'hotelBookings' => $hotelBookings,
             'bookedRoomNights' => $bookedRoomNights,
             'roomNightCapacity' => $roomNightCapacity,
-            'occupancyRate' => $roomNightCapacity > 0 ? ($bookedRoomNights / $roomNightCapacity) * 100 : 0,
+            'occupancyRate' => $roomNightCapacity > 0 ? ($bookedRoomNights / $roomNightCapacity) * 100 : null,
             'conferenceBookings' => $conferenceBookings,
             'tableReservations' => $tableReservations,
             'conferenceAvailability' => $conferenceAvailability,

@@ -44,12 +44,16 @@ class OccupancyStats extends StatsOverviewWidget
         $reportPage->endDate = $this->endDate;
         $report = $reportPage->report();
         $periodLabel = $reportPage->periodLabel();
+        $hasRoomCapacity = $report['occupancyRate'] !== null;
 
         return [
-            Stat::make('Room occupancy', number_format((float) $report['occupancyRate'], 1).'%')
-                ->description($periodLabel)
+            Stat::make(
+                'Room occupancy',
+                $hasRoomCapacity ? number_format((float) $report['occupancyRate'], 1).'%' : 'N/A',
+            )
+                ->description($hasRoomCapacity ? $periodLabel : 'No room-night capacity in '.$periodLabel)
                 ->icon('heroicon-o-chart-pie')
-                ->color('primary'),
+                ->color($hasRoomCapacity ? 'primary' : 'gray'),
             Stat::make('Booked room nights', number_format((int) $report['bookedRoomNights']))
                 ->description('Active stays in '.$periodLabel)
                 ->icon('heroicon-o-moon')
