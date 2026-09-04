@@ -12,9 +12,15 @@ class GuestStats extends StatsOverviewWidget
 {
     protected int|string|array $columnSpan = 'full';
 
-    /** @var array{totalGuests: int, newGuests: int, payingGuests: int, returningGuests: int, averageSpend: float} */
+    /** @var array<string, int> */
+    protected int|array|null $columns = [
+        'default' => 1,
+        'sm' => 2,
+        'xl' => 4,
+    ];
+
+    /** @var array{newGuests: int, payingGuests: int, returningGuests: int, averageSpend: float} */
     public array $reportData = [
-        'totalGuests' => 0,
         'newGuests' => 0,
         'payingGuests' => 0,
         'returningGuests' => 0,
@@ -42,10 +48,6 @@ class GuestStats extends StatsOverviewWidget
         $periodLabel = $this->reportPeriodLabel;
 
         return [
-            Stat::make('Guest profiles', number_format((int) $report['totalGuests']))
-                ->description('All registered guest records')
-                ->icon('heroicon-o-users')
-                ->color('primary'),
             Stat::make('New guests', number_format((int) $report['newGuests']))
                 ->description('Profiles created in '.$periodLabel)
                 ->icon('heroicon-o-user-plus')

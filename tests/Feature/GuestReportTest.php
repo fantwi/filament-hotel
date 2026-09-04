@@ -698,13 +698,46 @@ class GuestReportTest extends TestCase
         self::assertCount(1, $xpath->query('.//section[@aria-label="Guest trend chart"]', $results));
     }
 
+    public function test_guest_report_separates_the_all_time_guest_base_from_selected_period_metrics(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        foreach (range(1, 3) as $index) {
+            Guest::query()->create([
+                'first_name' => 'Guest',
+                'last_name' => (string) $index,
+                'phone_number' => '024000000'.$index,
+                'email' => 'overview-guest-'.$index.'@example.test',
+            ]);
+        }
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(GuestReport::getUrl());
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $overview = $xpath->query('//section[@aria-labelledby="guest-overview-heading"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $overview);
+        self::assertStringContainsString('Selected-period overview', $overview->textContent);
+
+        $guestBase = $xpath->query('.//*[@role="note" and @aria-label="All-time guest base"]', $overview)?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $guestBase);
+        self::assertStringContainsString('Guest profiles', $guestBase->textContent);
+        self::assertStringContainsString('3', $guestBase->textContent);
+    }
+
     public function test_guest_stats_widget_uses_precomputed_period_aware_data_without_queries(): void
     {
         self::assertTrue(is_subclass_of(GuestStats::class, StatsOverviewWidget::class));
 
         $widget = new GuestStats;
         $widget->reportData = [
-            'totalGuests' => 25,
             'newGuests' => 4,
             'payingGuests' => 3,
             'returningGuests' => 2,
@@ -725,13 +758,22 @@ class GuestReportTest extends TestCase
         }
 
         self::assertCount(0, $queries);
-        self::assertCount(5, $stats);
+        self::assertCount(4, $stats);
         self::assertSame(
-            ['25', '4', '3', '2', 'GHS 1,250.50'],
+            ['4', '3', '2', 'GHS 1,250.50'],
             array_map(fn ($stat): string => $stat->getValue(), $stats),
         );
-        self::assertSame('Profiles created in Yearly', $stats[1]->getDescription());
-        self::assertSame('Gross collections per paying guest in Yearly', $stats[4]->getDescription());
+        self::assertSame('Profiles created in Yearly', $stats[0]->getDescription());
+        self::assertSame('Gross collections per paying guest in Yearly', $stats[3]->getDescription());
+
+        $columns = new \ReflectionMethod($widget, 'getColumns');
+        $columns->setAccessible(true);
+
+        self::assertSame([
+            'default' => 1,
+            'sm' => 2,
+            'xl' => 4,
+        ], $columns->invoke($widget));
     }
 
     /**

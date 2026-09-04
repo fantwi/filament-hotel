@@ -24,10 +24,32 @@
                 wire:loading.class="pointer-events-none opacity-60"
                 wire:target="applyReportPeriod,resetReportPeriod"
             >
-        <section aria-label="Guest overview">
+        <section aria-labelledby="guest-overview-heading" class="space-y-4">
+            <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-stretch">
+                <div class="flex min-w-0 flex-col justify-center">
+                    <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Selected period</p>
+                    <h2 id="guest-overview-heading" class="mt-1 text-xl font-bold tracking-tight text-gray-950 dark:text-white">Selected-period overview</h2>
+                    <p class="mt-1 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Guest acquisition, paid activity, repeat visits, and average spend for {{ strtolower($this->periodLabel()) }}.</p>
+                </div>
+
+                <div
+                    role="note"
+                    aria-label="All-time guest base"
+                    class="flex min-w-0 items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5"
+                >
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-300">
+                        <x-filament::icon icon="heroicon-o-users" class="h-6 w-6" />
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">All-time guest base</p>
+                        <p class="mt-1 text-sm font-medium text-gray-600 dark:text-gray-300">Guest profiles</p>
+                        <p class="text-2xl font-bold tabular-nums text-gray-950 dark:text-white">{{ number_format($report['totalGuests']) }}</p>
+                    </div>
+                </div>
+            </div>
+
             @livewire(\App\Filament\Admin\Widgets\GuestStats::class, [
                 'reportData' => [
-                    'totalGuests' => $report['totalGuests'],
                     'newGuests' => $report['newGuests'],
                     'payingGuests' => $report['payingGuests'],
                     'returningGuests' => $report['returningGuests'],
