@@ -22,6 +22,7 @@ use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -112,6 +113,44 @@ class RevenueReportTest extends TestCase
         }
 
         self::assertCount(9, $reportQueries);
+    }
+
+    public function test_revenue_report_indexes_cover_period_and_status_predicates(): void
+    {
+        foreach ($this->revenueIndexDefinitions() as $table => $expectedIndexes) {
+            $installedIndexes = collect(Schema::getIndexes($table))->keyBy('name');
+
+            foreach ($expectedIndexes as $name => $columns) {
+                self::assertTrue($installedIndexes->has($name), "Missing revenue report index [{$name}].");
+                self::assertSame($columns, $installedIndexes->get($name)['columns']);
+            }
+        }
+    }
+
+    public function test_revenue_report_index_migration_is_reversible(): void
+    {
+        $path = database_path('migrations/2026_09_04_000300_add_revenue_report_indexes.php');
+
+        self::assertFileExists($path);
+
+        $migration = require $path;
+        $migration->down();
+
+        foreach ($this->revenueIndexDefinitions() as $table => $expectedIndexes) {
+            foreach (array_keys($expectedIndexes) as $name) {
+                self::assertNotContains($name, Schema::getIndexListing($table));
+            }
+        }
+
+        $migration->up();
+
+        foreach ($this->revenueIndexDefinitions() as $table => $expectedIndexes) {
+            $installedIndexes = collect(Schema::getIndexes($table))->keyBy('name');
+
+            foreach ($expectedIndexes as $name => $columns) {
+                self::assertSame($columns, $installedIndexes->get($name)['columns'] ?? null);
+            }
+        }
     }
 
     public function test_outstanding_breakdown_uses_remaining_balances_after_successful_payments(): void
@@ -356,5 +395,29 @@ class RevenueReportTest extends TestCase
         $reportPage->endDate = $endDate;
 
         return $reportPage->report();
+    }
+
+    /**
+     * @return array<string, array<string, list<string>>>
+     */
+    private function revenueIndexDefinitions(): array
+    {
+        return [
+            'payments' => [
+                'payments_revenue_period_status_index' => ['created_at', 'payment_status'],
+            ],
+            'bookings' => [
+                'bookings_revenue_period_status_index' => ['created_at', 'status', 'payment_status'],
+            ],
+            'conference_bookings' => [
+                'conference_bookings_revenue_period_status_index' => ['created_at', 'status', 'payment_status'],
+            ],
+            'restaurant_reservations' => [
+                'restaurant_reservations_revenue_period_status_index' => ['created_at', 'status', 'payment_status'],
+            ],
+            'restaurant_orders' => [
+                'restaurant_orders_revenue_period_status_index' => ['created_at', 'status', 'payment_status'],
+            ],
+        ];
     }
 }
