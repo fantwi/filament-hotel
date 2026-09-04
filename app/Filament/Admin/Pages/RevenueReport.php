@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
 use Filament\Pages\Page;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Provides the revenue report Filament administration page.
@@ -40,22 +41,30 @@ class RevenueReport extends Page
         );
 
         $outstanding = [
-            'hotel' => $this->forReportPeriod(Booking::query())
-                ->whereIn('payment_status', ['pending', 'unpaid'])
-                ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
-                ->sum('total_price'),
-            'conference' => $this->forReportPeriod(ConferenceBooking::query())
-                ->whereIn('payment_status', ['pending', 'unpaid'])
-                ->where('status', '!=', 'cancelled')
-                ->sum('total_price'),
-            'table' => $this->forReportPeriod(RestaurantReservation::query())
-                ->whereIn('payment_status', ['pending', 'unpaid'])
-                ->whereNotIn('status', ['cancelled', 'no_show'])
-                ->sum('reservation_fee'),
-            'food' => $this->forReportPeriod(RestaurantOrder::query())
-                ->whereIn('payment_status', ['pending', 'unpaid'])
-                ->where('status', '!=', 'cancelled')
-                ->sum('total'),
+            'hotel' => $this->outstandingBalance(
+                Booking::query(),
+                'total_price',
+                'booking_id',
+                ['cancelled', 'expired', 'no_show'],
+            ),
+            'conference' => $this->outstandingBalance(
+                ConferenceBooking::query(),
+                'total_price',
+                'conference_booking_id',
+                ['cancelled', 'no_show'],
+            ),
+            'table' => $this->outstandingBalance(
+                RestaurantReservation::query(),
+                'reservation_fee',
+                'restaurant_reservation_id',
+                ['cancelled', 'no_show'],
+            ),
+            'food' => $this->outstandingBalance(
+                RestaurantOrder::query(),
+                'total',
+                'restaurant_order_id',
+                ['cancelled'],
+            ),
         ];
 
         $revenue = (float) (clone $paidPayments)->sum('amount');
@@ -75,6 +84,47 @@ class RevenueReport extends Page
                 ->orderByDesc('total')
                 ->get(),
         ];
+    }
+
+    /**
+     * Calculates the unpaid portion of active transactions in the report period.
+     *
+     * @param  array<int, string>  $excludedStatuses
+     */
+    private function outstandingBalance(
+        Builder $transactions,
+        string $amountColumn,
+        string $paymentForeignKey,
+        array $excludedStatuses,
+    ): float {
+        $transactionTable = $transactions->getModel()->getTable();
+        $paidPaymentsAlias = $transactionTable.'_revenue_report_paid';
+        $paidPayments = Payment::query()
+            ->select($paymentForeignKey)
+            ->selectRaw('SUM(amount) as paid_amount')
+            ->whereIn('payment_status', ['paid', 'completed'])
+            ->whereNotNull($paymentForeignKey)
+            ->groupBy($paymentForeignKey);
+        $remainingBalance = "{$transactionTable}.{$amountColumn} - COALESCE({$paidPaymentsAlias}.paid_amount, 0)";
+
+        $outstanding = $this->forReportPeriod(
+            $transactions,
+            "{$transactionTable}.created_at",
+        )
+            ->leftJoinSub(
+                $paidPayments,
+                $paidPaymentsAlias,
+                "{$paidPaymentsAlias}.{$paymentForeignKey}",
+                '=',
+                "{$transactionTable}.id",
+            )
+            ->whereNotIn("{$transactionTable}.status", $excludedStatuses)
+            ->whereNotIn("{$transactionTable}.payment_status", ['paid', 'completed', 'refunded'])
+            ->whereRaw("{$remainingBalance} > 0")
+            ->selectRaw("COALESCE(SUM({$remainingBalance}), 0) as outstanding")
+            ->value('outstanding');
+
+        return (float) $outstanding;
     }
 
     /**
