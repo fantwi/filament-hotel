@@ -11,7 +11,7 @@
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
             Report period
             <x-filament::input.wrapper class="mt-1">
-                <x-filament::input.select wire:model="draftPeriod">
+                <x-filament::input.select wire:model.live="draftPeriod">
                     @foreach (\App\Support\Reporting\ReportPeriod::options() as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
                     @endforeach
@@ -25,7 +25,11 @@
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
             {{ $fromLabel }}
             <x-filament::input.wrapper class="mt-1">
-                <x-filament::input wire:model="draftStartDate" type="date" />
+                <x-filament::input
+                    wire:model="draftStartDate"
+                    type="date"
+                    :disabled="$this->draftPeriod !== 'custom'"
+                />
             </x-filament::input.wrapper>
             @error('draftStartDate')
                 <span class="mt-1 block text-xs text-danger-600 dark:text-danger-400">{{ $message }}</span>
@@ -35,7 +39,11 @@
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
             {{ $untilLabel }}
             <x-filament::input.wrapper class="mt-1">
-                <x-filament::input wire:model="draftEndDate" type="date" />
+                <x-filament::input
+                    wire:model="draftEndDate"
+                    type="date"
+                    :disabled="$this->draftPeriod !== 'custom'"
+                />
             </x-filament::input.wrapper>
             @error('draftEndDate')
                 <span class="mt-1 block text-xs text-danger-600 dark:text-danger-400">{{ $message }}</span>
@@ -57,6 +65,14 @@
             </x-filament::button>
         </div>
     </div>
+
+    <p class="mt-3 text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
+        @if ($this->draftPeriod === 'custom')
+            Choose the exact start and end dates for this report.
+        @else
+            Dates are calculated automatically for preset periods.
+        @endif
+    </p>
 
     <div class="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 pt-3 text-sm dark:border-white/10">
         <p class="text-gray-600 dark:text-gray-300">

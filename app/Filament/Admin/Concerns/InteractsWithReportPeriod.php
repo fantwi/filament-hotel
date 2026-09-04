@@ -80,6 +80,27 @@ trait InteractsWithReportPeriod
     }
 
     /**
+     * Refreshes preset draft dates without changing the applied report range.
+     */
+    public function updatedDraftPeriod(string $period): void
+    {
+        $this->resetValidation([
+            'draftPeriod',
+            'draftStartDate',
+            'draftEndDate',
+        ]);
+
+        if ($period === 'custom' || ! array_key_exists($period, ReportPeriod::options())) {
+            return;
+        }
+
+        [$start, $end] = ReportPeriod::range($period);
+
+        $this->draftStartDate = $start->toDateString();
+        $this->draftEndDate = $end->toDateString();
+    }
+
+    /**
      * Restores and immediately applies the current monthly range.
      */
     public function resetReportPeriod(): void

@@ -47,6 +47,22 @@ class ReportPeriodControlsTest extends TestCase
             ->assertSet('endDate', '2026-09-18');
     }
 
+    public function test_selecting_a_preset_refreshes_draft_dates_without_applying_the_report(): void
+    {
+        $this->travelTo('2026-09-18 14:30:00');
+
+        Livewire::test(ReportPeriodHarness::class)
+            ->assertSet('period', 'monthly')
+            ->assertSet('startDate', '2026-09-01')
+            ->assertSet('endDate', '2026-09-18')
+            ->set('draftPeriod', 'quarterly')
+            ->assertSet('draftStartDate', '2026-07-01')
+            ->assertSet('draftEndDate', '2026-09-18')
+            ->assertSet('period', 'monthly')
+            ->assertSet('startDate', '2026-09-01')
+            ->assertSet('endDate', '2026-09-18');
+    }
+
     public function test_custom_report_period_rejects_reversed_dates(): void
     {
         Livewire::test(ReportPeriodHarness::class)
@@ -68,17 +84,18 @@ class ReportPeriodControlsTest extends TestCase
         self::assertStringContainsString('<x-filament.report-period-controls', $source);
     }
 
-    public function test_shared_report_period_controls_use_filament_inputs_without_live_filter_bindings(): void
+    public function test_shared_report_period_controls_only_refresh_the_draft_when_the_period_changes(): void
     {
         $source = file_get_contents(resource_path('views/components/filament/report-period-controls.blade.php'));
 
         self::assertStringContainsString('<x-filament::input.wrapper', $source);
         self::assertStringContainsString('<x-filament::input.select', $source);
-        self::assertStringContainsString('wire:model="draftPeriod"', $source);
-        self::assertStringContainsString('<x-filament::input wire:model="draftStartDate"', $source);
-        self::assertStringContainsString('<x-filament::input wire:model="draftEndDate"', $source);
+        self::assertStringContainsString('wire:model.live="draftPeriod"', $source);
+        self::assertStringContainsString('wire:model="draftStartDate"', $source);
+        self::assertStringContainsString('wire:model="draftEndDate"', $source);
         self::assertStringNotContainsString('class="fi-input', $source);
-        self::assertStringNotContainsString('wire:model.live', $source);
+        self::assertStringNotContainsString('wire:model.live="draftStartDate"', $source);
+        self::assertStringNotContainsString('wire:model.live="draftEndDate"', $source);
     }
 
     public static function reportPages(): array

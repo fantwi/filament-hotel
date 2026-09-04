@@ -13,6 +13,7 @@ use App\Models\RestaurantReservation;
 use App\Models\RestaurantTable;
 use App\Models\Room;
 use App\Models\RoomType;
+use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -463,6 +464,25 @@ class OccupancyReportTest extends TestCase
         self::assertStringContainsString('wire:target="applyReportPeriod,resetReportPeriod"', $view);
     }
 
+    public function test_occupancy_page_only_allows_date_edits_for_custom_ranges(): void
+    {
+        $user = User::factory()->create(['department' => 'management']);
+
+        $presetResponse = $this->actingAs($user)->get('/admin/occupancy-report');
+        $presetResponse->assertOk()->assertSee('Dates are calculated automatically for preset periods.');
+
+        foreach ($this->reportDateInputs($presetResponse->getContent()) as $input) {
+            self::assertTrue($input->hasAttribute('disabled'));
+        }
+
+        $customResponse = $this->actingAs($user)->get('/admin/occupancy-report?period=custom&startDate=2026-09-01&endDate=2026-09-04');
+        $customResponse->assertOk()->assertSee('Choose the exact start and end dates for this report.');
+
+        foreach ($this->reportDateInputs($customResponse->getContent()) as $input) {
+            self::assertFalse($input->hasAttribute('disabled'));
+        }
+    }
+
     public function test_occupancy_stats_widget_uses_period_aware_overview_stats(): void
     {
         self::assertTrue(is_subclass_of(OccupancyStats::class, StatsOverviewWidget::class));
@@ -565,5 +585,21 @@ class OccupancyReportTest extends TestCase
                 'restaurant_reservations_reservation_date_status_index',
             ],
         ];
+    }
+
+    /**
+     * @return list<\DOMElement>
+     */
+    private function reportDateInputs(string $html): array
+    {
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $inputs = $xpath->query('//input[@type="date" and (@*[name()="wire:model"]="draftStartDate" or @*[name()="wire:model"]="draftEndDate")]');
+
+        self::assertNotFalse($inputs);
+        self::assertCount(2, $inputs);
+
+        return iterator_to_array($inputs);
     }
 }
