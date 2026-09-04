@@ -561,6 +561,68 @@ class OccupancyReportTest extends TestCase
         self::assertSame('Quarterly', $stats[0]->getDescription());
     }
 
+    public function test_occupancy_stats_widget_stacks_cards_before_using_three_desktop_columns(): void
+    {
+        $widget = new OccupancyStats;
+        $method = new \ReflectionMethod($widget, 'getColumns');
+        $method->setAccessible(true);
+
+        self::assertSame([
+            'default' => 1,
+            'md' => 2,
+            'xl' => 3,
+        ], $method->invoke($widget));
+    }
+
+    public function test_occupancy_stat_cards_use_distinct_colors_and_readable_numbers(): void
+    {
+        $widget = new OccupancyStats;
+        $widget->summary = [
+            'occupancyRate' => 64.5,
+            'bookedRoomNights' => 1234,
+            'roomNightCapacity' => 2345,
+        ];
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+
+        $stats = $method->invoke($widget);
+
+        self::assertSame(['primary', 'success', 'info'], array_map(
+            fn ($stat): string|array|null => $stat->getColor(),
+            $stats,
+        ));
+
+        foreach ($stats as $stat) {
+            self::assertStringContainsString('tabular-nums', $stat->getExtraAttributes()['class'] ?? '');
+        }
+    }
+
+    public function test_scheduled_use_metrics_render_as_three_distinct_responsive_cards(): void
+    {
+        $user = User::factory()->create(['department' => 'management']);
+
+        $response = $this->actingAs($user)->get('/admin/occupancy-report');
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $grid = $xpath->query('//dl[@aria-label="Scheduled use metrics"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $grid);
+        self::assertStringContainsString('md:grid-cols-2', $grid->getAttribute('class'));
+        self::assertStringContainsString('xl:grid-cols-3', $grid->getAttribute('class'));
+
+        $cards = $xpath->query('./div', $grid);
+        self::assertNotFalse($cards);
+        self::assertCount(3, $cards);
+
+        foreach (['primary', 'info', 'warning'] as $index => $tone) {
+            self::assertStringContainsString("border-{$tone}-200", $cards->item($index)->getAttribute('class'));
+        }
+    }
+
     public function test_occupancy_stats_widget_builds_cards_without_requerying_report_data(): void
     {
         $widget = new OccupancyStats;

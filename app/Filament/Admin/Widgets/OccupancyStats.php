@@ -12,6 +12,13 @@ class OccupancyStats extends StatsOverviewWidget
 {
     protected int|string|array $columnSpan = 'full';
 
+    /** @var array<string, int> */
+    protected int|array|null $columns = [
+        'default' => 1,
+        'md' => 2,
+        'xl' => 3,
+    ];
+
     /** @var array{occupancyRate: float|null, bookedRoomNights: int, roomNightCapacity: int} */
     public array $summary = [
         'occupancyRate' => null,
@@ -38,7 +45,7 @@ class OccupancyStats extends StatsOverviewWidget
     {
         $hasRoomCapacity = $this->summary['occupancyRate'] !== null;
 
-        return [
+        $stats = [
             Stat::make(
                 'Room occupancy',
                 $hasRoomCapacity ? number_format((float) $this->summary['occupancyRate'], 1).'%' : 'N/A',
@@ -55,5 +62,17 @@ class OccupancyStats extends StatsOverviewWidget
                 ->icon('heroicon-o-home-modern')
                 ->color('info'),
         ];
+
+        return array_map($this->readableStat(...), $stats);
+    }
+
+    /**
+     * Keeps values aligned and prevents large counts from overflowing their cards.
+     */
+    private function readableStat(Stat $stat): Stat
+    {
+        return $stat->extraAttributes([
+            'class' => 'min-w-0 [&_.fi-wi-stats-overview-stat-content]:min-w-0 [&_.fi-wi-stats-overview-stat-value]:break-words [&_.fi-wi-stats-overview-stat-value]:tabular-nums',
+        ], merge: true);
     }
 }

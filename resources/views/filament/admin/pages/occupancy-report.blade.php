@@ -39,18 +39,36 @@
             )
 
             <x-filament::section heading="Scheduled use" description="{{ $this->periodLabel() }} reservations and bookings">
-                <dl class="grid gap-3 sm:grid-cols-3">
-                    <div class="flex items-center justify-between gap-4 rounded-lg bg-gray-50 p-3 dark:bg-white/5">
-                        <dt class="text-sm text-gray-600 dark:text-gray-300">Hotel stays</dt>
-                        <dd class="font-semibold">{{ number_format($report['hotelBookings']) }}</dd>
+                <dl aria-label="Scheduled use metrics" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="min-w-0 rounded-xl border border-primary-200 bg-primary-50 p-4 shadow-sm dark:border-primary-500/20 dark:bg-primary-500/10">
+                        <dt class="flex items-center gap-2 text-sm font-semibold text-primary-800 dark:text-primary-200">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-500/20 dark:text-primary-300">
+                                <x-filament::icon icon="heroicon-o-building-office-2" class="h-5 w-5" />
+                            </span>
+                            Hotel stays
+                        </dt>
+                        <dd class="mt-3 break-words text-2xl font-bold tabular-nums text-gray-950 dark:text-white">{{ number_format($report['hotelBookings']) }}</dd>
+                        <dd class="mt-1 text-xs text-gray-600 dark:text-gray-300">Bookings overlapping the selected range</dd>
                     </div>
-                    <div class="flex items-center justify-between gap-4 rounded-lg bg-gray-50 p-3 dark:bg-white/5">
-                        <dt class="text-sm text-gray-600 dark:text-gray-300">Conference bookings</dt>
-                        <dd class="font-semibold">{{ number_format($report['conferenceBookings']) }}</dd>
+                    <div class="min-w-0 rounded-xl border border-info-200 bg-info-50 p-4 shadow-sm dark:border-info-500/20 dark:bg-info-500/10">
+                        <dt class="flex items-center gap-2 text-sm font-semibold text-info-800 dark:text-info-200">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-info-100 text-info-600 dark:bg-info-500/20 dark:text-info-300">
+                                <x-filament::icon icon="heroicon-o-presentation-chart-bar" class="h-5 w-5" />
+                            </span>
+                            Conference bookings
+                        </dt>
+                        <dd class="mt-3 break-words text-2xl font-bold tabular-nums text-gray-950 dark:text-white">{{ number_format($report['conferenceBookings']) }}</dd>
+                        <dd class="mt-1 text-xs text-gray-600 dark:text-gray-300">Venue bookings scheduled in the range</dd>
                     </div>
-                    <div class="flex items-center justify-between gap-4 rounded-lg bg-gray-50 p-3 dark:bg-white/5">
-                        <dt class="text-sm text-gray-600 dark:text-gray-300">Table reservations</dt>
-                        <dd class="font-semibold">{{ number_format($report['tableReservations']) }}</dd>
+                    <div class="min-w-0 rounded-xl border border-warning-200 bg-warning-50 p-4 shadow-sm dark:border-warning-500/20 dark:bg-warning-500/10">
+                        <dt class="flex items-center gap-2 text-sm font-semibold text-warning-800 dark:text-warning-200">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-warning-100 text-warning-600 dark:bg-warning-500/20 dark:text-warning-300">
+                                <x-filament::icon icon="heroicon-o-cake" class="h-5 w-5" />
+                            </span>
+                            Table reservations
+                        </dt>
+                        <dd class="mt-3 break-words text-2xl font-bold tabular-nums text-gray-950 dark:text-white">{{ number_format($report['tableReservations']) }}</dd>
+                        <dd class="mt-1 text-xs text-gray-600 dark:text-gray-300">Dining reservations scheduled in the range</dd>
                     </div>
                 </dl>
             </x-filament::section>
