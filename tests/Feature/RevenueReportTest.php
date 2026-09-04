@@ -353,6 +353,34 @@ class RevenueReportTest extends TestCase
         self::assertSame('/admin/transaction-dashboard#transaction-breakdown', $stats[3]->getUrl());
     }
 
+    public function test_net_revenue_stat_uses_outcome_aware_presentation(): void
+    {
+        $cases = [
+            'positive' => [250.0, 'success', 'heroicon-o-arrow-trending-up', 'Positive after refunds'],
+            'break-even' => [0.0, 'gray', 'heroicon-o-scale', 'Collected revenue equals refunds'],
+            'negative' => [-25.0, 'danger', 'heroicon-o-arrow-trending-down', 'Refunds exceed collected revenue'],
+        ];
+
+        foreach ($cases as $case => [$netRevenue, $color, $icon, $description]) {
+            $widget = new RevenueReportStats;
+            $widget->reportData = [
+                'revenue' => 250.0,
+                'paymentsReceived' => 1,
+                'refunds' => 0.0,
+                'refundCount' => 0,
+                'netRevenue' => $netRevenue,
+                'outstanding' => 0.0,
+            ];
+            $method = new \ReflectionMethod($widget, 'getStats');
+            $method->setAccessible(true);
+            $stat = $method->invoke($widget)[2];
+
+            self::assertSame($color, $stat->getColor(), "Unexpected color for {$case} net revenue.");
+            self::assertSame($icon, $stat->getIcon(), "Unexpected icon for {$case} net revenue.");
+            self::assertSame($description, $stat->getDescription(), "Unexpected description for {$case} net revenue.");
+        }
+    }
+
     public function test_revenue_report_page_calculates_the_report_only_once(): void
     {
         Role::findOrCreate('accountant', 'web');

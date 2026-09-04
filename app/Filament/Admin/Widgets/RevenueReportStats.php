@@ -42,6 +42,25 @@ class RevenueReportStats extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
+        $netRevenue = (float) $this->reportData['netRevenue'];
+        $netRevenuePresentation = match (true) {
+            $netRevenue > 0 => [
+                'color' => 'success',
+                'icon' => 'heroicon-o-arrow-trending-up',
+                'description' => 'Positive after refunds',
+            ],
+            $netRevenue < 0 => [
+                'color' => 'danger',
+                'icon' => 'heroicon-o-arrow-trending-down',
+                'description' => 'Refunds exceed collected revenue',
+            ],
+            default => [
+                'color' => 'gray',
+                'icon' => 'heroicon-o-scale',
+                'description' => 'Collected revenue equals refunds',
+            ],
+        };
+
         return [
             $this->withDrillDown(
                 Stat::make('Revenue received', 'GHS '.number_format((float) $this->reportData['revenue'], 2))
@@ -58,10 +77,10 @@ class RevenueReportStats extends StatsOverviewWidget
                 'refunds',
             ),
             $this->withDrillDown(
-                Stat::make('Net revenue', 'GHS '.number_format((float) $this->reportData['netRevenue'], 2))
-                    ->description('Revenue less refunds')
-                    ->icon('heroicon-o-chart-bar')
-                    ->color('primary'),
+                Stat::make('Net revenue', 'GHS '.number_format($netRevenue, 2))
+                    ->description($netRevenuePresentation['description'])
+                    ->icon($netRevenuePresentation['icon'])
+                    ->color($netRevenuePresentation['color']),
                 'netRevenue',
             ),
             $this->withDrillDown(
