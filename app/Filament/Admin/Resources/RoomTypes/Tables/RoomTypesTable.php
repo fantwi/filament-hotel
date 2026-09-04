@@ -12,7 +12,10 @@ use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Configures Filament administration for room types table.
@@ -87,7 +90,29 @@ class RoomTypesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                TernaryFilter::make('is_published')
+                    ->label('Publication status')
+                    ->placeholder('All room types')
+                    ->trueLabel('Published')
+                    ->falseLabel('Draft'),
+                SelectFilter::make('capacity')
+                    ->label('Guest capacity')
+                    ->options([
+                        '1' => '1 guest',
+                        '2' => '2 guests',
+                        '3' => '3 guests',
+                        '4+' => '4+ guests',
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => match ((string) ($data['value'] ?? '')) {
+                        '1', '2', '3' => $query->where('capacity', (int) $data['value']),
+                        '4+' => $query->where('capacity', '>=', 4),
+                        default => $query,
+                    }),
+                SelectFilter::make('facility')
+                    ->label('Facility')
+                    ->relationship('facilities', 'name')
+                    ->searchable()
+                    ->preload(),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -106,6 +131,7 @@ class RoomTypesTable
                                 : "{$failureCount} room types were not deleted because they are assigned to rooms. Unpublish them instead."
                         ),
                 ]),
-            ]);
+            ])
+            ->defaultSort('name');
     }
 }
