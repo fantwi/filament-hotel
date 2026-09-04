@@ -7,7 +7,6 @@ use App\Models\Guest;
 use App\Models\Payment;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Provides the guest report Filament administration page.
@@ -35,15 +34,36 @@ class GuestReport extends Page
      */
     public function report(): array
     {
+        [$periodStart, $periodEnd] = $this->periodBounds();
         $collectedPayments = $this->collectedGuestPayments();
         $refundedPayments = $this->refundedGuestPayments();
 
-        $payingGuests = (clone $collectedPayments)
-            ->distinct()
-            ->count(DB::raw(self::RESOLVED_GUEST_ID));
+        $guestSummary = Guest::query()
+            ->selectRaw('COUNT(*) as total_guests')
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN guests.created_at BETWEEN ? AND ? THEN 1 ELSE 0 END), 0) as new_guests',
+                [$periodStart, $periodEnd],
+            )
+            ->first();
 
-        $totalPaid = (float) (clone $collectedPayments)->sum('payments.amount');
-        $refundTotal = (float) (clone $refundedPayments)->sum('payments.amount');
+        $collectedSummary = (clone $collectedPayments)
+            ->selectRaw('COUNT(DISTINCT '.self::RESOLVED_GUEST_ID.') as paying_guests')
+            ->selectRaw('COALESCE(SUM(payments.amount), 0) as total_paid')
+            ->selectRaw('COUNT(payments.id) as payment_count')
+            ->selectRaw('COUNT(payments.booking_id) as hotel_payment_count')
+            ->selectRaw('COUNT(payments.conference_booking_id) as conference_payment_count')
+            ->selectRaw('COUNT(payments.restaurant_reservation_id) as table_payment_count')
+            ->selectRaw('COUNT(payments.restaurant_order_id) as food_payment_count')
+            ->first();
+
+        $refundSummary = (clone $refundedPayments)
+            ->selectRaw('COALESCE(SUM(payments.amount), 0) as refund_total')
+            ->selectRaw('COUNT(payments.id) as refund_count')
+            ->first();
+
+        $payingGuests = (int) $collectedSummary->paying_guests;
+        $totalPaid = (float) $collectedSummary->total_paid;
+        $refundTotal = (float) $refundSummary->refund_total;
 
         $topGuests = (clone $collectedPayments)
             ->with('guest')
@@ -53,16 +73,9 @@ class GuestReport extends Page
             ->limit(5)
             ->get();
 
-        $activity = [
-            'hotel' => (clone $collectedPayments)->whereNotNull('payments.booking_id')->count(),
-            'conference' => (clone $collectedPayments)->whereNotNull('payments.conference_booking_id')->count(),
-            'table' => (clone $collectedPayments)->whereNotNull('payments.restaurant_reservation_id')->count(),
-            'food' => (clone $collectedPayments)->whereNotNull('payments.restaurant_order_id')->count(),
-        ];
-
         return [
-            'totalGuests' => Guest::count(),
-            'newGuests' => $this->forReportPeriod(Guest::query())->count(),
+            'totalGuests' => (int) $guestSummary->total_guests,
+            'newGuests' => (int) $guestSummary->new_guests,
             'payingGuests' => $payingGuests,
             'returningGuests' => (clone $collectedPayments)
                 ->selectRaw(self::RESOLVED_GUEST_ID.' as guest_id')
@@ -73,10 +86,15 @@ class GuestReport extends Page
             'averageSpend' => $payingGuests > 0 ? $totalPaid / $payingGuests : 0,
             'totalPaid' => $totalPaid,
             'refundTotal' => $refundTotal,
-            'refundCount' => (clone $refundedPayments)->count('payments.id'),
+            'refundCount' => (int) $refundSummary->refund_count,
             'netSpend' => $totalPaid - $refundTotal,
-            'paymentCount' => (clone $collectedPayments)->count('payments.id'),
-            'activity' => $activity,
+            'paymentCount' => (int) $collectedSummary->payment_count,
+            'activity' => [
+                'hotel' => (int) $collectedSummary->hotel_payment_count,
+                'conference' => (int) $collectedSummary->conference_payment_count,
+                'table' => (int) $collectedSummary->table_payment_count,
+                'food' => (int) $collectedSummary->food_payment_count,
+            ],
             'topGuests' => $topGuests,
         ];
     }

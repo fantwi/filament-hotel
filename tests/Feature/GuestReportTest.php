@@ -15,9 +15,14 @@ use App\Models\RestaurantReservation;
 use App\Models\RestaurantTable;
 use App\Models\Room;
 use App\Models\RoomType;
+use App\Models\User;
 use Carbon\Carbon;
+use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class GuestReportTest extends TestCase
@@ -351,18 +356,110 @@ class GuestReportTest extends TestCase
         self::assertCount(0, $report['topGuests']);
     }
 
-    public function test_guest_stats_widget_uses_period_aware_overview_stats(): void
+    public function test_guest_report_uses_a_consolidated_query_budget(): void
+    {
+        $guest = Guest::query()->create([
+            'first_name' => 'Query',
+            'last_name' => 'Budget',
+            'email' => 'query-budget@example.test',
+            'phone_number' => '0240000005',
+        ]);
+        Payment::query()->create([
+            'guest_id' => $guest->id,
+            'amount' => 125,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-REPORT-QUERY-BUDGET',
+        ]);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            (new GuestReport)->report();
+            $queries = DB::getQueryLog();
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        self::assertCount(6, $queries);
+    }
+
+    public function test_guest_report_page_reuses_precomputed_metrics_in_the_stats_widget(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $guest = Guest::query()->create([
+            'first_name' => 'Page',
+            'last_name' => 'Metrics',
+            'email' => 'page-metrics@example.test',
+            'phone_number' => '0240000006',
+        ]);
+        Payment::query()->create([
+            'guest_id' => $guest->id,
+            'amount' => 125,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-REPORT-PAGE-METRICS',
+        ]);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $component = Livewire::actingAs($accountant)
+                ->test(GuestReport::class)
+                ->assertSuccessful();
+            $reportQueries = collect(DB::getQueryLog())
+                ->pluck('query')
+                ->filter(fn (string $query): bool => (bool) preg_match(
+                    '/\b(?:from|join)\s+["`]?(?:payments|guests|bookings|conference_bookings|restaurant_reservations|restaurant_orders)["`]?\b/i',
+                    $query,
+                ));
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        self::assertCount(6, $reportQueries);
+        self::assertSame(4, substr_count($component->html(), 'GHS 125.00'));
+    }
+
+    public function test_guest_stats_widget_uses_precomputed_period_aware_data_without_queries(): void
     {
         self::assertTrue(is_subclass_of(GuestStats::class, StatsOverviewWidget::class));
 
         $widget = new GuestStats;
-        $widget->period = 'yearly';
+        $widget->reportData = [
+            'totalGuests' => 25,
+            'newGuests' => 4,
+            'payingGuests' => 3,
+            'returningGuests' => 2,
+            'averageSpend' => 1250.5,
+        ];
+        $widget->reportPeriodLabel = 'Yearly';
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 
-        $stats = $method->invoke($widget);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
 
+        try {
+            $stats = $method->invoke($widget);
+            $queries = DB::getQueryLog();
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        self::assertCount(0, $queries);
         self::assertCount(5, $stats);
+        self::assertSame(
+            ['25', '4', '3', '2', 'GHS 1,250.50'],
+            array_map(fn ($stat): string => $stat->getValue(), $stats),
+        );
+        self::assertSame('Profiles created in Yearly', $stats[1]->getDescription());
+        self::assertSame('Gross collections per paying guest in Yearly', $stats[4]->getDescription());
     }
 
     /**

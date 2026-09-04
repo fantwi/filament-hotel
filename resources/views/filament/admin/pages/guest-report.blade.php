@@ -13,7 +13,16 @@
         </x-filament::section>
 
         <section aria-label="Guest overview">
-            @livewire(\App\Filament\Admin\Widgets\GuestStats::class, ['period' => $this->period, 'startDate' => $this->startDate, 'endDate' => $this->endDate], key('guest-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+            @livewire(\App\Filament\Admin\Widgets\GuestStats::class, [
+                'reportData' => [
+                    'totalGuests' => $report['totalGuests'],
+                    'newGuests' => $report['newGuests'],
+                    'payingGuests' => $report['payingGuests'],
+                    'returningGuests' => $report['returningGuests'],
+                    'averageSpend' => $report['averageSpend'],
+                ],
+                'reportPeriodLabel' => $this->periodLabel(),
+            ], key('guest-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
         <x-filament::section heading="Guest spending" description="Collections and refund events recorded during {{ strtolower($this->periodLabel()) }}">

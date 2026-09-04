@@ -2,26 +2,26 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Filament\Admin\Pages\GuestReport;
-use App\Support\Reporting\ReportPeriod;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 /**
- * Provides a period-aware guest performance summary for the guest report.
+ * Presents the guest performance summary calculated by the parent report page.
  */
 class GuestStats extends StatsOverviewWidget
 {
     protected int|string|array $columnSpan = 'full';
 
-    /**
-     * The report period selected on the parent guest report page.
-     */
-    public string $period = 'monthly';
+    /** @var array{totalGuests: int, newGuests: int, payingGuests: int, returningGuests: int, averageSpend: float} */
+    public array $reportData = [
+        'totalGuests' => 0,
+        'newGuests' => 0,
+        'payingGuests' => 0,
+        'returningGuests' => 0,
+        'averageSpend' => 0.0,
+    ];
 
-    public string $startDate = '';
-
-    public string $endDate = '';
+    public string $reportPeriodLabel = 'Monthly';
 
     /**
      * Determines whether the current user may view this feature.
@@ -32,18 +32,14 @@ class GuestStats extends StatsOverviewWidget
     }
 
     /**
-     * Builds the guest metrics for the selected reporting period.
+     * Builds guest metric cards from the parent page's precomputed data.
      *
      * @return array<int, Stat>
      */
     protected function getStats(): array
     {
-        $reportPage = new GuestReport;
-        $reportPage->period = $this->validPeriod($this->period);
-        $reportPage->startDate = $this->startDate;
-        $reportPage->endDate = $this->endDate;
-        $report = $reportPage->report();
-        $periodLabel = $reportPage->periodLabel();
+        $report = $this->reportData;
+        $periodLabel = $this->reportPeriodLabel;
 
         return [
             Stat::make('Guest profiles', number_format((int) $report['totalGuests']))
@@ -67,15 +63,5 @@ class GuestStats extends StatsOverviewWidget
                 ->icon('heroicon-o-banknotes')
                 ->color('success'),
         ];
-    }
-
-    /**
-     * Keeps nested widget state within the periods supported by the report page.
-     */
-    private function validPeriod(string $period): string
-    {
-        return array_key_exists($period, ReportPeriod::options())
-            ? $period
-            : 'monthly';
     }
 }
