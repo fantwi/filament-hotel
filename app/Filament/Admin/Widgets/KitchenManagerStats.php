@@ -18,6 +18,8 @@ class KitchenManagerStats extends StatsOverviewWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    protected ?string $pollingInterval = null;
+
     /**
      * Determines whether the current user may view this feature.
      */
@@ -36,18 +38,22 @@ class KitchenManagerStats extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
+        $orderCounts = $this->forDashboardDateRange(RestaurantOrder::kitchenQueue())
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
         $periodLabel = $this->dashboardDateRangeLabel();
 
         return [
-            Stat::make('Orders waiting to start', number_format($this->ordersInStatus('confirmed')))
+            Stat::make('Orders waiting to start', number_format((int) ($orderCounts['confirmed'] ?? 0)))
                 ->description($periodLabel)
                 ->icon('heroicon-o-clock')
                 ->color('info'),
-            Stat::make('Orders preparing', number_format($this->ordersInStatus('preparing')))
+            Stat::make('Orders preparing', number_format((int) ($orderCounts['preparing'] ?? 0)))
                 ->description($periodLabel)
                 ->icon('heroicon-o-fire')
                 ->color('warning'),
-            Stat::make('Orders ready to serve', number_format($this->ordersInStatus('ready')))
+            Stat::make('Orders ready to serve', number_format((int) ($orderCounts['ready'] ?? 0)))
                 ->description($periodLabel)
                 ->icon('heroicon-o-bell-alert')
                 ->color('success'),
@@ -60,15 +66,5 @@ class KitchenManagerStats extends StatsOverviewWidget
                 ->icon('heroicon-o-archive-box')
                 ->color('danger'),
         ];
-    }
-
-    /**
-     * Counts eligible kitchen orders in the selected period by status.
-     */
-    private function ordersInStatus(string $status): int
-    {
-        return $this->forDashboardDateRange(RestaurantOrder::kitchenQueue())
-            ->where('status', $status)
-            ->count();
     }
 }
