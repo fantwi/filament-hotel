@@ -122,6 +122,22 @@ class RestaurantOrdersTable
                             $data['created_until'] ?? null,
                             fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '<=', $date),
                         )),
+                Filter::make('served_at')
+                    ->label('Served date')
+                    ->schema([
+                        DatePicker::make('from')->label('Served from'),
+                        DatePicker::make('until')->label('Served until'),
+                    ])
+                    ->columns(2)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['from'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('served_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['until'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('served_at', '<=', $date),
+                        )),
             ])
             ->filtersFormColumns(3)
             ->recordActions([

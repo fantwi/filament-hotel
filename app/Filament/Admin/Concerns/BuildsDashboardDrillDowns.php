@@ -238,6 +238,36 @@ trait BuildsDashboardDrillDowns
     }
 
     /**
+     * Links a live kitchen statistic to every currently active order in that status.
+     */
+    protected function restaurantOrderLiveStatusDrillDownUrl(string $status): string
+    {
+        return RestaurantOrderResource::getUrl('index', [
+            'filters' => [
+                'status' => ['value' => $status],
+            ],
+        ]);
+    }
+
+    /**
+     * Links served-order activity to orders served during the selected period.
+     */
+    protected function restaurantOrderServedDrillDownUrl(): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return RestaurantOrderResource::getUrl('index', [
+            'filters' => [
+                'status' => ['value' => 'served'],
+                'served_at' => [
+                    'from' => $start->toDateString(),
+                    'until' => $end->toDateString(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
      * Links production activity to batches recorded within the period.
      */
     protected function kitchenProductionDrillDownUrl(): string
