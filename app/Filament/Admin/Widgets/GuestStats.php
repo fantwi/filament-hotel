@@ -62,8 +62,8 @@ class GuestStats extends StatsOverviewWidget
                 ->description('Two or more paid service visits')
                 ->icon('heroicon-o-arrow-path-rounded-square')
                 ->color('warning'),
-            Stat::make('Average guest spend', 'GHS '.number_format((float) $report['averageSpend'], 2))
-                ->description('Paid spend per guest in '.$periodLabel)
+            Stat::make('Average gross spend', 'GHS '.number_format((float) $report['averageSpend'], 2))
+                ->description('Gross collections per paying guest in '.$periodLabel)
                 ->icon('heroicon-o-banknotes')
                 ->color('success'),
         ];

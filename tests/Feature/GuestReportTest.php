@@ -15,6 +15,7 @@ use App\Models\RestaurantReservation;
 use App\Models\RestaurantTable;
 use App\Models\Room;
 use App\Models\RoomType;
+use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -284,6 +285,72 @@ class GuestReportTest extends TestCase
         self::assertSame(1, (new GuestReport)->report()['returningGuests']);
     }
 
+    public function test_later_refund_does_not_erase_guest_collection_from_original_period(): void
+    {
+        $guest = Guest::query()->create([
+            'first_name' => 'Original',
+            'last_name' => 'Collection',
+            'email' => 'original-collection@example.test',
+            'phone_number' => '0240000003',
+        ]);
+        $payment = Payment::query()->create([
+            'guest_id' => $guest->id,
+            'amount' => 250,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-REPORT-LATER-REFUND',
+        ]);
+        $payment->forceFill([
+            'payment_status' => 'refunded',
+            'created_at' => Carbon::parse('2026-08-05 09:00:00'),
+            'updated_at' => Carbon::parse('2026-08-20 12:00:00'),
+            'refunded_at' => Carbon::parse('2026-08-20 12:00:00'),
+        ])->saveQuietly();
+
+        $report = $this->reportForPeriod('2026-08-01', '2026-08-10');
+
+        self::assertSame(250.0, $report['totalPaid']);
+        self::assertSame(0.0, $report['refundTotal']);
+        self::assertSame(0, $report['refundCount']);
+        self::assertSame(250.0, $report['netSpend']);
+        self::assertSame(1, $report['payingGuests']);
+        self::assertSame(1, $report['paymentCount']);
+        self::assertEqualsWithDelta(250.0, (float) $report['topGuests']->first()->total_spend, 0.001);
+    }
+
+    public function test_refund_is_attributed_to_its_refunded_at_period(): void
+    {
+        $guest = Guest::query()->create([
+            'first_name' => 'Refund',
+            'last_name' => 'Period',
+            'email' => 'refund-period@example.test',
+            'phone_number' => '0240000004',
+        ]);
+        $payment = Payment::query()->create([
+            'guest_id' => $guest->id,
+            'amount' => 125,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-REPORT-REFUND-PERIOD',
+        ]);
+        $payment->forceFill([
+            'payment_status' => 'refunded',
+            'created_at' => Carbon::parse('2026-07-15 09:00:00'),
+            'updated_at' => Carbon::parse('2026-08-06 12:00:00'),
+            'refunded_at' => Carbon::parse('2026-08-06 12:00:00'),
+        ])->saveQuietly();
+
+        $report = $this->reportForPeriod('2026-08-01', '2026-08-10');
+
+        self::assertSame(0.0, $report['totalPaid']);
+        self::assertSame(125.0, $report['refundTotal']);
+        self::assertSame(1, $report['refundCount']);
+        self::assertSame(-125.0, $report['netSpend']);
+        self::assertSame(0, $report['payingGuests']);
+        self::assertSame(0, $report['paymentCount']);
+        self::assertCount(0, $report['topGuests']);
+    }
+
     public function test_guest_stats_widget_uses_period_aware_overview_stats(): void
     {
         self::assertTrue(is_subclass_of(GuestStats::class, StatsOverviewWidget::class));
@@ -338,5 +405,15 @@ class GuestReportTest extends TestCase
         ]);
 
         return [$guest, $room, $conferenceRoom, $restaurant, $table];
+    }
+
+    private function reportForPeriod(string $startDate, string $endDate): array
+    {
+        $page = new GuestReport;
+        $page->period = 'custom';
+        $page->startDate = $startDate;
+        $page->endDate = $endDate;
+
+        return $page->report();
     }
 }

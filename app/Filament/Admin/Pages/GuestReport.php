@@ -35,15 +35,17 @@ class GuestReport extends Page
      */
     public function report(): array
     {
-        $paidPayments = $this->paidGuestPayments();
+        $collectedPayments = $this->collectedGuestPayments();
+        $refundedPayments = $this->refundedGuestPayments();
 
-        $payingGuests = (clone $paidPayments)
+        $payingGuests = (clone $collectedPayments)
             ->distinct()
             ->count(DB::raw(self::RESOLVED_GUEST_ID));
 
-        $totalPaid = (float) (clone $paidPayments)->sum('payments.amount');
+        $totalPaid = (float) (clone $collectedPayments)->sum('payments.amount');
+        $refundTotal = (float) (clone $refundedPayments)->sum('payments.amount');
 
-        $topGuests = (clone $paidPayments)
+        $topGuests = (clone $collectedPayments)
             ->with('guest')
             ->selectRaw(self::RESOLVED_GUEST_ID.' as guest_id, SUM(payments.amount) as total_spend, COUNT(*) as payment_count')
             ->groupByRaw(self::RESOLVED_GUEST_ID)
@@ -52,17 +54,17 @@ class GuestReport extends Page
             ->get();
 
         $activity = [
-            'hotel' => (clone $paidPayments)->whereNotNull('payments.booking_id')->count(),
-            'conference' => (clone $paidPayments)->whereNotNull('payments.conference_booking_id')->count(),
-            'table' => (clone $paidPayments)->whereNotNull('payments.restaurant_reservation_id')->count(),
-            'food' => (clone $paidPayments)->whereNotNull('payments.restaurant_order_id')->count(),
+            'hotel' => (clone $collectedPayments)->whereNotNull('payments.booking_id')->count(),
+            'conference' => (clone $collectedPayments)->whereNotNull('payments.conference_booking_id')->count(),
+            'table' => (clone $collectedPayments)->whereNotNull('payments.restaurant_reservation_id')->count(),
+            'food' => (clone $collectedPayments)->whereNotNull('payments.restaurant_order_id')->count(),
         ];
 
         return [
             'totalGuests' => Guest::count(),
             'newGuests' => $this->forReportPeriod(Guest::query())->count(),
             'payingGuests' => $payingGuests,
-            'returningGuests' => (clone $paidPayments)
+            'returningGuests' => (clone $collectedPayments)
                 ->selectRaw(self::RESOLVED_GUEST_ID.' as guest_id')
                 ->groupByRaw(self::RESOLVED_GUEST_ID)
                 ->havingRaw(self::DISTINCT_SERVICE_VISIT_COUNT.' >= 2')
@@ -70,28 +72,49 @@ class GuestReport extends Page
                 ->count(),
             'averageSpend' => $payingGuests > 0 ? $totalPaid / $payingGuests : 0,
             'totalPaid' => $totalPaid,
-            'paymentCount' => (clone $paidPayments)->count('payments.id'),
+            'refundTotal' => $refundTotal,
+            'refundCount' => (clone $refundedPayments)->count('payments.id'),
+            'netSpend' => $totalPaid - $refundTotal,
+            'paymentCount' => (clone $collectedPayments)->count('payments.id'),
             'activity' => $activity,
             'topGuests' => $topGuests,
         ];
     }
 
     /**
-     * Builds the paid-payment scope with the same guest fallback order used by
-     * Payment::transactionGuest(), including legacy rows without a direct guest.
+     * Builds gross guest collections in the period when funds were received.
      */
-    private function paidGuestPayments(): Builder
+    private function collectedGuestPayments(): Builder
     {
         return $this->forReportPeriod(
-            Payment::query()
-                ->leftJoin('bookings as guest_report_bookings', 'payments.booking_id', '=', 'guest_report_bookings.id')
-                ->leftJoin('conference_bookings as guest_report_conferences', 'payments.conference_booking_id', '=', 'guest_report_conferences.id')
-                ->leftJoin('restaurant_reservations as guest_report_reservations', 'payments.restaurant_reservation_id', '=', 'guest_report_reservations.id')
-                ->leftJoin('restaurant_orders as guest_report_orders', 'payments.restaurant_order_id', '=', 'guest_report_orders.id')
-                ->whereIn('payments.payment_status', ['paid', 'completed'])
-                ->whereRaw(self::RESOLVED_GUEST_ID.' IS NOT NULL'),
+            $this->guestPayments()
+                ->whereIn('payments.payment_status', ['paid', 'completed', 'refunded', 'refund']),
             'payments.created_at',
         );
+    }
+
+    /**
+     * Builds guest refund events in the period when each refund was processed.
+     */
+    private function refundedGuestPayments(): Builder
+    {
+        return $this->forReportPeriod(
+            $this->guestPayments()->whereNotNull('payments.refunded_at'),
+            'payments.refunded_at',
+        );
+    }
+
+    /**
+     * Resolves the guest through the same fallback order as Payment::transactionGuest().
+     */
+    private function guestPayments(): Builder
+    {
+        return Payment::query()
+            ->leftJoin('bookings as guest_report_bookings', 'payments.booking_id', '=', 'guest_report_bookings.id')
+            ->leftJoin('conference_bookings as guest_report_conferences', 'payments.conference_booking_id', '=', 'guest_report_conferences.id')
+            ->leftJoin('restaurant_reservations as guest_report_reservations', 'payments.restaurant_reservation_id', '=', 'guest_report_reservations.id')
+            ->leftJoin('restaurant_orders as guest_report_orders', 'payments.restaurant_order_id', '=', 'guest_report_orders.id')
+            ->whereRaw(self::RESOLVED_GUEST_ID.' IS NOT NULL');
     }
 
     /**
