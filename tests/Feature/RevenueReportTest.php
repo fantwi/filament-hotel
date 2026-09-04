@@ -420,6 +420,107 @@ class RevenueReportTest extends TestCase
         }
     }
 
+    public function test_revenue_report_renders_responsive_outstanding_balance_cards_with_shares_and_drill_downs(): void
+    {
+        $this->travelTo('2026-09-04 12:00:00');
+        [$guest, $room, $conferenceRoom, $restaurant, $table] = $this->serviceFixture();
+
+        Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-10-10',
+            'check_out' => '2026-10-11',
+            'total_price' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'pending',
+        ]);
+        ConferenceBooking::query()->create([
+            'guest_id' => $guest->id,
+            'conference_room_id' => $conferenceRoom->id,
+            'booking_date' => '2026-10-10',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'attendees' => 10,
+            'total_price' => 200,
+            'status' => 'confirmed',
+            'payment_status' => 'pending',
+        ]);
+        RestaurantReservation::query()->create([
+            'restaurant_id' => $restaurant->id,
+            'restaurant_table_id' => $table->id,
+            'guest_id' => $guest->id,
+            'guest_name' => $guest->full_name,
+            'guest_email' => $guest->email,
+            'guest_phone' => $guest->phone_number,
+            'reservation_date' => '2026-10-10',
+            'reservation_time' => '18:00',
+            'number_of_guests' => 2,
+            'reservation_fee' => 300,
+            'status' => 'confirmed',
+            'payment_status' => 'pending',
+        ]);
+        RestaurantOrder::query()->create([
+            'guest_id' => $guest->id,
+            'order_number' => 'REVENUE-OUTSTANDING-CARDS',
+            'total' => 400,
+            'status' => 'confirmed',
+            'payment_status' => 'pending',
+        ]);
+
+        $accountant = $this->revenueReportUser('accountant', withTransactionDashboard: true);
+        $response = $this->actingAs($accountant)->get(RevenueReport::getUrl());
+
+        $response->assertOk()->assertSeeInOrder([
+            'Outstanding by transaction',
+            'Hotel bookings',
+            '10.0% of outstanding',
+            'Conference bookings',
+            '20.0% of outstanding',
+            'Table reservations',
+            '30.0% of outstanding',
+            'Food orders',
+            '40.0% of outstanding',
+            'Payment methods',
+        ]);
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $section = $xpath->query('//section[@aria-labelledby="outstanding-breakdown-heading"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $section);
+        $grid = $xpath->query('.//*[@data-outstanding-grid]', $section)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $grid);
+        self::assertStringContainsString('sm:grid-cols-2', $grid->getAttribute('class'));
+        self::assertStringContainsString('xl:grid-cols-4', $grid->getAttribute('class'));
+
+        $cards = $xpath->query('.//article[@data-outstanding-card]', $section);
+        self::assertCount(4, $cards);
+        self::assertCount(4, array_unique(array_map(
+            fn (\DOMElement $card): string => $card->getAttribute('data-outstanding-tone'),
+            iterator_to_array($cards),
+        )));
+
+        $links = $xpath->query('.//a[@data-revenue-drill-down="outstanding"]', $section);
+        self::assertCount(4, $links);
+
+        foreach ($links as $link) {
+            self::assertSame('/admin/transaction-dashboard', parse_url($link->getAttribute('href'), PHP_URL_PATH));
+            self::assertSame('transaction-breakdown', parse_url($link->getAttribute('href'), PHP_URL_FRAGMENT));
+            self::assertStringContainsString('outstanding balance', $link->getAttribute('aria-label'));
+        }
+
+        $progressBars = $xpath->query('.//*[@role="progressbar"]', $section);
+        self::assertCount(4, $progressBars);
+        self::assertSame(
+            ['10', '20', '30', '40'],
+            array_map(
+                fn (\DOMElement $bar): string => $bar->getAttribute('aria-valuenow'),
+                iterator_to_array($progressBars),
+            ),
+        );
+    }
+
     public function test_revenue_report_places_comparison_and_trend_before_detailed_financial_sections(): void
     {
         Role::findOrCreate('accountant', 'web');

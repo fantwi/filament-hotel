@@ -41,6 +41,44 @@
                 'iconClasses' => 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
             ],
         ];
+        $outstandingChannels = [
+            'hotel' => [
+                'label' => 'Hotel bookings',
+                'description' => 'Unpaid room stays',
+                'icon' => 'heroicon-o-building-office-2',
+                'tone' => 'primary',
+                'classes' => 'border-primary-200 bg-primary-50/60 dark:border-primary-800 dark:bg-primary-950/20',
+                'iconClasses' => 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300',
+                'barClasses' => 'bg-primary-500 dark:bg-primary-400',
+            ],
+            'conference' => [
+                'label' => 'Conference bookings',
+                'description' => 'Outstanding venue bookings',
+                'icon' => 'heroicon-o-presentation-chart-bar',
+                'tone' => 'info',
+                'classes' => 'border-info-200 bg-info-50/60 dark:border-info-800 dark:bg-info-950/20',
+                'iconClasses' => 'bg-info-100 text-info-700 dark:bg-info-900/50 dark:text-info-300',
+                'barClasses' => 'bg-info-500 dark:bg-info-400',
+            ],
+            'table' => [
+                'label' => 'Table reservations',
+                'description' => 'Unpaid reservation fees',
+                'icon' => 'heroicon-o-calendar-days',
+                'tone' => 'warning',
+                'classes' => 'border-warning-200 bg-warning-50/60 dark:border-warning-800 dark:bg-warning-950/20',
+                'iconClasses' => 'bg-warning-100 text-warning-700 dark:bg-warning-900/50 dark:text-warning-300',
+                'barClasses' => 'bg-warning-500 dark:bg-warning-400',
+            ],
+            'food' => [
+                'label' => 'Food orders',
+                'description' => 'Outstanding meal orders',
+                'icon' => 'heroicon-o-cake',
+                'tone' => 'success',
+                'classes' => 'border-success-200 bg-success-50/60 dark:border-success-800 dark:bg-success-950/20',
+                'iconClasses' => 'bg-success-100 text-success-700 dark:bg-success-900/50 dark:text-success-300',
+                'barClasses' => 'bg-success-500 dark:bg-success-400',
+            ],
+        ];
     @endphp
     <div class="space-y-6">
         <x-filament::section>
@@ -136,58 +174,92 @@
             ], key('revenue-trend-chart-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
-        <section class="grid gap-4 lg:grid-cols-3">
-            <x-filament::section heading="Outstanding by transaction" description="{{ $this->periodLabel() }} unpaid balances">
-                <dl class="space-y-3">
-                    @foreach ([
-                        'hotel' => 'Hotel bookings',
-                        'conference' => 'Conference bookings',
-                        'table' => 'Table reservations',
-                        'food' => 'Food orders',
-                    ] as $key => $label)
-                        <div class="relative flex items-center justify-between gap-4 rounded-lg px-2 py-1.5 transition hover:bg-gray-50 dark:hover:bg-white/5">
-                            <dt class="text-sm text-gray-600 dark:text-gray-300">{{ $label }}</dt>
-                            <dd class="flex items-center gap-2 font-semibold tabular-nums">
-                                GHS {{ number_format($report['outstandingBreakdown'][$key], 2) }}
-                                <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4 text-gray-400" />
-                            </dd>
-                            <a
-                                href="{{ $drillDowns['outstanding'] }}"
-                                aria-label="Analyze {{ $label }} outstanding balance"
-                                data-revenue-drill-down="outstanding"
-                                class="absolute inset-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-                            ></a>
-                        </div>
-                    @endforeach
-                </dl>
-            </x-filament::section>
+        <x-filament::section aria-labelledby="outstanding-breakdown-heading">
+            <x-slot name="heading">
+                <span id="outstanding-breakdown-heading">Outstanding by transaction</span>
+            </x-slot>
+            <x-slot name="description">{{ $this->periodLabel() }} unpaid balances</x-slot>
 
-            <x-filament::section heading="Payment methods" description="Completed payments received during {{ strtolower($this->periodLabel()) }}" class="lg:col-span-2">
-                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    @forelse ($report['methods'] as $method)
-                        @php
-                            $methodKey = (string) ($method->method ?: '');
-                            $methodLabel = ucfirst(str_replace('_', ' ', $method->method ?: 'Unknown'));
-                        @endphp
-                        <a
-                            href="{{ $drillDowns['methods'][$methodKey] ?? $drillDowns['revenue'] }}"
-                            aria-label="View {{ $methodLabel }} revenue payments"
-                            data-revenue-drill-down="method"
-                            class="rounded-xl bg-gray-50 p-4 transition hover:-translate-y-0.5 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:bg-white/5 dark:hover:bg-white/10"
+            <div data-outstanding-grid class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach ($outstandingChannels as $key => $presentation)
+                    @php
+                        $amount = (float) $report['outstandingBreakdown'][$key];
+                        $share = $report['outstanding'] > 0
+                            ? ($amount / $report['outstanding']) * 100
+                            : 0;
+                        $boundedShare = max(0, min(100, $share));
+                    @endphp
+                    <a
+                        href="{{ $drillDowns['outstanding'] }}"
+                        aria-label="Analyze {{ $presentation['label'] }} outstanding balance"
+                        data-revenue-drill-down="outstanding"
+                        class="block rounded-xl transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                    >
+                        <article
+                            data-outstanding-card
+                            data-outstanding-tone="{{ $presentation['tone'] }}"
+                            class="h-full min-w-0 rounded-xl border p-4 shadow-sm transition hover:shadow-md {{ $presentation['classes'] }}"
                         >
-                            <div class="flex items-start justify-between gap-2">
-                                <p class="text-sm font-semibold capitalize">{{ $methodLabel }}</p>
-                                <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4 shrink-0 text-gray-400" />
+                            <div class="flex items-start gap-3">
+                                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ $presentation['iconClasses'] }}">
+                                    <x-filament::icon :icon="$presentation['icon']" class="h-5 w-5" />
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <h3 class="text-sm font-semibold text-gray-950 dark:text-white">{{ $presentation['label'] }}</h3>
+                                        <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                                    </div>
+                                    <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ $presentation['description'] }}</p>
+                                </div>
                             </div>
-                            <p class="mt-2 text-xl font-bold">GHS {{ number_format($method->total, 2) }}</p>
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($method->payment_count) }} payment(s)</p>
-                        </a>
-                    @empty
-                        <p class="text-sm text-gray-500 dark:text-gray-400">No completed payments were recorded for {{ strtolower($this->periodLabel()) }}.</p>
-                    @endforelse
-                </div>
-            </x-filament::section>
-        </section>
+
+                            <p class="mt-4 truncate text-xl font-bold tabular-nums text-gray-950 dark:text-white" title="GHS {{ number_format($amount, 2) }}">
+                                GHS {{ number_format($amount, 2) }}
+                            </p>
+                            <p class="mt-1 text-xs font-semibold tabular-nums text-gray-600 dark:text-gray-300">
+                                {{ number_format($share, 1) }}% of outstanding
+                            </p>
+                            <div
+                                role="progressbar"
+                                aria-label="{{ $presentation['label'] }} share of outstanding balance"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                aria-valuenow="{{ round($boundedShare, 1) }}"
+                                class="mt-3 h-2 overflow-hidden rounded-full bg-white/80 ring-1 ring-inset ring-gray-950/5 dark:bg-white/10 dark:ring-white/10"
+                            >
+                                <span class="block h-full rounded-full {{ $presentation['barClasses'] }}" style="width: {{ $boundedShare }}%"></span>
+                            </div>
+                        </article>
+                    </a>
+                @endforeach
+            </div>
+        </x-filament::section>
+
+        <x-filament::section heading="Payment methods" description="Completed payments received during {{ strtolower($this->periodLabel()) }}">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                @forelse ($report['methods'] as $method)
+                    @php
+                        $methodKey = (string) ($method->method ?: '');
+                        $methodLabel = ucfirst(str_replace('_', ' ', $method->method ?: 'Unknown'));
+                    @endphp
+                    <a
+                        href="{{ $drillDowns['methods'][$methodKey] ?? $drillDowns['revenue'] }}"
+                        aria-label="View {{ $methodLabel }} revenue payments"
+                        data-revenue-drill-down="method"
+                        class="rounded-xl bg-gray-50 p-4 transition hover:-translate-y-0.5 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:bg-white/5 dark:hover:bg-white/10"
+                    >
+                        <div class="flex items-start justify-between gap-2">
+                            <p class="text-sm font-semibold capitalize">{{ $methodLabel }}</p>
+                            <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4 shrink-0 text-gray-400" />
+                        </div>
+                        <p class="mt-2 text-xl font-bold">GHS {{ number_format($method->total, 2) }}</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($method->payment_count) }} payment(s)</p>
+                    </a>
+                @empty
+                    <p class="text-sm text-gray-500 dark:text-gray-400">No completed payments were recorded for {{ strtolower($this->periodLabel()) }}.</p>
+                @endforelse
+            </div>
+        </x-filament::section>
 
         <x-filament::section heading="Report notes">
             <div class="grid gap-4 text-sm text-gray-600 dark:text-gray-300 sm:grid-cols-2">
