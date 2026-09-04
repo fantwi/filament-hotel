@@ -1,6 +1,43 @@
 <x-filament::page>
     @php
         $report = $this->report();
+        $revenueChannels = [
+            'hotel' => [
+                'label' => 'Hotel bookings',
+                'description' => 'Room stay payments',
+                'icon' => 'heroicon-o-building-office-2',
+                'classes' => 'border-primary-200 bg-primary-50/60 dark:border-primary-800 dark:bg-primary-950/20',
+                'iconClasses' => 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300',
+            ],
+            'conference' => [
+                'label' => 'Conference bookings',
+                'description' => 'Venue payments',
+                'icon' => 'heroicon-o-presentation-chart-bar',
+                'classes' => 'border-info-200 bg-info-50/60 dark:border-info-800 dark:bg-info-950/20',
+                'iconClasses' => 'bg-info-100 text-info-700 dark:bg-info-900/50 dark:text-info-300',
+            ],
+            'table' => [
+                'label' => 'Table reservations',
+                'description' => 'Dining reservation payments',
+                'icon' => 'heroicon-o-calendar-days',
+                'classes' => 'border-warning-200 bg-warning-50/60 dark:border-warning-800 dark:bg-warning-950/20',
+                'iconClasses' => 'bg-warning-100 text-warning-700 dark:bg-warning-900/50 dark:text-warning-300',
+            ],
+            'food' => [
+                'label' => 'Food orders',
+                'description' => 'Restaurant order payments',
+                'icon' => 'heroicon-o-cake',
+                'classes' => 'border-success-200 bg-success-50/60 dark:border-success-800 dark:bg-success-950/20',
+                'iconClasses' => 'bg-success-100 text-success-700 dark:bg-success-900/50 dark:text-success-300',
+            ],
+            'other' => [
+                'label' => 'Other / direct',
+                'description' => 'Unlinked and direct payments',
+                'icon' => 'heroicon-o-receipt-percent',
+                'classes' => 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-white/5',
+                'iconClasses' => 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
+            ],
+        ];
     @endphp
     <div class="space-y-6">
         <x-filament::section>
@@ -25,6 +62,42 @@
                 'reportPeriodLabel' => $this->periodLabel(),
             ], key('revenue-report-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
+
+        <x-filament::section aria-labelledby="revenue-channel-heading">
+            <x-slot name="heading">
+                <span id="revenue-channel-heading">Revenue by business channel</span>
+            </x-slot>
+            <x-slot name="description">Collected payments received during {{ strtolower($this->periodLabel()) }}</x-slot>
+
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                @foreach ($revenueChannels as $key => $presentation)
+                    @php
+                        $channel = $report['revenueByChannel'][$key];
+                        $share = $report['revenue'] > 0
+                            ? ($channel['total'] / $report['revenue']) * 100
+                            : 0;
+                    @endphp
+                    <article class="min-w-0 rounded-xl border p-4 {{ $presentation['classes'] }}">
+                        <div class="flex items-start gap-3">
+                            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ $presentation['iconClasses'] }}">
+                                <x-filament::icon :icon="$presentation['icon']" class="h-5 w-5" />
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-gray-950 dark:text-white">{{ $presentation['label'] }}</h3>
+                                <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ $presentation['description'] }}</p>
+                            </div>
+                        </div>
+                        <p class="mt-4 truncate text-xl font-bold tabular-nums text-gray-950 dark:text-white" title="GHS {{ number_format($channel['total'], 2) }}">
+                            GHS {{ number_format($channel['total'], 2) }}
+                        </p>
+                        <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600 dark:text-gray-300">
+                            <span>{{ number_format($channel['payment_count']) }} payment(s)</span>
+                            <span class="font-semibold tabular-nums">{{ number_format($share, 1) }}% of revenue</span>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        </x-filament::section>
 
         <section class="grid gap-4 lg:grid-cols-3">
             <x-filament::section heading="Outstanding by transaction" description="{{ $this->periodLabel() }} unpaid balances">

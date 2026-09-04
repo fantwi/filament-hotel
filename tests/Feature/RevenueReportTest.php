@@ -46,6 +46,73 @@ class RevenueReportTest extends TestCase
         self::assertArrayHasKey('food', $report['outstandingBreakdown']);
     }
 
+    public function test_revenue_report_groups_collected_payments_by_business_channel(): void
+    {
+        [$guest, $room, $conferenceRoom, $restaurant, $table] = $this->serviceFixture();
+        $hotel = Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-10-10',
+            'check_out' => '2026-10-11',
+            'total_price' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+        $conference = ConferenceBooking::query()->create([
+            'guest_id' => $guest->id,
+            'conference_room_id' => $conferenceRoom->id,
+            'booking_date' => '2026-10-10',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'attendees' => 10,
+            'total_price' => 200,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+        $reservation = RestaurantReservation::query()->create([
+            'restaurant_id' => $restaurant->id,
+            'restaurant_table_id' => $table->id,
+            'guest_id' => $guest->id,
+            'guest_name' => $guest->full_name,
+            'guest_email' => $guest->email,
+            'guest_phone' => $guest->phone_number,
+            'reservation_date' => '2026-10-10',
+            'reservation_time' => '18:00',
+            'number_of_guests' => 2,
+            'reservation_fee' => 300,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+        $food = RestaurantOrder::query()->create([
+            'guest_id' => $guest->id,
+            'order_number' => 'REVENUE-CHANNEL-ORDER',
+            'total' => 400,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+
+        $this->createdAt($this->payment($guest, 'booking_id', $hotel->id, 100, 'REVENUE-CHANNEL-HOTEL'), '2026-08-05 09:00:00');
+        $this->createdAt($this->payment($guest, 'conference_booking_id', $conference->id, 200, 'REVENUE-CHANNEL-CONFERENCE'), '2026-08-06 09:00:00');
+        $this->createdAt($this->payment($guest, 'restaurant_reservation_id', $reservation->id, 300, 'REVENUE-CHANNEL-TABLE'), '2026-08-07 09:00:00');
+        $this->createdAt($this->payment($guest, 'restaurant_order_id', $food->id, 400, 'REVENUE-CHANNEL-FOOD'), '2026-08-08 09:00:00');
+        $this->createdAt($this->payment($guest, 'booking_id', null, 50, 'REVENUE-CHANNEL-DIRECT'), '2026-08-09 09:00:00');
+
+        $report = $this->reportForPeriod('2026-08-01', '2026-08-31');
+
+        self::assertArrayHasKey('revenueByChannel', $report);
+        self::assertSame([
+            'hotel' => ['total' => 100.0, 'payment_count' => 1],
+            'conference' => ['total' => 200.0, 'payment_count' => 1],
+            'table' => ['total' => 300.0, 'payment_count' => 1],
+            'food' => ['total' => 400.0, 'payment_count' => 1],
+            'other' => ['total' => 50.0, 'payment_count' => 1],
+        ], $report['revenueByChannel']);
+        self::assertSame(
+            $report['revenue'],
+            array_sum(array_column($report['revenueByChannel'], 'total')),
+        );
+    }
+
     public function test_revenue_stats_widget_uses_precomputed_period_aware_overview_without_queries(): void
     {
         self::assertTrue(is_subclass_of(RevenueReportStats::class, StatsOverviewWidget::class));
@@ -113,6 +180,39 @@ class RevenueReportTest extends TestCase
         }
 
         self::assertCount(9, $reportQueries);
+    }
+
+    public function test_revenue_report_page_renders_a_card_for_every_business_channel(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(RevenueReport::getUrl());
+
+        $response->assertOk()->assertSeeInOrder([
+            'Revenue by business channel',
+            'Hotel bookings',
+            'Conference bookings',
+            'Table reservations',
+            'Food orders',
+            'Other / direct',
+        ]);
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $section = $xpath->query('//section[@aria-labelledby="revenue-channel-heading"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $section);
+        $cards = $xpath->query('.//article', $section);
+        self::assertCount(5, $cards);
+
+        foreach ($cards as $card) {
+            self::assertStringContainsString('payment(s)', $card->textContent);
+            self::assertMatchesRegularExpression('/\d+\.\d% of revenue/', $card->textContent);
+        }
     }
 
     public function test_revenue_report_indexes_cover_period_and_status_predicates(): void

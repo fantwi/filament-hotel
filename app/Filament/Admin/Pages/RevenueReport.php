@@ -29,6 +29,19 @@ class RevenueReport extends Page
     protected string $view = 'filament.admin.pages.revenue-report';
 
     /**
+     * Mutually exclusive payment classifications, ordered by transaction priority.
+     *
+     * @var array<string, string>
+     */
+    private const REVENUE_CHANNEL_CONDITIONS = [
+        'hotel' => 'booking_id IS NOT NULL',
+        'conference' => 'booking_id IS NULL AND conference_booking_id IS NOT NULL',
+        'table' => 'booking_id IS NULL AND conference_booking_id IS NULL AND restaurant_reservation_id IS NOT NULL',
+        'food' => 'booking_id IS NULL AND conference_booking_id IS NULL AND restaurant_reservation_id IS NULL AND restaurant_order_id IS NOT NULL',
+        'other' => 'booking_id IS NULL AND conference_booking_id IS NULL AND restaurant_reservation_id IS NULL AND restaurant_order_id IS NULL',
+    ];
+
+    /**
      * Configures report for the Filament administration interface.
      */
     public function report(): array
@@ -70,6 +83,27 @@ class RevenueReport extends Page
 
         $revenue = (float) (clone $paidPayments)->sum('amount');
         $refundTotal = (float) (clone $refunds)->sum('amount');
+        $paymentMethodsQuery = (clone $paidPayments)
+            ->selectRaw('method, SUM(amount) as total, COUNT(*) as payment_count');
+
+        foreach (self::REVENUE_CHANNEL_CONDITIONS as $channel => $condition) {
+            $paymentMethodsQuery
+                ->selectRaw("SUM(CASE WHEN {$condition} THEN amount ELSE 0 END) as {$channel}_total")
+                ->selectRaw("SUM(CASE WHEN {$condition} THEN 1 ELSE 0 END) as {$channel}_payment_count");
+        }
+
+        $methods = $paymentMethodsQuery
+            ->groupBy('method')
+            ->orderByDesc('total')
+            ->get();
+        $revenueByChannel = collect(array_keys(self::REVENUE_CHANNEL_CONDITIONS))
+            ->mapWithKeys(fn (string $channel): array => [
+                $channel => [
+                    'total' => (float) $methods->sum("{$channel}_total"),
+                    'payment_count' => (int) $methods->sum("{$channel}_payment_count"),
+                ],
+            ])
+            ->all();
 
         return [
             'revenue' => $revenue,
@@ -79,11 +113,8 @@ class RevenueReport extends Page
             'outstandingBreakdown' => $outstanding,
             'paymentsReceived' => (clone $paidPayments)->count(),
             'refundCount' => (clone $refunds)->count(),
-            'methods' => (clone $paidPayments)
-                ->selectRaw('method, SUM(amount) as total, COUNT(*) as payment_count')
-                ->groupBy('method')
-                ->orderByDesc('total')
-                ->get(),
+            'revenueByChannel' => $revenueByChannel,
+            'methods' => $methods,
         ];
     }
 
