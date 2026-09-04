@@ -10,6 +10,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
@@ -55,25 +56,50 @@ class RoomTypesTable
                     ->label('Room type')
                     ->state(fn (RoomType $record): string => $record->name)
                     ->description(fn (RoomType $record): string => sprintf(
-                        'GHS %s per night · Capacity %d · %s',
+                        'GHS %s per night · %d guests · %d rooms · %s',
                         number_format((float) $record->price_per_night, 2),
                         $record->capacity,
+                        (int) ($record->rooms_count ?? 0),
                         $record->is_published ? 'Published' : 'Draft',
                     ))
                     ->wrap()
                     ->weight('bold')
                     ->hiddenFrom('md'),
+                ImageColumn::make('image')
+                    ->label('Cover')
+                    ->disk('public')
+                    ->visibility('public')
+                    ->square()
+                    ->visibleFrom('md'),
                 TextColumn::make('name')
                     ->searchable()
+                    ->sortable()
                     ->visibleFrom('md'),
                 TextColumn::make('price_per_night')
-                    ->numeric()
+                    ->label('Nightly price')
+                    ->money('GHS')
                     ->sortable()
                     ->visibleFrom('md'),
                 TextColumn::make('capacity')
+                    ->label('Guests')
                     ->numeric()
+                    ->suffix(' guests')
                     ->sortable()
                     ->visibleFrom('md'),
+                TextColumn::make('rooms_count')
+                    ->label('Physical rooms')
+                    ->counts('rooms')
+                    ->numeric()
+                    ->suffix(' rooms')
+                    ->sortable()
+                    ->visibleFrom('md'),
+                TextColumn::make('facilities.name')
+                    ->label('Facilities')
+                    ->badge()
+                    ->limitList(2)
+                    ->expandableLimitedList()
+                    ->visibleFrom('md')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_published')
                     ->label('Published')
                     ->boolean()

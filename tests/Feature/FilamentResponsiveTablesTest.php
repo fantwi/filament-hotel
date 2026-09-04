@@ -11,6 +11,7 @@ use App\Filament\Admin\Resources\Restaurants\Tables\RestaurantsTable;
 use App\Filament\Admin\Resources\RestaurantTables\Tables\RestaurantTablesTable;
 use App\Filament\Admin\Resources\RoomTypes\Tables\RoomTypesTable;
 use App\Models\RoomType;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -77,7 +78,7 @@ class FilamentResponsiveTablesTest extends TestCase
         self::assertInstanceOf(TextColumn::class, $mobileSummary);
         self::assertSame('md', $mobileSummary->getHiddenFrom());
 
-        foreach (['name', 'price_per_night', 'capacity', 'is_published', 'created_at', 'updated_at'] as $columnName) {
+        foreach (['image', 'name', 'price_per_night', 'capacity', 'rooms_count', 'facilities.name', 'is_published', 'created_at', 'updated_at'] as $columnName) {
             self::assertSame(
                 'md',
                 $table->getColumn($columnName)?->getVisibleFrom(),
@@ -94,6 +95,7 @@ class FilamentResponsiveTablesTest extends TestCase
             'capacity' => 2,
             'is_published' => true,
         ]);
+        $roomType->setAttribute('rooms_count', 4);
         $column = RoomTypesTable::configure(Table::make($this->createMock(HasTable::class)))
             ->getColumn('mobile_summary');
 
@@ -102,7 +104,41 @@ class FilamentResponsiveTablesTest extends TestCase
         $column->record($roomType)->clearCachedState();
 
         self::assertSame('Deluxe Suite', $column->getState());
-        self::assertSame('GHS 350.00 per night · Capacity 2 · Published', $column->getDescriptionBelow());
+        self::assertSame('GHS 350.00 per night · 2 guests · 4 rooms · Published', $column->getDescriptionBelow());
+    }
+
+    public function test_room_types_table_exposes_cover_media_and_ghs_pricing(): void
+    {
+        $table = RoomTypesTable::configure(Table::make($this->createMock(HasTable::class)));
+        $image = $table->getColumn('image');
+        $price = $table->getColumn('price_per_night');
+        $capacity = $table->getColumn('capacity');
+
+        self::assertInstanceOf(ImageColumn::class, $image);
+        self::assertSame('public', $image->getDiskName());
+        self::assertSame('public', $image->getVisibility());
+        self::assertTrue($image->isSquare());
+        self::assertInstanceOf(TextColumn::class, $price);
+        self::assertTrue($price->isMoney());
+        self::assertStringContainsString('GHS', (string) $price->formatState(350));
+        self::assertInstanceOf(TextColumn::class, $capacity);
+        self::assertSame(' guests', $capacity->getSuffix());
+    }
+
+    public function test_room_types_table_exposes_physical_inventory_and_optional_facilities(): void
+    {
+        $table = RoomTypesTable::configure(Table::make($this->createMock(HasTable::class)));
+        $rooms = $table->getColumn('rooms_count');
+        $facilities = $table->getColumn('facilities.name');
+
+        self::assertInstanceOf(TextColumn::class, $rooms);
+        self::assertSame('rooms', $rooms->getRelationshipsToCount());
+        self::assertSame(' rooms', $rooms->getSuffix());
+        self::assertTrue($rooms->isSortable());
+        self::assertInstanceOf(TextColumn::class, $facilities);
+        self::assertTrue($facilities->isBadge());
+        self::assertTrue($facilities->isToggleable());
+        self::assertTrue($facilities->isToggledHiddenByDefault());
     }
 
     public static function responsiveTables(): array
