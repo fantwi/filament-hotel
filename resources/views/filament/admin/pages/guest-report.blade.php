@@ -128,33 +128,68 @@
             </x-filament::section>
 
             <x-filament::section heading="Top guests by gross spend" description="Gross collections recorded during {{ strtolower($this->periodLabel()) }}" class="lg:col-span-2">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-white/10">
-                        <caption class="sr-only">Top guests by gross spend</caption>
-                        <thead class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                            <tr>
-                                <th scope="col" class="px-3 py-3 font-semibold">Guest</th>
-                                <th scope="col" class="px-3 py-3 font-semibold">Email</th>
-                                <th scope="col" class="px-3 py-3 text-right font-semibold">Payments</th>
-                                <th scope="col" class="px-3 py-3 text-right font-semibold">Gross spend</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 dark:divide-white/5">
-                            @forelse ($report['topGuests'] as $payment)
-                                <tr>
-                                    <th scope="row" class="px-3 py-3 font-semibold">{{ $payment->guest?->full_name ?? 'Guest not recorded' }}</th>
-                                    <td class="px-3 py-3 text-gray-500 dark:text-gray-400">{{ $payment->guest?->email ?? '-' }}</td>
-                                    <td class="px-3 py-3 text-right">{{ number_format($payment->payment_count) }}</td>
-                                    <td class="px-3 py-3 text-right font-semibold">GHS {{ number_format($payment->total_spend, 2) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="px-3 py-8 text-center text-gray-500 dark:text-gray-400">No paid guest activity was recorded for {{ strtolower($this->periodLabel()) }}.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                @if ($report['topGuests']->isEmpty())
+                    <div role="status" aria-label="No top guests" class="flex flex-col items-center px-4 py-10 text-center sm:py-12">
+                        <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-300">
+                            <x-filament::icon icon="heroicon-o-user-group" class="h-6 w-6" />
+                        </span>
+                        <h3 class="mt-4 text-base font-semibold text-gray-950 dark:text-white">No paying guests in this period</h3>
+                        <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">No paid guest activity was recorded for {{ strtolower($this->periodLabel()) }}.</p>
+                    </div>
+                @else
+                    <ol aria-label="Top guests mobile list" class="space-y-3 md:hidden">
+                        @foreach ($report['topGuests'] as $payment)
+                            <li class="min-w-0 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-50 text-sm font-bold text-primary-700 dark:bg-primary-500/10 dark:text-primary-300" aria-label="Rank {{ $loop->iteration }}">
+                                        {{ $loop->iteration }}
+                                    </span>
+                                    <div class="min-w-0">
+                                        <h3 class="break-words font-semibold text-gray-950 dark:text-white">{{ $payment->guest?->full_name ?? 'Guest not recorded' }}</h3>
+                                        <p class="mt-1 break-all text-xs text-gray-500 dark:text-gray-400">{{ $payment->guest?->email ?? 'Email not recorded' }}</p>
+                                    </div>
+                                </div>
+
+                                <dl class="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-gray-200 p-3 text-sm dark:border-white/10">
+                                    <div class="min-w-0">
+                                        <dt class="text-xs text-gray-500 dark:text-gray-400">Payments</dt>
+                                        <dd class="mt-1 font-semibold tabular-nums text-gray-950 dark:text-white">{{ number_format($payment->payment_count) }}</dd>
+                                    </div>
+                                    <div class="min-w-0 text-right">
+                                        <dt class="text-xs text-gray-500 dark:text-gray-400">Gross spend</dt>
+                                        <dd class="mt-1 break-words font-bold tabular-nums text-primary-700 dark:text-primary-300">GHS {{ number_format($payment->total_spend, 2) }}</dd>
+                                    </div>
+                                </dl>
+                            </li>
+                        @endforeach
+                    </ol>
+
+                    <div aria-label="Top guests desktop table" class="hidden md:block">
+                        <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-white/10">
+                            <table class="w-full min-w-[640px] divide-y divide-gray-200 text-sm dark:divide-white/10">
+                                <caption class="sr-only">Top guests by gross spend</caption>
+                                <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500 dark:bg-white/5 dark:text-gray-400">
+                                    <tr>
+                                        <th scope="col" class="px-4 py-3 font-semibold">Guest</th>
+                                        <th scope="col" class="px-4 py-3 font-semibold">Email</th>
+                                        <th scope="col" class="px-4 py-3 text-right font-semibold">Payments</th>
+                                        <th scope="col" class="px-4 py-3 text-right font-semibold">Gross spend</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 dark:divide-white/10">
+                                    @foreach ($report['topGuests'] as $payment)
+                                        <tr class="align-top hover:bg-gray-50 dark:hover:bg-white/5">
+                                            <th scope="row" class="max-w-56 break-words px-4 py-4 font-semibold text-gray-950 dark:text-white">{{ $payment->guest?->full_name ?? 'Guest not recorded' }}</th>
+                                            <td class="max-w-64 break-all px-4 py-4 text-gray-500 dark:text-gray-400">{{ $payment->guest?->email ?? 'Email not recorded' }}</td>
+                                            <td class="whitespace-nowrap px-4 py-4 text-right tabular-nums">{{ number_format($payment->payment_count) }}</td>
+                                            <td class="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums">GHS {{ number_format($payment->total_spend, 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
             </x-filament::section>
         </section>
             </div>

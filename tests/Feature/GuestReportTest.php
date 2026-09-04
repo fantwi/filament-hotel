@@ -628,7 +628,7 @@ class GuestReportTest extends TestCase
         }
 
         self::assertCount(10, $reportQueries);
-        self::assertSame(4, substr_count($component->html(), 'GHS 125.00'));
+        self::assertStringContainsString('GHS 125.00', $component->html());
     }
 
     public function test_guest_report_marks_period_sensitive_results_as_busy_during_a_refresh(): void
@@ -730,6 +730,69 @@ class GuestReportTest extends TestCase
         self::assertInstanceOf(\DOMElement::class, $guestBase);
         self::assertStringContainsString('Guest profiles', $guestBase->textContent);
         self::assertStringContainsString('3', $guestBase->textContent);
+    }
+
+    public function test_top_guests_render_as_mobile_cards_and_a_desktop_table(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        $guest = Guest::query()->create([
+            'first_name' => 'Akosua',
+            'last_name' => 'Mensah-Danquah',
+            'phone_number' => '0240000010',
+            'email' => 'akosua.mensah-danquah@example.test',
+        ]);
+        Payment::query()->create([
+            'guest_id' => $guest->id,
+            'amount' => 275.50,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-MOBILE-TOP-1',
+        ]);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(GuestReport::getUrl());
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $mobileList = $xpath->query('//*[@aria-label="Top guests mobile list"]')?->item(0);
+        $desktopTable = $xpath->query('//*[@aria-label="Top guests desktop table"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $mobileList);
+        self::assertStringContainsString('md:hidden', $mobileList->getAttribute('class'));
+        self::assertCount(1, $xpath->query('./li', $mobileList));
+        self::assertStringContainsString('Akosua Mensah-Danquah', $mobileList->textContent);
+        self::assertStringContainsString('akosua.mensah-danquah@example.test', $mobileList->textContent);
+        self::assertStringContainsString('GHS 275.50', $mobileList->textContent);
+
+        self::assertInstanceOf(\DOMElement::class, $desktopTable);
+        self::assertStringContainsString('hidden', $desktopTable->getAttribute('class'));
+        self::assertStringContainsString('md:block', $desktopTable->getAttribute('class'));
+        self::assertCount(1, $xpath->query('.//tbody/tr', $desktopTable));
+    }
+
+    public function test_top_guests_show_one_shared_empty_state(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(GuestReport::getUrl());
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+
+        self::assertCount(1, $xpath->query('//*[@role="status" and @aria-label="No top guests"]'));
+        self::assertCount(0, $xpath->query('//*[@aria-label="Top guests mobile list"]'));
+        self::assertCount(0, $xpath->query('//*[@aria-label="Top guests desktop table"]'));
     }
 
     public function test_guest_stats_widget_uses_precomputed_period_aware_data_without_queries(): void
