@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\GuestReport;
+use App\Filament\Admin\Widgets\GuestComparisonStats;
 use App\Filament\Admin\Widgets\GuestStats;
+use App\Filament\Admin\Widgets\GuestTrendChart;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\ConferenceRoom;
@@ -18,7 +20,9 @@ use App\Models\RoomType;
 use App\Models\User;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
+use Filament\Widgets\ChartWidget;
 use Filament\Widgets\StatsOverviewWidget;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -356,6 +360,207 @@ class GuestReportTest extends TestCase
         self::assertCount(0, $report['topGuests']);
     }
 
+    public function test_guest_report_compares_the_previous_equal_length_period_and_fills_trend_gaps(): void
+    {
+        [$returningGuest, $room] = $this->serviceFixture();
+        $this->createdAt($returningGuest, '2026-08-10 08:00:00');
+        $payingGuest = $this->createdAt(Guest::query()->create([
+            'first_name' => 'Current',
+            'last_name' => 'Paying',
+            'email' => 'current-paying@example.test',
+            'phone_number' => '0240000007',
+        ]), '2026-08-12 08:00:00');
+        $previousGuest = $this->createdAt(Guest::query()->create([
+            'first_name' => 'Previous',
+            'last_name' => 'Paying',
+            'email' => 'previous-paying@example.test',
+            'phone_number' => '0240000008',
+        ]), '2026-08-08 08:00:00');
+        $firstStay = Booking::query()->create([
+            'guest_id' => $returningGuest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-08-10',
+            'check_out' => '2026-08-11',
+            'total_price' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+        $secondStay = Booking::query()->create([
+            'guest_id' => $returningGuest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-08-12',
+            'check_out' => '2026-08-13',
+            'total_price' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+
+        foreach ([$firstStay, $secondStay] as $index => $stay) {
+            $this->createdAt(Payment::query()->create([
+                'booking_id' => $stay->id,
+                'guest_id' => $returningGuest->id,
+                'amount' => 100,
+                'method' => 'cash',
+                'payment_status' => 'completed',
+                'transaction_reference' => 'GUEST-TREND-RETURNING-'.$index,
+            ]), '2026-08-10 '.($index === 0 ? '09:00:00' : '15:00:00'));
+        }
+
+        $this->createdAt(Payment::query()->create([
+            'guest_id' => $payingGuest->id,
+            'amount' => 75,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-TREND-CURRENT-PAYING',
+        ]), '2026-08-12 11:00:00');
+        $this->createdAt(Payment::query()->create([
+            'guest_id' => $previousGuest->id,
+            'amount' => 50,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-TREND-PREVIOUS-PAYING',
+        ]), '2026-08-08 11:00:00');
+
+        $report = $this->reportForPeriod('2026-08-10', '2026-08-12');
+
+        self::assertArrayHasKey('comparison', $report);
+        self::assertArrayHasKey('trend', $report);
+        self::assertSame('Aug 7, 2026 to Aug 9, 2026', $report['comparison']['previousPeriodLabel']);
+        self::assertSame([
+            'current' => 2,
+            'previous' => 1,
+            'difference' => 1,
+            'percentageChange' => 100.0,
+        ], $report['comparison']['newGuests']);
+        self::assertSame([
+            'current' => 2,
+            'previous' => 1,
+            'difference' => 1,
+            'percentageChange' => 100.0,
+        ], $report['comparison']['payingGuests']);
+        self::assertSame([
+            'current' => 1,
+            'previous' => 0,
+            'difference' => 1,
+            'percentageChange' => null,
+        ], $report['comparison']['returningGuests']);
+        self::assertSame([
+            'granularity' => 'day',
+            'labels' => ['Aug 10', 'Aug 11', 'Aug 12'],
+            'newGuests' => [1, 0, 1],
+            'payingGuests' => [1, 0, 1],
+            'returningGuests' => [1, 0, 0],
+        ], $report['trend']);
+    }
+
+    public function test_guest_trend_uses_readable_automatic_granularity_for_short_and_long_ranges(): void
+    {
+        $dailyReport = $this->reportForPeriod('2026-08-10', '2026-08-10');
+        self::assertArrayHasKey('trend', $dailyReport);
+
+        $daily = $dailyReport['trend'];
+        $medium = $this->reportForPeriod('2026-08-01', '2026-09-15')['trend'];
+        $long = $this->reportForPeriod('2024-01-01', '2026-01-01')['trend'];
+
+        self::assertSame('hour', $daily['granularity']);
+        self::assertCount(24, $daily['labels']);
+        self::assertSame(['12 AM', '11 PM'], [$daily['labels'][0], $daily['labels'][23]]);
+        self::assertSame('month', $medium['granularity']);
+        self::assertSame(['Aug 2026', 'Sep 2026'], $medium['labels']);
+        self::assertSame('year', $long['granularity']);
+        self::assertSame(['2024', '2025', '2026'], $long['labels']);
+    }
+
+    public function test_guest_comparison_widget_uses_precomputed_values_without_queries(): void
+    {
+        self::assertTrue(class_exists(GuestComparisonStats::class));
+        self::assertTrue(is_subclass_of(GuestComparisonStats::class, StatsOverviewWidget::class));
+
+        $widget = new GuestComparisonStats;
+        $widget->comparison = [
+            'previousPeriodLabel' => 'Aug 7, 2026 to Aug 9, 2026',
+            'newGuests' => ['current' => 2, 'previous' => 1, 'difference' => 1, 'percentageChange' => 100.0],
+            'payingGuests' => ['current' => 1, 'previous' => 3, 'difference' => -2, 'percentageChange' => -66.7],
+            'returningGuests' => ['current' => 0, 'previous' => 0, 'difference' => 0, 'percentageChange' => null],
+        ];
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $stats = $method->invoke($widget);
+            $queries = DB::getQueryLog();
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        self::assertCount(0, $queries);
+        self::assertSame(
+            ['New guest change', 'Paying guest change', 'Returning guest change'],
+            array_map(fn ($stat): string => $stat->getLabel(), $stats),
+        );
+        self::assertSame(['+1', '-2', '0'], array_map(fn ($stat): string => $stat->getValue(), $stats));
+        self::assertSame(['success', 'danger', 'gray'], array_map(
+            fn ($stat): string|array|null => $stat->getColor(),
+            $stats,
+        ));
+        self::assertStringContainsString('Current 2', $stats[0]->getDescription());
+        self::assertStringContainsString('Previous 1', $stats[0]->getDescription());
+        self::assertStringContainsString('Up 100.0%', $stats[0]->getDescription());
+        self::assertStringContainsString('No previous-period baseline', $stats[2]->getDescription());
+    }
+
+    public function test_guest_trend_chart_uses_precomputed_values_and_accessible_count_options(): void
+    {
+        self::assertTrue(class_exists(GuestTrendChart::class));
+        self::assertTrue(is_subclass_of(GuestTrendChart::class, ChartWidget::class));
+
+        $widget = new GuestTrendChart;
+        $widget->periodLabel = 'Aug 10, 2026 to Aug 12, 2026';
+        $widget->trend = [
+            'granularity' => 'day',
+            'labels' => ['Aug 10', 'Aug 11', 'Aug 12'],
+            'newGuests' => [1, 0, 1],
+            'payingGuests' => [1, 0, 1],
+            'returningGuests' => [1, 0, 0],
+        ];
+        $dataMethod = new \ReflectionMethod($widget, 'getData');
+        $dataMethod->setAccessible(true);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $data = $dataMethod->invoke($widget);
+            $queries = DB::getQueryLog();
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        self::assertCount(0, $queries);
+        self::assertSame(['Aug 10', 'Aug 11', 'Aug 12'], $data['labels']);
+        self::assertSame(
+            ['New guests', 'Paying guests', 'Returning guests'],
+            array_column($data['datasets'], 'label'),
+        );
+        self::assertSame(
+            ['#059669', '#2563EB', '#7C3AED'],
+            array_column($data['datasets'], 'borderColor'),
+        );
+        self::assertFalse($widget->isEmpty());
+        self::assertTrue((new GuestTrendChart)->isEmpty());
+
+        $optionsMethod = new \ReflectionMethod($widget, 'getOptions');
+        $optionsMethod->setAccessible(true);
+        $options = $optionsMethod->invoke($widget);
+
+        self::assertTrue($options['responsive']);
+        self::assertSame(0, $options['scales']['y']['ticks']['precision']);
+        self::assertSame('Guest count', $options['scales']['y']['title']['text']);
+    }
+
     public function test_guest_report_uses_a_consolidated_query_budget(): void
     {
         $guest = Guest::query()->create([
@@ -382,7 +587,7 @@ class GuestReportTest extends TestCase
             DB::disableQueryLog();
         }
 
-        self::assertCount(6, $queries);
+        self::assertCount(10, $queries);
     }
 
     public function test_guest_report_page_reuses_precomputed_metrics_in_the_stats_widget(): void
@@ -422,7 +627,7 @@ class GuestReportTest extends TestCase
             DB::disableQueryLog();
         }
 
-        self::assertCount(6, $reportQueries);
+        self::assertCount(10, $reportQueries);
         self::assertSame(4, substr_count($component->html(), 'GHS 125.00'));
     }
 
@@ -463,6 +668,34 @@ class GuestReportTest extends TestCase
         self::assertStringContainsString('Updating guest report', $status->textContent);
 
         self::assertSame(0, $xpath->query('.//form[@*[name()="wire:submit"]="applyReportPeriod"]', $selectedPeriod)?->count());
+    }
+
+    public function test_guest_report_places_comparison_and_trend_before_detailed_guest_sections(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(GuestReport::getUrl());
+
+        $response->assertOk()->assertSeeInOrder([
+            'Guest profiles',
+            'Previous-period comparison',
+            'Guest trend',
+            'Guest spending',
+            'Guest activity',
+            'Top guests by gross spend',
+        ]);
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $results = $xpath->query('//div[@data-guest-period-results]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $results);
+        self::assertCount(1, $xpath->query('.//section[@aria-label="Previous-period guest comparison"]', $results));
+        self::assertCount(1, $xpath->query('.//section[@aria-label="Guest trend chart"]', $results));
     }
 
     public function test_guest_stats_widget_uses_precomputed_period_aware_data_without_queries(): void
@@ -551,5 +784,21 @@ class GuestReportTest extends TestCase
         $page->endDate = $endDate;
 
         return $page->report();
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  TModel  $model
+     * @return TModel
+     */
+    private function createdAt(Model $model, string $createdAt): Model
+    {
+        $model->forceFill([
+            'created_at' => Carbon::parse($createdAt),
+            'updated_at' => Carbon::parse($createdAt),
+        ])->saveQuietly();
+
+        return $model;
     }
 }

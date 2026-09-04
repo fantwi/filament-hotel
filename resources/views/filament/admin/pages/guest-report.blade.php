@@ -37,6 +37,19 @@
             ], key('guest-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
+        <section aria-label="Previous-period guest comparison">
+            @livewire(\App\Filament\Admin\Widgets\GuestComparisonStats::class, [
+                'comparison' => $report['comparison'],
+            ], key('guest-comparison-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+        </section>
+
+        <section aria-label="Guest trend chart">
+            @livewire(\App\Filament\Admin\Widgets\GuestTrendChart::class, [
+                'trend' => $report['trend'],
+                'periodLabel' => $this->periodLabel(),
+            ], key('guest-trend-chart-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+        </section>
+
         <x-filament::section heading="Guest spending" description="Collections and refund events recorded during {{ strtolower($this->periodLabel()) }}">
             <dl class="grid gap-4 sm:grid-cols-3">
                 <div class="rounded-xl border border-primary-200 bg-primary-50 p-4 dark:border-primary-500/20 dark:bg-primary-500/10">
