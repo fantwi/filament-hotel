@@ -9,7 +9,7 @@
                 <h2 class="mt-1 text-2xl font-bold tracking-tight">Guest performance</h2>
                 <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Monitor guest growth, paying-guest activity, repeat visits, and spend for one consistent reporting period.</p>
             </div>
-            <x-filament.report-period-controls class="mt-5" />
+            <x-filament.report-period-controls id="guest-report-period-controls" class="mt-5" />
         </x-filament::section>
 
         <section
@@ -48,17 +48,20 @@
                 </div>
             </div>
 
-            @livewire(\App\Filament\Admin\Widgets\GuestStats::class, [
-                'reportData' => [
-                    'newGuests' => $report['newGuests'],
-                    'payingGuests' => $report['payingGuests'],
-                    'returningGuests' => $report['returningGuests'],
-                    'averageSpend' => $report['averageSpend'],
-                ],
-                'reportPeriodLabel' => $this->periodLabel(),
-            ], key('guest-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+            @if ($report['hasPeriodActivity'])
+                @livewire(\App\Filament\Admin\Widgets\GuestStats::class, [
+                    'reportData' => [
+                        'newGuests' => $report['newGuests'],
+                        'payingGuests' => $report['payingGuests'],
+                        'returningGuests' => $report['returningGuests'],
+                        'averageSpend' => $report['averageSpend'],
+                    ],
+                    'reportPeriodLabel' => $this->periodLabel(),
+                ], key('guest-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+            @endif
         </section>
 
+        @if ($report['hasPeriodActivity'])
         <section aria-label="Previous-period guest comparison">
             @livewire(\App\Filament\Admin\Widgets\GuestComparisonStats::class, [
                 'comparison' => $report['comparison'],
@@ -192,6 +195,24 @@
                 @endif
             </x-filament::section>
         </section>
+        @else
+            <x-filament::section>
+                <div role="status" aria-label="No guest activity for selected period" class="flex flex-col items-center px-4 py-12 text-center sm:py-16">
+                    <span class="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-300">
+                        <x-filament::icon icon="heroicon-o-calendar-days" class="h-7 w-7" />
+                    </span>
+                    <h2 class="mt-5 text-lg font-bold tracking-tight text-gray-950 dark:text-white">No guest activity in this period</h2>
+                    <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">No guest profiles were created, payments collected, or refunds processed during {{ strtolower($this->periodLabel()) }}.</p>
+                    <a
+                        href="#guest-report-period-controls"
+                        class="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                    >
+                        Change reporting period
+                        <x-filament::icon icon="heroicon-m-arrow-up" class="h-4 w-4" />
+                    </a>
+                </div>
+            </x-filament::section>
+        @endif
             </div>
 
             <div

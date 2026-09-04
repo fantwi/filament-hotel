@@ -98,6 +98,9 @@ class GuestReport extends Page
         return [
             'totalGuests' => (int) $guestSummary->total_guests,
             'newGuests' => (int) $guestSummary->new_guests,
+            'hasPeriodActivity' => (int) $guestSummary->new_guests > 0
+                || (int) $collectedSummary->payment_count > 0
+                || (int) $refundSummary->refund_count > 0,
             'payingGuests' => $payingGuests,
             'returningGuests' => $returningGuests,
             'averageSpend' => $payingGuests > 0 ? $totalPaid / $payingGuests : 0,

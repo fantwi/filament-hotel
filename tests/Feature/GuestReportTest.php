@@ -48,6 +48,29 @@ class GuestReportTest extends TestCase
         self::assertArrayHasKey('food', $report['activity']);
     }
 
+    public function test_guest_report_marks_a_selected_period_without_activity_as_empty(): void
+    {
+        $report = $this->reportForPeriod('2026-08-01', '2026-08-03');
+
+        self::assertArrayHasKey('hasPeriodActivity', $report);
+        self::assertFalse($report['hasPeriodActivity']);
+    }
+
+    public function test_a_new_guest_profile_marks_the_selected_period_as_active(): void
+    {
+        $this->createdAt(Guest::query()->create([
+            'first_name' => 'New',
+            'last_name' => 'Guest',
+            'email' => 'new-period-guest@example.test',
+            'phone_number' => '0240000011',
+        ]), '2026-08-02 10:00:00');
+
+        $report = $this->reportForPeriod('2026-08-01', '2026-08-03');
+
+        self::assertArrayHasKey('hasPeriodActivity', $report);
+        self::assertTrue($report['hasPeriodActivity']);
+    }
+
     public function test_guest_report_calculates_paid_guest_spend_for_the_selected_period(): void
     {
         $guest = Guest::query()->create([
@@ -71,6 +94,7 @@ class GuestReportTest extends TestCase
         self::assertSame(125.5, $report['averageSpend']);
         self::assertSame(125.5, $report['topGuests']->first()->total_spend);
         self::assertSame($guest->id, $report['topGuests']->first()->guest->id);
+        self::assertTrue($report['hasPeriodActivity']);
     }
 
     public function test_guest_report_attributes_payments_through_every_supported_transaction_source(): void
@@ -358,6 +382,7 @@ class GuestReportTest extends TestCase
         self::assertSame(0, $report['payingGuests']);
         self::assertSame(0, $report['paymentCount']);
         self::assertCount(0, $report['topGuests']);
+        self::assertTrue($report['hasPeriodActivity']);
     }
 
     public function test_guest_report_compares_the_previous_equal_length_period_and_fills_trend_gaps(): void
@@ -636,6 +661,12 @@ class GuestReportTest extends TestCase
         Role::findOrCreate('accountant', 'web');
         $accountant = User::factory()->create(['department' => 'accountant']);
         $accountant->assignRole('accountant');
+        Guest::query()->create([
+            'first_name' => 'Busy',
+            'last_name' => 'State',
+            'email' => 'busy-state@example.test',
+            'phone_number' => '0240000012',
+        ]);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         $response = $this->actingAs($accountant)->get(GuestReport::getUrl());
@@ -675,6 +706,12 @@ class GuestReportTest extends TestCase
         Role::findOrCreate('accountant', 'web');
         $accountant = User::factory()->create(['department' => 'accountant']);
         $accountant->assignRole('accountant');
+        Guest::query()->create([
+            'first_name' => 'Report',
+            'last_name' => 'Activity',
+            'email' => 'report-activity@example.test',
+            'phone_number' => '0240000013',
+        ]);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         $response = $this->actingAs($accountant)->get(GuestReport::getUrl());
@@ -775,7 +812,7 @@ class GuestReportTest extends TestCase
         self::assertCount(1, $xpath->query('.//tbody/tr', $desktopTable));
     }
 
-    public function test_top_guests_show_one_shared_empty_state(): void
+    public function test_an_empty_selected_period_replaces_zero_heavy_sections_with_one_actionable_state(): void
     {
         Role::findOrCreate('accountant', 'web');
         $accountant = User::factory()->create(['department' => 'accountant']);
@@ -790,9 +827,18 @@ class GuestReportTest extends TestCase
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
 
-        self::assertCount(1, $xpath->query('//*[@role="status" and @aria-label="No top guests"]'));
+        $emptyState = $xpath->query('//*[@role="status" and @aria-label="No guest activity for selected period"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $emptyState);
+        self::assertStringContainsString('No guest activity in this period', $emptyState->textContent);
+        self::assertStringContainsString('Change reporting period', $emptyState->textContent);
+        self::assertCount(1, $xpath->query('//*[@id="guest-report-period-controls"]'));
+        self::assertCount(1, $xpath->query('//*[@role="note" and @aria-label="All-time guest base"]'));
+        self::assertCount(0, $xpath->query('//*[@role="status" and @aria-label="No top guests"]'));
         self::assertCount(0, $xpath->query('//*[@aria-label="Top guests mobile list"]'));
         self::assertCount(0, $xpath->query('//*[@aria-label="Top guests desktop table"]'));
+        self::assertStringNotContainsString('Guest spending', $response->getContent());
+        self::assertStringNotContainsString('Previous-period comparison', $response->getContent());
     }
 
     public function test_guest_stats_widget_uses_precomputed_period_aware_data_without_queries(): void
