@@ -25,6 +25,15 @@ class KitchenManagerDashboardPerformanceTest extends TestCase
         }
     }
 
+    public function test_manager_summary_uses_a_balanced_responsive_five_column_grid(): void
+    {
+        self::assertSame([
+            'default' => 1,
+            'md' => 2,
+            'xl' => 5,
+        ], $this->invokeProtected(new KitchenManagerStats, 'getColumns'));
+    }
+
     public function test_manager_summary_uses_one_order_aggregate_and_two_activity_queries(): void
     {
         $this->order('confirmed', 'CONFIRMED-1', '2026-08-05 10:00:00');

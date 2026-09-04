@@ -20,6 +20,13 @@ class KitchenManagerStats extends StatsOverviewWidget
 
     protected ?string $pollingInterval = null;
 
+    /** @var array<string, int> */
+    protected int|array|null $columns = [
+        'default' => 1,
+        'md' => 2,
+        'xl' => 5,
+    ];
+
     /**
      * Determines whether the current user may view this feature.
      */
