@@ -53,8 +53,12 @@ class OccupancyReport extends Page
 
         $bookedRoomNights = $this->bookedRoomNights($periodStart, $periodEndExclusive);
 
-        $periodDays = max(1, (int) $periodStart->diffInDays($periodEndExclusive));
-        $roomNightCapacity = $roomsInService * $periodDays;
+        $roomNightCapacity = $this->roomNightCapacity(
+            $periodStart,
+            $periodEndExclusive,
+            $roomStatus['total'],
+            $roomsInService,
+        );
 
         $conferenceBookings = ConferenceBooking::query()
             ->whereBetween('booking_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
@@ -106,6 +110,44 @@ class OccupancyReport extends Page
 
                 return max(0, $checkIn->diffInDays($checkOut));
             });
+    }
+
+    /**
+     * Calculates capacity without projecting today's maintenance state
+     * backwards onto completed historical dates.
+     */
+    private function roomNightCapacity(
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        int $totalRooms,
+        int $currentRoomsInService,
+    ): int {
+        $today = now()->startOfDay();
+        $historicalDays = 0;
+        $currentAndFutureDays = 0;
+
+        if ($periodStart->lessThan($today)) {
+            $historicalEnd = $periodEnd->lessThan($today)
+                ? $periodEnd
+                : $today;
+
+            if ($historicalEnd->greaterThan($periodStart)) {
+                $historicalDays = (int) $periodStart->diffInDays($historicalEnd);
+            }
+        }
+
+        if ($periodEnd->greaterThan($today)) {
+            $currentStart = $periodStart->greaterThan($today)
+                ? $periodStart
+                : $today;
+
+            if ($periodEnd->greaterThan($currentStart)) {
+                $currentAndFutureDays = (int) $currentStart->diffInDays($periodEnd);
+            }
+        }
+
+        return ($totalRooms * $historicalDays)
+            + ($currentRoomsInService * $currentAndFutureDays);
     }
 
     /**

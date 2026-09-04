@@ -267,6 +267,72 @@ class OccupancyReportTest extends TestCase
         self::assertSame(1, $page->report()['hotelBookings']);
     }
 
+    public function test_current_maintenance_does_not_reduce_completed_historical_room_capacity(): void
+    {
+        $this->travelTo('2026-09-15 12:00:00');
+
+        $roomType = RoomType::query()->create([
+            'name' => 'Historical occupancy room',
+            'price_per_night' => 100,
+            'capacity' => 2,
+        ]);
+        $room = Room::query()->create([
+            'room_type_id' => $roomType->id,
+            'room_number' => 'HISTORICAL-1',
+            'status' => 'maintenance',
+        ]);
+        $guest = Guest::query()->create([
+            'first_name' => 'Historical',
+            'last_name' => 'Guest',
+            'phone_number' => '0240000013',
+            'email' => 'historical-occupancy@example.test',
+        ]);
+
+        Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-09-01',
+            'check_out' => '2026-09-04',
+            'total_price' => 300,
+            'status' => 'confirmed',
+        ]);
+
+        $page = new OccupancyReport;
+        $page->period = 'custom';
+        $page->startDate = '2026-09-01';
+        $page->endDate = '2026-09-03';
+        $report = $page->report();
+
+        self::assertSame(0, $report['roomsInService']);
+        self::assertSame(3, $report['roomNightCapacity']);
+        self::assertSame(3, $report['bookedRoomNights']);
+        self::assertEqualsWithDelta(100, $report['occupancyRate'], 0.001);
+    }
+
+    public function test_current_maintenance_only_reduces_room_capacity_from_today_onward(): void
+    {
+        $this->travelTo('2026-09-03 12:00:00');
+
+        $roomType = RoomType::query()->create([
+            'name' => 'Mixed period room',
+            'price_per_night' => 100,
+            'capacity' => 2,
+        ]);
+
+        foreach (['available', 'maintenance'] as $index => $status) {
+            Room::query()->create([
+                'room_type_id' => $roomType->id,
+                'room_number' => 'MIXED-'.($index + 1),
+                'status' => $status,
+            ]);
+        }
+
+        $report = (new OccupancyReport)->report();
+
+        self::assertSame(1, $report['roomsInService']);
+        self::assertSame(5, $report['roomNightCapacity']);
+    }
+
     public function test_occupancy_report_uses_a_memory_bounded_booking_iterator(): void
     {
         $source = file_get_contents(app_path('Filament/Admin/Pages/OccupancyReport.php'));

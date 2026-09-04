@@ -55,7 +55,7 @@ class OccupancyStats extends StatsOverviewWidget
                 ->icon('heroicon-o-moon')
                 ->color('success'),
             Stat::make('Room-night capacity', number_format((int) $report['roomNightCapacity']))
-                ->description(number_format((int) $report['roomsInService']).' rooms in service')
+                ->description('Available inventory across '.$periodLabel)
                 ->icon('heroicon-o-home-modern')
                 ->color('info'),
             Stat::make('Rooms available now', number_format((int) $report['roomStatus']['available']))
