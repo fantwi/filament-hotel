@@ -19,7 +19,8 @@ class ViewRoomType extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            EditAction::make(),
+            EditAction::make()
+                ->visible(fn (): bool => RoomTypeResource::canEdit($this->getRecord())),
         ];
     }
 }

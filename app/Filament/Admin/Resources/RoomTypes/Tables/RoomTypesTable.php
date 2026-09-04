@@ -171,7 +171,8 @@ class RoomTypesTable
             ])
             ->recordActions([
                 ViewAction::make(),
-                EditAction::make(),
+                EditAction::make()
+                    ->visible(fn (RoomType $record): bool => RoomTypeResource::canEdit($record)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
