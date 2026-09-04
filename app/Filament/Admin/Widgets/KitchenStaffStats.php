@@ -57,11 +57,11 @@ class KitchenStaffStats extends StatsOverviewWidget
     }
 
     /**
-     * Counts eligible kitchen orders in the selected period by status.
+     * Counts the current eligible kitchen workload by status.
      */
     private function ordersInStatus(string $status): int
     {
-        return $this->forDashboardDateRange(RestaurantOrder::kitchenQueue())
+        return RestaurantOrder::kitchenQueue()
             ->where('status', $status)
             ->count();
     }
