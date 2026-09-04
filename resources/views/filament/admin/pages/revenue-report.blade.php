@@ -13,7 +13,17 @@
         </x-filament::section>
 
         <section aria-label="Revenue overview">
-            @livewire(\App\Filament\Admin\Widgets\RevenueReportStats::class, ['period' => $this->period, 'startDate' => $this->startDate, 'endDate' => $this->endDate], key('revenue-report-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+            @livewire(\App\Filament\Admin\Widgets\RevenueReportStats::class, [
+                'reportData' => [
+                    'revenue' => $report['revenue'],
+                    'paymentsReceived' => $report['paymentsReceived'],
+                    'refunds' => $report['refunds'],
+                    'refundCount' => $report['refundCount'],
+                    'netRevenue' => $report['netRevenue'],
+                    'outstanding' => $report['outstanding'],
+                ],
+                'reportPeriodLabel' => $this->periodLabel(),
+            ], key('revenue-report-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
         <section class="grid gap-4 lg:grid-cols-3">

@@ -2,8 +2,6 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Filament\Admin\Pages\RevenueReport;
-use App\Support\Reporting\ReportPeriod;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -14,14 +12,17 @@ class RevenueReportStats extends StatsOverviewWidget
 {
     protected int|string|array $columnSpan = 'full';
 
-    /**
-     * The report period selected on the parent revenue report page.
-     */
-    public string $period = 'monthly';
+    /** @var array{revenue: float, paymentsReceived: int, refunds: float, refundCount: int, netRevenue: float, outstanding: float} */
+    public array $reportData = [
+        'revenue' => 0.0,
+        'paymentsReceived' => 0,
+        'refunds' => 0.0,
+        'refundCount' => 0,
+        'netRevenue' => 0.0,
+        'outstanding' => 0.0,
+    ];
 
-    public string $startDate = '';
-
-    public string $endDate = '';
+    public string $reportPeriodLabel = 'Selected period';
 
     /**
      * Determines whether the current user may view this feature.
@@ -38,40 +39,23 @@ class RevenueReportStats extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
-        $reportPage = new RevenueReport;
-        $reportPage->period = $this->validPeriod($this->period);
-        $reportPage->startDate = $this->startDate;
-        $reportPage->endDate = $this->endDate;
-        $report = $reportPage->report();
-        $periodLabel = $reportPage->periodLabel();
-
         return [
-            Stat::make('Revenue received', 'GHS '.number_format((float) $report['revenue'], 2))
-                ->description(number_format((int) $report['paymentsReceived']).' payment(s) in '.$periodLabel)
+            Stat::make('Revenue received', 'GHS '.number_format((float) $this->reportData['revenue'], 2))
+                ->description(number_format((int) $this->reportData['paymentsReceived']).' payment(s) in '.$this->reportPeriodLabel)
                 ->icon('heroicon-o-banknotes')
                 ->color('success'),
-            Stat::make('Refunds', 'GHS '.number_format((float) $report['refunds'], 2))
-                ->description(number_format((int) $report['refundCount']).' refund(s) in '.$periodLabel)
+            Stat::make('Refunds', 'GHS '.number_format((float) $this->reportData['refunds'], 2))
+                ->description(number_format((int) $this->reportData['refundCount']).' refund(s) in '.$this->reportPeriodLabel)
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('danger'),
-            Stat::make('Net revenue', 'GHS '.number_format((float) $report['netRevenue'], 2))
+            Stat::make('Net revenue', 'GHS '.number_format((float) $this->reportData['netRevenue'], 2))
                 ->description('Revenue less refunds')
                 ->icon('heroicon-o-chart-bar')
                 ->color('primary'),
-            Stat::make('Outstanding balance', 'GHS '.number_format((float) $report['outstanding'], 2))
-                ->description('Unpaid transactions in '.$periodLabel)
+            Stat::make('Outstanding balance', 'GHS '.number_format((float) $this->reportData['outstanding'], 2))
+                ->description('Unpaid transactions in '.$this->reportPeriodLabel)
                 ->icon('heroicon-o-clock')
                 ->color('warning'),
         ];
-    }
-
-    /**
-     * Keeps nested widget state within the periods supported by the report page.
-     */
-    private function validPeriod(string $period): string
-    {
-        return array_key_exists($period, ReportPeriod::options())
-            ? $period
-            : 'monthly';
     }
 }

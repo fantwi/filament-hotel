@@ -15,10 +15,15 @@ use App\Models\RestaurantReservation;
 use App\Models\RestaurantTable;
 use App\Models\Room;
 use App\Models\RoomType;
+use App\Models\User;
 use Carbon\Carbon;
+use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class RevenueReportTest extends TestCase
@@ -40,18 +45,73 @@ class RevenueReportTest extends TestCase
         self::assertArrayHasKey('food', $report['outstandingBreakdown']);
     }
 
-    public function test_revenue_stats_widget_uses_period_aware_overview_stats(): void
+    public function test_revenue_stats_widget_uses_precomputed_period_aware_overview_without_queries(): void
     {
         self::assertTrue(is_subclass_of(RevenueReportStats::class, StatsOverviewWidget::class));
 
         $widget = new RevenueReportStats;
-        $widget->period = 'quarterly';
+        $widget->reportData = [
+            'revenue' => 1250.00,
+            'paymentsReceived' => 3,
+            'refunds' => 100.00,
+            'refundCount' => 1,
+            'netRevenue' => 1150.00,
+            'outstanding' => 450.00,
+        ];
+        $widget->reportPeriodLabel = 'Quarterly';
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 
-        $stats = $method->invoke($widget);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
 
+        try {
+            $stats = $method->invoke($widget);
+            $queries = DB::getQueryLog();
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        self::assertCount(0, $queries);
         self::assertCount(4, $stats);
+        self::assertSame(
+            ['Revenue received', 'Refunds', 'Net revenue', 'Outstanding balance'],
+            array_map(fn ($stat): string => $stat->getLabel(), $stats),
+        );
+        self::assertSame(
+            ['GHS 1,250.00', 'GHS 100.00', 'GHS 1,150.00', 'GHS 450.00'],
+            array_map(fn ($stat): string => $stat->getValue(), $stats),
+        );
+        self::assertSame('3 payment(s) in Quarterly', $stats[0]->getDescription());
+        self::assertSame('1 refund(s) in Quarterly', $stats[1]->getDescription());
+        self::assertSame('Unpaid transactions in Quarterly', $stats[3]->getDescription());
+    }
+
+    public function test_revenue_report_page_calculates_the_report_only_once(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            Livewire::actingAs($accountant)
+                ->test(RevenueReport::class)
+                ->assertSuccessful();
+            $reportQueries = collect(DB::getQueryLog())
+                ->pluck('query')
+                ->filter(fn (string $query): bool => (bool) preg_match(
+                    '/\b(?:from|join)\s+["`]?(?:payments|bookings|conference_bookings|restaurant_reservations|restaurant_orders)["`]?\b/i',
+                    $query,
+                ));
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        self::assertCount(9, $reportQueries);
     }
 
     public function test_outstanding_breakdown_uses_remaining_balances_after_successful_payments(): void
