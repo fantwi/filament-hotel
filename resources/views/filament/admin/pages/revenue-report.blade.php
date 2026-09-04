@@ -145,7 +145,7 @@
                 <h2 class="mt-1 text-2xl font-bold tracking-tight">Revenue performance</h2>
                 <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Track funds received, refunds, outstanding balances, and payment-method performance for one consistent reporting period.</p>
             </div>
-            <x-filament.report-period-controls class="mt-5" />
+            <x-filament.report-period-controls id="revenue-report-period-controls" class="mt-5" />
         </x-filament::section>
 
         <section
@@ -369,7 +369,26 @@
                         </article>
                     </a>
                 @empty
-                    <p class="text-sm text-gray-500 dark:text-gray-400">No completed payments were recorded for {{ strtolower($this->periodLabel()) }}.</p>
+                    <div
+                        data-payment-method-empty-state
+                        class="col-span-full flex flex-col items-center rounded-xl border border-dashed border-gray-300 bg-gray-50/70 px-4 py-10 text-center dark:border-white/15 dark:bg-white/5 sm:py-12"
+                    >
+                        <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-300">
+                            <x-filament::icon icon="heroicon-o-credit-card" class="h-6 w-6" />
+                        </span>
+                        <h3 class="mt-4 text-base font-semibold text-gray-950 dark:text-white">No completed payments</h3>
+                        <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">
+                            No completed payments were recorded for {{ strtolower($this->periodLabel()) }}, so there are no payment methods to compare.
+                        </p>
+                        <p class="mt-1 max-w-xl text-sm text-gray-500 dark:text-gray-400">Choose another reporting period to review collections from a different date range.</p>
+                        <a
+                            href="#revenue-report-period-controls"
+                            class="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                        >
+                            Change reporting period
+                            <x-filament::icon icon="heroicon-m-arrow-up" class="h-4 w-4" />
+                        </a>
+                    </div>
                 @endforelse
             </div>
         </x-filament::section>

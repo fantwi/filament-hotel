@@ -658,6 +658,37 @@ class RevenueReportTest extends TestCase
         }
     }
 
+    public function test_payment_methods_section_guides_staff_when_the_period_has_no_completed_payments(): void
+    {
+        $accountant = $this->revenueReportUser('accountant', withTransactionDashboard: true);
+
+        $response = $this->actingAs($accountant)->get(RevenueReport::getUrl());
+
+        $response->assertOk()->assertSeeInOrder([
+            'Payment methods',
+            'No completed payments',
+            'Change reporting period',
+        ]);
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $section = $xpath->query('//section[@aria-labelledby="payment-methods-heading"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $section);
+
+        $emptyState = $xpath->query('.//*[@data-payment-method-empty-state]', $section)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $emptyState);
+        self::assertStringContainsString('col-span-full', $emptyState->getAttribute('class'));
+        self::assertStringContainsString('No completed payments were recorded for', $emptyState->textContent);
+        self::assertSame(0, $xpath->query('.//*[@data-payment-method-card]', $section)?->count());
+
+        $changePeriod = $xpath->query('.//a[@href="#revenue-report-period-controls"]', $emptyState)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $changePeriod);
+        self::assertStringContainsString('Change reporting period', $changePeriod->textContent);
+        self::assertCount(1, $xpath->query('//form[@id="revenue-report-period-controls"]'));
+    }
+
     public function test_revenue_report_payment_method_cards_show_distinct_shares_and_link_to_filtered_payments(): void
     {
         $this->travelTo('2026-09-04 12:00:00');
@@ -671,6 +702,7 @@ class RevenueReportTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         $response = $this->actingAs($accountant)->get(RevenueReport::getUrl());
+        $response->assertDontSee('data-payment-method-empty-state', false);
         $response->assertOk()->assertSeeInOrder([
             'Payment methods',
             'Bank transfer',
