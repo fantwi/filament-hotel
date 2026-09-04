@@ -12,13 +12,11 @@ class OccupancyStats extends StatsOverviewWidget
 {
     protected int|string|array $columnSpan = 'full';
 
-    /** @var array{occupancyRate: float|null, bookedRoomNights: int, roomNightCapacity: int, roomsAvailable: int, tablesAvailable: int} */
+    /** @var array{occupancyRate: float|null, bookedRoomNights: int, roomNightCapacity: int} */
     public array $summary = [
         'occupancyRate' => null,
         'bookedRoomNights' => 0,
         'roomNightCapacity' => 0,
-        'roomsAvailable' => 0,
-        'tablesAvailable' => 0,
     ];
 
     public string $periodLabel = 'Monthly';
@@ -56,14 +54,6 @@ class OccupancyStats extends StatsOverviewWidget
                 ->description('Available inventory across '.$this->periodLabel)
                 ->icon('heroicon-o-home-modern')
                 ->color('info'),
-            Stat::make('Rooms available now', number_format($this->summary['roomsAvailable']))
-                ->description('Live inventory status')
-                ->icon('heroicon-o-key')
-                ->color('primary'),
-            Stat::make('Tables available now', number_format($this->summary['tablesAvailable']))
-                ->description('Live restaurant status')
-                ->icon('heroicon-o-square-3-stack-3d')
-                ->color('warning'),
         ];
     }
 }

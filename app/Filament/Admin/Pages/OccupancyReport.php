@@ -35,6 +35,7 @@ class OccupancyReport extends Page
     {
         [$periodStart, $periodEnd] = $this->periodBounds();
         $periodEndExclusive = $periodEnd->copy()->addDay()->startOfDay();
+        $snapshotAt = now();
 
         $roomStatus = [
             'total' => Room::count(),
@@ -70,13 +71,14 @@ class OccupancyReport extends Page
             ->whereNotIn('status', ['cancelled', 'no_show'])
             ->count();
 
-        $conferenceAvailability = app(CurrentVenueAvailability::class)->conferenceRooms(now());
+        $conferenceAvailability = app(CurrentVenueAvailability::class)->conferenceRooms($snapshotAt);
 
-        $tableStatus = app(CurrentVenueAvailability::class)->restaurantTables(now());
+        $tableStatus = app(CurrentVenueAvailability::class)->restaurantTables($snapshotAt);
 
         return [
             'periodStart' => $periodStart,
             'periodEnd' => $periodEnd,
+            'snapshotAt' => $snapshotAt,
             'roomStatus' => $roomStatus,
             'roomsInService' => $roomsInService,
             'hotelBookings' => $hotelBookings,

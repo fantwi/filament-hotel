@@ -14,6 +14,8 @@ use App\Models\RestaurantTable;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\User;
+use App\Services\CurrentVenueAvailability;
+use Carbon\CarbonInterface;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +39,37 @@ class OccupancyReportTest extends TestCase
         self::assertArrayHasKey('bookedRoomNights', $report);
         self::assertArrayHasKey('conferenceAvailability', $report);
         self::assertArrayHasKey('tableStatus', $report);
+    }
+
+    public function test_live_availability_uses_one_timestamp_for_the_complete_snapshot(): void
+    {
+        $availability = new class extends CurrentVenueAvailability
+        {
+            /** @var list<CarbonInterface> */
+            public array $observedAt = [];
+
+            public function conferenceRooms(CarbonInterface $at): array
+            {
+                $this->observedAt[] = $at;
+
+                return ['available' => 0, 'unavailable' => 0];
+            }
+
+            public function restaurantTables(CarbonInterface $at): array
+            {
+                $this->observedAt[] = $at;
+
+                return ['available' => 0, 'reserved' => 0, 'occupied' => 0, 'unavailable' => 0];
+            }
+        };
+        $this->app->instance(CurrentVenueAvailability::class, $availability);
+        $this->travelTo('2026-09-04 12:34:56');
+
+        $report = (new OccupancyReport)->report();
+
+        self::assertArrayHasKey('snapshotAt', $report);
+        self::assertSame($report['snapshotAt'], $availability->observedAt[0]);
+        self::assertSame($report['snapshotAt'], $availability->observedAt[1]);
     }
 
     public function test_occupancy_rate_is_undefined_when_selected_period_has_no_capacity(): void
@@ -483,6 +516,31 @@ class OccupancyReportTest extends TestCase
         }
     }
 
+    public function test_occupancy_page_separates_selected_period_results_from_the_live_snapshot(): void
+    {
+        $this->travelTo('2026-09-04 12:34:56');
+        $user = User::factory()->create(['department' => 'management']);
+
+        $response = $this->actingAs($user)->get('/admin/occupancy-report');
+
+        $response->assertOk()->assertSeeInOrder([
+            'Selected period performance',
+            'Live operational snapshot',
+        ]);
+
+        $selectedPeriod = $this->reportSection($response->getContent(), 'selected-period-heading');
+        self::assertStringContainsString('Room occupancy', $selectedPeriod);
+        self::assertStringContainsString('Scheduled use', $selectedPeriod);
+        self::assertStringNotContainsString('available now', strtolower($selectedPeriod));
+
+        $liveSnapshot = $this->reportSection($response->getContent(), 'live-snapshot-heading');
+        self::assertStringContainsString('As of Sep 4, 2026 12:34 PM', $liveSnapshot);
+        self::assertStringContainsString('Room inventory', $liveSnapshot);
+        self::assertStringContainsString('Venue availability', $liveSnapshot);
+        self::assertStringContainsString('Tables available now', $liveSnapshot);
+        self::assertStringNotContainsString('Room occupancy', $liveSnapshot);
+    }
+
     public function test_occupancy_stats_widget_uses_period_aware_overview_stats(): void
     {
         self::assertTrue(is_subclass_of(OccupancyStats::class, StatsOverviewWidget::class));
@@ -495,7 +553,11 @@ class OccupancyReportTest extends TestCase
 
         $stats = $method->invoke($widget);
 
-        self::assertCount(5, $stats);
+        self::assertSame([
+            'Room occupancy',
+            'Booked room nights',
+            'Room-night capacity',
+        ], array_map(fn ($stat): string => $stat->getLabel(), $stats));
         self::assertSame('Quarterly', $stats[0]->getDescription());
     }
 
@@ -555,7 +617,7 @@ class OccupancyReportTest extends TestCase
 
     /**
      * @param  array<string, mixed>  $report
-     * @return array{occupancyRate: float|null, bookedRoomNights: int, roomNightCapacity: int, roomsAvailable: int, tablesAvailable: int}
+     * @return array{occupancyRate: float|null, bookedRoomNights: int, roomNightCapacity: int}
      */
     private function statsSummary(array $report): array
     {
@@ -563,8 +625,6 @@ class OccupancyReportTest extends TestCase
             'occupancyRate' => $report['occupancyRate'],
             'bookedRoomNights' => $report['bookedRoomNights'],
             'roomNightCapacity' => $report['roomNightCapacity'],
-            'roomsAvailable' => $report['roomStatus']['available'],
-            'tablesAvailable' => $report['tableStatus']['available'],
         ];
     }
 
@@ -601,5 +661,17 @@ class OccupancyReportTest extends TestCase
         self::assertCount(2, $inputs);
 
         return iterator_to_array($inputs);
+    }
+
+    private function reportSection(string $html, string $labelledBy): string
+    {
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $section = $xpath->query("//section[@aria-labelledby='{$labelledBy}']")?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $section);
+
+        return trim($section->textContent);
     }
 }
