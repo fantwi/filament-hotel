@@ -8,8 +8,10 @@ use App\Models\ConferenceBooking;
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
+use Carbon\Carbon;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 /**
  * Provides the revenue report Filament administration page.
@@ -46,13 +48,13 @@ class RevenueReport extends Page
      */
     public function report(): array
     {
-        $paidPayments = $this->forReportPeriod(
-            Payment::query()->whereIn('payment_status', ['paid', 'completed', 'refunded', 'refund']),
-        );
-        $refunds = $this->forReportPeriod(
-            Payment::query()->whereNotNull('refunded_at'),
-            'refunded_at',
-        );
+        [$periodStart, $periodEnd] = $this->periodBounds();
+        $paidPayments = Payment::query()
+            ->whereIn('payment_status', ['paid', 'completed', 'refunded', 'refund'])
+            ->whereBetween('created_at', [$periodStart, $periodEnd]);
+        $refunds = Payment::query()
+            ->whereNotNull('refunded_at')
+            ->whereBetween('refunded_at', [$periodStart, $periodEnd]);
 
         $outstanding = [
             'hotel' => $this->outstandingBalance(
@@ -81,8 +83,6 @@ class RevenueReport extends Page
             ),
         ];
 
-        $revenue = (float) (clone $paidPayments)->sum('amount');
-        $refundTotal = (float) (clone $refunds)->sum('amount');
         $paymentMethodsQuery = (clone $paidPayments)
             ->selectRaw('method, SUM(amount) as total, COUNT(*) as payment_count');
 
@@ -96,6 +96,8 @@ class RevenueReport extends Page
             ->groupBy('method')
             ->orderByDesc('total')
             ->get();
+        $revenue = (float) $methods->sum('total');
+        $paymentsReceived = (int) $methods->sum('payment_count');
         $revenueByChannel = collect(array_keys(self::REVENUE_CHANNEL_CONDITIONS))
             ->mapWithKeys(fn (string $channel): array => [
                 $channel => [
@@ -104,18 +106,225 @@ class RevenueReport extends Page
                 ],
             ])
             ->all();
+        $granularity = $this->trendGranularity($periodStart, $periodEnd);
+        $collectedTrend = $this->paymentAggregates($paidPayments, 'created_at', $granularity);
+        $refundTrend = $this->paymentAggregates($refunds, 'refunded_at', $granularity);
+        $refundTotal = (float) $refundTrend->sum('total');
+        $refundCount = (int) $refundTrend->sum('payment_count');
+        $netRevenue = $revenue - $refundTotal;
+        [$previousStart, $previousEnd] = $this->previousPeriodBounds($periodStart, $periodEnd);
+        $previousRevenue = (float) Payment::query()
+            ->whereIn('payment_status', ['paid', 'completed', 'refunded', 'refund'])
+            ->whereBetween('created_at', [$previousStart, $previousEnd])
+            ->sum('amount');
+        $previousRefunds = (float) Payment::query()
+            ->whereNotNull('refunded_at')
+            ->whereBetween('refunded_at', [$previousStart, $previousEnd])
+            ->sum('amount');
+        $previousNetRevenue = $previousRevenue - $previousRefunds;
 
         return [
             'revenue' => $revenue,
             'refunds' => $refundTotal,
-            'netRevenue' => $revenue - $refundTotal,
+            'netRevenue' => $netRevenue,
             'outstanding' => array_sum($outstanding),
             'outstandingBreakdown' => $outstanding,
-            'paymentsReceived' => (clone $paidPayments)->count(),
-            'refundCount' => (clone $refunds)->count(),
+            'paymentsReceived' => $paymentsReceived,
+            'refundCount' => $refundCount,
             'revenueByChannel' => $revenueByChannel,
             'methods' => $methods,
+            'comparison' => [
+                'previousPeriodLabel' => $this->dateRangeLabel($previousStart, $previousEnd),
+                'revenue' => $this->comparisonMetric($revenue, $previousRevenue),
+                'refunds' => $this->comparisonMetric($refundTotal, $previousRefunds),
+                'netRevenue' => $this->comparisonMetric($netRevenue, $previousNetRevenue),
+            ],
+            'trend' => $this->buildTrend(
+                $periodStart,
+                $periodEnd,
+                $granularity,
+                $collectedTrend,
+                $refundTrend,
+            ),
         ];
+    }
+
+    /**
+     * Returns the immediately preceding inclusive period with the same number of days.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function previousPeriodBounds(Carbon $periodStart, Carbon $periodEnd): array
+    {
+        $days = (int) $periodStart->copy()->startOfDay()
+            ->diffInDays($periodEnd->copy()->startOfDay()) + 1;
+        $previousEnd = $periodStart->copy()->subDay()->endOfDay();
+        $previousStart = $previousEnd->copy()->subDays($days - 1)->startOfDay();
+
+        return [$previousStart, $previousEnd];
+    }
+
+    /**
+     * Selects a readable chart resolution without producing an excessive bucket count.
+     */
+    private function trendGranularity(Carbon $periodStart, Carbon $periodEnd): string
+    {
+        $days = (int) $periodStart->copy()->startOfDay()
+            ->diffInDays($periodEnd->copy()->startOfDay()) + 1;
+
+        return match (true) {
+            $days === 1 => 'hour',
+            $days <= 45 => 'day',
+            $days <= 730 => 'month',
+            default => 'year',
+        };
+    }
+
+    /**
+     * Aggregates payment amounts and counts into database-portable time buckets.
+     *
+     * @return Collection<string, object>
+     */
+    private function paymentAggregates(Builder $payments, string $column, string $granularity): Collection
+    {
+        $expression = $this->bucketExpression($column, $granularity);
+
+        return (clone $payments)
+            ->selectRaw("{$expression} as bucket")
+            ->selectRaw('SUM(amount) as total, COUNT(*) as payment_count')
+            ->groupByRaw($expression)
+            ->get()
+            ->keyBy(fn (object $aggregate): string => (string) $aggregate->bucket);
+    }
+
+    /**
+     * Builds every selected-period chart bucket, including dates without activity.
+     *
+     * @param  Collection<string, object>  $collectedTrend
+     * @param  Collection<string, object>  $refundTrend
+     * @return array{granularity: string, labels: list<string>, collected: list<float>, refunds: list<float>, net: list<float>}
+     */
+    private function buildTrend(
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        string $granularity,
+        Collection $collectedTrend,
+        Collection $refundTrend,
+    ): array {
+        $cursor = match ($granularity) {
+            'hour' => $periodStart->copy()->startOfHour(),
+            'day' => $periodStart->copy()->startOfDay(),
+            'month' => $periodStart->copy()->startOfMonth(),
+            default => $periodStart->copy()->startOfYear(),
+        };
+        $labels = [];
+        $collected = [];
+        $refunds = [];
+
+        while ($cursor->lessThanOrEqualTo($periodEnd)) {
+            $key = $this->bucketKey($cursor, $granularity);
+            $collectedAmount = (float) ($collectedTrend->get($key)?->total ?? 0);
+            $refundAmount = (float) ($refundTrend->get($key)?->total ?? 0);
+
+            $labels[] = match ($granularity) {
+                'hour' => $cursor->format('g A'),
+                'day' => $cursor->format('M j'),
+                'month' => $cursor->format('M Y'),
+                default => $cursor->format('Y'),
+            };
+            $collected[] = $collectedAmount;
+            $refunds[] = $refundAmount;
+
+            match ($granularity) {
+                'hour' => $cursor->addHour(),
+                'day' => $cursor->addDay(),
+                'month' => $cursor->addMonth(),
+                default => $cursor->addYear(),
+            };
+        }
+
+        return [
+            'granularity' => $granularity,
+            'labels' => $labels,
+            'collected' => $collected,
+            'refunds' => $refunds,
+            'net' => array_map(
+                fn (float $amount, int $index): float => $amount - $refunds[$index],
+                $collected,
+                array_keys($collected),
+            ),
+        ];
+    }
+
+    /**
+     * Returns a database-specific expression for a supported timestamp bucket.
+     */
+    private function bucketExpression(string $column, string $granularity): string
+    {
+        $driver = Payment::query()->getModel()->getConnection()->getDriverName();
+
+        return match ($driver) {
+            'sqlite' => match ($granularity) {
+                'hour' => "strftime('%Y-%m-%d %H:00:00', {$column})",
+                'day' => "strftime('%Y-%m-%d', {$column})",
+                'month' => "strftime('%Y-%m-01', {$column})",
+                default => "strftime('%Y-01-01', {$column})",
+            },
+            'pgsql' => match ($granularity) {
+                'hour' => "to_char(date_trunc('hour', {$column}), 'YYYY-MM-DD HH24:00:00')",
+                'day' => "to_char({$column}, 'YYYY-MM-DD')",
+                'month' => "to_char({$column}, 'YYYY-MM-01')",
+                default => "to_char({$column}, 'YYYY-01-01')",
+            },
+            default => match ($granularity) {
+                'hour' => "DATE_FORMAT({$column}, '%Y-%m-%d %H:00:00')",
+                'day' => "DATE_FORMAT({$column}, '%Y-%m-%d')",
+                'month' => "DATE_FORMAT({$column}, '%Y-%m-01')",
+                default => "DATE_FORMAT({$column}, '%Y-01-01')",
+            },
+        };
+    }
+
+    /**
+     * Formats a chart cursor to the key returned by its database aggregate.
+     */
+    private function bucketKey(Carbon $cursor, string $granularity): string
+    {
+        return match ($granularity) {
+            'hour' => $cursor->format('Y-m-d H:00:00'),
+            'day' => $cursor->format('Y-m-d'),
+            'month' => $cursor->format('Y-m-01'),
+            default => $cursor->format('Y-01-01'),
+        };
+    }
+
+    /**
+     * Produces comparable current, previous, absolute, and percentage values.
+     *
+     * @return array{current: float, previous: float, difference: float, percentageChange: float|null}
+     */
+    private function comparisonMetric(float $current, float $previous): array
+    {
+        $difference = $current - $previous;
+
+        return [
+            'current' => $current,
+            'previous' => $previous,
+            'difference' => $difference,
+            'percentageChange' => $previous === 0.0
+                ? null
+                : round(($difference / abs($previous)) * 100, 1),
+        ];
+    }
+
+    /**
+     * Formats an inclusive period for the comparison widget.
+     */
+    private function dateRangeLabel(Carbon $start, Carbon $end): string
+    {
+        return $start->isSameDay($end)
+            ? $start->format('M j, Y')
+            : $start->format('M j, Y').' to '.$end->format('M j, Y');
     }
 
     /**

@@ -99,6 +99,19 @@
             </div>
         </x-filament::section>
 
+        <section aria-label="Previous-period revenue comparison">
+            @livewire(\App\Filament\Admin\Widgets\RevenueComparisonStats::class, [
+                'comparison' => $report['comparison'],
+            ], key('revenue-comparison-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+        </section>
+
+        <section aria-label="Revenue trend chart">
+            @livewire(\App\Filament\Admin\Widgets\RevenueTrendChart::class, [
+                'trend' => $report['trend'],
+                'periodLabel' => $this->periodLabel(),
+            ], key('revenue-trend-chart-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+        </section>
+
         <section class="grid gap-4 lg:grid-cols-3">
             <x-filament::section heading="Outstanding by transaction" description="{{ $this->periodLabel() }} unpaid balances">
                 <dl class="space-y-3">

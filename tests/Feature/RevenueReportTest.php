@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\RevenueReport;
+use App\Filament\Admin\Widgets\RevenueComparisonStats;
 use App\Filament\Admin\Widgets\RevenueReportStats;
+use App\Filament\Admin\Widgets\RevenueTrendChart;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\ConferenceRoom;
@@ -18,6 +20,7 @@ use App\Models\RoomType;
 use App\Models\User;
 use Carbon\Carbon;
 use Filament\Facades\Filament;
+use Filament\Widgets\ChartWidget;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -111,6 +114,180 @@ class RevenueReportTest extends TestCase
             $report['revenue'],
             array_sum(array_column($report['revenueByChannel'], 'total')),
         );
+    }
+
+    public function test_revenue_report_compares_the_immediately_preceding_equal_length_period_and_fills_trend_gaps(): void
+    {
+        [$guest] = $this->serviceFixture();
+
+        $this->createdAt(
+            $this->payment($guest, 'booking_id', null, 100, 'REVENUE-COMPARISON-PREVIOUS'),
+            '2026-08-08 09:00:00',
+        );
+        $this->createdAt(
+            $this->payment($guest, 'booking_id', null, 200, 'REVENUE-COMPARISON-CURRENT-ONE'),
+            '2026-08-10 09:00:00',
+        );
+        $this->createdAt(
+            $this->payment($guest, 'booking_id', null, 100, 'REVENUE-COMPARISON-CURRENT-TWO'),
+            '2026-08-12 15:00:00',
+        );
+
+        $previousRefund = $this->createdAt(
+            $this->payment($guest, 'booking_id', null, 20, 'REVENUE-COMPARISON-PREVIOUS-REFUND'),
+            '2026-07-01 09:00:00',
+        );
+        $previousRefund->forceFill([
+            'payment_status' => 'refunded',
+            'refunded_at' => Carbon::parse('2026-08-08 12:00:00'),
+        ])->saveQuietly();
+
+        $currentRefund = $this->createdAt(
+            $this->payment($guest, 'booking_id', null, 30, 'REVENUE-COMPARISON-CURRENT-REFUND'),
+            '2026-07-02 09:00:00',
+        );
+        $currentRefund->forceFill([
+            'payment_status' => 'refunded',
+            'refunded_at' => Carbon::parse('2026-08-11 12:00:00'),
+        ])->saveQuietly();
+
+        $report = $this->reportForPeriod('2026-08-10', '2026-08-12');
+
+        self::assertSame('Aug 7, 2026 to Aug 9, 2026', $report['comparison']['previousPeriodLabel']);
+        self::assertSame([
+            'current' => 300.0,
+            'previous' => 100.0,
+            'difference' => 200.0,
+            'percentageChange' => 200.0,
+        ], $report['comparison']['revenue']);
+        self::assertSame([
+            'current' => 30.0,
+            'previous' => 20.0,
+            'difference' => 10.0,
+            'percentageChange' => 50.0,
+        ], $report['comparison']['refunds']);
+        self::assertSame([
+            'current' => 270.0,
+            'previous' => 80.0,
+            'difference' => 190.0,
+            'percentageChange' => 237.5,
+        ], $report['comparison']['netRevenue']);
+        self::assertSame([
+            'granularity' => 'day',
+            'labels' => ['Aug 10', 'Aug 11', 'Aug 12'],
+            'collected' => [200.0, 0.0, 100.0],
+            'refunds' => [0.0, 30.0, 0.0],
+            'net' => [200.0, -30.0, 100.0],
+        ], $report['trend']);
+    }
+
+    public function test_revenue_comparison_uses_null_percentage_when_the_previous_value_is_zero(): void
+    {
+        [$guest] = $this->serviceFixture();
+        $this->createdAt(
+            $this->payment($guest, 'booking_id', null, 75, 'REVENUE-COMPARISON-NO-BASELINE'),
+            '2026-08-10 09:00:00',
+        );
+
+        $comparison = $this->reportForPeriod('2026-08-10', '2026-08-10')['comparison'];
+
+        self::assertSame('Aug 9, 2026', $comparison['previousPeriodLabel']);
+        self::assertSame(75.0, $comparison['revenue']['difference']);
+        self::assertNull($comparison['revenue']['percentageChange']);
+    }
+
+    public function test_revenue_comparison_stats_widget_uses_precomputed_values_without_queries(): void
+    {
+        self::assertTrue(is_subclass_of(RevenueComparisonStats::class, StatsOverviewWidget::class));
+
+        $widget = new RevenueComparisonStats;
+        $widget->comparison = [
+            'previousPeriodLabel' => 'Aug 7, 2026 to Aug 9, 2026',
+            'revenue' => ['current' => 300.0, 'previous' => 100.0, 'difference' => 200.0, 'percentageChange' => 200.0],
+            'refunds' => ['current' => 30.0, 'previous' => 20.0, 'difference' => 10.0, 'percentageChange' => 50.0],
+            'netRevenue' => ['current' => 270.0, 'previous' => 80.0, 'difference' => 190.0, 'percentageChange' => 237.5],
+        ];
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $stats = $method->invoke($widget);
+            $queries = DB::getQueryLog();
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        self::assertCount(0, $queries);
+        self::assertSame(
+            ['Collected revenue change', 'Refund change', 'Net revenue change'],
+            array_map(fn ($stat): string => $stat->getLabel(), $stats),
+        );
+        self::assertSame(
+            ['+GHS 200.00', '+GHS 10.00', '+GHS 190.00'],
+            array_map(fn ($stat): string => $stat->getValue(), $stats),
+        );
+        self::assertSame(['success', 'danger', 'success'], array_map(
+            fn ($stat): string|array|null => $stat->getColor(),
+            $stats,
+        ));
+        self::assertStringContainsString('Current GHS 300.00', $stats[0]->getDescription());
+        self::assertStringContainsString('Previous GHS 100.00', $stats[0]->getDescription());
+        self::assertStringContainsString('Up 200.0%', $stats[0]->getDescription());
+    }
+
+    public function test_revenue_trend_chart_uses_precomputed_values_without_queries(): void
+    {
+        self::assertTrue(is_subclass_of(RevenueTrendChart::class, ChartWidget::class));
+
+        $widget = new RevenueTrendChart;
+        $widget->trend = [
+            'granularity' => 'day',
+            'labels' => ['Aug 10', 'Aug 11', 'Aug 12'],
+            'collected' => [200.0, 0.0, 100.0],
+            'refunds' => [0.0, 30.0, 0.0],
+            'net' => [200.0, -30.0, 100.0],
+        ];
+        $method = new \ReflectionMethod($widget, 'getData');
+        $method->setAccessible(true);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $data = $method->invoke($widget);
+            $queries = DB::getQueryLog();
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        self::assertCount(0, $queries);
+        self::assertSame(['Aug 10', 'Aug 11', 'Aug 12'], $data['labels']);
+        self::assertSame(
+            ['Collected revenue', 'Refunds', 'Net revenue'],
+            array_column($data['datasets'], 'label'),
+        );
+        self::assertSame('line', $data['datasets'][2]['type']);
+        self::assertSame('#059669', $data['datasets'][0]['borderColor']);
+        self::assertSame('#E11D48', $data['datasets'][1]['borderColor']);
+        self::assertSame('#4F46E5', $data['datasets'][2]['borderColor']);
+    }
+
+    public function test_revenue_trend_uses_readable_automatic_granularity_for_short_and_long_ranges(): void
+    {
+        $daily = $this->reportForPeriod('2026-08-10', '2026-08-10')['trend'];
+        $medium = $this->reportForPeriod('2026-08-01', '2026-09-15')['trend'];
+        $long = $this->reportForPeriod('2024-01-01', '2026-01-01')['trend'];
+
+        self::assertSame('hour', $daily['granularity']);
+        self::assertCount(24, $daily['labels']);
+        self::assertSame(['12 AM', '11 PM'], [$daily['labels'][0], $daily['labels'][23]]);
+        self::assertSame('month', $medium['granularity']);
+        self::assertSame(['Aug 2026', 'Sep 2026'], $medium['labels']);
+        self::assertSame('year', $long['granularity']);
+        self::assertSame(['2024', '2025', '2026'], $long['labels']);
     }
 
     public function test_revenue_stats_widget_uses_precomputed_period_aware_overview_without_queries(): void
@@ -213,6 +390,24 @@ class RevenueReportTest extends TestCase
             self::assertStringContainsString('payment(s)', $card->textContent);
             self::assertMatchesRegularExpression('/\d+\.\d% of revenue/', $card->textContent);
         }
+    }
+
+    public function test_revenue_report_places_comparison_and_trend_before_detailed_financial_sections(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(RevenueReport::getUrl());
+
+        $response->assertOk()->assertSeeInOrder([
+            'Revenue by business channel',
+            'Previous-period comparison',
+            'Revenue trend',
+            'Outstanding by transaction',
+            'Payment methods',
+        ]);
     }
 
     public function test_revenue_report_indexes_cover_period_and_status_predicates(): void
