@@ -3,10 +3,9 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
-use App\Models\KitchenStockMovement;
+use App\Models\Ingredient;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Provides the kitchen stock stats Filament dashboard widget.
@@ -32,91 +31,31 @@ class KitchenStockStats extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
-        $movements = $this->forDashboardDateRange(
-            KitchenStockMovement::query(),
-            'kitchen_stock_movements.occurred_at',
-        );
-        $inbound = $this->movementSummary(
-            (clone $movements)->where('kitchen_stock_movements.direction', KitchenStockMovement::DIRECTION_IN),
-        );
-        $consumption = $this->movementSummary(
-            (clone $movements)->where('kitchen_stock_movements.type', KitchenStockMovement::TYPE_CONSUMPTION),
-        );
-        $wastage = $this->movementSummary(
-            (clone $movements)->where('kitchen_stock_movements.type', KitchenStockMovement::TYPE_WASTAGE),
-        );
+        $stock = Ingredient::query()
+            ->where('is_active', true)
+            ->selectRaw('SUM(CASE WHEN current_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock')
+            ->selectRaw('SUM(CASE WHEN current_stock > 0 AND current_stock <= reorder_level THEN 1 ELSE 0 END) as low_stock')
+            ->selectRaw('SUM(CASE WHEN current_stock > reorder_level THEN 1 ELSE 0 END) as healthy_stock')
+            ->selectRaw('COALESCE(SUM(current_stock * unit_cost), 0) as inventory_value')
+            ->first();
 
         return [
-            Stat::make(
-                'Ingredients Moved',
-                number_format((clone $movements)
-                    ->distinct('kitchen_stock_movements.ingredient_id')
-                    ->count('kitchen_stock_movements.ingredient_id')),
-            )->description($this->dashboardDateRangeLabel())->icon('heroicon-o-archive-box')->color('primary'),
-            Stat::make('Inbound Movements', number_format($inbound['count']))
-                ->description($inbound['description'])
-                ->icon('heroicon-o-arrow-down-tray')
-                ->color('success'),
-            Stat::make('Consumption Movements', number_format($consumption['count']))
-                ->description($consumption['description'])
-                ->icon('heroicon-o-fire')
-                ->color('warning'),
-            Stat::make('Wastage Movements', number_format($wastage['count']))
-                ->description($wastage['description'])
-                ->icon('heroicon-o-exclamation-triangle')
+            Stat::make('Out of stock', number_format((int) $stock?->out_of_stock))
+                ->description('Current balance is zero or below')
+                ->icon('heroicon-o-exclamation-circle')
                 ->color('danger'),
+            Stat::make('Low stock', number_format((int) $stock?->low_stock))
+                ->description('Above zero and at or below reorder level')
+                ->icon('heroicon-o-arrow-trending-down')
+                ->color('warning'),
+            Stat::make('Healthy stock', number_format((int) $stock?->healthy_stock))
+                ->description('Current balance is above reorder level')
+                ->icon('heroicon-o-check-circle')
+                ->color('success'),
+            Stat::make('Current inventory value', 'GHS '.number_format((float) $stock?->inventory_value, 2))
+                ->description('Active ingredient stock at current cost')
+                ->icon('heroicon-o-banknotes')
+                ->color('primary'),
         ];
-    }
-
-    /**
-     * Summarize movement activity without combining incompatible stock units.
-     *
-     * @return array{count: int, description: string}
-     */
-    private function movementSummary(Builder $query): array
-    {
-        $groups = $query
-            ->leftJoin('ingredients', 'ingredients.id', '=', 'kitchen_stock_movements.ingredient_id')
-            ->selectRaw("COALESCE(NULLIF(ingredients.unit, ''), 'unspecified') as stock_unit")
-            ->selectRaw('COUNT(*) as movement_count')
-            ->selectRaw('SUM(kitchen_stock_movements.quantity) as stock_quantity')
-            ->groupBy('ingredients.unit')
-            ->orderBy('ingredients.unit')
-            ->get();
-
-        $count = (int) $groups->sum('movement_count');
-
-        if ($count === 0) {
-            return [
-                'count' => 0,
-                'description' => 'No movements in selected period',
-            ];
-        }
-
-        $quantities = $groups
-            ->map(fn (KitchenStockMovement $group): string => sprintf(
-                '%s %s',
-                $this->formatQuantity((float) $group->stock_quantity),
-                $group->stock_unit,
-            ))
-            ->implode(' · ');
-
-        return [
-            'count' => $count,
-            'description' => sprintf(
-                '%s across %s %s',
-                $quantities,
-                number_format($count),
-                str('movement')->plural($count),
-            ),
-        ];
-    }
-
-    /**
-     * Format a decimal quantity without insignificant trailing zeroes.
-     */
-    private function formatQuantity(float $quantity): string
-    {
-        return rtrim(rtrim(number_format($quantity, 3, '.', ''), '0'), '.');
     }
 }
