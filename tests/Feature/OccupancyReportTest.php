@@ -489,12 +489,62 @@ class OccupancyReportTest extends TestCase
         self::assertSame(1100, $report['bookedRoomNights']);
     }
 
-    public function test_occupancy_page_exposes_loading_feedback_while_the_period_changes(): void
+    public function test_occupancy_page_marks_only_selected_period_results_as_busy_while_the_period_changes(): void
     {
-        $view = file_get_contents(resource_path('views/filament/admin/pages/occupancy-report.blade.php'));
+        $user = User::factory()->create(['department' => 'management']);
 
-        self::assertStringContainsString('wire:loading', $view);
-        self::assertStringContainsString('wire:target="applyReportPeriod,resetReportPeriod"', $view);
+        $response = $this->actingAs($user)->get('/admin/occupancy-report');
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $selectedPeriod = $xpath->query('//section[@aria-labelledby="selected-period-heading"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $selectedPeriod);
+        self::assertSame('aria-busy', $selectedPeriod->getAttribute('wire:loading.attr'));
+        self::assertSame('applyReportPeriod,resetReportPeriod', $selectedPeriod->getAttribute('wire:target'));
+
+        $results = $xpath->query('./div[@data-occupancy-period-results]', $selectedPeriod)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $results);
+        self::assertStringContainsString('pointer-events-none', $results->getAttribute('wire:loading.class'));
+        self::assertStringContainsString('opacity-60', $results->getAttribute('wire:loading.class'));
+
+        $status = $xpath->query('./div[@role="status"]', $selectedPeriod)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $status);
+        self::assertSame('polite', $status->getAttribute('aria-live'));
+        self::assertSame('true', $status->getAttribute('aria-atomic'));
+        self::assertSame('applyReportPeriod,resetReportPeriod', $status->getAttribute('wire:target'));
+        self::assertTrue($status->hasAttribute('wire:loading.flex'));
+        self::assertStringContainsString('Updating occupancy report', $status->textContent);
+
+        $liveSnapshot = $xpath->query('//section[@aria-labelledby="live-snapshot-heading"]')?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $liveSnapshot);
+        self::assertFalse($liveSnapshot->hasAttribute('wire:loading.attr'));
+        self::assertSame(0, $xpath->query('.//*[@role="status"]', $liveSnapshot)?->count());
+    }
+
+    public function test_occupancy_period_actions_are_disabled_during_a_report_refresh(): void
+    {
+        $user = User::factory()->create(['department' => 'management']);
+
+        $response = $this->actingAs($user)->get('/admin/occupancy-report');
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $buttons = $xpath->query('//form[@*[name()="wire:submit"]="applyReportPeriod"]//button');
+
+        self::assertNotFalse($buttons);
+        self::assertCount(2, $buttons);
+
+        foreach ($buttons as $button) {
+            self::assertSame('disabled', $button->getAttribute('wire:loading.attr'));
+            self::assertSame('applyReportPeriod,resetReportPeriod', $button->getAttribute('wire:target'));
+        }
     }
 
     public function test_occupancy_page_only_allows_date_edits_for_custom_ranges(): void

@@ -51,7 +51,13 @@
         </label>
 
         <div class="flex flex-col justify-end gap-2 sm:flex-row xl:flex-col 2xl:flex-row">
-            <x-filament::button type="submit" icon="heroicon-o-funnel" class="w-full">
+            <x-filament::button
+                type="submit"
+                icon="heroicon-o-funnel"
+                wire:loading.attr="disabled"
+                wire:target="applyReportPeriod,resetReportPeriod"
+                class="w-full"
+            >
                 Apply
             </x-filament::button>
             <x-filament::button
@@ -59,6 +65,8 @@
                 color="gray"
                 icon="heroicon-o-arrow-path"
                 wire:click="resetReportPeriod"
+                wire:loading.attr="disabled"
+                wire:target="applyReportPeriod,resetReportPeriod"
                 class="w-full"
             >
                 Reset
