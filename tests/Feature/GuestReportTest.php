@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
 use App\Filament\Admin\Pages\GuestReport;
+use App\Filament\Admin\Resources\Guests\GuestResource;
+use App\Filament\Admin\Resources\Payments\PaymentResource;
 use App\Filament\Admin\Widgets\GuestComparisonStats;
 use App\Filament\Admin\Widgets\GuestStats;
 use App\Filament\Admin\Widgets\GuestTrendChart;
@@ -26,6 +29,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -69,6 +73,105 @@ class GuestReportTest extends TestCase
 
         self::assertArrayHasKey('hasPeriodActivity', $report);
         self::assertTrue($report['hasPeriodActivity']);
+    }
+
+    public function test_guest_report_builds_filtered_guest_and_payment_drill_downs_for_authorized_staff(): void
+    {
+        $permission = Permission::findOrCreate('view transaction dashboard', 'web');
+        $role = Role::findOrCreate('super_admin', 'web');
+        $role->givePermissionTo($permission);
+        $superAdmin = User::factory()->create(['department' => 'admin']);
+        $superAdmin->assignRole($role);
+        $guest = Guest::query()->create([
+            'first_name' => 'Drill',
+            'last_name' => 'Down',
+            'email' => 'drill-down@example.test',
+            'phone_number' => '0240000014',
+        ]);
+        $this->actingAs($superAdmin);
+
+        self::assertTrue(method_exists(GuestReport::class, 'drillDownUrls'));
+
+        $page = new GuestReport;
+        $page->period = 'custom';
+        $page->startDate = '2026-08-10';
+        $page->endDate = '2026-08-12';
+        $urls = $page->drillDownUrls();
+
+        self::assertSame('/admin/guests', parse_url($urls['guestProfiles'], PHP_URL_PATH));
+        self::assertSame([
+            'from' => '2026-08-10',
+            'until' => '2026-08-12',
+        ], $this->urlFilters($urls['newGuests'])['created_at']);
+        self::assertNull($urls['returningGuests']);
+
+        $payingFilters = $this->urlFilters($urls['payingGuests']);
+        self::assertSame('/admin/payments', parse_url($urls['payingGuests'], PHP_URL_PATH));
+        self::assertSame('revenue', $payingFilters['payment_status']);
+        self::assertSame('created_at', $payingFilters['date_basis']);
+        self::assertSame('2026-08-10', $payingFilters['start_date']);
+        self::assertSame('2026-08-12', $payingFilters['end_date']);
+        self::assertSame($urls['payingGuests'], $urls['averageSpend']);
+        self::assertSame($urls['payingGuests'], $urls['grossSpend']);
+
+        $refundFilters = $this->urlFilters($urls['refunds']);
+        self::assertSame('refunded', $refundFilters['payment_status']);
+        self::assertSame('refunded_at', $refundFilters['date_basis']);
+        self::assertSame('hotel_bookings', $this->urlFilters($urls['activity']['hotel'])['transaction_type']);
+        self::assertSame('conference_bookings', $this->urlFilters($urls['activity']['conference'])['transaction_type']);
+        self::assertSame('table_reservations', $this->urlFilters($urls['activity']['table'])['transaction_type']);
+        self::assertSame('food_orders', $this->urlFilters($urls['activity']['food'])['transaction_type']);
+        self::assertSame('/admin/transaction-dashboard', parse_url($urls['netSpend'], PHP_URL_PATH));
+        self::assertSame('collection-performance', parse_url($urls['netSpend'], PHP_URL_FRAGMENT));
+        self::assertSame(
+            GuestResource::getUrl('view', ['record' => $guest]),
+            $page->guestDetailsUrl($guest),
+        );
+    }
+
+    public function test_guest_report_uses_permission_safe_transaction_fallbacks_for_managers(): void
+    {
+        $permission = Permission::findOrCreate('view transaction dashboard', 'web');
+        $role = Role::findOrCreate('manager', 'web');
+        $role->givePermissionTo($permission);
+        $manager = User::factory()->create(['department' => 'manager']);
+        $manager->assignRole($role);
+        $guest = Guest::query()->create([
+            'first_name' => 'Manager',
+            'last_name' => 'Guest',
+            'email' => 'manager-guest@example.test',
+            'phone_number' => '0240000015',
+        ]);
+        $this->actingAs($manager);
+
+        self::assertFalse(GuestResource::canViewAny());
+        self::assertFalse(PaymentResource::canViewAny());
+        self::assertTrue(TransactionDashboard::canAccess());
+        self::assertTrue(method_exists(GuestReport::class, 'drillDownUrls'));
+
+        $page = new GuestReport;
+        $page->period = 'custom';
+        $page->startDate = '2026-08-10';
+        $page->endDate = '2026-08-12';
+        $urls = $page->drillDownUrls();
+
+        self::assertNull($urls['guestProfiles']);
+        self::assertNull($urls['newGuests']);
+        self::assertNull($urls['returningGuests']);
+        self::assertNull($page->guestDetailsUrl($guest));
+
+        foreach ([
+            $urls['payingGuests'],
+            $urls['averageSpend'],
+            $urls['grossSpend'],
+            $urls['refunds'],
+            $urls['netSpend'],
+            ...array_values($urls['activity']),
+        ] as $url) {
+            self::assertSame('/admin/transaction-dashboard', parse_url($url, PHP_URL_PATH));
+            self::assertSame('2026-08-10', $this->urlFilters($url)['start_date']);
+            self::assertSame('2026-08-12', $this->urlFilters($url)['end_date']);
+        }
     }
 
     public function test_guest_report_calculates_paid_guest_spend_for_the_selected_period(): void
@@ -812,6 +915,80 @@ class GuestReportTest extends TestCase
         self::assertCount(1, $xpath->query('.//tbody/tr', $desktopTable));
     }
 
+    public function test_guest_report_renders_authorized_drill_down_links_without_linking_returning_guests(): void
+    {
+        $permission = Permission::findOrCreate('view transaction dashboard', 'web');
+        $role = Role::findOrCreate('super_admin', 'web');
+        $role->givePermissionTo($permission);
+        $superAdmin = User::factory()->create(['department' => 'admin']);
+        $superAdmin->assignRole($role);
+        $guest = Guest::query()->create([
+            'first_name' => 'Linked',
+            'last_name' => 'Guest',
+            'email' => 'linked-guest@example.test',
+            'phone_number' => '0240000016',
+        ]);
+        Payment::query()->create([
+            'guest_id' => $guest->id,
+            'amount' => 325,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-REPORT-DRILL-DOWN',
+        ]);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs($superAdmin);
+        $urls = (new GuestReport)->drillDownUrls();
+
+        $response = $this->get(GuestReport::getUrl());
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $results = $xpath->query('//section[@aria-label="Selected period guest results"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $results);
+        self::assertSame(
+            $urls['guestProfiles'],
+            $xpath->query('.//a[@aria-label="View all guest profiles"]', $results)?->item(0)?->getAttribute('href'),
+        );
+        self::assertSame(
+            $urls['newGuests'],
+            $xpath->query('.//a[contains(normalize-space(.), "New guests")]', $results)?->item(0)?->getAttribute('href'),
+        );
+        self::assertSame(
+            $urls['payingGuests'],
+            $xpath->query('.//a[contains(normalize-space(.), "Paying guests")]', $results)?->item(0)?->getAttribute('href'),
+        );
+        self::assertSame(
+            $urls['averageSpend'],
+            $xpath->query('.//a[contains(normalize-space(.), "Average gross spend")]', $results)?->item(0)?->getAttribute('href'),
+        );
+        self::assertCount(0, $xpath->query('.//a[contains(normalize-space(.), "Returning guests")]', $results));
+        self::assertSame(
+            $urls['grossSpend'],
+            $xpath->query('.//a[@aria-label="View gross guest spend payments"]', $results)?->item(0)?->getAttribute('href'),
+        );
+        self::assertSame(
+            $urls['refunds'],
+            $xpath->query('.//a[@aria-label="View guest refund payments"]', $results)?->item(0)?->getAttribute('href'),
+        );
+        self::assertSame(
+            $urls['netSpend'],
+            $xpath->query('.//a[@aria-label="View net guest spend analysis"]', $results)?->item(0)?->getAttribute('href'),
+        );
+
+        foreach (['hotel', 'conference', 'table', 'food'] as $type) {
+            self::assertSame(
+                $urls['activity'][$type],
+                $xpath->query('.//a[@aria-label="View '.$type.' guest payment activity"]', $results)?->item(0)?->getAttribute('href'),
+            );
+        }
+
+        self::assertCount(2, $xpath->query('.//a[@aria-label="View guest Linked Guest"]', $results));
+    }
+
     public function test_an_empty_selected_period_replaces_zero_heavy_sections_with_one_actionable_state(): void
     {
         Role::findOrCreate('accountant', 'web');
@@ -844,6 +1021,7 @@ class GuestReportTest extends TestCase
     public function test_guest_stats_widget_uses_precomputed_period_aware_data_without_queries(): void
     {
         self::assertTrue(is_subclass_of(GuestStats::class, StatsOverviewWidget::class));
+        self::assertTrue(property_exists(GuestStats::class, 'drillDownUrls'));
 
         $widget = new GuestStats;
         $widget->reportData = [
@@ -853,6 +1031,12 @@ class GuestReportTest extends TestCase
             'averageSpend' => 1250.5,
         ];
         $widget->reportPeriodLabel = 'Yearly';
+        $widget->drillDownUrls = [
+            'newGuests' => '/admin/guests?joined=yearly',
+            'payingGuests' => '/admin/payments?scope=guests',
+            'returningGuests' => null,
+            'averageSpend' => '/admin/payments?scope=guests',
+        ];
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 
@@ -874,6 +1058,10 @@ class GuestReportTest extends TestCase
         );
         self::assertSame('Profiles created in Yearly', $stats[0]->getDescription());
         self::assertSame('Gross collections per paying guest in Yearly', $stats[3]->getDescription());
+        self::assertSame('/admin/guests?joined=yearly', $stats[0]->getUrl());
+        self::assertSame('/admin/payments?scope=guests', $stats[1]->getUrl());
+        self::assertNull($stats[2]->getUrl());
+        self::assertSame('/admin/payments?scope=guests', $stats[3]->getUrl());
 
         $columns = new \ReflectionMethod($widget, 'getColumns');
         $columns->setAccessible(true);
@@ -935,6 +1123,16 @@ class GuestReportTest extends TestCase
         $page->endDate = $endDate;
 
         return $page->report();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function urlFilters(string $url): array
+    {
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        return $query['filters'] ?? [];
     }
 
     /**

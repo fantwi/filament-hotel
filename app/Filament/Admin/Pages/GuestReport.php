@@ -3,8 +3,12 @@
 namespace App\Filament\Admin\Pages;
 
 use App\Filament\Admin\Concerns\InteractsWithReportPeriod;
+use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
+use App\Filament\Admin\Resources\Guests\GuestResource;
+use App\Filament\Admin\Resources\Payments\PaymentResource;
 use App\Models\Guest;
 use App\Models\Payment;
+use App\Services\PaymentReportFilters;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
@@ -376,6 +380,120 @@ class GuestReport extends Page
         return $start->isSameDay($end)
             ? $start->format('M j, Y')
             : $start->format('M j, Y').' to '.$end->format('M j, Y');
+    }
+
+    /**
+     * Builds permission-aware destinations for the report's actionable metrics.
+     *
+     * @return array{
+     *     guestProfiles: string|null,
+     *     newGuests: string|null,
+     *     payingGuests: string|null,
+     *     returningGuests: null,
+     *     averageSpend: string|null,
+     *     grossSpend: string|null,
+     *     refunds: string|null,
+     *     netSpend: string|null,
+     *     activity: array{hotel: string|null, conference: string|null, table: string|null, food: string|null}
+     * }
+     */
+    public function drillDownUrls(): array
+    {
+        [$start, $end] = $this->periodBounds();
+        $canViewGuests = auth()->check() && GuestResource::canViewAny();
+        $guestProfiles = $canViewGuests ? GuestResource::getUrl('index') : null;
+        $newGuests = $canViewGuests
+            ? GuestResource::getUrl('index', [
+                'filters' => [
+                    'created_at' => [
+                        'from' => $start->toDateString(),
+                        'until' => $end->toDateString(),
+                    ],
+                ],
+            ])
+            : null;
+        $collections = $this->paymentOrTransactionUrl('revenue');
+
+        return [
+            'guestProfiles' => $guestProfiles,
+            'newGuests' => $newGuests,
+            'payingGuests' => $collections,
+            'returningGuests' => null,
+            'averageSpend' => $collections,
+            'grossSpend' => $collections,
+            'refunds' => $this->paymentOrTransactionUrl('refunded', dateBasis: 'refunded_at'),
+            'netSpend' => $this->transactionDashboardUrl('collection-performance'),
+            'activity' => [
+                'hotel' => $this->paymentOrTransactionUrl('revenue', 'hotel_bookings', 'transaction-breakdown'),
+                'conference' => $this->paymentOrTransactionUrl('revenue', 'conference_bookings', 'transaction-breakdown'),
+                'table' => $this->paymentOrTransactionUrl('revenue', 'table_reservations', 'transaction-breakdown'),
+                'food' => $this->paymentOrTransactionUrl('revenue', 'food_orders', 'transaction-breakdown'),
+            ],
+        ];
+    }
+
+    /**
+     * Links an individual top-guest result only when guest records are authorized.
+     */
+    public function guestDetailsUrl(?Guest $guest): ?string
+    {
+        return $guest !== null && auth()->check() && GuestResource::canViewAny()
+            ? GuestResource::getUrl('view', ['record' => $guest])
+            : null;
+    }
+
+    /**
+     * Links finance roles to filtered payments and other authorized roles to analysis.
+     */
+    private function paymentOrTransactionUrl(
+        string $status,
+        string $transactionType = 'all',
+        string $fallbackSection = 'collection-performance',
+        string $dateBasis = 'created_at',
+    ): ?string {
+        if (! (auth()->check() && PaymentResource::canViewAny())) {
+            return $this->transactionDashboardUrl($fallbackSection);
+        }
+
+        [$start, $end] = $this->periodBounds();
+        $period = array_key_exists($this->period, PaymentReportFilters::periodOptions())
+            ? $this->period
+            : 'monthly';
+
+        return PaymentResource::getUrl('index', [
+            'filters' => [
+                'transaction_type' => $transactionType,
+                'payment_status' => $status,
+                'payment_method' => 'all',
+                'date_basis' => $dateBasis,
+                'period' => $period,
+                'start_date' => $start->toDateString(),
+                'end_date' => $end->toDateString(),
+            ],
+        ]);
+    }
+
+    /**
+     * Opens date-filtered transaction analysis when the current role may access it.
+     */
+    private function transactionDashboardUrl(string $section): ?string
+    {
+        if (! (auth()->check() && TransactionDashboard::canAccess())) {
+            return null;
+        }
+
+        [$start, $end] = $this->periodBounds();
+        $period = array_key_exists($this->period, PaymentReportFilters::periodOptions())
+            ? $this->period
+            : 'monthly';
+
+        return TransactionDashboard::getUrl([
+            'filters' => [
+                'period' => $period,
+                'start_date' => $start->toDateString(),
+                'end_date' => $end->toDateString(),
+            ],
+        ]).'#'.ltrim($section, '#');
     }
 
     /**

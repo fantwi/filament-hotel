@@ -29,6 +29,9 @@ class GuestStats extends StatsOverviewWidget
 
     public string $reportPeriodLabel = 'Monthly';
 
+    /** @var array<string, string|null> */
+    public array $drillDownUrls = [];
+
     /**
      * Determines whether the current user may view this feature.
      */
@@ -48,22 +51,46 @@ class GuestStats extends StatsOverviewWidget
         $periodLabel = $this->reportPeriodLabel;
 
         return [
-            Stat::make('New guests', number_format((int) $report['newGuests']))
-                ->description('Profiles created in '.$periodLabel)
-                ->icon('heroicon-o-user-plus')
-                ->color('success'),
-            Stat::make('Paying guests', number_format((int) $report['payingGuests']))
-                ->description('Guests with paid activity')
-                ->icon('heroicon-o-credit-card')
-                ->color('info'),
-            Stat::make('Returning guests', number_format((int) $report['returningGuests']))
-                ->description('Two or more paid service visits')
-                ->icon('heroicon-o-arrow-path-rounded-square')
-                ->color('warning'),
-            Stat::make('Average gross spend', 'GHS '.number_format((float) $report['averageSpend'], 2))
-                ->description('Gross collections per paying guest in '.$periodLabel)
-                ->icon('heroicon-o-banknotes')
-                ->color('success'),
+            $this->withDrillDown(
+                Stat::make('New guests', number_format((int) $report['newGuests']))
+                    ->description('Profiles created in '.$periodLabel)
+                    ->icon('heroicon-o-user-plus')
+                    ->color('success'),
+                'newGuests',
+            ),
+            $this->withDrillDown(
+                Stat::make('Paying guests', number_format((int) $report['payingGuests']))
+                    ->description('Guests with paid activity')
+                    ->icon('heroicon-o-credit-card')
+                    ->color('info'),
+                'payingGuests',
+            ),
+            $this->withDrillDown(
+                Stat::make('Returning guests', number_format((int) $report['returningGuests']))
+                    ->description('Two or more paid service visits')
+                    ->icon('heroicon-o-arrow-path-rounded-square')
+                    ->color('warning'),
+                'returningGuests',
+            ),
+            $this->withDrillDown(
+                Stat::make('Average gross spend', 'GHS '.number_format((float) $report['averageSpend'], 2))
+                    ->description('Gross collections per paying guest in '.$periodLabel)
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success'),
+                'averageSpend',
+            ),
         ];
+    }
+
+    /**
+     * Makes a metric visibly actionable only when an authorized URL is supplied.
+     */
+    private function withDrillDown(Stat $stat, string $key): Stat
+    {
+        $url = $this->drillDownUrls[$key] ?? null;
+
+        return filled($url)
+            ? $stat->url($url)->descriptionIcon('heroicon-m-arrow-top-right-on-square')
+            : $stat;
     }
 }
