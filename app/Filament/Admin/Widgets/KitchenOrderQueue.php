@@ -20,6 +20,8 @@ class KitchenOrderQueue extends TableWidget
 {
     use InteractsWithDashboardDateRange;
 
+    private const OPERATIONAL_ACTIONS = ['start_preparing', 'ready', 'served'];
+
     protected static ?string $heading = 'Live Kitchen Order Queue';
 
     protected static ?int $sort = 5;
@@ -27,12 +29,16 @@ class KitchenOrderQueue extends TableWidget
     protected int|string|array $columnSpan = 'full';
 
     /**
-     * Re-authorizes an already-mounted action before Filament can short-circuit
-     * it as hidden after the staff account status changes.
+     * Re-authorizes an already-mounted operational action before Filament can
+     * short-circuit it as hidden after the staff account status changes.
      */
     public function callMountedAction(array $arguments = []): mixed
     {
-        $this->authorizeOperationalActions();
+        $actionName = $this->getMountedAction()?->getName();
+
+        if (in_array($actionName, self::OPERATIONAL_ACTIONS, true)) {
+            $this->authorizeOperationalActions();
+        }
 
         return parent::callMountedAction($arguments);
     }

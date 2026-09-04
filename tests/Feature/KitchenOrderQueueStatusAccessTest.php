@@ -100,6 +100,19 @@ class KitchenOrderQueueStatusAccessTest extends TestCase
             ->assertTableActionHidden('served', $ready);
     }
 
+    #[DataProvider('nonOperationalKitchenStaff')]
+    public function test_non_operational_kitchen_staff_can_refresh_an_empty_queue(
+        StaffAccountStatus $status,
+        bool $canManageOrders,
+    ): void {
+        $staff = $this->kitchenStaff('kitchen_staff', $status, $canManageOrders);
+
+        $this->queueFor($staff)
+            ->assertTableEmptyStateActionsExistInOrder(['refreshQueue'])
+            ->call('mountAction', 'refreshQueue', [], ['table' => true])
+            ->assertOk();
+    }
+
     public function test_live_queue_keeps_active_orders_created_before_the_dashboard_period_visible(): void
     {
         $staff = $this->kitchenStaff('kitchen_manager', StaffAccountStatus::Active);
@@ -177,6 +190,14 @@ class KitchenOrderQueueStatusAccessTest extends TestCase
         return [
             'kitchen manager' => ['kitchen_manager'],
             'kitchen staff' => ['kitchen_staff'],
+        ];
+    }
+
+    public static function nonOperationalKitchenStaff(): array
+    {
+        return [
+            'on leave' => [StaffAccountStatus::OnLeave, true],
+            'active and view only' => [StaffAccountStatus::Active, false],
         ];
     }
 
