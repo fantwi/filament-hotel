@@ -608,18 +608,67 @@ class OccupancyReportTest extends TestCase
         $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
-        $grid = $xpath->query('//dl[@aria-label="Scheduled use metrics"]')?->item(0);
+        $grid = $xpath->query('//ul[@aria-label="Scheduled use metrics"]')?->item(0);
 
         self::assertInstanceOf(\DOMElement::class, $grid);
         self::assertStringContainsString('md:grid-cols-2', $grid->getAttribute('class'));
         self::assertStringContainsString('xl:grid-cols-3', $grid->getAttribute('class'));
 
-        $cards = $xpath->query('./div', $grid);
+        $cards = $xpath->query('./li', $grid);
         self::assertNotFalse($cards);
         self::assertCount(3, $cards);
 
         foreach (['primary', 'info', 'warning'] as $index => $tone) {
             self::assertStringContainsString("border-{$tone}-200", $cards->item($index)->getAttribute('class'));
+        }
+    }
+
+    public function test_occupancy_activity_stats_link_to_the_matching_hotel_calendar_scope(): void
+    {
+        $widget = new OccupancyStats;
+        $widget->hotelBookingsUrl = 'http://localhost/admin/booking-calendar?type=hotel&status_scope=reportable&start_date=2026-09-01&end_date=2026-09-04';
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+
+        $stats = $method->invoke($widget);
+
+        self::assertSame($widget->hotelBookingsUrl, $stats[0]->getUrl());
+        self::assertSame($widget->hotelBookingsUrl, $stats[1]->getUrl());
+        self::assertSame('heroicon-m-arrow-top-right-on-square', $stats[0]->getDescriptionIcon());
+        self::assertSame('heroicon-m-arrow-top-right-on-square', $stats[1]->getDescriptionIcon());
+        self::assertNull($stats[2]->getUrl());
+    }
+
+    public function test_scheduled_use_cards_link_to_matching_calendar_types_and_selected_dates(): void
+    {
+        $user = User::factory()->create(['department' => 'management']);
+
+        $response = $this->actingAs($user)->get(
+            '/admin/occupancy-report?period=custom&startDate=2026-09-01&endDate=2026-09-04',
+        );
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+
+        foreach ([
+            'View hotel stays for the selected period' => 'hotel',
+            'View conference bookings for the selected period' => 'conference',
+            'View table reservations for the selected period' => 'restaurant',
+        ] as $label => $type) {
+            $link = $xpath->query('//a[@aria-label="'.$label.'"]')?->item(0);
+
+            self::assertInstanceOf(\DOMElement::class, $link);
+            $url = $link->getAttribute('href');
+            parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+            self::assertSame('/admin/booking-calendar', parse_url($url, PHP_URL_PATH));
+            self::assertSame($type, $query['type'] ?? null);
+            self::assertSame('reportable', $query['status_scope'] ?? null);
+            self::assertSame('2026-09-01', $query['start_date'] ?? null);
+            self::assertSame('2026-09-04', $query['end_date'] ?? null);
         }
     }
 

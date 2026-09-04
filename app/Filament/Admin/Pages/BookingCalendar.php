@@ -43,7 +43,7 @@ class BookingCalendar extends Page
         $this->eventType = in_array($type, ['all', 'hotel', 'conference', 'restaurant'], true)
             ? $type
             : 'all';
-        $this->statusScope = in_array($statusScope, ['all', 'active'], true)
+        $this->statusScope = in_array($statusScope, ['all', 'active', 'reportable'], true)
             ? $statusScope
             : 'all';
         $this->focusDate = $this->isIsoDate($startDate) ? $startDate : '';
@@ -62,7 +62,11 @@ class BookingCalendar extends Page
             default => 'reservations',
         };
 
-        return ucfirst(($this->statusScope === 'active' ? 'active ' : '').$type);
+        return match ($this->statusScope) {
+            'active' => 'Active '.$type,
+            'reportable' => 'Occupancy report: '.ucfirst($type),
+            default => ucfirst($type),
+        };
     }
 
     /**

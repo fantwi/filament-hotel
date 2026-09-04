@@ -90,7 +90,7 @@ class BookingController extends Controller
 
         $filters = $request->validate([
             'type' => ['nullable', Rule::in(['all', 'hotel', 'conference', 'restaurant'])],
-            'status_scope' => ['nullable', Rule::in(['all', 'active'])],
+            'status_scope' => ['nullable', Rule::in(['all', 'active', 'reportable'])],
             'range_start' => ['nullable', 'date_format:Y-m-d'],
             'range_end' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:range_start'],
         ]);
@@ -113,6 +113,7 @@ class BookingController extends Controller
 
         $type = $filters['type'] ?? 'all';
         $activeOnly = ($filters['status_scope'] ?? 'all') === 'active';
+        $reportableOnly = ($filters['status_scope'] ?? 'all') === 'reportable';
 
         $colorForStatus = fn (?string $status): string => match ($status) {
             'confirmed' => '#22c55e',
@@ -128,6 +129,7 @@ class BookingController extends Controller
             ? Booking::query()
                 ->with(['guest', 'room'])
                 ->when($activeOnly, fn ($query) => $query->whereIn('status', ['pending', 'confirmed', 'checked_in']))
+                ->when($reportableOnly, fn ($query) => $query->whereNotIn('status', ['cancelled', 'expired', 'no_show']))
                 ->when($start && $end, fn ($query) => $query
                     ->whereDate('check_in', '<', $end)
                     ->whereDate('check_out', '>', $start))
@@ -161,6 +163,7 @@ class BookingController extends Controller
             ? ConferenceBooking::query()
                 ->with(['guest', 'room'])
                 ->when($activeOnly, fn ($query) => $query->whereIn('status', ['pending', 'confirmed']))
+                ->when($reportableOnly, fn ($query) => $query->whereNotIn('status', ['cancelled', 'no_show']))
                 ->when($start && $end, fn ($query) => $query
                     ->whereDate('booking_date', '>=', $start)
                     ->whereDate('booking_date', '<', $end))
@@ -194,6 +197,7 @@ class BookingController extends Controller
             ? RestaurantReservation::query()
                 ->with(['restaurant', 'table'])
                 ->when($activeOnly, fn ($query) => $query->whereIn('status', ['pending', 'confirmed', 'checked_in']))
+                ->when($reportableOnly, fn ($query) => $query->whereNotIn('status', ['cancelled', 'no_show']))
                 ->when($start && $end, fn ($query) => $query
                     ->whereDate('reservation_date', '>=', $start)
                     ->whereDate('reservation_date', '<', $end))

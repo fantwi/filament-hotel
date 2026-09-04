@@ -93,6 +93,21 @@ class OccupancyReport extends Page
     }
 
     /**
+     * Opens the unified calendar at the selected period and reservation channel.
+     */
+    public function reservationCalendarUrl(string $type): string
+    {
+        [$periodStart, $periodEnd] = $this->periodBounds();
+
+        return BookingCalendar::getUrl([
+            'type' => $type,
+            'status_scope' => 'reportable',
+            'start_date' => $periodStart->toDateString(),
+            'end_date' => $periodEnd->toDateString(),
+        ]);
+    }
+
+    /**
      * Streams overlapping stays and clamps each stay to the selected period.
      *
      * This keeps memory usage stable even when an all-time report covers a

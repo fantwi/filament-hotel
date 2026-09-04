@@ -28,6 +28,8 @@ class OccupancyStats extends StatsOverviewWidget
 
     public string $periodLabel = 'Monthly';
 
+    public ?string $hotelBookingsUrl = null;
+
     /**
      * Determines whether the current user may view this feature.
      */
@@ -46,17 +48,21 @@ class OccupancyStats extends StatsOverviewWidget
         $hasRoomCapacity = $this->summary['occupancyRate'] !== null;
 
         $stats = [
-            Stat::make(
-                'Room occupancy',
-                $hasRoomCapacity ? number_format((float) $this->summary['occupancyRate'], 1).'%' : 'N/A',
-            )
-                ->description($hasRoomCapacity ? $this->periodLabel : 'No room-night capacity in '.$this->periodLabel)
-                ->icon('heroicon-o-chart-pie')
-                ->color($hasRoomCapacity ? 'primary' : 'gray'),
-            Stat::make('Booked room nights', number_format($this->summary['bookedRoomNights']))
-                ->description('Active stays in '.$this->periodLabel)
-                ->icon('heroicon-o-moon')
-                ->color('success'),
+            $this->withHotelDrillDown(
+                Stat::make(
+                    'Room occupancy',
+                    $hasRoomCapacity ? number_format((float) $this->summary['occupancyRate'], 1).'%' : 'N/A',
+                )
+                    ->description($hasRoomCapacity ? $this->periodLabel : 'No room-night capacity in '.$this->periodLabel)
+                    ->icon('heroicon-o-chart-pie')
+                    ->color($hasRoomCapacity ? 'primary' : 'gray'),
+            ),
+            $this->withHotelDrillDown(
+                Stat::make('Booked room nights', number_format($this->summary['bookedRoomNights']))
+                    ->description('Active stays in '.$this->periodLabel)
+                    ->icon('heroicon-o-moon')
+                    ->color('success'),
+            ),
             Stat::make('Room-night capacity', number_format($this->summary['roomNightCapacity']))
                 ->description('Available inventory across '.$this->periodLabel)
                 ->icon('heroicon-o-home-modern')
@@ -74,5 +80,19 @@ class OccupancyStats extends StatsOverviewWidget
         return $stat->extraAttributes([
             'class' => 'min-w-0 [&_.fi-wi-stats-overview-stat-content]:min-w-0 [&_.fi-wi-stats-overview-stat-value]:break-words [&_.fi-wi-stats-overview-stat-value]:tabular-nums',
         ], merge: true);
+    }
+
+    /**
+     * Links activity metrics to the report-matching hotel schedule.
+     */
+    private function withHotelDrillDown(Stat $stat): Stat
+    {
+        if (blank($this->hotelBookingsUrl)) {
+            return $stat;
+        }
+
+        return $stat
+            ->url($this->hotelBookingsUrl)
+            ->descriptionIcon('heroicon-m-arrow-top-right-on-square');
     }
 }

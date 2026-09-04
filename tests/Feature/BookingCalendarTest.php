@@ -60,6 +60,22 @@ class BookingCalendarTest extends TestCase
         self::assertSame(50, BookingCalendar::getNavigationSort());
     }
 
+    public function test_booking_calendar_page_preserves_the_occupancy_report_drill_down_scope(): void
+    {
+        $manager = User::factory()->create(['department' => 'management']);
+
+        $response = $this->actingAs($manager)->get(route('filament.admin.pages.booking-calendar', [
+            'type' => 'hotel',
+            'status_scope' => 'reportable',
+            'start_date' => '2026-09-01',
+            'end_date' => '2026-09-04',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Occupancy report: Hotel bookings');
+        $response->assertSee('Sep 1, 2026 – Sep 4, 2026');
+    }
+
     public function test_booking_calendar_view_has_responsive_sidebar_and_calendar_states(): void
     {
         $view = file_get_contents(resource_path('views/filament/admin/pages/booking-calendar.blade.php'));
@@ -186,5 +202,104 @@ class BookingCalendarTest extends TestCase
         self::assertSame('paid', $events->firstWhere('id', 'hotel-1')['extendedProps']['payment_status']);
         self::assertSame('paid', $events->firstWhere('id', 'conference-1')['extendedProps']['payment_status']);
         self::assertSame('completed', $events->firstWhere('id', 'restaurant-1')['extendedProps']['payment_status']);
+    }
+
+    public function test_reportable_scope_matches_the_occupancy_report_status_rules_for_every_channel(): void
+    {
+        $this->travelTo('2026-09-04 12:00:00');
+        $manager = User::factory()->create(['department' => 'management']);
+        $guest = Guest::query()->create([
+            'first_name' => 'Reportable',
+            'last_name' => 'Guest',
+            'email' => 'reportable-calendar@example.test',
+            'phone_number' => '0240000015',
+        ]);
+        $roomType = RoomType::query()->create([
+            'name' => 'Reportable room type',
+            'price_per_night' => 100,
+            'capacity' => 2,
+        ]);
+        $room = Room::query()->create([
+            'room_type_id' => $roomType->id,
+            'room_number' => 'REPORTABLE-1',
+            'status' => 'available',
+        ]);
+
+        foreach (['confirmed', 'expired'] as $status) {
+            Booking::query()->create([
+                'guest_id' => $guest->id,
+                'room_id' => $room->id,
+                'check_in' => '2026-09-10',
+                'check_out' => '2026-09-12',
+                'total_price' => 200,
+                'status' => $status,
+                'payment_status' => 'pending',
+            ]);
+        }
+
+        $conferenceRoom = ConferenceRoom::query()->create([
+            'name' => 'Reportable conference room',
+            'capacity' => 10,
+            'price_per_hour' => 100,
+            'is_available' => true,
+        ]);
+
+        foreach (['confirmed', 'no_show'] as $status) {
+            ConferenceBooking::query()->create([
+                'guest_id' => $guest->id,
+                'conference_room_id' => $conferenceRoom->id,
+                'booking_date' => '2026-09-10',
+                'start_time' => '10:00',
+                'end_time' => '12:00',
+                'total_price' => 200,
+                'status' => $status,
+                'payment_status' => 'pending',
+            ]);
+        }
+
+        $restaurant = Restaurant::query()->create([
+            'name' => 'Reportable restaurant',
+            'description' => 'Calendar status-scope fixture.',
+            'opening_time' => '09:00',
+            'closing_time' => '22:00',
+        ]);
+        $table = RestaurantTable::query()->create([
+            'restaurant_id' => $restaurant->id,
+            'table_number' => 'REPORTABLE-T1',
+            'capacity' => 4,
+        ]);
+
+        foreach (['confirmed', 'cancelled'] as $status) {
+            RestaurantReservation::query()->create([
+                'restaurant_id' => $restaurant->id,
+                'restaurant_table_id' => $table->id,
+                'guest_id' => $guest->id,
+                'guest_name' => 'Reportable Guest',
+                'guest_email' => 'reportable-calendar@example.test',
+                'guest_phone' => '0240000015',
+                'reservation_date' => '2026-09-10',
+                'reservation_time' => '18:00',
+                'number_of_guests' => 2,
+                'status' => $status,
+                'payment_status' => 'pending',
+            ]);
+        }
+
+        $response = $this->actingAs($manager)->getJson(route('admin.calendar-events', [
+            'type' => 'all',
+            'status_scope' => 'reportable',
+            'range_start' => '2026-09-01',
+            'range_end' => '2026-09-30',
+            'start' => '2026-09-01',
+            'end' => '2026-10-01',
+        ]));
+
+        $response->assertOk();
+
+        self::assertSame([
+            'conference-1',
+            'hotel-1',
+            'restaurant-1',
+        ], collect($response->json())->pluck('id')->sort()->values()->all());
     }
 }
