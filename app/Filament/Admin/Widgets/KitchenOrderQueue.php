@@ -56,14 +56,29 @@ class KitchenOrderQueue extends TableWidget
                     ->orderByRaw("CASE status WHEN 'ready' THEN 1 WHEN 'preparing' THEN 2 WHEN 'confirmed' THEN 3 ELSE 4 END")
                     ->oldest('created_at'),
             )
-            ->emptyStateHeading('No active kitchen orders')
-            ->emptyStateDescription('Only eligible orders in Confirmed, Preparing, or Ready status appear here. The queue refreshes automatically every 10 seconds.')
-            ->emptyStateIcon('heroicon-o-check-circle')
+            ->emptyStateHeading(fn (): string => $this->hasTableSearch()
+                ? 'No orders match your search'
+                : 'No active kitchen orders')
+            ->emptyStateDescription(fn (): string => $this->hasTableSearch()
+                ? 'No active kitchen orders match the current search. Clear the search to return to the full live queue.'
+                : 'Only eligible orders in Confirmed, Preparing, or Ready status appear here. The queue refreshes automatically every 10 seconds.')
+            ->emptyStateIcon(fn (): string => $this->hasTableSearch()
+                ? 'heroicon-o-magnifying-glass'
+                : 'heroicon-o-check-circle')
             ->emptyStateActions([
+                Action::make('clearSearch')
+                    ->label('Clear search')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('gray')
+                    ->visible(fn (): bool => $this->hasTableSearch())
+                    ->action(function (): void {
+                        $this->resetTableSearch();
+                    }),
                 Action::make('refreshQueue')
                     ->label('Refresh queue')
                     ->icon('heroicon-o-arrow-path')
                     ->color('gray')
+                    ->visible(fn (): bool => ! $this->hasTableSearch())
                     ->action(function (): void {
                         $this->resetTable();
                     }),

@@ -33,7 +33,9 @@ class KitchenOrderQueueEmptyStateTest extends TestCase
 
     public function test_live_queue_empty_state_provides_a_working_refresh_action(): void
     {
-        $actions = $this->table()->getEmptyStateActions();
+        $actions = collect($this->table()->getEmptyStateActions())
+            ->filter(fn (Action $action): bool => $action->isVisible())
+            ->values();
 
         self::assertCount(1, $actions);
         self::assertContainsOnlyInstancesOf(Action::class, $actions);

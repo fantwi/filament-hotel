@@ -39,6 +39,23 @@ class KitchenManagerDashboardIntegrationTest extends TestCase
             ->assertOk();
     }
 
+    public function test_clearing_an_unmatched_queue_search_restores_live_orders(): void
+    {
+        $manager = $this->kitchenManager();
+        $activeOrder = $this->order('confirmed', 'ACTIVE-ORDER', '2026-08-05 10:00:00');
+
+        Livewire::actingAs($manager)
+            ->test(KitchenOrderQueue::class)
+            ->set('tableSearch', 'DOES-NOT-EXIST')
+            ->assertSeeText('No orders match your search')
+            ->assertSeeText('Clear the search to return to the full live queue.')
+            ->assertSeeText('Clear search')
+            ->assertDontSeeText('Refresh queue')
+            ->callAction(TestAction::make('clearSearch')->table())
+            ->assertSet('tableSearch', '')
+            ->assertCanSeeTableRecords([$activeOrder]);
+    }
+
     public function test_period_summary_excludes_an_older_active_order_that_remains_in_the_live_queue(): void
     {
         $manager = $this->kitchenManager();
