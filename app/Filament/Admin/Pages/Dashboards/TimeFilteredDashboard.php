@@ -261,7 +261,7 @@ abstract class TimeFilteredDashboard extends Dashboard
      */
     protected function dashboardPeriodFilterLabel(): string
     {
-        return 'Breakdown';
+        return 'Period';
     }
 
     /**
@@ -269,7 +269,7 @@ abstract class TimeFilteredDashboard extends Dashboard
      */
     protected function dashboardPeriodFilterHelpText(): ?string
     {
-        return null;
+        return 'Sets the reporting date range; it does not group results into a time series.';
     }
 
     /**

@@ -90,7 +90,7 @@ class KitchenManagerStats extends StatsOverviewWidget
                 Stat::make('Stock movements', number_format($this->forDashboardDateRange(KitchenStockMovement::query(), 'occurred_at')->count()))
                     ->description($periodLabel)
                     ->icon('heroicon-o-archive-box')
-                    ->color('danger'),
+                    ->color('gray'),
                 $this->kitchenStockMovementDrillDownUrl(),
             ),
         ];

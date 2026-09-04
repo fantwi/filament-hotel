@@ -126,7 +126,8 @@ class StaffAccountAccessTest extends TestCase
             ->assertOk()
             ->assertSeeText(StaffAccountAccess::LEAVE_MESSAGE)
             ->assertSeeText('Dashboard period')
-            ->assertSeeText('Breakdown');
+            ->assertSeeText('Period')
+            ->assertSeeText('Sets the reporting date range; it does not group results into a time series.');
     }
 
     public function test_suspended_staff_are_redirected_to_profile_with_the_exact_notice(): void
