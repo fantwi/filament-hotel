@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\RoomTypes\Tables;
 
 use App\Filament\Admin\Resources\RoomTypes\RoomTypeResource;
+use App\Models\RoomType;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -61,7 +62,16 @@ class RoomTypesTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->modalDescription('Only unused room types will be deleted. Unpublish room types assigned to rooms instead.')
+                        ->authorizeIndividualRecords(
+                            fn (RoomType $record): bool => RoomTypeResource::canDelete($record)
+                        )
+                        ->missingBulkAuthorizationFailureNotificationMessage(
+                            fn (int $failureCount): string => $failureCount === 1
+                                ? 'One room type was not deleted because it is assigned to a room. Unpublish it instead.'
+                                : "{$failureCount} room types were not deleted because they are assigned to rooms. Unpublish them instead."
+                        ),
                 ]),
             ]);
     }

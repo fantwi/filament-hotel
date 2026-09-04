@@ -59,7 +59,7 @@ class RoomTypeForm
                     ->columnSpanFull(),
                 Toggle::make('is_published')
                     ->label('Published for guests')
-                    ->helperText('Only you can see this room type in Filament until it is published.')
+                    ->helperText('Unpublish room types that are no longer offered. This preserves their room, booking, and payment history.')
                     ->onIcon('heroicon-m-eye')
                     ->offIcon('heroicon-m-eye-slash')
                     ->default(false),

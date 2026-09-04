@@ -79,7 +79,8 @@ class RoomTypeResource extends SecureResource
      */
     public static function canDelete($record): bool
     {
-        return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
+        return (auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false)
+            && ! $record->rooms()->exists();
     }
 
     /**
