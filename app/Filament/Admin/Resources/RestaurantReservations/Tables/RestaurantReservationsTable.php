@@ -19,6 +19,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -380,7 +381,15 @@ class RestaurantReservationsTable
                         ->visible(fn ($record) => $record->payment_status === 'completed')
                         ->requiresConfirmation()
                         ->action(function ($record): void {
-                            $record->update(['payment_status' => 'refunded']);
+                            DB::transaction(function () use ($record): void {
+                                $record->payments()
+                                    ->whereIn('payment_status', ['paid', 'completed'])
+                                    ->update([
+                                        'payment_status' => 'refunded',
+                                        'refunded_at' => now(),
+                                    ]);
+                                $record->update(['payment_status' => 'refunded']);
+                            });
 
                             activity()
                                 ->performedOn($record)

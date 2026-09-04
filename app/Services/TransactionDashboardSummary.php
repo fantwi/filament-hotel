@@ -198,11 +198,11 @@ class TransactionDashboardSummary
                 ['paid', 'completed', $start, $end],
             )
             ->selectRaw(
-                "COALESCE(SUM(CASE WHEN {$paymentTable}.payment_status IN (?, ?) AND {$paymentTable}.updated_at BETWEEN ? AND ? THEN {$paymentTable}.amount ELSE 0 END), 0) as refunds",
+                "COALESCE(SUM(CASE WHEN {$paymentTable}.payment_status IN (?, ?) AND {$paymentTable}.refunded_at BETWEEN ? AND ? THEN {$paymentTable}.amount ELSE 0 END), 0) as refunds",
                 ['refunded', 'refund', $start, $end],
             )
             ->selectRaw(
-                "COALESCE(SUM(CASE WHEN {$paymentTable}.payment_status IN (?, ?) AND {$paymentTable}.updated_at BETWEEN ? AND ? THEN 1 ELSE 0 END), 0) as refund_count",
+                "COALESCE(SUM(CASE WHEN {$paymentTable}.payment_status IN (?, ?) AND {$paymentTable}.refunded_at BETWEEN ? AND ? THEN 1 ELSE 0 END), 0) as refund_count",
                 ['refunded', 'refund', $start, $end],
             )
             ->first();

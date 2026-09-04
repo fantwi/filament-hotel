@@ -30,6 +30,10 @@ class Payment extends Model
         'transaction_reference',
     ];
 
+    protected $casts = [
+        'refunded_at' => 'datetime',
+    ];
+
     /**
      * Defines the booking relationship or domain behavior for this model.
      */
@@ -115,6 +119,16 @@ class Payment extends Model
      */
     protected static function booted()
     {
+        static::saving(function (Payment $payment): void {
+            if (
+                $payment->isDirty('payment_status')
+                && in_array($payment->payment_status, ['refunded', 'refund'], true)
+                && $payment->refunded_at === null
+            ) {
+                $payment->refunded_at = now();
+            }
+        });
+
         static::created(function ($payment) {
             $booking = $payment->booking
                 ?? $payment->conferenceBooking

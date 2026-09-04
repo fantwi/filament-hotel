@@ -153,6 +153,63 @@ class RevenueReportTest extends TestCase
         self::assertSame(0.0, $reportPage->report()['outstandingBreakdown']['conference']);
     }
 
+    public function test_refund_period_does_not_rewrite_the_original_collection_period(): void
+    {
+        [$guest] = $this->serviceFixture();
+        $payment = $this->createdAt(
+            $this->payment($guest, 'booking_id', null, 100, 'REVENUE-REFUND-PERIOD'),
+            '2026-07-15 09:00:00',
+        );
+
+        Carbon::setTestNow('2026-08-20 12:00:00');
+
+        try {
+            $payment->update(['payment_status' => 'refunded']);
+        } finally {
+            Carbon::setTestNow();
+        }
+
+        $collectionPeriod = $this->reportForPeriod('2026-07-01', '2026-07-31');
+        $refundPeriod = $this->reportForPeriod('2026-08-01', '2026-08-31');
+
+        self::assertSame(100.0, $collectionPeriod['revenue']);
+        self::assertSame(0.0, $collectionPeriod['refunds']);
+        self::assertSame(100.0, $collectionPeriod['netRevenue']);
+        self::assertSame(1, $collectionPeriod['paymentsReceived']);
+        self::assertSame(0.0, $refundPeriod['revenue']);
+        self::assertSame(100.0, $refundPeriod['refunds']);
+        self::assertSame(-100.0, $refundPeriod['netRevenue']);
+        self::assertSame(1, $refundPeriod['refundCount']);
+    }
+
+    public function test_later_payment_edits_do_not_move_a_refund_to_another_period(): void
+    {
+        [$guest] = $this->serviceFixture();
+        $payment = $this->createdAt(
+            $this->payment($guest, 'booking_id', null, 100, 'REVENUE-REFUND-STABLE'),
+            '2026-07-15 09:00:00',
+        );
+
+        Carbon::setTestNow('2026-08-20 12:00:00');
+        $payment->update(['payment_status' => 'refunded']);
+
+        Carbon::setTestNow('2026-09-10 14:00:00');
+
+        try {
+            $payment->update(['transaction_reference' => 'REVENUE-REFUND-CORRECTED']);
+        } finally {
+            Carbon::setTestNow();
+        }
+
+        $refundPeriod = $this->reportForPeriod('2026-08-01', '2026-08-31');
+        $editPeriod = $this->reportForPeriod('2026-09-01', '2026-09-30');
+
+        self::assertSame(100.0, $refundPeriod['refunds']);
+        self::assertSame(1, $refundPeriod['refundCount']);
+        self::assertSame(0.0, $editPeriod['refunds']);
+        self::assertSame(0, $editPeriod['refundCount']);
+    }
+
     /**
      * @return array{0: Guest, 1: Room, 2: ConferenceRoom, 3: Restaurant, 4: RestaurantTable}
      */
@@ -198,7 +255,7 @@ class RevenueReportTest extends TestCase
     private function payment(
         Guest $guest,
         string $foreignKey,
-        int $foreignId,
+        ?int $foreignId,
         float $amount,
         string $reference,
     ): Payment {
@@ -226,5 +283,18 @@ class RevenueReportTest extends TestCase
         ])->saveQuietly();
 
         return $model;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function reportForPeriod(string $startDate, string $endDate): array
+    {
+        $reportPage = new RevenueReport;
+        $reportPage->period = 'custom';
+        $reportPage->startDate = $startDate;
+        $reportPage->endDate = $endDate;
+
+        return $reportPage->report();
     }
 }

@@ -476,8 +476,16 @@ class BookingsTable
                         ->schema([Textarea::make('reason')->required()->maxLength(1000)])
                         ->action(function (Booking $record, array $data): void {
                             DB::transaction(function () use ($record, $data): void {
-                                $record->payments()->whereNotIn('payment_status', ['refunded', 'failed'])->update(['payment_status' => 'refunded']);
-                                $record->update(['status' => 'cancelled']);
+                                $record->payments()
+                                    ->whereIn('payment_status', ['paid', 'completed'])
+                                    ->update([
+                                        'payment_status' => 'refunded',
+                                        'refunded_at' => now(),
+                                    ]);
+                                $record->update([
+                                    'status' => 'cancelled',
+                                    'payment_status' => 'refunded',
+                                ]);
                                 activity()->performedOn($record)->causedBy(auth()->user())->withProperties(['reason' => $data['reason']])->log('Booking payment refunded');
                             });
                             Notification::make()->title('Payment refunded and booking cancelled')->success()->send();

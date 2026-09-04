@@ -277,7 +277,10 @@ class TransactionDashboardIntegrationTest extends TestCase
         [$guest, $room] = $this->serviceFixture();
         $booking = $this->hotelBooking($guest, $room, 100, '2026-07-31 09:00:00');
         $payment = $this->payment($guest, 'booking_id', $booking->id, 25, 'TXN-REFUND-ONLY', '2026-08-10 09:00:00');
-        $payment->forceFill(['payment_status' => 'refunded'])->saveQuietly();
+        $payment->forceFill([
+            'payment_status' => 'refunded',
+            'refunded_at' => '2026-08-10 09:00:00',
+        ])->saveQuietly();
         $this->createdAt($payment, '2026-08-10 09:00:00');
 
         self::assertCount(5, $this->stats());

@@ -34,10 +34,11 @@ class RevenueReport extends Page
     public function report(): array
     {
         $paidPayments = $this->forReportPeriod(
-            Payment::query()->whereIn('payment_status', ['paid', 'completed']),
+            Payment::query()->whereIn('payment_status', ['paid', 'completed', 'refunded', 'refund']),
         );
         $refunds = $this->forReportPeriod(
-            Payment::query()->whereIn('payment_status', ['refunded', 'refund']),
+            Payment::query()->whereNotNull('refunded_at'),
+            'refunded_at',
         );
 
         $outstanding = [

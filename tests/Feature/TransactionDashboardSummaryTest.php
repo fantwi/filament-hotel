@@ -139,8 +139,8 @@ class TransactionDashboardSummaryTest extends TestCase
 
             $this->payment($guest, $personalBooking, 400, 'INDICATOR-COLLECTED-IN-PERIOD', 'completed', '2026-08-10', '2026-08-10');
             $this->payment($guest, $overdueCorporateBooking, 500, 'INDICATOR-COLLECTED-BEFORE-PERIOD', 'completed', '2026-07-20', '2026-07-20');
-            $this->payment($guest, $personalBooking, 100, 'INDICATOR-REFUNDED-IN-PERIOD', 'refunded', '2026-07-15', '2026-08-20');
-            $this->payment($guest, $currentCorporateBooking, 50, 'INDICATOR-REFUNDED-AFTER-PERIOD', 'refunded', '2026-08-20', '2026-09-01');
+            $this->payment($guest, $personalBooking, 100, 'INDICATOR-REFUNDED-IN-PERIOD', 'refunded', '2026-07-15', '2026-09-10', '2026-08-20');
+            $this->payment($guest, $currentCorporateBooking, 50, 'INDICATOR-REFUNDED-AFTER-PERIOD', 'refunded', '2026-08-20', '2026-08-25', '2026-09-01');
 
             $summary = app(TransactionDashboardSummary::class)->summarize(
                 Carbon::parse('2026-08-01')->startOfDay(),
@@ -246,6 +246,7 @@ class TransactionDashboardSummaryTest extends TestCase
         string $status,
         string $createdAt,
         string $updatedAt,
+        ?string $refundedAt = null,
     ): Payment {
         $payment = Payment::query()->create([
             'guest_id' => $guest->id,
@@ -258,6 +259,7 @@ class TransactionDashboardSummaryTest extends TestCase
         $payment->forceFill([
             'created_at' => Carbon::parse($createdAt),
             'updated_at' => Carbon::parse($updatedAt),
+            'refunded_at' => $refundedAt ? Carbon::parse($refundedAt) : null,
         ])->saveQuietly();
 
         return $payment;
