@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\HasPublicationState;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -47,6 +48,14 @@ class RoomType extends Model
         return $this->belongsToMany(
             Facility::class
         );
+    }
+
+    /**
+     * Identifies the staff member who created this room type.
+     */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
