@@ -18,6 +18,10 @@ class KitchenStockStats extends StatsOverviewWidget
 
     protected ?string $pollingInterval = null;
 
+    protected ?string $heading = 'Current ingredient stock';
+
+    protected ?string $description = 'Current replenishment risks across active ingredients; independent of the dashboard period.';
+
     /**
      * Determines whether the current user may view this feature.
      */

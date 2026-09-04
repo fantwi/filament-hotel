@@ -20,6 +20,10 @@ class KitchenManagerStats extends StatsOverviewWidget
 
     protected ?string $pollingInterval = null;
 
+    protected ?string $heading = 'Kitchen operations summary';
+
+    protected ?string $description = 'Selected-period order, production-batch, and stock-movement activity.';
+
     /** @var array<string, int> */
     protected int|array|null $columns = [
         'default' => 1,

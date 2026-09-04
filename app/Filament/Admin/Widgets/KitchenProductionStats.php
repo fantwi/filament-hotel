@@ -18,6 +18,10 @@ class KitchenProductionStats extends StatsOverviewWidget
 
     protected ?string $pollingInterval = null;
 
+    protected ?string $heading = 'Finished-food production';
+
+    protected ?string $description = 'Selected-period production balances, variances, and food revenue.';
+
     /**
      * Determines whether the current user may view this feature.
      */
@@ -35,10 +39,22 @@ class KitchenProductionStats extends StatsOverviewWidget
         $r = app(KitchenProductionReportService::class)->build($start, $end)['summary'];
 
         return [
-            Stat::make('Tracked Food Items', $r['tracked_items'])->description($this->dashboardDateRangeLabel())->color('primary'),
-            Stat::make('Low finished-food balances', $r['low_stock_items'])->description('At or below threshold at period end')->color('warning'),
-            Stat::make('Negative Variances', $r['negative_variance_items'])->description('Production compared with sales')->color('danger'),
-            Stat::make('Food Revenue', 'GHS '.number_format($r['sales_revenue'], 2))->description($this->dashboardDateRangeLabel())->color('success'),
+            Stat::make('Tracked Food Items', $r['tracked_items'])
+                ->description($this->dashboardDateRangeLabel())
+                ->icon('heroicon-o-clipboard-document-list')
+                ->color('primary'),
+            Stat::make('Low finished-food balances', $r['low_stock_items'])
+                ->description('At or below threshold at period end')
+                ->icon('heroicon-o-exclamation-triangle')
+                ->color('warning'),
+            Stat::make('Negative Variances', $r['negative_variance_items'])
+                ->description('Production compared with sales')
+                ->icon('heroicon-o-arrow-trending-down')
+                ->color('danger'),
+            Stat::make('Food Revenue', 'GHS '.number_format($r['sales_revenue'], 2))
+                ->description($this->dashboardDateRangeLabel())
+                ->icon('heroicon-o-banknotes')
+                ->color('success'),
         ];
     }
 }
