@@ -6,6 +6,7 @@ use App\Filament\Admin\Widgets\KitchenStaffStats;
 use App\Models\RestaurantOrder;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -34,6 +35,43 @@ class KitchenStaffStatsTest extends TestCase
         self::assertSame('1', $stats['Orders preparing']->getValue());
         self::assertSame('1', $stats['Orders ready to serve']->getValue());
         self::assertSame('1', $stats['Orders served']->getValue());
+    }
+
+    public function test_staff_summary_polls_every_ten_seconds(): void
+    {
+        self::assertSame('10s', $this->invokeProtected(new KitchenStaffStats, 'getPollingInterval'));
+    }
+
+    public function test_staff_summary_uses_one_active_workload_aggregate_and_one_served_query(): void
+    {
+        $this->order('confirmed', 'WAITING-ONE', '2026-07-28 09:00:00');
+        $this->order('confirmed', 'WAITING-TWO', '2026-07-29 09:00:00');
+        $this->order('preparing', 'PREPARING', '2026-07-30 09:00:00');
+        $this->order('ready', 'READY', '2026-07-31 09:00:00');
+        $this->order('served', 'SERVED', '2026-07-20 09:00:00', servedAt: '2026-08-10 12:00:00');
+        $widget = new KitchenStaffStats;
+        $widget->pageFilters = [
+            'period' => 'custom',
+            'start_date' => '2026-08-01',
+            'end_date' => '2026-08-31',
+        ];
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $stats = collect($this->invokeProtected($widget, 'getStats'))
+                ->mapWithKeys(fn (Stat $stat): array => [(string) $stat->getLabel() => $stat->getValue()]);
+            $queryCount = count(DB::getQueryLog());
+        } finally {
+            DB::disableQueryLog();
+        }
+
+        self::assertSame('2', $stats['Orders waiting to start']);
+        self::assertSame('1', $stats['Orders preparing']);
+        self::assertSame('1', $stats['Orders ready to serve']);
+        self::assertSame('1', $stats['Orders served']);
+        self::assertSame(2, $queryCount);
     }
 
     private function order(
@@ -65,11 +103,16 @@ class KitchenStaffStatsTest extends TestCase
      */
     private function stats(KitchenStaffStats $widget): array
     {
-        $method = new ReflectionMethod($widget, 'getStats');
-        $method->setAccessible(true);
-
-        return collect($method->invoke($widget))
+        return collect($this->invokeProtected($widget, 'getStats'))
             ->mapWithKeys(fn (Stat $stat): array => [(string) $stat->getLabel() => $stat])
             ->all();
+    }
+
+    private function invokeProtected(object $target, string $methodName): mixed
+    {
+        $method = new ReflectionMethod($target, $methodName);
+        $method->setAccessible(true);
+
+        return $method->invoke($target);
     }
 }
