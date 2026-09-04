@@ -78,7 +78,7 @@ class KitchenOrderQueue extends TableWidget
                     ->label('Table')
                     ->state(fn (RestaurantOrder $record): string => $record->table?->table_number ?? $record->reservation?->table?->table_number ?? 'No Table')
                     ->badge()
-                    ->color(fn (RestaurantOrder $record): string => $record->restaurant_table_id ? 'success' : 'gray')
+                    ->color(fn (string $state): string => $state === 'No Table' ? 'gray' : 'success')
                     ->toggleable()
                     ->visibleFrom('md'),
                 TextColumn::make('ordering_channel')

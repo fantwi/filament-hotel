@@ -10,6 +10,7 @@ use App\Filament\Admin\Widgets\ExecutiveKitchenQueueSummary;
 use App\Filament\Admin\Widgets\KitchenOrderQueue;
 use App\Filament\Admin\Widgets\RecentPayments;
 use App\Models\RestaurantOrder;
+use App\Models\RestaurantReservation;
 use App\Models\RestaurantTable;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
@@ -106,6 +107,38 @@ class AdminDashboardMobileWidgetsTest extends TestCase
             self::assertSame('Table T12 · Waiting 30m', $column->getDescriptionBelow());
         } finally {
             Carbon::setTestNow();
+        }
+    }
+
+    public function test_kitchen_queue_table_badge_color_uses_the_resolved_table_source(): void
+    {
+        $directOrder = new RestaurantOrder(['restaurant_table_id' => 11]);
+        $directOrder->setRelation('table', new RestaurantTable(['table_number' => 'T11']));
+        $directOrder->setRelation('reservation', null);
+
+        $reservation = new RestaurantReservation;
+        $reservation->setRelation('table', new RestaurantTable(['table_number' => 'R12']));
+        $reservationOrder = new RestaurantOrder;
+        $reservationOrder->setRelation('table', null);
+        $reservationOrder->setRelation('reservation', $reservation);
+
+        $tablelessOrder = new RestaurantOrder;
+        $tablelessOrder->setRelation('table', null);
+        $tablelessOrder->setRelation('reservation', null);
+        $column = $this->table(new KitchenOrderQueue)->getColumn('table_display');
+
+        self::assertInstanceOf(TextColumn::class, $column);
+
+        foreach ([
+            [$directOrder, 'T11', 'success'],
+            [$reservationOrder, 'R12', 'success'],
+            [$tablelessOrder, 'No Table', 'gray'],
+        ] as [$order, $expectedState, $expectedColor]) {
+            $column->record($order)->clearCachedState();
+            $state = $column->getState();
+
+            self::assertSame($expectedState, $state);
+            self::assertSame($expectedColor, $column->getColor($state));
         }
     }
 
