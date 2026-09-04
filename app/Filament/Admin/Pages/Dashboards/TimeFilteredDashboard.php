@@ -207,7 +207,7 @@ abstract class TimeFilteredDashboard extends Dashboard
 
         return $schema->components([
             Section::make('Dashboard period')
-                ->description('Choose a preset period or refine it with a custom start and end date, then apply the range. Widgets refresh only after the range passes validation.')
+                ->description($this->dashboardPeriodDescription())
                 ->schema([
                     Select::make('period')
                         ->label($this->dashboardPeriodFilterLabel())
@@ -252,8 +252,26 @@ abstract class TimeFilteredDashboard extends Dashboard
                         ->fullWidth(),
                 ])
                 ->columns(['default' => 1, 'md' => 3])
+                ->collapsible($this->dashboardPeriodFiltersStartCollapsed())
+                ->collapsed($this->dashboardPeriodFiltersStartCollapsed())
                 ->columnSpanFull(),
         ]);
+    }
+
+    /**
+     * Describes which dashboard information the reporting period controls.
+     */
+    protected function dashboardPeriodDescription(): string
+    {
+        return 'Choose a preset period or refine it with a custom start and end date, then apply the range. Widgets refresh only after the range passes validation.';
+    }
+
+    /**
+     * Determines whether the reporting-period controls start collapsed.
+     */
+    protected function dashboardPeriodFiltersStartCollapsed(): bool
+    {
+        return false;
     }
 
     /**

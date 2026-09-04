@@ -13,6 +13,8 @@ use App\Filament\Admin\Widgets\KitchenStaffStats;
 use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Models\User;
 use App\Services\StaffAccountAccess;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use ReflectionMethod;
@@ -93,6 +95,22 @@ class KitchenRoleDashboardTest extends TestCase
             KitchenOrderQueue::class,
             KitchenProductionStats::class,
         ], $sections['Kitchen']);
+    }
+
+    public function test_kitchen_staff_period_controls_start_collapsed_without_changing_manager_defaults(): void
+    {
+        $staffSection = (new KitchenStaffDashboard)->filtersForm(Schema::make())->getComponents()[0];
+        $managerSection = (new KitchenManagerDashboard)->filtersForm(Schema::make())->getComponents()[0];
+
+        self::assertInstanceOf(Section::class, $staffSection);
+        self::assertTrue($staffSection->isCollapsible());
+        self::assertTrue($staffSection->isCollapsed());
+        self::assertSame(
+            'Controls served-order and finished-food production metrics. The live kitchen queue always shows current active orders.',
+            $staffSection->getDescription(),
+        );
+        self::assertFalse($managerSection->isCollapsible());
+        self::assertFalse($managerSection->isCollapsed());
     }
 
     public function test_kitchen_manager_dashboard_is_visible_only_to_permitted_kitchen_managers_and_administrators(): void

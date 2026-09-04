@@ -50,6 +50,22 @@ class KitchenStaffDashboard extends TimeFilteredDashboard
     }
 
     /**
+     * Clarifies that the reporting period does not limit the live work queue.
+     */
+    protected function dashboardPeriodDescription(): string
+    {
+        return 'Controls served-order and finished-food production metrics. The live kitchen queue always shows current active orders.';
+    }
+
+    /**
+     * Keeps the live workload closer to the top of the staff dashboard.
+     */
+    protected function dashboardPeriodFiltersStartCollapsed(): bool
+    {
+        return true;
+    }
+
+    /**
      * Builds and returns widgets.
      */
     public function getWidgets(): array
