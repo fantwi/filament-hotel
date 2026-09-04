@@ -66,6 +66,18 @@ class KitchenStaffDashboard extends TimeFilteredDashboard
     }
 
     /**
+     * Describes the queue and production information available to kitchen staff.
+     */
+    protected function dashboardSectionDescription(string $section): string
+    {
+        if ($section === 'Kitchen') {
+            return 'Active food orders and workflow actions, plus selected-period finished-food production.';
+        }
+
+        return parent::dashboardSectionDescription($section);
+    }
+
+    /**
      * Builds and returns widgets.
      */
     public function getWidgets(): array

@@ -113,6 +113,20 @@ class KitchenRoleDashboardTest extends TestCase
         self::assertFalse($managerSection->isCollapsed());
     }
 
+    public function test_kitchen_section_descriptions_match_each_roles_available_widgets(): void
+    {
+        foreach ([
+            KitchenManagerDashboard::class => 'Kitchen production, stock, and order-queue activity.',
+            KitchenStaffDashboard::class => 'Active food orders and workflow actions, plus selected-period finished-food production.',
+        ] as $dashboardClass => $expectedDescription) {
+            $dashboard = new $dashboardClass;
+            $method = new ReflectionMethod($dashboard, 'dashboardSectionDescription');
+            $method->setAccessible(true);
+
+            self::assertSame($expectedDescription, $method->invoke($dashboard, 'Kitchen'));
+        }
+    }
+
     public function test_kitchen_manager_dashboard_is_visible_only_to_permitted_kitchen_managers_and_administrators(): void
     {
         $permission = Permission::findOrCreate('view kitchen dashboard', 'web');
