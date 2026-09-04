@@ -35,22 +35,42 @@ class RoomTypesTable
                     ->visible(fn (): bool => RoomTypeResource::canCreate()),
             ])
             ->columns([
+                TextColumn::make('mobile_summary')
+                    ->label('Room type')
+                    ->state(fn (RoomType $record): string => $record->name)
+                    ->description(fn (RoomType $record): string => sprintf(
+                        'GHS %s per night · Capacity %d · %s',
+                        number_format((float) $record->price_per_night, 2),
+                        $record->capacity,
+                        $record->is_published ? 'Published' : 'Draft',
+                    ))
+                    ->wrap()
+                    ->weight('bold')
+                    ->hiddenFrom('md'),
                 TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->visibleFrom('md'),
                 TextColumn::make('price_per_night')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->visibleFrom('md'),
                 TextColumn::make('capacity')
                     ->numeric()
-                    ->sortable(),
-                IconColumn::make('is_published')->label('Published')->boolean(),
+                    ->sortable()
+                    ->visibleFrom('md'),
+                IconColumn::make('is_published')
+                    ->label('Published')
+                    ->boolean()
+                    ->visibleFrom('md'),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
+                    ->visibleFrom('md')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
+                    ->visibleFrom('md')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
