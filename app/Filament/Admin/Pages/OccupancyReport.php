@@ -46,8 +46,8 @@ class OccupancyReport extends Page
         $roomsInService = $roomStatus['total'] - $roomStatus['maintenance'];
 
         $hotelBookings = Booking::query()
-            ->whereDate('check_in', '<', $periodEndExclusive->toDateString())
-            ->whereDate('check_out', '>', $periodStart->toDateString())
+            ->where('check_in', '<', $periodEndExclusive->toDateString())
+            ->where('check_out', '>', $periodStart->toDateString())
             ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
             ->count();
 
@@ -99,8 +99,8 @@ class OccupancyReport extends Page
     private function bookedRoomNights(Carbon $periodStart, Carbon $periodEnd): int
     {
         return Booking::query()
-            ->whereDate('check_in', '<', $periodEnd->toDateString())
-            ->whereDate('check_out', '>', $periodStart->toDateString())
+            ->where('check_in', '<', $periodEnd->toDateString())
+            ->where('check_out', '>', $periodStart->toDateString())
             ->whereNotIn('status', ['cancelled', 'expired', 'no_show'])
             ->select(['id', 'check_in', 'check_out'])
             ->lazyById()

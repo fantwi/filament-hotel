@@ -16,6 +16,7 @@ use App\Models\RoomType;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class OccupancyReportTest extends TestCase
@@ -378,6 +379,60 @@ class OccupancyReportTest extends TestCase
         self::assertStringNotContainsString("->get(['id', 'check_in', 'check_out'])", $source);
     }
 
+    public function test_occupancy_report_date_filters_do_not_wrap_indexed_columns_in_sql_functions(): void
+    {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        (new OccupancyReport)->report();
+
+        $bookingQueries = collect(DB::getQueryLog())
+            ->pluck('query')
+            ->filter(fn (string $query): bool => str_contains($query, 'from "bookings"')
+                && str_contains($query, 'check_in'));
+
+        DB::disableQueryLog();
+
+        self::assertNotEmpty($bookingQueries);
+
+        foreach ($bookingQueries as $query) {
+            self::assertDoesNotMatchRegularExpression('/\b(?:date|strftime)\s*\(/i', $query);
+        }
+    }
+
+    public function test_occupancy_report_date_indexes_are_installed(): void
+    {
+        foreach ($this->occupancyIndexNames() as $table => $indexes) {
+            foreach ($indexes as $index) {
+                self::assertContains($index, Schema::getIndexListing($table));
+            }
+        }
+    }
+
+    public function test_occupancy_report_date_index_migration_is_reversible(): void
+    {
+        $path = database_path('migrations/2026_09_04_000200_add_occupancy_report_indexes.php');
+
+        self::assertFileExists($path);
+
+        $migration = require $path;
+        $migration->down();
+
+        foreach ($this->occupancyIndexNames() as $table => $indexes) {
+            foreach ($indexes as $index) {
+                self::assertNotContains($index, Schema::getIndexListing($table));
+            }
+        }
+
+        $migration->up();
+
+        foreach ($this->occupancyIndexNames() as $table => $indexes) {
+            foreach ($indexes as $index) {
+                self::assertContains($index, Schema::getIndexListing($table));
+            }
+        }
+    }
+
     public function test_occupancy_report_processes_a_large_booking_set(): void
     {
         $this->travelTo('2026-08-15 12:00:00');
@@ -490,6 +545,25 @@ class OccupancyReportTest extends TestCase
             'roomNightCapacity' => $report['roomNightCapacity'],
             'roomsAvailable' => $report['roomStatus']['available'],
             'tablesAvailable' => $report['tableStatus']['available'],
+        ];
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    private function occupancyIndexNames(): array
+    {
+        return [
+            'bookings' => [
+                'bookings_check_in_status_index',
+                'bookings_check_out_status_index',
+            ],
+            'conference_bookings' => [
+                'conference_bookings_booking_date_status_index',
+            ],
+            'restaurant_reservations' => [
+                'restaurant_reservations_reservation_date_status_index',
+            ],
         ];
     }
 }
