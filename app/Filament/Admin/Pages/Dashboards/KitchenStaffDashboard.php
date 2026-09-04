@@ -41,6 +41,15 @@ class KitchenStaffDashboard extends TimeFilteredDashboard
     }
 
     /**
+     * Keeps the current workload summary above the live queue while moving
+     * historical production statistics into the Kitchen section.
+     */
+    protected function isPriorityDashboardWidget(string $widgetClass): bool
+    {
+        return $widgetClass === KitchenStaffStats::class;
+    }
+
+    /**
      * Builds and returns widgets.
      */
     public function getWidgets(): array

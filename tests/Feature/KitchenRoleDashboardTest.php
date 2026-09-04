@@ -80,6 +80,21 @@ class KitchenRoleDashboardTest extends TestCase
         ], $sections['Kitchen']);
     }
 
+    public function test_kitchen_staff_places_the_live_queue_before_production_stats(): void
+    {
+        $dashboard = new KitchenStaffDashboard;
+        $method = new ReflectionMethod($dashboard, 'dashboardWidgetLayout');
+        $method->setAccessible(true);
+
+        [$priorityWidgets, $sections] = $method->invoke($dashboard);
+
+        self::assertSame([KitchenStaffStats::class], $priorityWidgets);
+        self::assertSame([
+            KitchenOrderQueue::class,
+            KitchenProductionStats::class,
+        ], $sections['Kitchen']);
+    }
+
     public function test_kitchen_manager_dashboard_is_visible_only_to_permitted_kitchen_managers_and_administrators(): void
     {
         $permission = Permission::findOrCreate('view kitchen dashboard', 'web');
