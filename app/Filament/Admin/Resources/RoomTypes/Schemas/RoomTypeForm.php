@@ -23,10 +23,17 @@ class RoomTypeForm
         return $schema
             ->components([
                 TextInput::make('name')
-                    ->required(),
+                    ->required()
+                    ->trim()
+                    ->maxLength(255)
+                    ->unique(ignoreRecord: true),
                 TextInput::make('price_per_night')
                     ->required()
-                    ->numeric(),
+                    ->numeric()
+                    ->prefix('GHS')
+                    ->minValue(0.01)
+                    ->step(0.01)
+                    ->multipleOf(0.01),
                 FileUpload::make('image')
                     ->directory('room-types')
                     ->image()
@@ -53,7 +60,10 @@ class RoomTypeForm
                     ->columnSpanFull(),
                 TextInput::make('capacity')
                     ->required()
-                    ->numeric(),
+                    ->numeric()
+                    ->integer()
+                    ->minValue(1)
+                    ->step(1),
                 Textarea::make('description')
                     ->default(null)
                     ->columnSpanFull(),
