@@ -8,8 +8,11 @@ use App\Models\ConferenceBooking;
 use App\Models\RestaurantReservation;
 use App\Models\Room;
 use App\Services\CurrentVenueAvailability;
+use App\Support\Reporting\OccupancyReportCsv;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Provides the occupancy report Filament administration page.
@@ -27,6 +30,46 @@ class OccupancyReport extends Page
     protected static ?int $navigationSort = 10;
 
     protected string $view = 'filament.admin.pages.occupancy-report';
+
+    /**
+     * Makes the applied occupancy report available outside the dashboard.
+     *
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('exportCsv')
+                ->label('Export CSV')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->action(fn (): StreamedResponse => $this->exportCsv()),
+        ];
+    }
+
+    /**
+     * Streams the currently applied report range as a CSV download.
+     */
+    public function exportCsv(): StreamedResponse
+    {
+        abort_unless(static::canAccess(), 403);
+
+        $report = $this->report();
+        $csv = app(OccupancyReportCsv::class)->toCsv($report, $this->periodLabel());
+        $filename = sprintf(
+            'occupancy-report-%s-to-%s.csv',
+            $report['periodStart']->toDateString(),
+            $report['periodEnd']->toDateString(),
+        );
+
+        return response()->streamDownload(
+            static function () use ($csv): void {
+                echo $csv;
+            },
+            $filename,
+            ['Content-Type' => 'text/csv; charset=UTF-8'],
+        );
+    }
 
     /**
      * Configures report for the Filament administration interface.
