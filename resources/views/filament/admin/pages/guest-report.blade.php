@@ -12,6 +12,18 @@
             <x-filament.report-period-controls class="mt-5" />
         </x-filament::section>
 
+        <section
+            aria-label="Selected period guest results"
+            class="relative"
+            wire:loading.attr="aria-busy"
+            wire:target="applyReportPeriod,resetReportPeriod"
+        >
+            <div
+                data-guest-period-results
+                class="space-y-6 transition-opacity duration-200"
+                wire:loading.class="pointer-events-none opacity-60"
+                wire:target="applyReportPeriod,resetReportPeriod"
+            >
         <section aria-label="Guest overview">
             @livewire(\App\Filament\Admin\Widgets\GuestStats::class, [
                 'reportData' => [
@@ -109,6 +121,23 @@
                     </table>
                 </div>
             </x-filament::section>
+        </section>
+            </div>
+
+            <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                wire:loading.flex
+                wire:target="applyReportPeriod,resetReportPeriod"
+                class="absolute inset-0 z-10 items-start justify-center rounded-xl bg-white/75 px-4 py-12 backdrop-blur-[1px] dark:bg-gray-950/75"
+                style="display: none;"
+            >
+                <div class="inline-flex items-center gap-3 rounded-xl border border-primary-200 bg-white px-4 py-3 font-medium text-primary-700 shadow-lg dark:border-primary-500/30 dark:bg-gray-900 dark:text-primary-300">
+                    <x-filament::icon icon="heroicon-o-arrow-path" class="h-5 w-5 animate-spin" />
+                    <span>Updating guest report&hellip;</span>
+                </div>
+            </div>
         </section>
 
         <x-filament::section heading="Report notes">

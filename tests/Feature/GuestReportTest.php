@@ -426,6 +426,45 @@ class GuestReportTest extends TestCase
         self::assertSame(4, substr_count($component->html(), 'GHS 125.00'));
     }
 
+    public function test_guest_report_marks_period_sensitive_results_as_busy_during_a_refresh(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(GuestReport::getUrl());
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $selectedPeriod = $xpath->query('//section[@aria-label="Selected period guest results"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $selectedPeriod);
+        self::assertSame('aria-busy', $selectedPeriod->getAttribute('wire:loading.attr'));
+        self::assertSame('applyReportPeriod,resetReportPeriod', $selectedPeriod->getAttribute('wire:target'));
+
+        $results = $xpath->query('./div[@data-guest-period-results]', $selectedPeriod)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $results);
+        self::assertStringContainsString('pointer-events-none', $results->getAttribute('wire:loading.class'));
+        self::assertStringContainsString('opacity-60', $results->getAttribute('wire:loading.class'));
+        self::assertStringContainsString('Guest spending', $results->textContent);
+        self::assertStringContainsString('Top guests by gross spend', $results->textContent);
+        self::assertStringNotContainsString('Report notes', $results->textContent);
+
+        $status = $xpath->query('./div[@role="status"]', $selectedPeriod)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $status);
+        self::assertSame('polite', $status->getAttribute('aria-live'));
+        self::assertSame('true', $status->getAttribute('aria-atomic'));
+        self::assertSame('applyReportPeriod,resetReportPeriod', $status->getAttribute('wire:target'));
+        self::assertTrue($status->hasAttribute('wire:loading.flex'));
+        self::assertStringContainsString('Updating guest report', $status->textContent);
+
+        self::assertSame(0, $xpath->query('.//form[@*[name()="wire:submit"]="applyReportPeriod"]', $selectedPeriod)?->count());
+    }
+
     public function test_guest_stats_widget_uses_precomputed_period_aware_data_without_queries(): void
     {
         self::assertTrue(is_subclass_of(GuestStats::class, StatsOverviewWidget::class));
