@@ -5,10 +5,9 @@ namespace App\Filament\Admin\Pages;
 use App\Filament\Admin\Concerns\InteractsWithReportPeriod;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
-use App\Models\ConferenceRoom;
 use App\Models\RestaurantReservation;
-use App\Models\RestaurantTable;
 use App\Models\Room;
+use App\Services\CurrentVenueAvailability;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 
@@ -67,17 +66,9 @@ class OccupancyReport extends Page
             ->whereNotIn('status', ['cancelled', 'no_show'])
             ->count();
 
-        $conferenceAvailability = [
-            'available' => ConferenceRoom::where('is_available', true)->count(),
-            'unavailable' => ConferenceRoom::where('is_available', false)->count(),
-        ];
+        $conferenceAvailability = app(CurrentVenueAvailability::class)->conferenceRooms(now());
 
-        $tableStatus = [
-            'available' => RestaurantTable::where('status', 'available')->count(),
-            'reserved' => RestaurantTable::where('status', 'reserved')->count(),
-            'occupied' => RestaurantTable::where('status', 'occupied')->count(),
-            'unavailable' => RestaurantTable::whereIn('status', ['cleaning', 'maintenance'])->count(),
-        ];
+        $tableStatus = app(CurrentVenueAvailability::class)->restaurantTables(now());
 
         return [
             'periodStart' => $periodStart,

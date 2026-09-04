@@ -62,19 +62,19 @@
             <x-filament::section heading="Venue availability" description="Live conference and dining capacity">
                 <dl class="space-y-3">
                     <div class="flex items-center justify-between gap-4">
-                        <dt class="text-sm text-gray-600 dark:text-gray-300">Conference rooms available</dt>
+                        <dt class="text-sm text-gray-600 dark:text-gray-300">Conference rooms available now</dt>
                         <dd class="font-semibold">{{ number_format($report['conferenceAvailability']['available']) }}</dd>
                     </div>
                     <div class="flex items-center justify-between gap-4">
-                        <dt class="text-sm text-gray-600 dark:text-gray-300">Conference rooms unavailable</dt>
+                        <dt class="text-sm text-gray-600 dark:text-gray-300">Conference rooms unavailable now</dt>
                         <dd class="font-semibold">{{ number_format($report['conferenceAvailability']['unavailable']) }}</dd>
                     </div>
                     <div class="flex items-center justify-between gap-4">
-                        <dt class="text-sm text-gray-600 dark:text-gray-300">Tables reserved or occupied</dt>
+                        <dt class="text-sm text-gray-600 dark:text-gray-300">Tables reserved or occupied now</dt>
                         <dd class="font-semibold">{{ number_format($report['tableStatus']['reserved'] + $report['tableStatus']['occupied']) }}</dd>
                     </div>
                     <div class="flex items-center justify-between gap-4">
-                        <dt class="text-sm text-gray-600 dark:text-gray-300">Tables unavailable</dt>
+                        <dt class="text-sm text-gray-600 dark:text-gray-300">Tables cleaning or under maintenance</dt>
                         <dd class="font-semibold">{{ number_format($report['tableStatus']['unavailable']) }}</dd>
                     </div>
                 </dl>
@@ -84,7 +84,7 @@
         <x-filament::section heading="Report notes">
             <div class="grid gap-4 text-sm text-gray-600 dark:text-gray-300 sm:grid-cols-2">
                 <p><span class="font-semibold text-gray-900 dark:text-white">Room occupancy</span> measures active hotel bookings overlapping the selected period, excluding cancelled, expired, and no-show stays.</p>
-                <p><span class="font-semibold text-gray-900 dark:text-white">Live availability</span> reflects each room, conference room, and table's current operational status and is separate from future scheduled activity.</p>
+                <p><span class="font-semibold text-gray-900 dark:text-white">Live availability</span> combines operational status with bookings active at the current time. Future bookings remain visible in scheduled use without reducing availability now.</p>
             </div>
         </x-filament::section>
     </div>

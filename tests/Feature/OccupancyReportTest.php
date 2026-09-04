@@ -5,7 +5,12 @@ namespace Tests\Feature;
 use App\Filament\Admin\Pages\OccupancyReport;
 use App\Filament\Admin\Widgets\OccupancyStats;
 use App\Models\Booking;
+use App\Models\ConferenceBooking;
+use App\Models\ConferenceRoom;
 use App\Models\Guest;
+use App\Models\Restaurant;
+use App\Models\RestaurantReservation;
+use App\Models\RestaurantTable;
 use App\Models\Room;
 use App\Models\RoomType;
 use Filament\Widgets\StatsOverviewWidget;
@@ -29,6 +34,168 @@ class OccupancyReportTest extends TestCase
         self::assertArrayHasKey('bookedRoomNights', $report);
         self::assertArrayHasKey('conferenceAvailability', $report);
         self::assertArrayHasKey('tableStatus', $report);
+    }
+
+    public function test_current_conference_booking_blocks_room_while_future_booking_does_not(): void
+    {
+        $this->travelTo('2026-09-04 11:00:00');
+
+        $guest = Guest::query()->create([
+            'first_name' => 'Conference',
+            'last_name' => 'Guest',
+            'phone_number' => '0240000010',
+            'email' => 'conference-occupancy@example.test',
+        ]);
+        $currentRoom = ConferenceRoom::query()->create([
+            'name' => 'Currently booked room',
+            'capacity' => 20,
+            'price_per_hour' => 100,
+            'is_available' => true,
+        ]);
+        $futureRoom = ConferenceRoom::query()->create([
+            'name' => 'Future booked room',
+            'capacity' => 20,
+            'price_per_hour' => 100,
+            'is_available' => true,
+        ]);
+
+        foreach ([
+            [$currentRoom, '2026-09-04'],
+            [$futureRoom, '2026-09-05'],
+        ] as [$room, $bookingDate]) {
+            ConferenceBooking::query()->create([
+                'guest_id' => $guest->id,
+                'conference_room_id' => $room->id,
+                'booking_date' => $bookingDate,
+                'start_time' => '10:00',
+                'end_time' => '12:00',
+                'attendees' => 10,
+                'total_price' => 200,
+                'status' => 'confirmed',
+                'payment_status' => 'pending',
+            ]);
+        }
+
+        $availability = (new OccupancyReport)->report()['conferenceAvailability'];
+
+        self::assertSame(1, $availability['available']);
+        self::assertSame(1, $availability['unavailable']);
+    }
+
+    public function test_future_reservation_does_not_make_a_restaurant_table_unavailable_now(): void
+    {
+        $this->travelTo('2026-09-04 11:00:00');
+
+        $restaurant = Restaurant::query()->create([
+            'name' => 'Occupancy restaurant',
+            'description' => 'Restaurant fixture for occupancy reporting.',
+            'opening_time' => '08:00',
+            'closing_time' => '22:00',
+        ]);
+        $table = RestaurantTable::query()->create([
+            'restaurant_id' => $restaurant->id,
+            'table_number' => 'OCC-T1',
+            'capacity' => 4,
+            'status' => 'reserved',
+        ]);
+
+        RestaurantReservation::query()->create([
+            'restaurant_id' => $restaurant->id,
+            'restaurant_table_id' => $table->id,
+            'guest_name' => 'Future Guest',
+            'guest_email' => 'future-table@example.test',
+            'guest_phone' => '0240000011',
+            'reservation_date' => '2026-09-05',
+            'reservation_time' => '10:00',
+            'duration_minutes' => 120,
+            'number_of_guests' => 2,
+            'status' => 'confirmed',
+            'payment_status' => 'completed',
+            'hold_status' => 'confirmed',
+        ]);
+
+        $tableStatus = (new OccupancyReport)->report()['tableStatus'];
+
+        self::assertSame(1, $tableStatus['available']);
+        self::assertSame(0, $tableStatus['reserved']);
+    }
+
+    public function test_only_active_current_reservations_block_restaurant_tables(): void
+    {
+        $this->travelTo('2026-09-04 11:00:00');
+
+        $restaurant = Restaurant::query()->create([
+            'name' => 'Current occupancy restaurant',
+            'description' => 'Restaurant fixture for current table availability.',
+            'opening_time' => '08:00',
+            'closing_time' => '22:00',
+        ]);
+        $activeTable = RestaurantTable::query()->create([
+            'restaurant_id' => $restaurant->id,
+            'table_number' => 'OCC-ACTIVE',
+            'capacity' => 4,
+            'status' => 'available',
+        ]);
+        $expiredTable = RestaurantTable::query()->create([
+            'restaurant_id' => $restaurant->id,
+            'table_number' => 'OCC-EXPIRED',
+            'capacity' => 4,
+            'status' => 'available',
+        ]);
+
+        foreach ([
+            [$activeTable, 'confirmed', null],
+            [$expiredTable, 'pending', now()->subMinute()],
+        ] as [$table, $status, $holdUntil]) {
+            RestaurantReservation::query()->create([
+                'restaurant_id' => $restaurant->id,
+                'restaurant_table_id' => $table->id,
+                'guest_name' => 'Current Guest',
+                'guest_email' => $table->table_number.'@example.test',
+                'guest_phone' => '0240000012',
+                'reservation_date' => '2026-09-04',
+                'reservation_time' => '10:00',
+                'duration_minutes' => 120,
+                'number_of_guests' => 2,
+                'status' => $status,
+                'payment_status' => 'pending',
+                'hold_status' => $status === 'pending' ? 'held' : 'confirmed',
+                'hold_until' => $holdUntil,
+            ]);
+        }
+
+        $tableStatus = (new OccupancyReport)->report()['tableStatus'];
+
+        self::assertSame(1, $tableStatus['available']);
+        self::assertSame(1, $tableStatus['reserved']);
+        self::assertSame(0, $tableStatus['occupied']);
+        self::assertSame(0, $tableStatus['unavailable']);
+    }
+
+    public function test_operational_table_states_remain_unavailable_without_schedule_conflicts(): void
+    {
+        $restaurant = Restaurant::query()->create([
+            'name' => 'Operational status restaurant',
+            'description' => 'Restaurant fixture for table status reporting.',
+            'opening_time' => '08:00',
+            'closing_time' => '22:00',
+        ]);
+
+        foreach (['occupied', 'cleaning', 'maintenance'] as $status) {
+            RestaurantTable::query()->create([
+                'restaurant_id' => $restaurant->id,
+                'table_number' => 'OCC-'.strtoupper($status),
+                'capacity' => 4,
+                'status' => $status,
+            ]);
+        }
+
+        $tableStatus = (new OccupancyReport)->report()['tableStatus'];
+
+        self::assertSame(0, $tableStatus['available']);
+        self::assertSame(0, $tableStatus['reserved']);
+        self::assertSame(1, $tableStatus['occupied']);
+        self::assertSame(2, $tableStatus['unavailable']);
     }
 
     public function test_occupancy_report_counts_booking_nights_that_overlap_the_selected_period(): void
