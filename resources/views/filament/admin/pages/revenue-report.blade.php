@@ -1,6 +1,9 @@
 <x-filament::page>
     @php
         $report = $this->report();
+        $drillDowns = $this->drillDownUrls(
+            $report['methods']->pluck('method')->filter()->map(fn ($method) => (string) $method)->values()->all(),
+        );
         $revenueChannels = [
             'hotel' => [
                 'label' => 'Hotel bookings',
@@ -60,6 +63,12 @@
                     'outstanding' => $report['outstanding'],
                 ],
                 'reportPeriodLabel' => $this->periodLabel(),
+                'drillDownUrls' => [
+                    'revenue' => $drillDowns['revenue'],
+                    'refunds' => $drillDowns['refunds'],
+                    'netRevenue' => $drillDowns['netRevenue'],
+                    'outstanding' => $drillDowns['outstanding'],
+                ],
             ], key('revenue-report-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
@@ -77,24 +86,34 @@
                             ? ($channel['total'] / $report['revenue']) * 100
                             : 0;
                     @endphp
-                    <article class="min-w-0 rounded-xl border p-4 {{ $presentation['classes'] }}">
-                        <div class="flex items-start gap-3">
-                            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ $presentation['iconClasses'] }}">
-                                <x-filament::icon :icon="$presentation['icon']" class="h-5 w-5" />
-                            </span>
-                            <div class="min-w-0">
-                                <h3 class="text-sm font-semibold text-gray-950 dark:text-white">{{ $presentation['label'] }}</h3>
-                                <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ $presentation['description'] }}</p>
+                    <a
+                        href="{{ $drillDowns['channels'][$key] }}"
+                        aria-label="View {{ $presentation['label'] }} revenue payments"
+                        data-revenue-drill-down="channel"
+                        class="block rounded-xl transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                    >
+                        <article class="h-full min-w-0 rounded-xl border p-4 shadow-sm transition hover:shadow-md {{ $presentation['classes'] }}">
+                            <div class="flex items-start gap-3">
+                                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ $presentation['iconClasses'] }}">
+                                    <x-filament::icon :icon="$presentation['icon']" class="h-5 w-5" />
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <h3 class="text-sm font-semibold text-gray-950 dark:text-white">{{ $presentation['label'] }}</h3>
+                                        <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                                    </div>
+                                    <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ $presentation['description'] }}</p>
+                                </div>
                             </div>
-                        </div>
-                        <p class="mt-4 truncate text-xl font-bold tabular-nums text-gray-950 dark:text-white" title="GHS {{ number_format($channel['total'], 2) }}">
-                            GHS {{ number_format($channel['total'], 2) }}
-                        </p>
-                        <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600 dark:text-gray-300">
-                            <span>{{ number_format($channel['payment_count']) }} payment(s)</span>
-                            <span class="font-semibold tabular-nums">{{ number_format($share, 1) }}% of revenue</span>
-                        </div>
-                    </article>
+                            <p class="mt-4 truncate text-xl font-bold tabular-nums text-gray-950 dark:text-white" title="GHS {{ number_format($channel['total'], 2) }}">
+                                GHS {{ number_format($channel['total'], 2) }}
+                            </p>
+                            <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600 dark:text-gray-300">
+                                <span>{{ number_format($channel['payment_count']) }} payment(s)</span>
+                                <span class="font-semibold tabular-nums">{{ number_format($share, 1) }}% of revenue</span>
+                            </div>
+                        </article>
+                    </a>
                 @endforeach
             </div>
         </x-filament::section>
@@ -102,6 +121,11 @@
         <section aria-label="Previous-period revenue comparison">
             @livewire(\App\Filament\Admin\Widgets\RevenueComparisonStats::class, [
                 'comparison' => $report['comparison'],
+                'drillDownUrls' => [
+                    'revenue' => $drillDowns['revenue'],
+                    'refunds' => $drillDowns['refunds'],
+                    'netRevenue' => $drillDowns['netRevenue'],
+                ],
             ], key('revenue-comparison-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
@@ -121,9 +145,18 @@
                         'table' => 'Table reservations',
                         'food' => 'Food orders',
                     ] as $key => $label)
-                        <div class="flex items-center justify-between gap-4">
+                        <div class="relative flex items-center justify-between gap-4 rounded-lg px-2 py-1.5 transition hover:bg-gray-50 dark:hover:bg-white/5">
                             <dt class="text-sm text-gray-600 dark:text-gray-300">{{ $label }}</dt>
-                            <dd class="font-semibold">GHS {{ number_format($report['outstandingBreakdown'][$key], 2) }}</dd>
+                            <dd class="flex items-center gap-2 font-semibold tabular-nums">
+                                GHS {{ number_format($report['outstandingBreakdown'][$key], 2) }}
+                                <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4 text-gray-400" />
+                            </dd>
+                            <a
+                                href="{{ $drillDowns['outstanding'] }}"
+                                aria-label="Analyze {{ $label }} outstanding balance"
+                                data-revenue-drill-down="outstanding"
+                                class="absolute inset-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                            ></a>
                         </div>
                     @endforeach
                 </dl>
@@ -132,11 +165,23 @@
             <x-filament::section heading="Payment methods" description="Completed payments received during {{ strtolower($this->periodLabel()) }}" class="lg:col-span-2">
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     @forelse ($report['methods'] as $method)
-                        <div class="rounded-xl bg-gray-50 p-4 dark:bg-white/5">
-                            <p class="text-sm font-semibold capitalize">{{ str_replace('_', ' ', $method->method ?: 'Unknown') }}</p>
+                        @php
+                            $methodKey = (string) ($method->method ?: '');
+                            $methodLabel = ucfirst(str_replace('_', ' ', $method->method ?: 'Unknown'));
+                        @endphp
+                        <a
+                            href="{{ $drillDowns['methods'][$methodKey] ?? $drillDowns['revenue'] }}"
+                            aria-label="View {{ $methodLabel }} revenue payments"
+                            data-revenue-drill-down="method"
+                            class="rounded-xl bg-gray-50 p-4 transition hover:-translate-y-0.5 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:bg-white/5 dark:hover:bg-white/10"
+                        >
+                            <div class="flex items-start justify-between gap-2">
+                                <p class="text-sm font-semibold capitalize">{{ $methodLabel }}</p>
+                                <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4 shrink-0 text-gray-400" />
+                            </div>
                             <p class="mt-2 text-xl font-bold">GHS {{ number_format($method->total, 2) }}</p>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($method->payment_count) }} payment(s)</p>
-                        </div>
+                        </a>
                     @empty
                         <p class="text-sm text-gray-500 dark:text-gray-400">No completed payments were recorded for {{ strtolower($this->periodLabel()) }}.</p>
                     @endforelse

@@ -42,16 +42,21 @@ class PaymentsTable
                 $filters = $livewire instanceof ListPayments ? ($livewire->filters ?? []) : [];
                 [$start, $end] = PaymentReportFilters::dateRange($filters);
 
-                $query->whereBetween('created_at', [$start, $end]);
+                $query->whereBetween(PaymentReportFilters::dateColumn($filters), [$start, $end]);
 
                 $query = PaymentReportFilters::applyType(
                     $query,
                     (string) ($filters['transaction_type'] ?? 'all'),
                 );
 
-                return PaymentReportFilters::applyStatus(
+                $query = PaymentReportFilters::applyStatus(
                     $query,
                     (string) ($filters['payment_status'] ?? 'all'),
+                );
+
+                return PaymentReportFilters::applyMethod(
+                    $query,
+                    (string) ($filters['payment_method'] ?? 'all'),
                 );
             })
             ->columns([

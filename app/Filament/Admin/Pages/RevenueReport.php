@@ -3,11 +3,14 @@
 namespace App\Filament\Admin\Pages;
 
 use App\Filament\Admin\Concerns\InteractsWithReportPeriod;
+use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
+use App\Filament\Admin\Resources\Payments\PaymentResource;
 use App\Models\Booking;
 use App\Models\ConferenceBooking;
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
+use App\Services\PaymentReportFilters;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
@@ -147,6 +150,109 @@ class RevenueReport extends Page
                 $refundTrend,
             ),
         ];
+    }
+
+    /**
+     * Builds permission-aware destinations for every actionable report metric.
+     *
+     * @param  list<string>  $paymentMethods
+     * @return array{
+     *     revenue: string,
+     *     refunds: string,
+     *     netRevenue: string,
+     *     outstanding: string,
+     *     channels: array<string, string>,
+     *     methods: array<string, string>
+     * }
+     */
+    public function drillDownUrls(array $paymentMethods): array
+    {
+        $channels = [
+            'hotel' => 'hotel_bookings',
+            'conference' => 'conference_bookings',
+            'table' => 'table_reservations',
+            'food' => 'food_orders',
+            'other' => 'other',
+        ];
+
+        return [
+            'revenue' => $this->paymentOrTransactionUrl('revenue'),
+            'refunds' => $this->paymentOrTransactionUrl('refunded', dateBasis: 'refunded_at'),
+            'netRevenue' => $this->transactionDashboardUrl('collection-performance'),
+            'outstanding' => $this->transactionDashboardUrl('transaction-breakdown'),
+            'channels' => collect($channels)
+                ->map(fn (string $type): string => $this->paymentOrTransactionUrl(
+                    'revenue',
+                    transactionType: $type,
+                    fallbackSection: 'transaction-breakdown',
+                ))
+                ->all(),
+            'methods' => collect($paymentMethods)
+                ->filter(fn (string $method): bool => array_key_exists($method, PaymentReportFilters::methodOptions()))
+                ->mapWithKeys(fn (string $method): array => [
+                    $method => $this->paymentOrTransactionUrl('revenue', paymentMethod: $method),
+                ])
+                ->all(),
+        ];
+    }
+
+    /**
+     * Links authorized finance roles to payments and other roles to safe analysis.
+     */
+    private function paymentOrTransactionUrl(
+        string $status,
+        string $transactionType = 'all',
+        string $paymentMethod = 'all',
+        string $dateBasis = 'created_at',
+        string $fallbackSection = 'collection-performance',
+    ): string {
+        if (! (auth()->check() && PaymentResource::canViewAny())) {
+            return $this->transactionDashboardUrl($fallbackSection);
+        }
+
+        [$start, $end] = $this->periodBounds();
+        $period = array_key_exists($this->period, PaymentReportFilters::periodOptions())
+            ? $this->period
+            : 'monthly';
+
+        return PaymentResource::getUrl('index', [
+            'filters' => [
+                'transaction_type' => $transactionType,
+                'payment_status' => $status,
+                'payment_method' => $paymentMethod,
+                'date_basis' => $dateBasis,
+                'period' => $period,
+                'start_date' => $start->toDateString(),
+                'end_date' => $end->toDateString(),
+            ],
+        ]);
+    }
+
+    /**
+     * Opens the matching transaction analysis, falling back to this report safely.
+     */
+    private function transactionDashboardUrl(string $section): string
+    {
+        [$start, $end] = $this->periodBounds();
+        $period = array_key_exists($this->period, PaymentReportFilters::periodOptions())
+            ? $this->period
+            : 'monthly';
+
+        if (auth()->check() && TransactionDashboard::canAccess()) {
+            return TransactionDashboard::getUrl([
+                'filters' => [
+                    'period' => $period,
+                    'start_date' => $start->toDateString(),
+                    'end_date' => $end->toDateString(),
+                ],
+            ]).'#'.ltrim($section, '#');
+        }
+
+        return static::getUrl([
+            'period' => $this->period,
+            'startDate' => $start->toDateString(),
+            'endDate' => $end->toDateString(),
+        ]).'#'.ltrim($section, '#');
     }
 
     /**

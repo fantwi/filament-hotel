@@ -32,27 +32,33 @@ class PaymentReportStats extends StatsOverviewWidget
         $filters = $this->pageFilters ?? [];
         [$start, $end] = PaymentReportFilters::dateRange($filters);
         $query = PaymentReportFilters::applyType(
-            Payment::query()->whereBetween('created_at', [$start, $end]),
+            Payment::query()->whereBetween(PaymentReportFilters::dateColumn($filters), [$start, $end]),
             (string) ($filters['transaction_type'] ?? 'all'),
         );
         $query = PaymentReportFilters::applyStatus(
             $query,
             (string) ($filters['payment_status'] ?? 'all'),
         );
+        $query = PaymentReportFilters::applyMethod(
+            $query,
+            (string) ($filters['payment_method'] ?? 'all'),
+        );
         $scope = PaymentReportFilters::typeLabel((string) ($filters['transaction_type'] ?? 'all'));
         $status = PaymentReportFilters::statusLabel((string) ($filters['payment_status'] ?? 'all'));
+        $method = PaymentReportFilters::methodLabel((string) ($filters['payment_method'] ?? 'all'));
+        $dateBasis = PaymentReportFilters::dateBasisLabel((string) ($filters['date_basis'] ?? 'created_at'));
         $period = PaymentReportFilters::periodOptions()[(string) ($filters['period'] ?? 'monthly')] ?? 'Monthly';
 
         $count = (clone $query)->count();
-        $collected = (clone $query)->whereIn('payment_status', ['paid', 'completed'])->sum('amount');
+        $collected = (clone $query)->whereIn('payment_status', ['paid', 'completed', 'refunded', 'refund'])->sum('amount');
         $pending = (clone $query)->whereIn('payment_status', ['pending', 'unpaid'])->sum('amount');
         $refunded = (clone $query)->whereIn('payment_status', ['refunded', 'refund'])->sum('amount');
 
         return [
             Stat::make('Payment count', number_format($count))
-                ->description("{$scope} · {$status} · {$period}"),
+                ->description("{$scope} · {$status} · {$method} · {$period}"),
             Stat::make('Total collected', 'GHS '.number_format((float) $collected, 2))
-                ->description('Paid and completed payments')
+                ->description('Gross received before refunds · '.$dateBasis)
                 ->color('success'),
             Stat::make('Pending amount', 'GHS '.number_format((float) $pending, 2))
                 ->description('Pending or unpaid payments')

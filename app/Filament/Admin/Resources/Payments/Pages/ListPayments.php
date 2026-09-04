@@ -86,16 +86,28 @@ class ListPayments extends ListRecords
                         ->default('all')
                         ->live(condition: false),
 
-                    Select::make('period')
-                        ->label('Breakdown')
-                        ->options(PaymentReportFilters::periodOptions())
-                        ->default('monthly')
-                        ->live(condition: false),
-
                     Select::make('payment_status')
                         ->label('Payment status')
                         ->options(PaymentReportFilters::statusOptions())
                         ->default('all')
+                        ->live(condition: false),
+
+                    Select::make('payment_method')
+                        ->label('Payment method')
+                        ->options(PaymentReportFilters::methodOptions())
+                        ->default('all')
+                        ->live(condition: false),
+
+                    Select::make('date_basis')
+                        ->label('Date basis')
+                        ->options(PaymentReportFilters::dateBasisOptions())
+                        ->default('created_at')
+                        ->live(condition: false),
+
+                    Select::make('period')
+                        ->label('Breakdown')
+                        ->options(PaymentReportFilters::periodOptions())
+                        ->default('monthly')
                         ->live(condition: false),
 
                     DatePicker::make('start_date')
@@ -149,6 +161,12 @@ class ListPayments extends ListRecords
         $draft['payment_status'] = array_key_exists((string) $draft['payment_status'], PaymentReportFilters::statusOptions())
             ? (string) $draft['payment_status']
             : 'all';
+        $draft['payment_method'] = array_key_exists((string) $draft['payment_method'], PaymentReportFilters::methodOptions())
+            ? (string) $draft['payment_method']
+            : 'all';
+        $draft['date_basis'] = array_key_exists((string) $draft['date_basis'], PaymentReportFilters::dateBasisOptions())
+            ? (string) $draft['date_basis']
+            : 'created_at';
 
         $previous = array_replace($defaults, $this->filters ?? []);
         $hasCompleteRange = filled($draft['start_date'] ?? null) && filled($draft['end_date'] ?? null);
@@ -171,6 +189,8 @@ class ListPayments extends ListRecords
             'draftFilters.transaction_type' => ['required', 'in:'.implode(',', array_keys(PaymentReportFilters::typeOptions()))],
             'draftFilters.period' => ['required', 'in:'.implode(',', array_keys(PaymentReportFilters::periodOptions()))],
             'draftFilters.payment_status' => ['required', 'in:'.implode(',', array_keys(PaymentReportFilters::statusOptions()))],
+            'draftFilters.payment_method' => ['required', 'in:'.implode(',', array_keys(PaymentReportFilters::methodOptions()))],
+            'draftFilters.date_basis' => ['required', 'in:'.implode(',', array_keys(PaymentReportFilters::dateBasisOptions()))],
             'draftFilters.start_date' => ['required', 'date', 'before_or_equal:draftFilters.end_date'],
             'draftFilters.end_date' => ['required', 'date', 'after_or_equal:draftFilters.start_date'],
         ]);
@@ -206,16 +226,18 @@ class ListPayments extends ListRecords
         [$start, $end] = PaymentReportFilters::dateRange($filters);
 
         return sprintf(
-            '%s · %s · %s to %s',
+            '%s · %s · %s · %s · %s to %s',
             PaymentReportFilters::typeLabel((string) $filters['transaction_type']),
             PaymentReportFilters::statusLabel((string) $filters['payment_status']),
+            PaymentReportFilters::methodLabel((string) $filters['payment_method']),
+            PaymentReportFilters::dateBasisLabel((string) $filters['date_basis']),
             $start->format('M j, Y'),
             $end->format('M j, Y'),
         );
     }
 
     /**
-     * @return array{transaction_type: string, payment_status: string, period: string, start_date: string, end_date: string}
+     * @return array{transaction_type: string, payment_status: string, payment_method: string, date_basis: string, period: string, start_date: string, end_date: string}
      */
     private function defaultPaymentFilters(): array
     {
@@ -224,6 +246,8 @@ class ListPayments extends ListRecords
         return [
             'transaction_type' => 'all',
             'payment_status' => 'all',
+            'payment_method' => 'all',
+            'date_basis' => 'created_at',
             'period' => 'monthly',
             'start_date' => $start->toDateString(),
             'end_date' => $end->toDateString(),

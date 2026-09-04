@@ -24,6 +24,9 @@ class RevenueReportStats extends StatsOverviewWidget
 
     public string $reportPeriodLabel = 'Selected period';
 
+    /** @var array<string, string> */
+    public array $drillDownUrls = [];
+
     /**
      * Determines whether the current user may view this feature.
      */
@@ -40,22 +43,46 @@ class RevenueReportStats extends StatsOverviewWidget
     protected function getStats(): array
     {
         return [
-            Stat::make('Revenue received', 'GHS '.number_format((float) $this->reportData['revenue'], 2))
-                ->description(number_format((int) $this->reportData['paymentsReceived']).' payment(s) in '.$this->reportPeriodLabel)
-                ->icon('heroicon-o-banknotes')
-                ->color('success'),
-            Stat::make('Refunds', 'GHS '.number_format((float) $this->reportData['refunds'], 2))
-                ->description(number_format((int) $this->reportData['refundCount']).' refund(s) in '.$this->reportPeriodLabel)
-                ->icon('heroicon-o-arrow-uturn-left')
-                ->color('danger'),
-            Stat::make('Net revenue', 'GHS '.number_format((float) $this->reportData['netRevenue'], 2))
-                ->description('Revenue less refunds')
-                ->icon('heroicon-o-chart-bar')
-                ->color('primary'),
-            Stat::make('Outstanding balance', 'GHS '.number_format((float) $this->reportData['outstanding'], 2))
-                ->description('Unpaid transactions in '.$this->reportPeriodLabel)
-                ->icon('heroicon-o-clock')
-                ->color('warning'),
+            $this->withDrillDown(
+                Stat::make('Revenue received', 'GHS '.number_format((float) $this->reportData['revenue'], 2))
+                    ->description(number_format((int) $this->reportData['paymentsReceived']).' payment(s) in '.$this->reportPeriodLabel)
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success'),
+                'revenue',
+            ),
+            $this->withDrillDown(
+                Stat::make('Refunds', 'GHS '.number_format((float) $this->reportData['refunds'], 2))
+                    ->description(number_format((int) $this->reportData['refundCount']).' refund(s) in '.$this->reportPeriodLabel)
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('danger'),
+                'refunds',
+            ),
+            $this->withDrillDown(
+                Stat::make('Net revenue', 'GHS '.number_format((float) $this->reportData['netRevenue'], 2))
+                    ->description('Revenue less refunds')
+                    ->icon('heroicon-o-chart-bar')
+                    ->color('primary'),
+                'netRevenue',
+            ),
+            $this->withDrillDown(
+                Stat::make('Outstanding balance', 'GHS '.number_format((float) $this->reportData['outstanding'], 2))
+                    ->description('Unpaid transactions in '.$this->reportPeriodLabel)
+                    ->icon('heroicon-o-clock')
+                    ->color('warning'),
+                'outstanding',
+            ),
         ];
+    }
+
+    /**
+     * Makes a metric visibly actionable when an authorized destination exists.
+     */
+    private function withDrillDown(Stat $stat, string $key): Stat
+    {
+        $url = $this->drillDownUrls[$key] ?? null;
+
+        return filled($url)
+            ? $stat->url($url)->descriptionIcon('heroicon-m-arrow-top-right-on-square')
+            : $stat;
     }
 }

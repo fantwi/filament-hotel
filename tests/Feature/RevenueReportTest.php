@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
 use App\Filament\Admin\Pages\RevenueReport;
+use App\Filament\Admin\Resources\Payments\PaymentResource;
 use App\Filament\Admin\Widgets\RevenueComparisonStats;
 use App\Filament\Admin\Widgets\RevenueReportStats;
 use App\Filament\Admin\Widgets\RevenueTrendChart;
@@ -27,6 +29,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -207,6 +210,11 @@ class RevenueReportTest extends TestCase
             'refunds' => ['current' => 30.0, 'previous' => 20.0, 'difference' => 10.0, 'percentageChange' => 50.0],
             'netRevenue' => ['current' => 270.0, 'previous' => 80.0, 'difference' => 190.0, 'percentageChange' => 237.5],
         ];
+        $widget->drillDownUrls = [
+            'revenue' => '/admin/payments?scope=revenue',
+            'refunds' => '/admin/payments?scope=refunds',
+            'netRevenue' => '/admin/transaction-dashboard#collection-performance',
+        ];
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 
@@ -236,6 +244,9 @@ class RevenueReportTest extends TestCase
         self::assertStringContainsString('Current GHS 300.00', $stats[0]->getDescription());
         self::assertStringContainsString('Previous GHS 100.00', $stats[0]->getDescription());
         self::assertStringContainsString('Up 200.0%', $stats[0]->getDescription());
+        self::assertSame('/admin/payments?scope=revenue', $stats[0]->getUrl());
+        self::assertSame('/admin/payments?scope=refunds', $stats[1]->getUrl());
+        self::assertSame('/admin/transaction-dashboard#collection-performance', $stats[2]->getUrl());
     }
 
     public function test_revenue_trend_chart_uses_precomputed_values_without_queries(): void
@@ -304,6 +315,12 @@ class RevenueReportTest extends TestCase
             'outstanding' => 450.00,
         ];
         $widget->reportPeriodLabel = 'Quarterly';
+        $widget->drillDownUrls = [
+            'revenue' => '/admin/payments?scope=revenue',
+            'refunds' => '/admin/payments?scope=refunds',
+            'netRevenue' => '/admin/transaction-dashboard#collection-performance',
+            'outstanding' => '/admin/transaction-dashboard#transaction-breakdown',
+        ];
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 
@@ -330,6 +347,10 @@ class RevenueReportTest extends TestCase
         self::assertSame('3 payment(s) in Quarterly', $stats[0]->getDescription());
         self::assertSame('1 refund(s) in Quarterly', $stats[1]->getDescription());
         self::assertSame('Unpaid transactions in Quarterly', $stats[3]->getDescription());
+        self::assertSame('/admin/payments?scope=revenue', $stats[0]->getUrl());
+        self::assertSame('/admin/payments?scope=refunds', $stats[1]->getUrl());
+        self::assertSame('/admin/transaction-dashboard#collection-performance', $stats[2]->getUrl());
+        self::assertSame('/admin/transaction-dashboard#transaction-breakdown', $stats[3]->getUrl());
     }
 
     public function test_revenue_report_page_calculates_the_report_only_once(): void
@@ -390,6 +411,13 @@ class RevenueReportTest extends TestCase
             self::assertStringContainsString('payment(s)', $card->textContent);
             self::assertMatchesRegularExpression('/\d+\.\d% of revenue/', $card->textContent);
         }
+
+        $links = $xpath->query('.//a[@data-revenue-drill-down="channel"]', $section);
+        self::assertCount(5, $links);
+
+        foreach ($links as $link) {
+            self::assertStringContainsString('/admin/payments', $link->getAttribute('href'));
+        }
     }
 
     public function test_revenue_report_places_comparison_and_trend_before_detailed_financial_sections(): void
@@ -408,6 +436,82 @@ class RevenueReportTest extends TestCase
             'Outstanding by transaction',
             'Payment methods',
         ]);
+    }
+
+    public function test_revenue_report_builds_filtered_payment_and_transaction_drill_downs(): void
+    {
+        $accountant = $this->revenueReportUser('accountant', withTransactionDashboard: true);
+        $this->actingAs($accountant);
+
+        $page = new RevenueReport;
+        $page->period = 'custom';
+        $page->startDate = '2026-08-10';
+        $page->endDate = '2026-08-12';
+        $urls = $page->drillDownUrls(['cash']);
+
+        $revenueFilters = $this->urlFilters($urls['revenue']);
+        self::assertSame('/admin/payments', parse_url($urls['revenue'], PHP_URL_PATH));
+        self::assertSame('revenue', $revenueFilters['payment_status']);
+        self::assertSame('created_at', $revenueFilters['date_basis']);
+        self::assertSame('2026-08-10', $revenueFilters['start_date']);
+        self::assertSame('2026-08-12', $revenueFilters['end_date']);
+
+        $refundFilters = $this->urlFilters($urls['refunds']);
+        self::assertSame('refunded', $refundFilters['payment_status']);
+        self::assertSame('refunded_at', $refundFilters['date_basis']);
+        self::assertSame('hotel_bookings', $this->urlFilters($urls['channels']['hotel'])['transaction_type']);
+        self::assertSame('other', $this->urlFilters($urls['channels']['other'])['transaction_type']);
+        self::assertSame('cash', $this->urlFilters($urls['methods']['cash'])['payment_method']);
+        self::assertSame('/admin/transaction-dashboard', parse_url($urls['netRevenue'], PHP_URL_PATH));
+        self::assertSame('collection-performance', parse_url($urls['netRevenue'], PHP_URL_FRAGMENT));
+        self::assertSame('/admin/transaction-dashboard', parse_url($urls['outstanding'], PHP_URL_PATH));
+        self::assertSame('transaction-breakdown', parse_url($urls['outstanding'], PHP_URL_FRAGMENT));
+    }
+
+    public function test_revenue_report_uses_authorized_transaction_fallbacks_for_managers(): void
+    {
+        $manager = $this->revenueReportUser('manager', withTransactionDashboard: true);
+        $this->actingAs($manager);
+
+        self::assertFalse(PaymentResource::canViewAny());
+        self::assertTrue(TransactionDashboard::canAccess());
+
+        $page = new RevenueReport;
+        $page->period = 'custom';
+        $page->startDate = '2026-08-10';
+        $page->endDate = '2026-08-12';
+        $urls = $page->drillDownUrls(['cash']);
+        $financialUrls = [
+            $urls['revenue'],
+            $urls['refunds'],
+            ...array_values($urls['channels']),
+            ...array_values($urls['methods']),
+        ];
+
+        foreach ($financialUrls as $url) {
+            self::assertSame('/admin/transaction-dashboard', parse_url($url, PHP_URL_PATH));
+        }
+    }
+
+    public function test_revenue_report_payment_method_cards_link_to_filtered_payments(): void
+    {
+        $this->travelTo('2026-09-04 12:00:00');
+        [$guest] = $this->serviceFixture();
+        $this->payment($guest, 'booking_id', null, 125, 'REVENUE-METHOD-LINK');
+        $accountant = $this->revenueReportUser('accountant', withTransactionDashboard: true);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(RevenueReport::getUrl());
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $link = $xpath->query('//a[@data-revenue-drill-down="method"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $link);
+        self::assertSame('cash', $this->urlFilters($link->getAttribute('href'))['payment_method']);
+        self::assertStringContainsString('View Cash revenue payments', $link->getAttribute('aria-label'));
     }
 
     public function test_revenue_report_indexes_cover_period_and_status_predicates(): void
@@ -644,6 +748,31 @@ class RevenueReportTest extends TestCase
         ]);
 
         return [$guest, $room, $conferenceRoom, $restaurant, $table];
+    }
+
+    private function revenueReportUser(string $roleName, bool $withTransactionDashboard = false): User
+    {
+        $role = Role::findOrCreate($roleName, 'web');
+
+        if ($withTransactionDashboard) {
+            $role->givePermissionTo(Permission::findOrCreate('view transaction dashboard', 'web'));
+        }
+
+        $user = User::factory()->create();
+        $user->assignRole($role);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        return $user;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function urlFilters(string $url): array
+    {
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        return $query['filters'] ?? [];
     }
 
     private function payment(

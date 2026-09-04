@@ -43,7 +43,7 @@ class PaymentReportStatsTest extends TestCase
     public function test_payment_report_filter_options_include_all_supported_scopes(): void
     {
         self::assertSame(
-            ['all', 'food_orders', 'conference_bookings', 'hotel_bookings', 'table_reservations'],
+            ['all', 'food_orders', 'conference_bookings', 'hotel_bookings', 'table_reservations', 'other'],
             array_keys(PaymentReportFilters::typeOptions()),
         );
         self::assertSame(
@@ -51,8 +51,16 @@ class PaymentReportStatsTest extends TestCase
             array_keys(PaymentReportFilters::periodOptions()),
         );
         self::assertSame(
-            ['all', 'collected', 'pending', 'refunded'],
+            ['all', 'revenue', 'collected', 'pending', 'refunded'],
             array_keys(PaymentReportFilters::statusOptions()),
+        );
+        self::assertSame(
+            ['all', 'cash', 'momo', 'card', 'paystack', 'corporate_account', 'bank_transfer'],
+            array_keys(PaymentReportFilters::methodOptions()),
+        );
+        self::assertSame(
+            ['created_at', 'refunded_at'],
+            array_keys(PaymentReportFilters::dateBasisOptions()),
         );
         self::assertSame('Yearly', PaymentReportFilters::periodOptions()['yearly']);
     }
@@ -106,10 +114,13 @@ class PaymentReportStatsTest extends TestCase
         ));
 
         self::assertSame(
-            ['transaction_type', 'period', 'payment_status'],
+            ['transaction_type', 'payment_status', 'payment_method', 'date_basis', 'period'],
             array_map(fn (Select $select): string => $select->getName(), $selects),
         );
-        self::assertSame([], $selects[2]->getStateBindingModifiers());
+
+        foreach ($selects as $select) {
+            self::assertSame([], $select->getStateBindingModifiers());
+        }
 
         $actions = collect($components)->first(
             fn ($component): bool => $component instanceof Actions,
@@ -128,21 +139,69 @@ class PaymentReportStatsTest extends TestCase
             ->assertSet('filters.transaction_type', 'all')
             ->assertSet('filters.period', 'monthly')
             ->assertSet('filters.payment_status', 'all')
+            ->assertSet('filters.payment_method', 'all')
+            ->assertSet('filters.date_basis', 'created_at')
             ->set('draftFilters.transaction_type', 'food_orders')
             ->set('draftFilters.period', 'daily')
             ->set('draftFilters.payment_status', 'pending')
+            ->set('draftFilters.payment_method', 'card')
             ->assertSet('filters.transaction_type', 'all')
             ->call('applyPaymentFilters')
             ->assertHasNoErrors()
             ->assertSet('filters.transaction_type', 'food_orders')
             ->assertSet('filters.period', 'daily')
-            ->assertSet('filters.payment_status', 'pending');
+            ->assertSet('filters.payment_status', 'pending')
+            ->assertSet('filters.payment_method', 'card');
 
         $component
             ->call('resetPaymentFilters')
             ->assertSet('filters.transaction_type', 'all')
             ->assertSet('filters.period', 'monthly')
-            ->assertSet('filters.payment_status', 'all');
+            ->assertSet('filters.payment_status', 'all')
+            ->assertSet('filters.payment_method', 'all')
+            ->assertSet('filters.date_basis', 'created_at');
+    }
+
+    public function test_payment_drill_down_filters_support_gross_revenue_methods_and_refund_dates(): void
+    {
+        $this->travelTo('2026-09-02 12:00:00');
+
+        $cash = $this->payment('completed', 'CURRENT-CASH');
+        $card = $this->payment('completed', 'CURRENT-CARD');
+        $card->forceFill(['method' => 'card'])->saveQuietly();
+        $refunded = $this->payment('refunded', 'HISTORICAL-REFUND');
+        $refunded->forceFill([
+            'created_at' => '2026-07-15 09:00:00',
+            'updated_at' => '2026-07-15 09:00:00',
+            'refunded_at' => '2026-09-02 10:00:00',
+        ])->saveQuietly();
+
+        $component = $this->paymentPage()
+            ->set('draftFilters.payment_status', 'refunded')
+            ->set('draftFilters.payment_method', 'cash')
+            ->set('draftFilters.date_basis', 'refunded_at')
+            ->call('applyPaymentFilters')
+            ->assertHasNoErrors()
+            ->assertCanSeeTableRecords([$refunded])
+            ->assertCanNotSeeTableRecords([$cash, $card]);
+
+        $component
+            ->set('draftFilters.payment_status', 'revenue')
+            ->set('draftFilters.payment_method', 'cash')
+            ->set('draftFilters.date_basis', 'created_at')
+            ->call('applyPaymentFilters')
+            ->assertHasNoErrors()
+            ->assertCanSeeTableRecords([$cash])
+            ->assertCanNotSeeTableRecords([$card, $refunded]);
+
+        $widget = new PaymentReportStats;
+        $widget->pageFilters = $component->get('filters');
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+        $stats = $method->invoke($widget);
+
+        self::assertSame('1', $stats[0]->getValue());
+        self::assertSame('GHS 100.00', $stats[1]->getValue());
     }
 
     public function test_payment_status_filter_limits_the_metrics_and_transaction_list_to_the_selected_scope(): void

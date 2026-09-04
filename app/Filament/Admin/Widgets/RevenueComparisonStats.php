@@ -38,6 +38,9 @@ class RevenueComparisonStats extends StatsOverviewWidget
         'netRevenue' => ['current' => 0.0, 'previous' => 0.0, 'difference' => 0.0, 'percentageChange' => null],
     ];
 
+    /** @var array<string, string> */
+    public array $drillDownUrls = [];
+
     /**
      * Restricts the comparison to the same roles as the revenue report.
      */
@@ -54,9 +57,9 @@ class RevenueComparisonStats extends StatsOverviewWidget
     protected function getStats(): array
     {
         return [
-            $this->makeStat('Collected revenue change', $this->comparison['revenue'], true, 'heroicon-o-banknotes'),
-            $this->makeStat('Refund change', $this->comparison['refunds'], false, 'heroicon-o-arrow-uturn-left'),
-            $this->makeStat('Net revenue change', $this->comparison['netRevenue'], true, 'heroicon-o-chart-bar-square'),
+            $this->makeStat('Collected revenue change', 'revenue', $this->comparison['revenue'], true, 'heroicon-o-banknotes'),
+            $this->makeStat('Refund change', 'refunds', $this->comparison['refunds'], false, 'heroicon-o-arrow-uturn-left'),
+            $this->makeStat('Net revenue change', 'netRevenue', $this->comparison['netRevenue'], true, 'heroicon-o-chart-bar-square'),
         ];
     }
 
@@ -65,7 +68,7 @@ class RevenueComparisonStats extends StatsOverviewWidget
      *
      * @param  array{current: float, previous: float, difference: float, percentageChange: float|null}  $metric
      */
-    private function makeStat(string $label, array $metric, bool $increaseIsPositive, string $icon): Stat
+    private function makeStat(string $label, string $urlKey, array $metric, bool $increaseIsPositive, string $icon): Stat
     {
         $direction = $metric['difference'] <=> 0.0;
         $percentage = match (true) {
@@ -75,7 +78,7 @@ class RevenueComparisonStats extends StatsOverviewWidget
             default => 'No change',
         };
 
-        return Stat::make($label, $this->formatDifference($metric['difference']))
+        $stat = Stat::make($label, $this->formatDifference($metric['difference']))
             ->description(sprintf(
                 'Current GHS %s · Previous GHS %s · %s',
                 number_format($metric['current'], 2),
@@ -92,6 +95,12 @@ class RevenueComparisonStats extends StatsOverviewWidget
             ->extraAttributes([
                 'class' => 'min-w-0 [&_.fi-wi-stats-overview-stat-value]:break-words [&_.fi-wi-stats-overview-stat-value]:tabular-nums',
             ]);
+
+        $url = $this->drillDownUrls[$urlKey] ?? null;
+
+        return filled($url)
+            ? $stat->url($url)->descriptionIcon('heroicon-m-arrow-top-right-on-square')
+            : $stat;
     }
 
     /**
