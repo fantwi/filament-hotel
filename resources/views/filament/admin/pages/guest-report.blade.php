@@ -22,7 +22,7 @@
                     <div class="rounded-xl bg-primary-50 p-4 dark:bg-primary-500/10">
                         <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Returning guests</p>
                         <p class="mt-1 text-2xl font-bold text-primary-700 dark:text-primary-300">{{ number_format($report['returningGuests']) }}</p>
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Two or more paid transactions in range</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Two or more distinct paid service visits in range</p>
                     </div>
 
                     <dl class="space-y-3">

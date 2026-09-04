@@ -18,6 +18,8 @@ class GuestReport extends Page
 
     private const RESOLVED_GUEST_ID = 'COALESCE(payments.guest_id, guest_report_bookings.guest_id, guest_report_conferences.guest_id, guest_report_reservations.guest_id, guest_report_orders.guest_id)';
 
+    private const DISTINCT_SERVICE_VISIT_COUNT = 'COUNT(DISTINCT payments.booking_id) + COUNT(DISTINCT CASE WHEN payments.booking_id IS NULL THEN payments.conference_booking_id END) + COUNT(DISTINCT CASE WHEN payments.booking_id IS NULL AND payments.conference_booking_id IS NULL THEN payments.restaurant_reservation_id END) + COUNT(DISTINCT CASE WHEN payments.booking_id IS NULL AND payments.conference_booking_id IS NULL AND payments.restaurant_reservation_id IS NULL THEN payments.restaurant_order_id END)';
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Reports';
@@ -63,7 +65,7 @@ class GuestReport extends Page
             'returningGuests' => (clone $paidPayments)
                 ->selectRaw(self::RESOLVED_GUEST_ID.' as guest_id')
                 ->groupByRaw(self::RESOLVED_GUEST_ID)
-                ->havingRaw('COUNT(*) >= 2')
+                ->havingRaw(self::DISTINCT_SERVICE_VISIT_COUNT.' >= 2')
                 ->get()
                 ->count(),
             'averageSpend' => $payingGuests > 0 ? $totalPaid / $payingGuests : 0,

@@ -182,6 +182,108 @@ class GuestReportTest extends TestCase
         self::assertSame($paymentGuest->id, $report['topGuests']->first()->guest->id);
     }
 
+    public function test_returning_guest_requires_two_distinct_paid_service_visits(): void
+    {
+        [$guest, $room] = $this->serviceFixture();
+        $firstStay = Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-09-10',
+            'check_out' => '2026-09-11',
+            'total_price' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+        $secondStay = Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-09-12',
+            'check_out' => '2026-09-13',
+            'total_price' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+
+        foreach ([40, 60] as $index => $amount) {
+            Payment::query()->create([
+                'booking_id' => $firstStay->id,
+                'guest_id' => $guest->id,
+                'amount' => $amount,
+                'method' => 'cash',
+                'payment_status' => 'completed',
+                'transaction_reference' => 'GUEST-REPORT-INSTALMENT-'.$index,
+            ]);
+        }
+
+        self::assertSame(0, (new GuestReport)->report()['returningGuests']);
+
+        Payment::query()->create([
+            'booking_id' => $secondStay->id,
+            'guest_id' => $guest->id,
+            'amount' => 100,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-REPORT-SECOND-STAY',
+        ]);
+
+        self::assertSame(1, (new GuestReport)->report()['returningGuests']);
+    }
+
+    public function test_returning_guest_counts_service_types_separately_and_ignores_unlinked_payments(): void
+    {
+        [$returningGuest, $room, $conferenceRoom] = $this->serviceFixture();
+        $directPaymentGuest = Guest::query()->create([
+            'first_name' => 'Direct',
+            'last_name' => 'Only',
+            'email' => 'direct-only@example.test',
+            'phone_number' => '0240000002',
+        ]);
+        $stay = Booking::query()->create([
+            'guest_id' => $returningGuest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-09-10',
+            'check_out' => '2026-09-11',
+            'total_price' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+        $conference = ConferenceBooking::query()->create([
+            'guest_id' => $returningGuest->id,
+            'conference_room_id' => $conferenceRoom->id,
+            'booking_date' => '2026-09-10',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'attendees' => 10,
+            'total_price' => 200,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+
+        foreach ([
+            ['booking_id', $stay->id, $returningGuest->id, 'GUEST-REPORT-VISIT-HOTEL'],
+            ['conference_booking_id', $conference->id, $returningGuest->id, 'GUEST-REPORT-VISIT-CONFERENCE'],
+            [null, null, $directPaymentGuest->id, 'GUEST-REPORT-DIRECT-ONE'],
+            [null, null, $directPaymentGuest->id, 'GUEST-REPORT-DIRECT-TWO'],
+        ] as [$foreignKey, $foreignId, $guestId, $reference]) {
+            $payment = [
+                'guest_id' => $guestId,
+                'amount' => 100,
+                'method' => 'cash',
+                'payment_status' => 'completed',
+                'transaction_reference' => $reference,
+            ];
+
+            if ($foreignKey !== null) {
+                $payment[$foreignKey] = $foreignId;
+            }
+
+            Payment::query()->create($payment);
+        }
+
+        self::assertSame($stay->id, $conference->id);
+        self::assertSame(1, (new GuestReport)->report()['returningGuests']);
+    }
+
     public function test_guest_stats_widget_uses_period_aware_overview_stats(): void
     {
         self::assertTrue(is_subclass_of(GuestStats::class, StatsOverviewWidget::class));
