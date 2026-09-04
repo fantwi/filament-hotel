@@ -125,9 +125,17 @@ class KitchenOrderQueue extends TableWidget
                     })
                     ->toggleable()
                     ->visibleFrom('lg'),
-                TextColumn::make('status')->badge()->color(fn (string $state): string => match ($state) {
-                    'confirmed' => 'info', 'preparing' => 'warning', 'ready' => 'success', default => 'gray',
-                }),
+                TextColumn::make('status')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'confirmed' => 'Waiting to start',
+                        'preparing' => 'Preparing',
+                        'ready' => 'Ready to serve',
+                        default => ucfirst(str_replace('_', ' ', $state)),
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'confirmed' => 'info', 'preparing' => 'warning', 'ready' => 'success', default => 'gray',
+                    }),
                 TextColumn::make('preparedBy.name')
                     ->label('Chef')
                     ->placeholder('Unassigned')
@@ -147,7 +155,7 @@ class KitchenOrderQueue extends TableWidget
             ])
             ->recordActions([
                 Action::make('start_preparing')
-                    ->label('Prepare')
+                    ->label('Start preparing')
                     ->icon('heroicon-o-fire')
                     ->color('warning')
                     ->visible(fn (RestaurantOrder $record): bool => $record->status === 'confirmed' && $this->allowsOperationalActions())

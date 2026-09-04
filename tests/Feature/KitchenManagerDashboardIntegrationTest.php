@@ -79,6 +79,21 @@ class KitchenManagerDashboardIntegrationTest extends TestCase
             ->assertCanNotSeeTableRecords([$currentServed]);
     }
 
+    public function test_live_queue_uses_staff_facing_status_and_action_labels(): void
+    {
+        $manager = $this->kitchenManager();
+        $waiting = $this->order('confirmed', 'WAITING-ORDER', '2026-08-05 10:00:00');
+        $this->order('preparing', 'PREPARING-ORDER', '2026-08-05 10:01:00');
+        $this->order('ready', 'READY-ORDER', '2026-08-05 10:02:00');
+
+        Livewire::actingAs($manager)
+            ->test(KitchenOrderQueue::class)
+            ->assertSeeText('Waiting to start')
+            ->assertSeeText('Preparing')
+            ->assertSeeText('Ready to serve')
+            ->assertTableActionHasLabel('start_preparing', 'Start preparing', $waiting);
+    }
+
     private function kitchenManager(): User
     {
         $role = Role::findOrCreate('kitchen_manager', 'web');
