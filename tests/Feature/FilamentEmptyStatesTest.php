@@ -74,7 +74,7 @@ class FilamentEmptyStatesTest extends TestCase
             'restaurant order items' => [RestaurantOrderItemsTable::class, 'No restaurant order items found', 'heroicon-o-queue-list', ['resetFilters']],
             'restaurant tables' => [RestaurantTablesTable::class, 'No restaurant tables found', 'heroicon-o-table-cells', ['create', 'resetFilters']],
             'restaurants' => [RestaurantsTable::class, 'No restaurants found', 'heroicon-o-building-storefront', ['create', 'resetFilters']],
-            'room types' => [RoomTypesTable::class, 'No room types found', 'heroicon-o-home-modern', ['create']],
+            'room types' => [RoomTypesTable::class, 'No room types found', 'heroicon-o-home-modern', ['clearSearch', 'create']],
             'rooms' => [RoomsTable::class, 'No rooms found', 'heroicon-o-home', ['create']],
             'staff users' => [UsersTable::class, 'No staff users found', 'heroicon-o-user-group', ['create', 'resetFilters']],
         ];

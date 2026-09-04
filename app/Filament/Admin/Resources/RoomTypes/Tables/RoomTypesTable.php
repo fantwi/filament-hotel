@@ -11,6 +11,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 
 /**
@@ -24,15 +25,27 @@ class RoomTypesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->emptyStateHeading('No room types found')
-            ->emptyStateDescription('Create a room type to define the accommodations guests can book.')
-            ->emptyStateIcon('heroicon-o-home-modern')
+            ->emptyStateHeading(fn (HasTable $livewire): string => $livewire->hasTableSearch()
+                ? 'No room types match your search'
+                : 'No room types found')
+            ->emptyStateDescription(fn (HasTable $livewire): string => $livewire->hasTableSearch()
+                ? 'Clear the search to return to all room types.'
+                : 'Create a room type to define the accommodations guests can book.')
+            ->emptyStateIcon(fn (HasTable $livewire): string => $livewire->hasTableSearch()
+                ? 'heroicon-o-magnifying-glass'
+                : 'heroicon-o-home-modern')
             ->emptyStateActions([
+                Action::make('clearSearch')
+                    ->label('Clear search')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('gray')
+                    ->visible(fn (HasTable $livewire): bool => $livewire->hasTableSearch())
+                    ->action(fn (HasTable $livewire) => $livewire->resetTableSearch()),
                 Action::make('create')
                     ->label('Create room type')
                     ->icon('heroicon-o-plus')
                     ->url(fn (): string => RoomTypeResource::getUrl('create'))
-                    ->visible(fn (): bool => RoomTypeResource::canCreate()),
+                    ->visible(fn (HasTable $livewire): bool => ! $livewire->hasTableSearch() && RoomTypeResource::canCreate()),
             ])
             ->columns([
                 TextColumn::make('mobile_summary')
