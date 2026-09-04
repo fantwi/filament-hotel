@@ -594,25 +594,72 @@ class RevenueReportTest extends TestCase
         }
     }
 
-    public function test_revenue_report_payment_method_cards_link_to_filtered_payments(): void
+    public function test_revenue_report_payment_method_cards_show_distinct_shares_and_link_to_filtered_payments(): void
     {
         $this->travelTo('2026-09-04 12:00:00');
         [$guest] = $this->serviceFixture();
-        $this->payment($guest, 'booking_id', null, 125, 'REVENUE-METHOD-LINK');
+        $this->payment($guest, 'booking_id', null, 100, 'REVENUE-METHOD-CASH');
+        $this->payment($guest, 'booking_id', null, 300, 'REVENUE-METHOD-MOMO')
+            ->update(['method' => 'momo']);
+        $this->payment($guest, 'booking_id', null, 600, 'REVENUE-METHOD-BANK')
+            ->update(['method' => 'bank_transfer']);
         $accountant = $this->revenueReportUser('accountant', withTransactionDashboard: true);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         $response = $this->actingAs($accountant)->get(RevenueReport::getUrl());
-        $response->assertOk();
+        $response->assertOk()->assertSeeInOrder([
+            'Payment methods',
+            'Bank transfer',
+            '60.0% of revenue',
+            'Mobile money',
+            '30.0% of revenue',
+            'Cash',
+            '10.0% of revenue',
+        ]);
 
         $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
-        $link = $xpath->query('//a[@data-revenue-drill-down="method"]')?->item(0);
+        $section = $xpath->query('//section[@aria-labelledby="payment-methods-heading"]')?->item(0);
 
-        self::assertInstanceOf(\DOMElement::class, $link);
-        self::assertSame('cash', $this->urlFilters($link->getAttribute('href'))['payment_method']);
-        self::assertStringContainsString('View Cash revenue payments', $link->getAttribute('aria-label'));
+        self::assertInstanceOf(\DOMElement::class, $section);
+        $grid = $xpath->query('.//*[@data-payment-method-grid]', $section)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $grid);
+        self::assertStringContainsString('sm:grid-cols-2', $grid->getAttribute('class'));
+        self::assertStringContainsString('xl:grid-cols-3', $grid->getAttribute('class'));
+
+        $cards = $xpath->query('.//article[@data-payment-method-card]', $section);
+        self::assertCount(3, $cards);
+        self::assertCount(3, array_unique(array_map(
+            fn (\DOMElement $card): string => $card->getAttribute('data-payment-method-tone'),
+            iterator_to_array($cards),
+        )));
+
+        foreach ($cards as $card) {
+            $tone = $card->getAttribute('data-payment-method-tone');
+
+            self::assertStringContainsString("border-{$tone}-200", $card->getAttribute('class'));
+        }
+
+        $links = $xpath->query('.//a[@data-revenue-drill-down="method"]', $section);
+        self::assertCount(3, $links);
+
+        foreach ($links as $link) {
+            $method = $link->getAttribute('data-payment-method-key');
+
+            self::assertSame($method, $this->urlFilters($link->getAttribute('href'))['payment_method']);
+            self::assertStringContainsString('revenue payments', $link->getAttribute('aria-label'));
+        }
+
+        $progressBars = $xpath->query('.//*[@role="progressbar"]', $section);
+        self::assertCount(3, $progressBars);
+        self::assertSame(
+            ['60', '30', '10'],
+            array_map(
+                fn (\DOMElement $bar): string => $bar->getAttribute('aria-valuenow'),
+                iterator_to_array($progressBars),
+            ),
+        );
     }
 
     public function test_revenue_report_indexes_cover_period_and_status_predicates(): void

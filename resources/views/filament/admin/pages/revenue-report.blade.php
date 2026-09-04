@@ -79,6 +79,64 @@
                 'barClasses' => 'bg-success-500 dark:bg-success-400',
             ],
         ];
+        $paymentMethodPresentations = [
+            'cash' => [
+                'label' => 'Cash',
+                'icon' => 'heroicon-o-banknotes',
+                'tone' => 'emerald',
+                'classes' => 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-800 dark:bg-emerald-950/20',
+                'iconClasses' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+                'barClasses' => 'bg-emerald-500 dark:bg-emerald-400',
+            ],
+            'momo' => [
+                'label' => 'Mobile money',
+                'icon' => 'heroicon-o-device-phone-mobile',
+                'tone' => 'amber',
+                'classes' => 'border-amber-200 bg-amber-50/70 dark:border-amber-800 dark:bg-amber-950/20',
+                'iconClasses' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+                'barClasses' => 'bg-amber-500 dark:bg-amber-400',
+            ],
+            'card' => [
+                'label' => 'Card',
+                'icon' => 'heroicon-o-credit-card',
+                'tone' => 'indigo',
+                'classes' => 'border-indigo-200 bg-indigo-50/70 dark:border-indigo-800 dark:bg-indigo-950/20',
+                'iconClasses' => 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300',
+                'barClasses' => 'bg-indigo-500 dark:bg-indigo-400',
+            ],
+            'paystack' => [
+                'label' => 'Paystack',
+                'icon' => 'heroicon-o-shield-check',
+                'tone' => 'sky',
+                'classes' => 'border-sky-200 bg-sky-50/70 dark:border-sky-800 dark:bg-sky-950/20',
+                'iconClasses' => 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300',
+                'barClasses' => 'bg-sky-500 dark:bg-sky-400',
+            ],
+            'corporate_account' => [
+                'label' => 'Corporate account',
+                'icon' => 'heroicon-o-building-office',
+                'tone' => 'violet',
+                'classes' => 'border-violet-200 bg-violet-50/70 dark:border-violet-800 dark:bg-violet-950/20',
+                'iconClasses' => 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300',
+                'barClasses' => 'bg-violet-500 dark:bg-violet-400',
+            ],
+            'bank_transfer' => [
+                'label' => 'Bank transfer',
+                'icon' => 'heroicon-o-building-library',
+                'tone' => 'rose',
+                'classes' => 'border-rose-200 bg-rose-50/70 dark:border-rose-800 dark:bg-rose-950/20',
+                'iconClasses' => 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300',
+                'barClasses' => 'bg-rose-500 dark:bg-rose-400',
+            ],
+        ];
+        $defaultPaymentMethodPresentation = [
+            'label' => 'Unknown',
+            'icon' => 'heroicon-o-receipt-percent',
+            'tone' => 'neutral',
+            'classes' => 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-white/5',
+            'iconClasses' => 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
+            'barClasses' => 'bg-gray-500 dark:bg-gray-400',
+        ];
     @endphp
     <div class="space-y-6">
         <x-filament::section>
@@ -235,25 +293,68 @@
             </div>
         </x-filament::section>
 
-        <x-filament::section heading="Payment methods" description="Completed payments received during {{ strtolower($this->periodLabel()) }}">
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <x-filament::section aria-labelledby="payment-methods-heading">
+            <x-slot name="heading">
+                <span id="payment-methods-heading">Payment methods</span>
+            </x-slot>
+            <x-slot name="description">Completed payments received during {{ strtolower($this->periodLabel()) }}</x-slot>
+
+            <div data-payment-method-grid class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 @forelse ($report['methods'] as $method)
                     @php
                         $methodKey = (string) ($method->method ?: '');
-                        $methodLabel = ucfirst(str_replace('_', ' ', $method->method ?: 'Unknown'));
+                        $presentation = $paymentMethodPresentations[$methodKey] ?? $defaultPaymentMethodPresentation;
+                        $methodLabel = $methodKey !== '' && ! array_key_exists($methodKey, $paymentMethodPresentations)
+                            ? ucfirst(str_replace('_', ' ', $methodKey))
+                            : $presentation['label'];
+                        $methodTotal = (float) $method->total;
+                        $share = $report['revenue'] > 0
+                            ? ($methodTotal / $report['revenue']) * 100
+                            : 0;
+                        $boundedShare = max(0, min(100, $share));
                     @endphp
                     <a
                         href="{{ $drillDowns['methods'][$methodKey] ?? $drillDowns['revenue'] }}"
                         aria-label="View {{ $methodLabel }} revenue payments"
                         data-revenue-drill-down="method"
-                        class="rounded-xl bg-gray-50 p-4 transition hover:-translate-y-0.5 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:bg-white/5 dark:hover:bg-white/10"
+                        data-payment-method-key="{{ $methodKey }}"
+                        class="block rounded-xl transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                     >
-                        <div class="flex items-start justify-between gap-2">
-                            <p class="text-sm font-semibold capitalize">{{ $methodLabel }}</p>
-                            <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4 shrink-0 text-gray-400" />
-                        </div>
-                        <p class="mt-2 text-xl font-bold">GHS {{ number_format($method->total, 2) }}</p>
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($method->payment_count) }} payment(s)</p>
+                        <article
+                            data-payment-method-card
+                            data-payment-method-tone="{{ $presentation['tone'] }}"
+                            class="h-full min-w-0 rounded-xl border p-4 shadow-sm transition hover:shadow-md {{ $presentation['classes'] }}"
+                        >
+                            <div class="flex items-start gap-3">
+                                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {{ $presentation['iconClasses'] }}">
+                                    <x-filament::icon :icon="$presentation['icon']" class="h-5 w-5" />
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <h3 class="text-sm font-semibold text-gray-950 dark:text-white">{{ $methodLabel }}</h3>
+                                        <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                                    </div>
+                                    <p class="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{{ number_format($method->payment_count) }} payment(s)</p>
+                                </div>
+                            </div>
+
+                            <p class="mt-4 truncate text-xl font-bold tabular-nums text-gray-950 dark:text-white" title="GHS {{ number_format($methodTotal, 2) }}">
+                                GHS {{ number_format($methodTotal, 2) }}
+                            </p>
+                            <p class="mt-1 text-xs font-semibold tabular-nums text-gray-600 dark:text-gray-300">
+                                {{ number_format($share, 1) }}% of revenue
+                            </p>
+                            <div
+                                role="progressbar"
+                                aria-label="{{ $methodLabel }} share of collected revenue"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                aria-valuenow="{{ round($boundedShare, 1) }}"
+                                class="mt-3 h-2 overflow-hidden rounded-full bg-white/80 ring-1 ring-inset ring-gray-950/5 dark:bg-white/10 dark:ring-white/10"
+                            >
+                                <span class="block h-full rounded-full {{ $presentation['barClasses'] }}" style="width: {{ $boundedShare }}%"></span>
+                            </div>
+                        </article>
                     </a>
                 @empty
                     <p class="text-sm text-gray-500 dark:text-gray-400">No completed payments were recorded for {{ strtolower($this->periodLabel()) }}.</p>
