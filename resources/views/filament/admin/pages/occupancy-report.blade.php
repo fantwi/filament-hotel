@@ -1,6 +1,13 @@
 <x-filament::page>
     @php
         $report = $this->report();
+        $statsSummary = [
+            'occupancyRate' => $report['occupancyRate'],
+            'bookedRoomNights' => $report['bookedRoomNights'],
+            'roomNightCapacity' => $report['roomNightCapacity'],
+            'roomsAvailable' => $report['roomStatus']['available'],
+            'tablesAvailable' => $report['tableStatus']['available'],
+        ];
     @endphp
     <div class="space-y-6">
         <x-filament::section>
@@ -17,7 +24,14 @@
             wire:loading.class="opacity-60"
             wire:target="applyReportPeriod,resetReportPeriod"
         >
-            @livewire(\App\Filament\Admin\Widgets\OccupancyStats::class, ['period' => $this->period, 'startDate' => $this->startDate, 'endDate' => $this->endDate], key('occupancy-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+            @livewire(
+                \App\Filament\Admin\Widgets\OccupancyStats::class,
+                [
+                    'summary' => $statsSummary,
+                    'periodLabel' => $this->periodLabel(),
+                ],
+                key('occupancy-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate)
+            )
         </section>
 
         <section class="grid gap-4 lg:grid-cols-3">

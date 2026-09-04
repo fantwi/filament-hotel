@@ -2,8 +2,6 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Filament\Admin\Pages\OccupancyReport;
-use App\Support\Reporting\ReportPeriod;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -14,14 +12,16 @@ class OccupancyStats extends StatsOverviewWidget
 {
     protected int|string|array $columnSpan = 'full';
 
-    /**
-     * The report period selected on the parent occupancy page.
-     */
-    public string $period = 'monthly';
+    /** @var array{occupancyRate: float|null, bookedRoomNights: int, roomNightCapacity: int, roomsAvailable: int, tablesAvailable: int} */
+    public array $summary = [
+        'occupancyRate' => null,
+        'bookedRoomNights' => 0,
+        'roomNightCapacity' => 0,
+        'roomsAvailable' => 0,
+        'tablesAvailable' => 0,
+    ];
 
-    public string $startDate = '';
-
-    public string $endDate = '';
+    public string $periodLabel = 'Monthly';
 
     /**
      * Determines whether the current user may view this feature.
@@ -38,48 +38,32 @@ class OccupancyStats extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
-        $reportPage = new OccupancyReport;
-        $reportPage->period = $this->validPeriod($this->period);
-        $reportPage->startDate = $this->startDate;
-        $reportPage->endDate = $this->endDate;
-        $report = $reportPage->report();
-        $periodLabel = $reportPage->periodLabel();
-        $hasRoomCapacity = $report['occupancyRate'] !== null;
+        $hasRoomCapacity = $this->summary['occupancyRate'] !== null;
 
         return [
             Stat::make(
                 'Room occupancy',
-                $hasRoomCapacity ? number_format((float) $report['occupancyRate'], 1).'%' : 'N/A',
+                $hasRoomCapacity ? number_format((float) $this->summary['occupancyRate'], 1).'%' : 'N/A',
             )
-                ->description($hasRoomCapacity ? $periodLabel : 'No room-night capacity in '.$periodLabel)
+                ->description($hasRoomCapacity ? $this->periodLabel : 'No room-night capacity in '.$this->periodLabel)
                 ->icon('heroicon-o-chart-pie')
                 ->color($hasRoomCapacity ? 'primary' : 'gray'),
-            Stat::make('Booked room nights', number_format((int) $report['bookedRoomNights']))
-                ->description('Active stays in '.$periodLabel)
+            Stat::make('Booked room nights', number_format($this->summary['bookedRoomNights']))
+                ->description('Active stays in '.$this->periodLabel)
                 ->icon('heroicon-o-moon')
                 ->color('success'),
-            Stat::make('Room-night capacity', number_format((int) $report['roomNightCapacity']))
-                ->description('Available inventory across '.$periodLabel)
+            Stat::make('Room-night capacity', number_format($this->summary['roomNightCapacity']))
+                ->description('Available inventory across '.$this->periodLabel)
                 ->icon('heroicon-o-home-modern')
                 ->color('info'),
-            Stat::make('Rooms available now', number_format((int) $report['roomStatus']['available']))
+            Stat::make('Rooms available now', number_format($this->summary['roomsAvailable']))
                 ->description('Live inventory status')
                 ->icon('heroicon-o-key')
                 ->color('primary'),
-            Stat::make('Tables available now', number_format((int) $report['tableStatus']['available']))
+            Stat::make('Tables available now', number_format($this->summary['tablesAvailable']))
                 ->description('Live restaurant status')
                 ->icon('heroicon-o-square-3-stack-3d')
                 ->color('warning'),
         ];
-    }
-
-    /**
-     * Keeps nested widget state within the periods supported by the report page.
-     */
-    private function validPeriod(string $period): string
-    {
-        return array_key_exists($period, ReportPeriod::options())
-            ? $period
-            : 'monthly';
     }
 }

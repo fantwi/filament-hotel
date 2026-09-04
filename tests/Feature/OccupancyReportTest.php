@@ -15,6 +15,7 @@ use App\Models\Room;
 use App\Models\RoomType;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class OccupancyReportTest extends TestCase
@@ -63,6 +64,7 @@ class OccupancyReportTest extends TestCase
         self::assertEqualsWithDelta(0, $report['occupancyRate'], 0.001);
 
         $widget = new OccupancyStats;
+        $widget->summary = $this->statsSummary($report);
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
         $occupancy = collect($method->invoke($widget))
@@ -411,13 +413,30 @@ class OccupancyReportTest extends TestCase
         self::assertTrue(is_subclass_of(OccupancyStats::class, StatsOverviewWidget::class));
 
         $widget = new OccupancyStats;
-        $widget->period = 'quarterly';
+        $widget->summary['occupancyRate'] = 25;
+        $widget->periodLabel = 'Quarterly';
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 
         $stats = $method->invoke($widget);
 
         self::assertCount(5, $stats);
+        self::assertSame('Quarterly', $stats[0]->getDescription());
+    }
+
+    public function test_occupancy_stats_widget_builds_cards_without_requerying_report_data(): void
+    {
+        $widget = new OccupancyStats;
+        $method = new \ReflectionMethod($widget, 'getStats');
+        $method->setAccessible(true);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $method->invoke($widget);
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        self::assertCount(0, $queries);
     }
 
     public function test_occupancy_stats_widget_labels_zero_capacity_as_not_available(): void
@@ -457,5 +476,20 @@ class OccupancyReportTest extends TestCase
         ]);
 
         return [$guest, $room];
+    }
+
+    /**
+     * @param  array<string, mixed>  $report
+     * @return array{occupancyRate: float|null, bookedRoomNights: int, roomNightCapacity: int, roomsAvailable: int, tablesAvailable: int}
+     */
+    private function statsSummary(array $report): array
+    {
+        return [
+            'occupancyRate' => $report['occupancyRate'],
+            'bookedRoomNights' => $report['bookedRoomNights'],
+            'roomNightCapacity' => $report['roomNightCapacity'],
+            'roomsAvailable' => $report['roomStatus']['available'],
+            'tablesAvailable' => $report['tableStatus']['available'],
+        ];
     }
 }
