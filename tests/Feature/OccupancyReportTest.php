@@ -22,12 +22,39 @@ use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class OccupancyReportTest extends TestCase
 {
     use RefreshDatabase;
+
+    #[DataProvider('authorizedOccupancyDepartments')]
+    public function test_authorized_staff_can_open_the_occupancy_report(string $department): void
+    {
+        $user = User::factory()->create(['department' => $department]);
+
+        $this->actingAs($user)
+            ->get('/admin/occupancy-report')
+            ->assertOk();
+    }
+
+    #[DataProvider('unauthorizedOccupancyDepartments')]
+    public function test_other_authenticated_roles_cannot_open_the_occupancy_report(string $department): void
+    {
+        $user = User::factory()->create(['department' => $department]);
+
+        $this->actingAs($user)
+            ->get('/admin/occupancy-report')
+            ->assertForbidden();
+    }
+
+    public function test_anonymous_users_are_redirected_to_the_admin_login(): void
+    {
+        $this->get('/admin/occupancy-report')
+            ->assertRedirect('/admin/login');
+    }
 
     public function test_occupancy_report_uses_one_selected_period_for_structured_operational_data(): void
     {
@@ -468,14 +495,6 @@ class OccupancyReportTest extends TestCase
         self::assertSame(5, $report['roomNightCapacity']);
     }
 
-    public function test_occupancy_report_uses_a_memory_bounded_booking_iterator(): void
-    {
-        $source = file_get_contents(app_path('Filament/Admin/Pages/OccupancyReport.php'));
-
-        self::assertMatchesRegularExpression('/lazyById|cursor/', $source);
-        self::assertStringNotContainsString("->get(['id', 'check_in', 'check_out'])", $source);
-    }
-
     public function test_occupancy_report_date_filters_do_not_wrap_indexed_columns_in_sql_functions(): void
     {
         DB::flushQueryLog();
@@ -546,10 +565,24 @@ class OccupancyReportTest extends TestCase
             'updated_at' => now(),
         ])->all());
 
+        DB::flushQueryLog();
+        DB::enableQueryLog();
         $report = (new OccupancyReport)->report();
+        $bookingChunks = collect(DB::getQueryLog())
+            ->pluck('query')
+            ->filter(fn (string $query): bool => str_contains($query, 'from "bookings"')
+                && preg_match('/order by (?:"bookings"\.)?"id" asc limit 1000/i', $query) === 1)
+            ->values();
+        DB::disableQueryLog();
 
         self::assertSame(1100, $report['hotelBookings']);
         self::assertSame(1100, $report['bookedRoomNights']);
+        self::assertCount(2, $bookingChunks);
+        self::assertDoesNotMatchRegularExpression('/\boffset\b/i', $bookingChunks->first());
+        self::assertMatchesRegularExpression(
+            '/(?:"bookings"\.)?"id" > \?/i',
+            $bookingChunks->last(),
+        );
     }
 
     public function test_occupancy_page_marks_only_selected_period_results_as_busy_while_the_period_changes(): void
@@ -1010,6 +1043,33 @@ class OccupancyReportTest extends TestCase
             'restaurant_reservations' => [
                 'restaurant_reservations_reservation_date_status_index',
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function authorizedOccupancyDepartments(): array
+    {
+        return [
+            'super admin' => ['super_admin'],
+            'admin' => ['admin'],
+            'manager' => ['management'],
+            'receptionist' => ['reception'],
+        ];
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function unauthorizedOccupancyDepartments(): array
+    {
+        return [
+            'accountant' => ['accounting'],
+            'housekeeping' => ['housekeeping'],
+            'kitchen manager' => ['kitchen_manager'],
+            'kitchen staff' => ['kitchen_staff'],
+            'guest' => ['guest'],
         ];
     }
 
