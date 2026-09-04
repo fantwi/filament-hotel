@@ -20,7 +20,8 @@ class TransactionDashboardSummary
      *
      * @return array{
      *     rows: array<int, array<string, int|float|string>>,
-     *     totals: array<string, int|float>
+     *     totals: array<string, int|float>,
+     *     has_activity: bool
      * }
      */
     public function summarize(CarbonInterface $start, CarbonInterface $end): array
@@ -92,6 +93,9 @@ class TransactionDashboardSummary
         return [
             'rows' => $rows,
             'totals' => $totals,
+            'has_activity' => $totals['transactions'] > 0
+                || $totals['payment_count'] > 0
+                || $totals['refund_count'] > 0,
         ];
     }
 

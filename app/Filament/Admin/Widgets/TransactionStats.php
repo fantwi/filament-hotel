@@ -38,9 +38,18 @@ class TransactionStats extends StatsOverviewWidget
     protected function getStats(): array
     {
         [$start, $end] = $this->dashboardDateRange();
-        $totals = app(TransactionDashboardSummary::class)
-            ->summarize($start, $end)['totals'];
+        $summary = app(TransactionDashboardSummary::class)->summarize($start, $end);
+        $totals = $summary['totals'];
         $periodLabel = $this->dashboardDateRangeLabel();
+
+        if (! $summary['has_activity']) {
+            return [
+                Stat::make('No transaction activity', '—')
+                    ->description("No transactions, payments, or refunds · {$periodLabel}")
+                    ->icon('heroicon-o-calendar-days')
+                    ->color('gray'),
+            ];
+        }
 
         return [
             $this->dashboardSectionDrillDown(

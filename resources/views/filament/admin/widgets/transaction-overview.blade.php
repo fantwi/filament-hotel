@@ -11,6 +11,18 @@
             </div>
         </x-filament::section>
 
+        @if (! $hasActivity)
+            <x-filament::section>
+                <div class="flex flex-col items-center px-4 py-10 text-center sm:py-14">
+                    <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-300">
+                        <x-filament::icon icon="heroicon-o-calendar-days" class="h-6 w-6" />
+                    </span>
+                    <h3 class="mt-4 text-base font-semibold text-gray-950 dark:text-white">No transaction activity</h3>
+                    <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">No bookings, reservations, payments, or refunds were recorded from {{ $periodLabel }}.</p>
+                    <p class="mt-1 max-w-xl text-sm text-gray-500 dark:text-gray-400">Choose another period above and apply the filters to review a different range.</p>
+                </div>
+            </x-filament::section>
+        @else
         <x-filament::section heading="How metrics are scoped" description="The selected period is applied to the event date named on each metric.">
             <div class="grid gap-4 md:grid-cols-3">
                 <div class="rounded-xl border border-primary-200 bg-primary-50 p-4 dark:border-primary-500/20 dark:bg-primary-500/10">
@@ -118,6 +130,8 @@
                 @endforeach
             </div>
         </x-filament::section>
+
+        @endif
 
     </div>
 </x-filament-widgets::widget>

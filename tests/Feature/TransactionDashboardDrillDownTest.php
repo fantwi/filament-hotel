@@ -44,6 +44,7 @@ class TransactionDashboardDrillDownTest extends TestCase
     public function test_transaction_stats_link_to_matching_payment_receivable_and_detail_scopes(): void
     {
         $this->actingAs(User::factory()->create(['department' => 'accounting']));
+        $this->seedTransactionActivity();
         $stats = $this->stats();
 
         $this->assertDashboardSectionLink($stats['All transactions created'], 'transaction-breakdown');
@@ -66,6 +67,7 @@ class TransactionDashboardDrillDownTest extends TestCase
     {
         $accountant = User::factory()->create(['department' => 'accounting']);
         $this->actingAs($accountant);
+        $this->seedTransactionActivity();
         $overview = $this->overview();
         $rows = collect($overview['rows'])->keyBy('label');
 
@@ -108,6 +110,7 @@ class TransactionDashboardDrillDownTest extends TestCase
     public function test_transaction_links_fall_back_to_dashboard_details_when_the_destination_is_forbidden(): void
     {
         $this->actingAs(User::factory()->create(['department' => 'management']));
+        $this->seedTransactionActivity();
         $stats = $this->stats();
 
         $this->assertDashboardSectionLink($stats['Completed payments recorded'], 'collection-performance');
@@ -269,6 +272,16 @@ class TransactionDashboardDrillDownTest extends TestCase
             'status' => 'confirmed',
             'payment_status' => 'pending',
         ]);
+    }
+
+    /**
+     * Creates one in-period transaction for populated-dashboard link assertions.
+     */
+    private function seedTransactionActivity(): void
+    {
+        [$guest, $room] = $this->reservationFixture();
+
+        $this->createdAt($this->booking($guest, $room), '2026-08-10');
     }
 
     private function reservation(

@@ -50,6 +50,7 @@ class TransactionOverview extends Widget
                 ->all(),
             'periodLabel' => $this->dashboardDateRangeLabel(),
             'totals' => $summary['totals'],
+            'hasActivity' => $summary['has_activity'],
             'links' => [
                 'net_collections' => $this->paymentOrSectionUrl('all', 'all', 'collection-performance'),
                 'refunds' => $this->paymentOrSectionUrl('refunded', 'all', 'collection-performance'),

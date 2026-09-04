@@ -133,6 +133,8 @@ class TransactionDashboardIntegrationTest extends TestCase
     public function test_metric_scopes_are_explained_where_staff_interpret_the_figures(): void
     {
         $staff = $this->staff('accounting');
+        [$guest, $room] = $this->serviceFixture();
+        $this->hotelBooking($guest, $room, 100, '2026-08-10 09:00:00');
         $stats = $this->stats();
 
         self::assertSame([
@@ -173,6 +175,8 @@ class TransactionDashboardIntegrationTest extends TestCase
     public function test_overview_renders_each_channel_once_in_a_single_breakdown_section(): void
     {
         $staff = $this->staff('accounting');
+        [$guest, $room] = $this->serviceFixture();
+        $this->hotelBooking($guest, $room, 100, '2026-08-10 09:00:00');
         $html = Livewire::actingAs($staff)
             ->test(TransactionOverview::class, ['pageFilters' => self::FILTERS])
             ->html();
@@ -183,6 +187,59 @@ class TransactionDashboardIntegrationTest extends TestCase
         foreach (['Hotel bookings', 'Conference bookings', 'Table reservations', 'Food orders'] as $channel) {
             self::assertSame(1, substr_count($html, 'aria-label="Open '.$channel.'"'), $channel);
         }
+    }
+
+    public function test_empty_period_collapses_zero_metrics_into_a_concise_empty_state(): void
+    {
+        $staff = $this->staff('accounting');
+        $stats = $this->stats();
+
+        self::assertSame(['No transaction activity'], array_keys($stats));
+        self::assertSame('—', $stats['No transaction activity']->getValue());
+
+        Livewire::actingAs($staff)
+            ->test(TransactionOverview::class, ['pageFilters' => self::FILTERS])
+            ->assertSee('No transaction activity')
+            ->assertSee('No bookings, reservations, payments, or refunds were recorded from Aug 1, 2026 - Aug 31, 2026.')
+            ->assertSee('Choose another period above and apply the filters to review a different range.')
+            ->assertDontSee('Collection performance')
+            ->assertDontSee('Outstanding follow-up')
+            ->assertDontSee('Transaction breakdown');
+    }
+
+    public function test_payment_only_period_keeps_the_financial_dashboard_visible(): void
+    {
+        $staff = $this->staff('accounting');
+        [$guest, $room] = $this->serviceFixture();
+        $booking = $this->hotelBooking($guest, $room, 100, '2026-07-31 09:00:00');
+        $this->payment($guest, 'booking_id', $booking->id, 25, 'TXN-PAYMENT-ONLY', '2026-08-10 09:00:00');
+
+        self::assertCount(5, $this->stats());
+
+        Livewire::actingAs($staff)
+            ->test(TransactionOverview::class, ['pageFilters' => self::FILTERS])
+            ->assertSee('Collection performance')
+            ->assertSee('Transaction breakdown')
+            ->assertSee('GHS 25.00')
+            ->assertDontSee('No transaction activity');
+    }
+
+    public function test_refund_only_period_keeps_the_financial_dashboard_visible(): void
+    {
+        $staff = $this->staff('accounting');
+        [$guest, $room] = $this->serviceFixture();
+        $booking = $this->hotelBooking($guest, $room, 100, '2026-07-31 09:00:00');
+        $payment = $this->payment($guest, 'booking_id', $booking->id, 25, 'TXN-REFUND-ONLY', '2026-08-10 09:00:00');
+        $payment->forceFill(['payment_status' => 'refunded'])->saveQuietly();
+        $this->createdAt($payment, '2026-08-10 09:00:00');
+
+        self::assertCount(5, $this->stats());
+
+        Livewire::actingAs($staff)
+            ->test(TransactionOverview::class, ['pageFilters' => self::FILTERS])
+            ->assertSee('Refunds processed')
+            ->assertSee('GHS 25.00')
+            ->assertDontSee('No transaction activity');
     }
 
     public function test_both_widgets_render_the_same_date_filtered_four_channel_totals(): void
