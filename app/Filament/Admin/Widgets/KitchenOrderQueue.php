@@ -50,6 +50,18 @@ class KitchenOrderQueue extends TableWidget
                     ->orderByRaw("CASE status WHEN 'ready' THEN 1 WHEN 'preparing' THEN 2 WHEN 'confirmed' THEN 3 ELSE 4 END")
                     ->oldest('created_at'),
             )
+            ->emptyStateHeading('No active kitchen orders')
+            ->emptyStateDescription('Only eligible orders in Confirmed, Preparing, or Ready status appear here. The queue refreshes automatically every 10 seconds.')
+            ->emptyStateIcon('heroicon-o-check-circle')
+            ->emptyStateActions([
+                Action::make('refreshQueue')
+                    ->label('Refresh queue')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->action(function (): void {
+                        $this->resetTable();
+                    }),
+            ])
             ->columns([
                 TextColumn::make('mobile_order_context')
                     ->label('Order')
