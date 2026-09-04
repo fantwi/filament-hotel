@@ -7,11 +7,15 @@ use App\Filament\Admin\Pages\Dashboards\KitchenManagerDashboard;
 use App\Filament\Admin\Pages\Dashboards\KitchenStaffDashboard;
 use App\Filament\Admin\Pages\Dashboards\TimeFilteredDashboard;
 use App\Filament\Admin\Widgets\KitchenManagerStats;
+use App\Filament\Admin\Widgets\KitchenOrderQueue;
+use App\Filament\Admin\Widgets\KitchenProductionStats;
 use App\Filament\Admin\Widgets\KitchenStaffStats;
+use App\Filament\Admin\Widgets\KitchenStockStats;
 use App\Models\User;
 use App\Services\StaffAccountAccess;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use ReflectionMethod;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -58,6 +62,22 @@ class KitchenRoleDashboardTest extends TestCase
             'filament.admin.pages.kitchen-staff-dashboard',
             $access->dashboardRouteName($kitchenStaff),
         );
+    }
+
+    public function test_kitchen_manager_places_the_live_queue_before_production_and_stock_stats(): void
+    {
+        $dashboard = new KitchenManagerDashboard;
+        $method = new ReflectionMethod($dashboard, 'dashboardWidgetLayout');
+        $method->setAccessible(true);
+
+        [$priorityWidgets, $sections] = $method->invoke($dashboard);
+
+        self::assertSame([KitchenManagerStats::class], $priorityWidgets);
+        self::assertSame([
+            KitchenOrderQueue::class,
+            KitchenProductionStats::class,
+            KitchenStockStats::class,
+        ], $sections['Kitchen']);
     }
 
     public function test_kitchen_manager_dashboard_is_visible_only_to_permitted_kitchen_managers_and_administrators(): void
