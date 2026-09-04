@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\KitchenProduction;
 use App\Models\KitchenStockMovement;
@@ -14,6 +15,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class KitchenManagerStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -56,26 +58,41 @@ class KitchenManagerStats extends StatsOverviewWidget
         $periodLabel = $this->dashboardDateRangeLabel();
 
         return [
-            Stat::make('Orders waiting to start', number_format((int) ($orderCounts['confirmed'] ?? 0)))
-                ->description($periodLabel)
-                ->icon('heroicon-o-clock')
-                ->color('info'),
-            Stat::make('Orders preparing', number_format((int) ($orderCounts['preparing'] ?? 0)))
-                ->description($periodLabel)
-                ->icon('heroicon-o-fire')
-                ->color('warning'),
-            Stat::make('Orders ready to serve', number_format((int) ($orderCounts['ready'] ?? 0)))
-                ->description($periodLabel)
-                ->icon('heroicon-o-bell-alert')
-                ->color('success'),
-            Stat::make('Production batches', number_format($this->forDashboardDateRange(KitchenProduction::query(), 'production_date')->count()))
-                ->description($periodLabel)
-                ->icon('heroicon-o-clipboard-document-list')
-                ->color('primary'),
-            Stat::make('Stock movements', number_format($this->forDashboardDateRange(KitchenStockMovement::query(), 'occurred_at')->count()))
-                ->description($periodLabel)
-                ->icon('heroicon-o-archive-box')
-                ->color('danger'),
+            $this->drillDown(
+                Stat::make('Orders waiting to start', number_format((int) ($orderCounts['confirmed'] ?? 0)))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-clock')
+                    ->color('info'),
+                $this->restaurantOrderDrillDownUrl('confirmed'),
+            ),
+            $this->drillDown(
+                Stat::make('Orders preparing', number_format((int) ($orderCounts['preparing'] ?? 0)))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-fire')
+                    ->color('warning'),
+                $this->restaurantOrderDrillDownUrl('preparing'),
+            ),
+            $this->drillDown(
+                Stat::make('Orders ready to serve', number_format((int) ($orderCounts['ready'] ?? 0)))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-bell-alert')
+                    ->color('success'),
+                $this->restaurantOrderDrillDownUrl('ready'),
+            ),
+            $this->drillDown(
+                Stat::make('Production batches', number_format($this->forDashboardDateRange(KitchenProduction::query(), 'production_date')->count()))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->color('primary'),
+                $this->kitchenProductionDrillDownUrl(),
+            ),
+            $this->drillDown(
+                Stat::make('Stock movements', number_format($this->forDashboardDateRange(KitchenStockMovement::query(), 'occurred_at')->count()))
+                    ->description($periodLabel)
+                    ->icon('heroicon-o-archive-box')
+                    ->color('danger'),
+                $this->kitchenStockMovementDrillDownUrl(),
+            ),
         ];
     }
 }

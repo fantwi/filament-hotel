@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Services\KitchenProductionReportService;
 use Filament\Widgets\StatsOverviewWidget;
@@ -12,6 +13,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class KitchenProductionStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -37,24 +39,37 @@ class KitchenProductionStats extends StatsOverviewWidget
     {
         [$start, $end] = $this->dashboardDateRange();
         $r = app(KitchenProductionReportService::class)->build($start, $end)['summary'];
+        $reportUrl = $this->kitchenProductionReportDrillDownUrl();
 
         return [
-            Stat::make('Tracked Food Items', $r['tracked_items'])
-                ->description($this->dashboardDateRangeLabel())
-                ->icon('heroicon-o-clipboard-document-list')
-                ->color('primary'),
-            Stat::make('Low finished-food balances', $r['low_stock_items'])
-                ->description('At or below threshold at period end')
-                ->icon('heroicon-o-exclamation-triangle')
-                ->color('warning'),
-            Stat::make('Negative Variances', $r['negative_variance_items'])
-                ->description('Production compared with sales')
-                ->icon('heroicon-o-arrow-trending-down')
-                ->color('danger'),
-            Stat::make('Food Revenue', 'GHS '.number_format($r['sales_revenue'], 2))
-                ->description($this->dashboardDateRangeLabel())
-                ->icon('heroicon-o-banknotes')
-                ->color('success'),
+            $this->drillDown(
+                Stat::make('Tracked Food Items', $r['tracked_items'])
+                    ->description($this->dashboardDateRangeLabel())
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->color('primary'),
+                $reportUrl,
+            ),
+            $this->drillDown(
+                Stat::make('Low finished-food balances', $r['low_stock_items'])
+                    ->description('At or below threshold at period end')
+                    ->icon('heroicon-o-exclamation-triangle')
+                    ->color('warning'),
+                $reportUrl,
+            ),
+            $this->drillDown(
+                Stat::make('Negative Variances', $r['negative_variance_items'])
+                    ->description('Production compared with sales')
+                    ->icon('heroicon-o-arrow-trending-down')
+                    ->color('danger'),
+                $reportUrl,
+            ),
+            $this->drillDown(
+                Stat::make('Food Revenue', 'GHS '.number_format($r['sales_revenue'], 2))
+                    ->description($this->dashboardDateRangeLabel())
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success'),
+                $this->restaurantOrderDrillDownUrl(paymentStatus: 'completed'),
+            ),
         ];
     }
 }

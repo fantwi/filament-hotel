@@ -5,7 +5,9 @@ namespace App\Filament\Admin\Concerns;
 use App\Filament\Admin\Pages\BookingCalendar;
 use App\Filament\Admin\Pages\CorporateReceivables;
 use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
+use App\Filament\Admin\Pages\KitchenProductionReport;
 use App\Filament\Admin\Resources\Bookings\BookingResource;
+use App\Filament\Admin\Resources\Ingredients\IngredientResource;
 use App\Filament\Admin\Resources\KitchenProductions\KitchenProductionResource;
 use App\Filament\Admin\Resources\KitchenStockMovements\KitchenStockMovementResource;
 use App\Filament\Admin\Resources\Payments\PaymentResource;
@@ -212,7 +214,7 @@ trait BuildsDashboardDrillDowns
     /**
      * Links a statistic to food orders with matching date and optional status filters.
      */
-    protected function restaurantOrderDrillDownUrl(?string $status = null): string
+    protected function restaurantOrderDrillDownUrl(?string $status = null, ?string $paymentStatus = null): string
     {
         [$start, $end] = $this->dashboardDateRange();
         $filters = [
@@ -224,6 +226,10 @@ trait BuildsDashboardDrillDowns
 
         if ($status !== null) {
             $filters['status'] = ['value' => $status];
+        }
+
+        if ($paymentStatus !== null) {
+            $filters['payment_status'] = ['value' => $paymentStatus];
         }
 
         return RestaurantOrderResource::getUrl('index', [
@@ -243,6 +249,34 @@ trait BuildsDashboardDrillDowns
                 'production_date' => [
                     'from' => $start->toDateString(),
                     'until' => $end->toDateString(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Links finished-food metrics to the detailed report for the selected period.
+     */
+    protected function kitchenProductionReportDrillDownUrl(): string
+    {
+        [$start, $end] = $this->dashboardDateRange();
+
+        return KitchenProductionReport::getUrl([
+            'period' => 'custom',
+            'startDate' => $start->toDateString(),
+            'endDate' => $end->toDateString(),
+        ]);
+    }
+
+    /**
+     * Links current ingredient metrics to their matching stock status.
+     */
+    protected function ingredientStockDrillDownUrl(string $status): string
+    {
+        return IngredientResource::getUrl('index', [
+            'filters' => [
+                'stock_status' => [
+                    'value' => $status,
                 ],
             ],
         ]);

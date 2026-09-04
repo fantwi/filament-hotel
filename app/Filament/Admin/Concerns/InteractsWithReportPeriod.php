@@ -25,6 +25,20 @@ trait InteractsWithReportPeriod
     public string $draftEndDate = '';
 
     /**
+     * Keeps applied report periods shareable and accepts dashboard drill-down dates.
+     *
+     * @return array<string, array<string, string>>
+     */
+    protected function queryStringInteractsWithReportPeriod(): array
+    {
+        return [
+            'period' => ['except' => 'monthly'],
+            'startDate' => ['except' => ''],
+            'endDate' => ['except' => ''],
+        ];
+    }
+
+    /**
      * Initializes applied and draft values when Livewire mounts the page.
      */
     public function mountInteractsWithReportPeriod(): void

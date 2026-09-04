@@ -63,6 +63,30 @@ class IngredientsTable
             ->filters([
                 SelectFilter::make('restaurant_id')->relationship('restaurant', 'name')->searchable()->preload(),
                 SelectFilter::make('category')->options(fn (): array => Ingredient::query()->whereNotNull('category')->distinct()->orderBy('category')->pluck('category', 'category')->all()),
+                SelectFilter::make('stock_status')
+                    ->label('Stock Status')
+                    ->options([
+                        'out' => 'Out of Stock',
+                        'low' => 'Low Stock',
+                        'healthy' => 'Healthy Stock',
+                        'active' => 'All Active Ingredients',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value'] ?? null) {
+                            'out' => $query
+                                ->where('is_active', true)
+                                ->where('current_stock', '<=', 0),
+                            'low' => $query
+                                ->where('is_active', true)
+                                ->where('current_stock', '>', 0)
+                                ->whereColumn('current_stock', '<=', 'reorder_level'),
+                            'healthy' => $query
+                                ->where('is_active', true)
+                                ->whereColumn('current_stock', '>', 'reorder_level'),
+                            'active' => $query->where('is_active', true),
+                            default => $query,
+                        };
+                    }),
                 Filter::make('low_stock')->label('Low Stock Only')->query(fn (Builder $query): Builder => $query->whereColumn('current_stock', '<=', 'reorder_level')),
             ])
             ->recordActions([

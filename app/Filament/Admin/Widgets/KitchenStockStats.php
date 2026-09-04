@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Concerns\BuildsDashboardDrillDowns;
 use App\Filament\Admin\Concerns\InteractsWithDashboardDateRange;
 use App\Models\Ingredient;
 use Filament\Widgets\StatsOverviewWidget;
@@ -12,6 +13,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class KitchenStockStats extends StatsOverviewWidget
 {
+    use BuildsDashboardDrillDowns;
     use InteractsWithDashboardDateRange;
 
     protected int|string|array $columnSpan = 'full';
@@ -44,22 +46,34 @@ class KitchenStockStats extends StatsOverviewWidget
             ->first();
 
         return [
-            Stat::make('Out of stock', number_format((int) $stock?->out_of_stock))
-                ->description('Current balance is zero or below')
-                ->icon('heroicon-o-exclamation-circle')
-                ->color('danger'),
-            Stat::make('Low stock', number_format((int) $stock?->low_stock))
-                ->description('Above zero and at or below reorder level')
-                ->icon('heroicon-o-arrow-trending-down')
-                ->color('warning'),
-            Stat::make('Healthy stock', number_format((int) $stock?->healthy_stock))
-                ->description('Current balance is above reorder level')
-                ->icon('heroicon-o-check-circle')
-                ->color('success'),
-            Stat::make('Current inventory value', 'GHS '.number_format((float) $stock?->inventory_value, 2))
-                ->description('Active ingredient stock at current cost')
-                ->icon('heroicon-o-banknotes')
-                ->color('primary'),
+            $this->drillDown(
+                Stat::make('Out of stock', number_format((int) $stock?->out_of_stock))
+                    ->description('Current balance is zero or below')
+                    ->icon('heroicon-o-exclamation-circle')
+                    ->color('danger'),
+                $this->ingredientStockDrillDownUrl('out'),
+            ),
+            $this->drillDown(
+                Stat::make('Low stock', number_format((int) $stock?->low_stock))
+                    ->description('Above zero and at or below reorder level')
+                    ->icon('heroicon-o-arrow-trending-down')
+                    ->color('warning'),
+                $this->ingredientStockDrillDownUrl('low'),
+            ),
+            $this->drillDown(
+                Stat::make('Healthy stock', number_format((int) $stock?->healthy_stock))
+                    ->description('Current balance is above reorder level')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success'),
+                $this->ingredientStockDrillDownUrl('healthy'),
+            ),
+            $this->drillDown(
+                Stat::make('Current inventory value', 'GHS '.number_format((float) $stock?->inventory_value, 2))
+                    ->description('Active ingredient stock at current cost')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('primary'),
+                $this->ingredientStockDrillDownUrl('active'),
+            ),
         ];
     }
 }
