@@ -170,6 +170,21 @@ class TransactionDashboardIntegrationTest extends TestCase
             ->assertSee('Corporate outstanding from period');
     }
 
+    public function test_overview_renders_each_channel_once_in_a_single_breakdown_section(): void
+    {
+        $staff = $this->staff('accounting');
+        $html = Livewire::actingAs($staff)
+            ->test(TransactionOverview::class, ['pageFilters' => self::FILTERS])
+            ->html();
+
+        self::assertStringNotContainsString('Transaction mix', $html);
+        self::assertStringContainsString('Transaction breakdown', $html);
+
+        foreach (['Hotel bookings', 'Conference bookings', 'Table reservations', 'Food orders'] as $channel) {
+            self::assertSame(1, substr_count($html, 'aria-label="Open '.$channel.'"'), $channel);
+        }
+    }
+
     public function test_both_widgets_render_the_same_date_filtered_four_channel_totals(): void
     {
         $staff = $this->staff('accounting');

@@ -82,19 +82,6 @@
             </div>
         </x-filament::section>
 
-        <x-filament::section id="transaction-mix" heading="Transaction mix" description="Created during {{ $periodLabel }}">
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach ($rows as $row)
-                    <a href="{{ $row['url'] }}" aria-label="Open {{ $row['label'] }}" class="group block rounded-xl bg-gray-50 p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:bg-white/5 dark:focus-visible:ring-offset-gray-900">
-                        <p class="text-sm font-semibold">{{ $row['label'] }}</p>
-                        <p class="mt-2 text-2xl font-bold">{{ number_format($row['transactions']) }}</p>
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">GHS {{ number_format($row['gross'], 2) }} active gross value</p>
-                        <span class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-700 dark:text-primary-300">View records <x-filament::icon icon="heroicon-m-arrow-right" class="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
-                    </a>
-                @endforeach
-            </div>
-        </x-filament::section>
-
         <x-filament::section id="transaction-breakdown" heading="Transaction breakdown" description="Compare activity, payments, and outstanding balances for each guest transaction workflow.">
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 @foreach ($rows as $row)

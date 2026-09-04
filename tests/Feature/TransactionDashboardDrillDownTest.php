@@ -46,7 +46,7 @@ class TransactionDashboardDrillDownTest extends TestCase
         $this->actingAs(User::factory()->create(['department' => 'accounting']));
         $stats = $this->stats();
 
-        $this->assertDashboardSectionLink($stats['All transactions created'], 'transaction-mix');
+        $this->assertDashboardSectionLink($stats['All transactions created'], 'transaction-breakdown');
         $this->assertDashboardSectionLink($stats['Active transaction value'], 'transaction-breakdown');
         $this->assertFilteredLink($stats['Completed payments recorded'], '/admin/payments', [
             'filters.transaction_type' => 'all',

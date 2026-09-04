@@ -48,7 +48,7 @@ class TransactionStats extends StatsOverviewWidget
                     ->description("All statuses · transaction date: {$periodLabel}")
                     ->icon('heroicon-o-arrows-right-left')
                     ->color('primary'),
-                'transaction-mix',
+                'transaction-breakdown',
             ),
             $this->dashboardSectionDrillDown(
                 Stat::make('Active transaction value', $this->formatAmount($totals['gross']))
