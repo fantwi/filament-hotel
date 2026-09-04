@@ -549,6 +549,42 @@ class RevenueReportTest extends TestCase
         );
     }
 
+    public function test_revenue_report_marks_period_sensitive_results_as_busy_during_a_refresh(): void
+    {
+        $accountant = $this->revenueReportUser('accountant', withTransactionDashboard: true);
+
+        $response = $this->actingAs($accountant)->get(RevenueReport::getUrl());
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $selectedPeriod = $xpath->query('//section[@aria-label="Selected period revenue results"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $selectedPeriod);
+        self::assertSame('aria-busy', $selectedPeriod->getAttribute('wire:loading.attr'));
+        self::assertSame('applyReportPeriod,resetReportPeriod', $selectedPeriod->getAttribute('wire:target'));
+
+        $results = $xpath->query('./div[@data-revenue-period-results]', $selectedPeriod)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $results);
+        self::assertStringContainsString('pointer-events-none', $results->getAttribute('wire:loading.class'));
+        self::assertStringContainsString('opacity-60', $results->getAttribute('wire:loading.class'));
+        self::assertStringContainsString('Revenue by business channel', $results->textContent);
+        self::assertStringContainsString('Payment methods', $results->textContent);
+        self::assertStringNotContainsString('Report notes', $results->textContent);
+
+        $status = $xpath->query('./div[@role="status"]', $selectedPeriod)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $status);
+        self::assertSame('polite', $status->getAttribute('aria-live'));
+        self::assertSame('true', $status->getAttribute('aria-atomic'));
+        self::assertSame('applyReportPeriod,resetReportPeriod', $status->getAttribute('wire:target'));
+        self::assertTrue($status->hasAttribute('wire:loading.flex'));
+        self::assertStringContainsString('Updating revenue report', $status->textContent);
+
+        self::assertSame(0, $xpath->query('.//form[@*[name()="wire:submit"]="applyReportPeriod"]', $selectedPeriod)?->count());
+    }
+
     public function test_revenue_report_places_comparison_and_trend_before_detailed_financial_sections(): void
     {
         Role::findOrCreate('accountant', 'web');
