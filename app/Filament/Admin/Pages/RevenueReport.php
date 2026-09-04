@@ -11,10 +11,13 @@ use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantReservation;
 use App\Services\PaymentReportFilters;
+use App\Support\Reporting\RevenueReportCsv;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Provides the revenue report Filament administration page.
@@ -32,6 +35,51 @@ class RevenueReport extends Page
     protected static ?int $navigationSort = 30;
 
     protected string $view = 'filament.admin.pages.revenue-report';
+
+    /**
+     * Exposes spreadsheet export and browser printing for the applied report.
+     *
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('exportCsv')
+                ->label('Export CSV')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->action(fn (): StreamedResponse => $this->exportCsv()),
+            Action::make('printReport')
+                ->label('Print report')
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->alpineClickHandler('window.print()'),
+        ];
+    }
+
+    /**
+     * Streams the currently applied revenue report range as a CSV download.
+     */
+    public function exportCsv(): StreamedResponse
+    {
+        abort_unless(static::canAccess(), 403);
+
+        $report = $this->report();
+        $csv = app(RevenueReportCsv::class)->toCsv($report, $this->periodLabel());
+        $filename = sprintf(
+            'revenue-report-%s-to-%s.csv',
+            $report['periodStart']->toDateString(),
+            $report['periodEnd']->toDateString(),
+        );
+
+        return response()->streamDownload(
+            static function () use ($csv): void {
+                echo $csv;
+            },
+            $filename,
+            ['Content-Type' => 'text/csv; charset=UTF-8'],
+        );
+    }
 
     /**
      * Mutually exclusive payment classifications, ordered by transaction priority.
@@ -52,6 +100,7 @@ class RevenueReport extends Page
     public function report(): array
     {
         [$periodStart, $periodEnd] = $this->periodBounds();
+        $generatedAt = now();
         $paidPayments = Payment::query()
             ->whereIn('payment_status', ['paid', 'completed', 'refunded', 'refund'])
             ->whereBetween('created_at', [$periodStart, $periodEnd]);
@@ -127,6 +176,9 @@ class RevenueReport extends Page
         $previousNetRevenue = $previousRevenue - $previousRefunds;
 
         return [
+            'periodStart' => $periodStart,
+            'periodEnd' => $periodEnd,
+            'generatedAt' => $generatedAt,
             'revenue' => $revenue,
             'refunds' => $refundTotal,
             'netRevenue' => $netRevenue,

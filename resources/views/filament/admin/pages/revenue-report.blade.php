@@ -1,4 +1,46 @@
 <x-filament::page>
+    <style>
+        @media print {
+            @page {
+                size: landscape;
+                margin: 12mm;
+            }
+
+            .fi-sidebar,
+            .fi-topbar,
+            .fi-header,
+            .fi-breadcrumbs,
+            #revenue-report-period-controls,
+            [data-revenue-loading-overlay] {
+                display: none !important;
+            }
+
+            .fi-main-ctn {
+                margin-inline-start: 0 !important;
+                min-height: auto !important;
+            }
+
+            .fi-main {
+                max-width: none !important;
+                padding: 0 !important;
+            }
+
+            [data-revenue-report-page] {
+                gap: 1rem !important;
+            }
+
+            [data-revenue-report-page] .fi-section,
+            [data-revenue-report-page] article {
+                break-inside: avoid;
+            }
+
+            [data-revenue-report-page] a {
+                color: inherit !important;
+                text-decoration: none !important;
+            }
+        }
+    </style>
+
     @php
         $report = $this->report();
         $drillDowns = $this->drillDownUrls(
@@ -138,7 +180,7 @@
             'barClasses' => 'bg-gray-500 dark:bg-gray-400',
         ];
     @endphp
-    <div class="space-y-6">
+    <div data-revenue-report-page class="space-y-6">
         <x-filament::section>
             <div>
                 <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Finance</p>
@@ -395,6 +437,7 @@
             </div>
 
             <div
+                data-revenue-loading-overlay
                 role="status"
                 aria-live="polite"
                 aria-atomic="true"
