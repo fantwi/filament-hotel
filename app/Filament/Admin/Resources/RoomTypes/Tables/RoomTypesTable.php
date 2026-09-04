@@ -5,18 +5,21 @@ namespace App\Filament\Admin\Resources\RoomTypes\Tables;
 use App\Filament\Admin\Resources\RoomTypes\RoomTypeResource;
 use App\Models\RoomType;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Tables\Columns\IconColumn;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Configures Filament administration for room types table.
@@ -28,6 +31,8 @@ class RoomTypesTable
      */
     public static function configure(Table $table): Table
     {
+        $canManagePublication = fn (): bool => auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
+
         return $table
             ->emptyStateHeading(fn (HasTable $livewire): string => $livewire->hasTableSearch()
                 ? 'No room types match your search'
@@ -100,10 +105,20 @@ class RoomTypesTable
                     ->expandableLimitedList()
                     ->visibleFrom('md')
                     ->toggleable(isToggledHiddenByDefault: true),
-                IconColumn::make('is_published')
+                ToggleColumn::make('is_published')
                     ->label('Published')
-                    ->boolean()
-                    ->visibleFrom('md'),
+                    ->onColor('success')
+                    ->offColor('gray')
+                    ->onIcon('heroicon-m-eye')
+                    ->offIcon('heroicon-m-eye-slash')
+                    ->disabled(fn (RoomType $record): bool => ! RoomTypeResource::canEdit($record))
+                    ->afterStateUpdated(function (RoomType $record, bool $state): void {
+                        Notification::make()
+                            ->title($state ? 'Room type published' : 'Room type unpublished')
+                            ->body("{$record->name} is now ".($state ? 'visible to guests.' : 'hidden from guests.'))
+                            ->success()
+                            ->send();
+                    }),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -146,6 +161,36 @@ class RoomTypesTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('publish')
+                        ->label('Publish selected')
+                        ->icon('heroicon-o-eye')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('Publish selected room types?')
+                        ->modalDescription('Published room types are visible to guests when they have bookable rooms.')
+                        ->visible($canManagePublication)
+                        ->authorize($canManagePublication)
+                        ->authorizeIndividualRecords(
+                            fn (RoomType $record): bool => RoomTypeResource::canEdit($record)
+                        )
+                        ->action(fn (Collection $records) => $records->each->update(['is_published' => true]))
+                        ->deselectRecordsAfterCompletion()
+                        ->successNotificationTitle('Selected room types published'),
+                    BulkAction::make('unpublish')
+                        ->label('Unpublish selected')
+                        ->icon('heroicon-o-eye-slash')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading('Unpublish selected room types?')
+                        ->modalDescription('Unpublished room types are hidden from guests but remain available to authorized staff.')
+                        ->visible($canManagePublication)
+                        ->authorize($canManagePublication)
+                        ->authorizeIndividualRecords(
+                            fn (RoomType $record): bool => RoomTypeResource::canEdit($record)
+                        )
+                        ->action(fn (Collection $records) => $records->each->update(['is_published' => false]))
+                        ->deselectRecordsAfterCompletion()
+                        ->successNotificationTitle('Selected room types unpublished'),
                     DeleteBulkAction::make()
                         ->modalDescription('Only unused room types will be deleted. Unpublish room types assigned to rooms instead.')
                         ->authorizeIndividualRecords(

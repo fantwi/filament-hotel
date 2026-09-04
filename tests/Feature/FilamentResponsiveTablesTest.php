@@ -13,6 +13,7 @@ use App\Filament\Admin\Resources\RoomTypes\Tables\RoomTypesTable;
 use App\Models\RoomType;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -78,13 +79,18 @@ class FilamentResponsiveTablesTest extends TestCase
         self::assertInstanceOf(TextColumn::class, $mobileSummary);
         self::assertSame('md', $mobileSummary->getHiddenFrom());
 
-        foreach (['image', 'name', 'price_per_night', 'capacity', 'rooms_count', 'facilities.name', 'is_published', 'created_at', 'updated_at'] as $columnName) {
+        foreach (['image', 'name', 'price_per_night', 'capacity', 'rooms_count', 'facilities.name', 'created_at', 'updated_at'] as $columnName) {
             self::assertSame(
                 'md',
                 $table->getColumn($columnName)?->getVisibleFrom(),
                 "[{$columnName}] should collapse below the medium breakpoint.",
             );
         }
+
+        $publication = $table->getColumn('is_published');
+
+        self::assertInstanceOf(ToggleColumn::class, $publication);
+        self::assertNull($publication->getVisibleFrom());
     }
 
     public function test_room_types_mobile_summary_includes_booking_decision_details(): void
