@@ -100,6 +100,26 @@ class KitchenOrderQueueStatusAccessTest extends TestCase
             ->assertTableActionHidden('served', $ready);
     }
 
+    public function test_live_queue_keeps_active_orders_created_before_the_dashboard_period_visible(): void
+    {
+        $staff = $this->kitchenStaff('kitchen_manager', StaffAccountStatus::Active);
+        [$olderActiveOrder] = $this->orderFixture('confirmed');
+        $olderActiveOrder->forceFill([
+            'created_at' => '2026-07-31 23:59:59',
+            'updated_at' => '2026-07-31 23:59:59',
+        ])->saveQuietly();
+
+        Livewire::actingAs($staff)
+            ->test(KitchenOrderQueue::class, [
+                'pageFilters' => [
+                    'period' => 'custom',
+                    'start_date' => '2026-08-01',
+                    'end_date' => '2026-08-31',
+                ],
+            ])
+            ->assertCanSeeTableRecords([$olderActiveOrder]);
+    }
+
     #[DataProvider('kitchenServiceActions')]
     public function test_kitchen_service_rejects_on_leave_staff_before_any_transition(
         string $method,

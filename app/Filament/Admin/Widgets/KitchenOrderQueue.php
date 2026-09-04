@@ -45,7 +45,7 @@ class KitchenOrderQueue extends TableWidget
         return $table
             ->poll('10s')
             ->query(
-                $this->forDashboardDateRange(RestaurantOrder::kitchenQueue())
+                RestaurantOrder::kitchenQueue()
                     ->with(['guest', 'items.menuItem', 'reservation.table', 'table', 'preparedBy'])
                     ->orderByRaw("CASE status WHEN 'ready' THEN 1 WHEN 'preparing' THEN 2 WHEN 'confirmed' THEN 3 ELSE 4 END")
                     ->oldest('created_at'),
