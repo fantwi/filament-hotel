@@ -210,7 +210,8 @@ abstract class TimeFilteredDashboard extends Dashboard
                 ->description('Choose a preset period or refine it with a custom start and end date, then apply the range. Widgets refresh only after the range passes validation.')
                 ->schema([
                     Select::make('period')
-                        ->label('Breakdown')
+                        ->label($this->dashboardPeriodFilterLabel())
+                        ->helperText($this->dashboardPeriodFilterHelpText())
                         ->options([
                             'daily' => 'Daily',
                             'weekly' => 'Weekly',
@@ -253,6 +254,22 @@ abstract class TimeFilteredDashboard extends Dashboard
                 ->columns(['default' => 1, 'md' => 3])
                 ->columnSpanFull(),
         ]);
+    }
+
+    /**
+     * Returns the label used for the reporting-period selector.
+     */
+    protected function dashboardPeriodFilterLabel(): string
+    {
+        return 'Breakdown';
+    }
+
+    /**
+     * Returns optional context for how a dashboard interprets its period.
+     */
+    protected function dashboardPeriodFilterHelpText(): ?string
+    {
+        return null;
     }
 
     /**

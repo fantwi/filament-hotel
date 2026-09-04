@@ -71,6 +71,16 @@ class TransactionDashboardIntegrationTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_period_selector_describes_a_date_range_instead_of_a_breakdown(): void
+    {
+        $this->actingAs($this->staff('accounting'))
+            ->get('/admin/transaction-dashboard')
+            ->assertOk()
+            ->assertSeeText('Period')
+            ->assertSeeText('Sets the reporting date range; it does not group results into a time series.')
+            ->assertDontSeeText('Breakdown');
+    }
+
     public function test_role_name_does_not_bypass_missing_transaction_dashboard_permission(): void
     {
         $permission = Permission::findOrCreate('view transaction dashboard', 'web');

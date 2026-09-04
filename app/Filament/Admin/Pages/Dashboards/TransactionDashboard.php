@@ -37,6 +37,22 @@ class TransactionDashboard extends TimeFilteredDashboard
     }
 
     /**
+     * Describes this selector accurately because it changes the reporting range.
+     */
+    protected function dashboardPeriodFilterLabel(): string
+    {
+        return 'Period';
+    }
+
+    /**
+     * Clarifies that the selector does not group results into chart buckets.
+     */
+    protected function dashboardPeriodFilterHelpText(): string
+    {
+        return 'Sets the reporting date range; it does not group results into a time series.';
+    }
+
+    /**
      * Builds and returns widgets.
      */
     public function getWidgets(): array
