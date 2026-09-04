@@ -189,6 +189,52 @@ class TransactionDashboardIntegrationTest extends TestCase
         }
     }
 
+    public function test_overview_uses_accessible_metric_markup_and_natural_count_labels(): void
+    {
+        $staff = $this->staff('accounting');
+        [$guest, $room] = $this->serviceFixture();
+        $firstBooking = $this->hotelBooking($guest, $room, 100, '2026-08-10 09:00:00');
+        $this->hotelBooking($guest, $room, 200, '2026-08-11 09:00:00');
+        $this->payment($guest, 'booking_id', $firstBooking->id, 25, 'TXN-ACCESSIBLE-METRICS', '2026-08-12 09:00:00');
+
+        $html = Livewire::actingAs($staff)
+            ->test(TransactionOverview::class, ['pageFilters' => self::FILTERS])
+            ->html();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+
+        self::assertSame(0, $xpath->query('//dt[not(ancestor::dl)] | //dd[not(ancestor::dl)]')->count());
+        self::assertGreaterThan(0, $xpath->query('//dl//dd')->count());
+        self::assertSame(0, $xpath->query('//dl//dd[not(contains(concat(" ", normalize-space(@class), " "), " tabular-nums "))]')->count());
+        self::assertSame(0, $xpath->query('//dl//dd[not(contains(concat(" ", normalize-space(@class), " "), " break-words "))]')->count());
+        self::assertGreaterThan(0, $xpath->query('//dd[normalize-space()="1 payment"]')->count());
+        self::assertGreaterThan(0, $xpath->query('//dd[normalize-space()="2 guest transactions"]')->count());
+        self::assertGreaterThan(0, $xpath->query('//dd[normalize-space()="2 unpaid transactions"]')->count());
+        self::assertStringNotContainsString('(s)', $html);
+    }
+
+    public function test_transaction_stat_values_are_overflow_safe_and_use_tabular_numbers(): void
+    {
+        $staff = $this->staff('accounting');
+        [$guest, $room] = $this->serviceFixture();
+        $this->hotelBooking($guest, $room, 123456789.99, '2026-08-10 09:00:00');
+
+        $html = Livewire::actingAs($staff)
+            ->test(TransactionStats::class, ['pageFilters' => self::FILTERS])
+            ->html();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $stats = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " fi-wi-stats-overview-stat ")]');
+        $readableStats = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " fi-wi-stats-overview-stat ") and contains(concat(" ", normalize-space(@class), " "), " min-w-0 ") and contains(@class, "fi-wi-stats-overview-stat-value]:break-words") and contains(@class, "fi-wi-stats-overview-stat-value]:tabular-nums")]');
+
+        self::assertCount(5, $stats);
+        self::assertCount(5, $readableStats);
+    }
+
     public function test_empty_period_collapses_zero_metrics_into_a_concise_empty_state(): void
     {
         $staff = $this->staff('accounting');
@@ -196,6 +242,7 @@ class TransactionDashboardIntegrationTest extends TestCase
 
         self::assertSame(['No transaction activity'], array_keys($stats));
         self::assertSame('—', $stats['No transaction activity']->getValue());
+        self::assertSame('full', $stats['No transaction activity']->getColumnSpan('default'));
 
         Livewire::actingAs($staff)
             ->test(TransactionOverview::class, ['pageFilters' => self::FILTERS])

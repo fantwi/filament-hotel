@@ -47,25 +47,31 @@
                     'border-success-200 bg-success-50 dark:border-success-500/20 dark:bg-success-500/10' => $totals['net_collections'] >= 0,
                     'border-danger-200 bg-danger-50 dark:border-danger-500/20 dark:bg-danger-500/10' => $totals['net_collections'] < 0,
                 ])>
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Net collections</p>
-                    <p @class([
-                        'mt-1 text-2xl font-bold',
-                        'text-success-700 dark:text-success-300' => $totals['net_collections'] >= 0,
-                        'text-danger-700 dark:text-danger-300' => $totals['net_collections'] < 0,
-                    ])>GHS {{ number_format($totals['net_collections'], 2) }}</p>
+                    <dl class="min-w-0">
+                        <dt class="text-sm font-medium text-gray-600 dark:text-gray-300">Net collections</dt>
+                        <dd @class([
+                            'mt-1 break-words text-2xl font-bold tabular-nums',
+                            'text-success-700 dark:text-success-300' => $totals['net_collections'] >= 0,
+                            'text-danger-700 dark:text-danger-300' => $totals['net_collections'] < 0,
+                        ])>GHS {{ number_format($totals['net_collections'], 2) }}</dd>
+                    </dl>
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Completed payments less refunds processed</p>
                     <span class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-gray-700 dark:text-gray-200">View details <x-filament::icon icon="heroicon-m-arrow-right" class="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
                 </a>
                 <a href="{{ $links['refunds'] }}" aria-label="Open refund details" class="group block rounded-xl border border-danger-200 bg-danger-50 p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:border-danger-500/20 dark:bg-danger-500/10 dark:focus-visible:ring-offset-gray-900">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Refunds processed</p>
-                    <p class="mt-1 text-2xl font-bold text-danger-700 dark:text-danger-300">GHS {{ number_format($totals['refunds'], 2) }}</p>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($totals['refund_count']) }} refund(s)</p>
+                    <dl class="min-w-0">
+                        <dt class="text-sm font-medium text-gray-600 dark:text-gray-300">Refunds processed</dt>
+                        <dd class="mt-1 break-words text-2xl font-bold tabular-nums text-danger-700 dark:text-danger-300">GHS {{ number_format($totals['refunds'], 2) }}</dd>
+                        <dd class="mt-1 break-words text-xs tabular-nums text-gray-500 dark:text-gray-400">{{ number_format($totals['refund_count']) }} {{ \Illuminate\Support\Str::plural('refund', $totals['refund_count']) }}</dd>
+                    </dl>
                     <span class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-danger-700 dark:text-danger-300">View details <x-filament::icon icon="heroicon-m-arrow-right" class="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
                 </a>
                 <a href="{{ $links['collection_rate'] }}" aria-label="Open collection rate details" class="group block rounded-xl border border-info-200 bg-info-50 p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:border-info-500/20 dark:bg-info-500/10 dark:focus-visible:ring-offset-gray-900">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Collection rate</p>
-                    <p class="mt-1 text-2xl font-bold text-info-700 dark:text-info-300">{{ number_format($totals['collection_rate'], 1) }}%</p>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">GHS {{ number_format($totals['cohort_collections'], 2) }} collected against active period transactions</p>
+                    <dl class="min-w-0">
+                        <dt class="text-sm font-medium text-gray-600 dark:text-gray-300">Collection rate</dt>
+                        <dd class="mt-1 break-words text-2xl font-bold tabular-nums text-info-700 dark:text-info-300">{{ number_format($totals['collection_rate'], 1) }}%</dd>
+                        <dd class="mt-1 break-words text-xs tabular-nums text-gray-500 dark:text-gray-400">GHS {{ number_format($totals['cohort_collections'], 2) }} collected against active period transactions</dd>
+                    </dl>
                     <span class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-info-700 dark:text-info-300">View details <x-filament::icon icon="heroicon-m-arrow-right" class="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
                 </a>
             </div>
@@ -74,21 +80,27 @@
         <x-filament::section id="outstanding-follow-up" heading="Outstanding follow-up" description="Unpaid transactions created in {{ $periodLabel }}">
             <div class="grid gap-4 md:grid-cols-3">
                 <a href="{{ $links['non_corporate'] }}" aria-label="Open non-corporate outstanding details" class="group block rounded-xl border border-info-200 bg-info-50 p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:border-info-500/20 dark:bg-info-500/10 dark:focus-visible:ring-offset-gray-900">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Non-corporate outstanding</p>
-                    <p class="mt-1 text-2xl font-bold text-info-700 dark:text-info-300">GHS {{ number_format($totals['non_corporate_outstanding'], 2) }}</p>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($totals['non_corporate_outstanding_count']) }} guest transaction(s)</p>
+                    <dl class="min-w-0">
+                        <dt class="text-sm font-medium text-gray-600 dark:text-gray-300">Non-corporate outstanding</dt>
+                        <dd class="mt-1 break-words text-2xl font-bold tabular-nums text-info-700 dark:text-info-300">GHS {{ number_format($totals['non_corporate_outstanding'], 2) }}</dd>
+                        <dd class="mt-1 break-words text-xs tabular-nums text-gray-500 dark:text-gray-400">{{ number_format($totals['non_corporate_outstanding_count']) }} guest {{ \Illuminate\Support\Str::plural('transaction', $totals['non_corporate_outstanding_count']) }}</dd>
+                    </dl>
                     <span class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-info-700 dark:text-info-300">View details <x-filament::icon icon="heroicon-m-arrow-right" class="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
                 </a>
                 <a href="{{ $links['corporate'] }}" aria-label="Open corporate outstanding details" class="group block rounded-xl border border-warning-200 bg-warning-50 p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:border-warning-500/20 dark:bg-warning-500/10 dark:focus-visible:ring-offset-gray-900">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Corporate outstanding</p>
-                    <p class="mt-1 text-2xl font-bold text-warning-700 dark:text-warning-300">GHS {{ number_format($totals['corporate_outstanding'], 2) }}</p>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($totals['corporate_outstanding_count']) }} corporate transaction(s)</p>
+                    <dl class="min-w-0">
+                        <dt class="text-sm font-medium text-gray-600 dark:text-gray-300">Corporate outstanding</dt>
+                        <dd class="mt-1 break-words text-2xl font-bold tabular-nums text-warning-700 dark:text-warning-300">GHS {{ number_format($totals['corporate_outstanding'], 2) }}</dd>
+                        <dd class="mt-1 break-words text-xs tabular-nums text-gray-500 dark:text-gray-400">{{ number_format($totals['corporate_outstanding_count']) }} corporate {{ \Illuminate\Support\Str::plural('transaction', $totals['corporate_outstanding_count']) }}</dd>
+                    </dl>
                     <span class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-warning-700 dark:text-warning-300">View details <x-filament::icon icon="heroicon-m-arrow-right" class="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
                 </a>
                 <a href="{{ $links['overdue_corporate'] }}" aria-label="Open overdue corporate details" class="group block rounded-xl border border-danger-200 bg-danger-50 p-4 transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:border-danger-500/20 dark:bg-danger-500/10 dark:focus-visible:ring-offset-gray-900">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Overdue corporate</p>
-                    <p class="mt-1 text-2xl font-bold text-danger-700 dark:text-danger-300">GHS {{ number_format($totals['overdue_corporate_outstanding'], 2) }}</p>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($totals['overdue_corporate_outstanding_count']) }} past payment terms</p>
+                    <dl class="min-w-0">
+                        <dt class="text-sm font-medium text-gray-600 dark:text-gray-300">Overdue corporate</dt>
+                        <dd class="mt-1 break-words text-2xl font-bold tabular-nums text-danger-700 dark:text-danger-300">GHS {{ number_format($totals['overdue_corporate_outstanding'], 2) }}</dd>
+                        <dd class="mt-1 break-words text-xs tabular-nums text-gray-500 dark:text-gray-400">{{ number_format($totals['overdue_corporate_outstanding_count']) }} past payment terms</dd>
+                    </dl>
                     <span class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-danger-700 dark:text-danger-300">View details <x-filament::icon icon="heroicon-m-arrow-right" class="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
                 </a>
             </div>
@@ -98,31 +110,31 @@
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 @foreach ($rows as $row)
                     <a href="{{ $row['url'] }}" aria-label="Open {{ $row['label'] }}" class="group block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">
-                        <article class="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition group-hover:-translate-y-0.5 group-hover:shadow-md dark:border-white/10 dark:bg-white/5">
-                            <div class="flex items-start justify-between gap-3">
-                                <h3 class="font-semibold text-gray-950 dark:text-white">{{ $row['label'] }}</h3>
-                                <span class="shrink-0 rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700 dark:bg-white/10 dark:text-gray-200">{{ number_format($row['transactions']) }} created</span>
+                        <article class="flex h-full min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition group-hover:-translate-y-0.5 group-hover:shadow-md dark:border-white/10 dark:bg-white/5">
+                            <div class="flex min-w-0 items-start justify-between gap-3">
+                                <h3 class="min-w-0 break-words font-semibold text-gray-950 dark:text-white">{{ $row['label'] }}</h3>
+                                <span class="shrink-0 rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold tabular-nums text-gray-700 dark:bg-white/10 dark:text-gray-200">{{ number_format($row['transactions']) }} created</span>
                             </div>
                             <dl class="mt-5 grid grid-cols-2 gap-3 text-sm">
                                 <div>
                                     <dt class="text-xs text-gray-500 dark:text-gray-400">Active gross value</dt>
-                                    <dd class="mt-1 font-semibold text-gray-950 dark:text-white">GHS {{ number_format($row['gross'], 2) }}</dd>
+                                    <dd class="mt-1 break-words font-semibold tabular-nums text-gray-950 dark:text-white">GHS {{ number_format($row['gross'], 2) }}</dd>
                                 </div>
                                 <div>
                                     <dt class="text-xs text-gray-500 dark:text-gray-400">Completed payments recorded</dt>
-                                    <dd class="mt-1 font-semibold text-gray-950 dark:text-white">GHS {{ number_format($row['payments'], 2) }}</dd>
-                                    <dd class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($row['payment_count']) }} payment(s)</dd>
+                                    <dd class="mt-1 break-words font-semibold tabular-nums text-gray-950 dark:text-white">GHS {{ number_format($row['payments'], 2) }}</dd>
+                                    <dd class="mt-1 break-words text-xs tabular-nums text-gray-500 dark:text-gray-400">{{ number_format($row['payment_count']) }} {{ \Illuminate\Support\Str::plural('payment', $row['payment_count']) }}</dd>
                                 </div>
                                 <div class="col-span-2 rounded-lg bg-warning-50 p-3 dark:bg-warning-500/10">
                                     <dt class="text-xs text-warning-800 dark:text-warning-200">Outstanding from period</dt>
-                                    <dd class="mt-1 font-semibold text-warning-700 dark:text-warning-300">GHS {{ number_format($row['outstanding'], 2) }}</dd>
-                                    <dd class="mt-1 text-xs text-warning-700/80 dark:text-warning-200/80">{{ number_format($row['outstanding_count']) }} unpaid transaction(s)</dd>
+                                    <dd class="mt-1 break-words font-semibold tabular-nums text-warning-700 dark:text-warning-300">GHS {{ number_format($row['outstanding'], 2) }}</dd>
+                                    <dd class="mt-1 break-words text-xs tabular-nums text-warning-700/80 dark:text-warning-200/80">{{ number_format($row['outstanding_count']) }} unpaid {{ \Illuminate\Support\Str::plural('transaction', $row['outstanding_count']) }}</dd>
                                 </div>
                             </dl>
                             <dl class="mt-4 border-t border-gray-100 pt-3 text-xs dark:border-white/10">
                                 <dt class="text-gray-500 dark:text-gray-400">Corporate outstanding from period</dt>
-                                <dd class="mt-1 font-semibold text-gray-800 dark:text-gray-200">GHS {{ number_format($row['corporate_outstanding'], 2) }}</dd>
-                                <dd class="mt-1 text-gray-500 dark:text-gray-400">{{ number_format($row['corporate_outstanding_count']) }} corporate transaction(s)</dd>
+                                <dd class="mt-1 break-words font-semibold tabular-nums text-gray-800 dark:text-gray-200">GHS {{ number_format($row['corporate_outstanding'], 2) }}</dd>
+                                <dd class="mt-1 break-words tabular-nums text-gray-500 dark:text-gray-400">{{ number_format($row['corporate_outstanding_count']) }} corporate {{ \Illuminate\Support\Str::plural('transaction', $row['corporate_outstanding_count']) }}</dd>
                             </dl>
                             <span class="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary-700 dark:text-primary-300">View records <x-filament::icon icon="heroicon-m-arrow-right" class="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
                         </article>

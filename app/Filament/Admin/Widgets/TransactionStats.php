@@ -22,6 +22,13 @@ class TransactionStats extends StatsOverviewWidget
 
     protected ?string $pollingInterval = null;
 
+    /** @var array<string, int> */
+    protected int|array|null $columns = [
+        'default' => 1,
+        'md' => 2,
+        'xl' => 5,
+    ];
+
     /**
      * Determines whether the current user may view this feature.
      */
@@ -44,14 +51,17 @@ class TransactionStats extends StatsOverviewWidget
 
         if (! $summary['has_activity']) {
             return [
-                Stat::make('No transaction activity', '—')
-                    ->description("No transactions, payments, or refunds · {$periodLabel}")
-                    ->icon('heroicon-o-calendar-days')
-                    ->color('gray'),
+                $this->readableStat(
+                    Stat::make('No transaction activity', '—')
+                        ->description("No transactions, payments, or refunds · {$periodLabel}")
+                        ->icon('heroicon-o-calendar-days')
+                        ->color('gray')
+                        ->columnSpanFull(),
+                ),
             ];
         }
 
-        return [
+        $stats = [
             $this->dashboardSectionDrillDown(
                 Stat::make('All transactions created', number_format($totals['transactions']))
                     ->description("All statuses · transaction date: {$periodLabel}")
@@ -89,6 +99,18 @@ class TransactionStats extends StatsOverviewWidget
                 'outstanding-follow-up',
             ),
         ];
+
+        return array_map($this->readableStat(...), $stats);
+    }
+
+    /**
+     * Keeps long financial values readable within responsive stat cards.
+     */
+    private function readableStat(Stat $stat): Stat
+    {
+        return $stat->extraAttributes([
+            'class' => 'min-w-0 [&_.fi-wi-stats-overview-stat-content]:min-w-0 [&_.fi-wi-stats-overview-stat-value]:break-words [&_.fi-wi-stats-overview-stat-value]:tabular-nums',
+        ], merge: true);
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Filament\Admin\Pages\Dashboards\TransactionDashboard;
 use App\Filament\Admin\Widgets\TransactionOverview;
 use App\Filament\Admin\Widgets\TransactionStats;
 use Filament\Widgets\StatsOverviewWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -40,6 +41,31 @@ class TransactionDashboardTest extends TestCase
 
         self::assertSame('full', $stats->getColumnSpan());
         self::assertSame('full', $overview->getColumnSpan());
+    }
+
+    public function test_transaction_stats_use_balanced_responsive_columns(): void
+    {
+        $stats = new class extends TransactionStats
+        {
+            protected function getStats(): array
+            {
+                return [
+                    Stat::make('One', 1),
+                    Stat::make('Two', 2),
+                    Stat::make('Three', 3),
+                    Stat::make('Four', 4),
+                    Stat::make('Five', 5),
+                ];
+            }
+        };
+        $method = new ReflectionMethod($stats, 'getColumns');
+        $method->setAccessible(true);
+
+        self::assertSame([
+            'default' => 1,
+            'md' => 2,
+            'xl' => 5,
+        ], $method->invoke($stats));
     }
 
     public function test_historical_transaction_stats_do_not_poll_automatically(): void
