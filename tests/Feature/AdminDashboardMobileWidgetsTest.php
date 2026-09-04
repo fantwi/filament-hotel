@@ -142,6 +142,41 @@ class AdminDashboardMobileWidgetsTest extends TestCase
         }
     }
 
+    public function test_kitchen_queue_escalates_order_age_at_the_warning_and_overdue_boundaries(): void
+    {
+        Carbon::setTestNow('2026-08-10 09:00:00');
+
+        try {
+            $table = $this->table(new KitchenOrderQueue);
+            $statusColumn = $table->getColumn('status');
+            $waitingColumn = $table->getColumn('created_at');
+
+            self::assertInstanceOf(TextColumn::class, $statusColumn);
+            self::assertInstanceOf(TextColumn::class, $waitingColumn);
+
+            foreach ([
+                ['2026-08-10 08:46:00', null, 'info', 'gray'],
+                ['2026-08-10 08:45:00', 'Needs attention', 'warning', 'warning'],
+                ['2026-08-10 08:31:00', 'Needs attention', 'warning', 'warning'],
+                ['2026-08-10 08:30:00', 'Overdue', 'danger', 'danger'],
+            ] as [$createdAt, $description, $statusColor, $waitingColor]) {
+                $order = new RestaurantOrder(['status' => 'confirmed']);
+                $order->forceFill(['created_at' => $createdAt]);
+
+                $statusColumn->record($order)->clearCachedState();
+                $statusState = $statusColumn->getState();
+
+                self::assertSame($description, $statusColumn->getDescriptionBelow(), $createdAt);
+                self::assertSame($statusColor, $statusColumn->getColor($statusState), $createdAt);
+
+                $waitingColumn->record($order)->clearCachedState();
+                self::assertSame($waitingColor, $waitingColumn->getColor($waitingColumn->getState()), $createdAt);
+            }
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     private function table(RecentPayments|KitchenOrderQueue $widget): Table
     {
         return $widget->table(Table::make($this->createMock(HasTable::class)));

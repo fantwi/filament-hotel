@@ -22,6 +22,10 @@ class KitchenOrderQueue extends TableWidget
 
     private const OPERATIONAL_ACTIONS = ['start_preparing', 'ready', 'served'];
 
+    private const WARNING_AFTER_MINUTES = 15;
+
+    private const OVERDUE_AFTER_MINUTES = 30;
+
     protected static ?string $heading = 'Live Kitchen Order Queue';
 
     protected static ?int $sort = 5;
@@ -133,8 +137,17 @@ class KitchenOrderQueue extends TableWidget
                         'ready' => 'Ready to serve',
                         default => ucfirst(str_replace('_', ' ', $state)),
                     })
-                    ->color(fn (string $state): string => match ($state) {
-                        'confirmed' => 'info', 'preparing' => 'warning', 'ready' => 'success', default => 'gray',
+                    ->description(fn (RestaurantOrder $record): ?string => match ($this->orderUrgency($record)) {
+                        'warning' => 'Needs attention',
+                        'overdue' => 'Overdue',
+                        default => null,
+                    })
+                    ->color(fn (string $state, RestaurantOrder $record): string => match ($this->orderUrgency($record)) {
+                        'warning' => 'warning',
+                        'overdue' => 'danger',
+                        default => match ($state) {
+                            'confirmed' => 'info', 'preparing' => 'warning', 'ready' => 'success', default => 'gray',
+                        },
                     }),
                 TextColumn::make('preparedBy.name')
                     ->label('Chef')
@@ -144,6 +157,11 @@ class KitchenOrderQueue extends TableWidget
                 TextColumn::make('created_at')
                     ->label('Waiting')
                     ->since()
+                    ->color(fn (RestaurantOrder $record): string => match ($this->orderUrgency($record)) {
+                        'warning' => 'warning',
+                        'overdue' => 'danger',
+                        default => 'gray',
+                    })
                     ->toggleable()
                     ->visibleFrom('md'),
                 TextColumn::make('kitchen_notes')
@@ -202,6 +220,24 @@ class KitchenOrderQueue extends TableWidget
 
         return ($user?->can('manage kitchen orders') ?? false)
             && app(StaffAccountAccess::class)->allowsOperationalActions($user);
+    }
+
+    /**
+     * Classifies an active order by the time elapsed since it was placed.
+     */
+    private function orderUrgency(RestaurantOrder $record): string
+    {
+        if (! $record->created_at || $record->created_at->isFuture()) {
+            return 'normal';
+        }
+
+        $ageInMinutes = (int) floor($record->created_at->diffInSeconds(now()) / 60);
+
+        return match (true) {
+            $ageInMinutes >= self::OVERDUE_AFTER_MINUTES => 'overdue',
+            $ageInMinutes >= self::WARNING_AFTER_MINUTES => 'warning',
+            default => 'normal',
+        };
     }
 
     private function authorizeOperationalActions(): void
