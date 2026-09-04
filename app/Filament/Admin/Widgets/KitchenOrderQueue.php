@@ -51,7 +51,23 @@ class KitchenOrderQueue extends TableWidget
                     ->oldest('created_at'),
             )
             ->columns([
-                TextColumn::make('order_number')->label('Order')->searchable()->weight('bold'),
+                TextColumn::make('mobile_order_context')
+                    ->label('Order')
+                    ->state(fn (RestaurantOrder $record): string => $record->order_number)
+                    ->description(function (RestaurantOrder $record): string {
+                        $tableNumber = $record->table?->table_number ?? $record->reservation?->table?->table_number;
+                        $waiting = $record->created_at?->shortAbsoluteDiffForHumans() ?? 'unknown';
+
+                        return (filled($tableNumber) ? 'Table '.$tableNumber : 'No table').' · Waiting '.$waiting;
+                    })
+                    ->wrap()
+                    ->weight('bold')
+                    ->hiddenFrom('md'),
+                TextColumn::make('order_number')
+                    ->label('Order')
+                    ->searchable()
+                    ->weight('bold')
+                    ->visibleFrom('md'),
                 TextColumn::make('items_summary')
                     ->label('Items')
                     ->state(fn (RestaurantOrder $record): string => $record->items

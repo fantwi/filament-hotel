@@ -9,8 +9,12 @@ use App\Filament\Admin\Pages\Dashboards\ManagerDashboard;
 use App\Filament\Admin\Widgets\ExecutiveKitchenQueueSummary;
 use App\Filament\Admin\Widgets\KitchenOrderQueue;
 use App\Filament\Admin\Widgets\RecentPayments;
+use App\Models\RestaurantOrder;
+use App\Models\RestaurantTable;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class AdminDashboardMobileWidgetsTest extends TestCase
@@ -59,12 +63,15 @@ class AdminDashboardMobileWidgetsTest extends TestCase
     {
         $table = $this->table(new KitchenOrderQueue);
 
-        foreach (['order_number', 'items_summary', 'status'] as $columnName) {
+        foreach (['mobile_order_context', 'items_summary', 'status'] as $columnName) {
             $column = $table->getColumn($columnName);
 
             self::assertNotNull($column);
             self::assertNull($column->getVisibleFrom(), "[{$columnName}] should remain visible on mobile.");
         }
+
+        self::assertSame('md', $table->getColumn('mobile_order_context')?->getHiddenFrom());
+        self::assertSame('md', $table->getColumn('order_number')?->getVisibleFrom());
 
         foreach ([
             'table_display' => 'md',
@@ -78,6 +85,27 @@ class AdminDashboardMobileWidgetsTest extends TestCase
             self::assertNotNull($column);
             self::assertSame($breakpoint, $column->getVisibleFrom(), "[{$columnName}] has the wrong responsive breakpoint.");
             self::assertTrue($column->isToggleable(), "[{$columnName}] should be user-toggleable.");
+        }
+    }
+
+    public function test_kitchen_queue_mobile_order_context_includes_table_and_waiting_duration(): void
+    {
+        Carbon::setTestNow('2026-08-10 09:00:00');
+
+        try {
+            $order = new RestaurantOrder([
+                'order_number' => 'MOBILE-ORDER-1',
+            ]);
+            $order->forceFill(['created_at' => '2026-08-10 08:30:00']);
+            $order->setRelation('table', new RestaurantTable(['table_number' => 'T12']));
+            $column = $this->table(new KitchenOrderQueue)->getColumn('mobile_order_context');
+
+            self::assertInstanceOf(TextColumn::class, $column);
+            $column->record($order)->clearCachedState();
+            self::assertSame('MOBILE-ORDER-1', $column->getState());
+            self::assertSame('Table T12 · Waiting 30m', $column->getDescriptionBelow());
+        } finally {
+            Carbon::setTestNow();
         }
     }
 
