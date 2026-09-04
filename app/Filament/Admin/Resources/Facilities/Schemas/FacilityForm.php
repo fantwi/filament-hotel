@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\Facilities\Schemas;
 
+use App\Models\Facility;
+use Closure;
 use Filament\Forms;
 use Filament\Schemas\Schema;
 
@@ -23,7 +25,15 @@ class FacilityForm
         return $schema
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->required(),
+                    ->required()
+                    ->trim()
+                    ->maxLength(255)
+                    ->unique(ignoreRecord: true)
+                    ->rule(fn (?Facility $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record): void {
+                        if (Facility::hasEquivalentName((string) $value, $record?->getKey())) {
+                            $fail('The facility name has already been taken.');
+                        }
+                    }),
                 Forms\Components\TextInput::make('icon')
                     ->helperText(
                         'Optional icon name'

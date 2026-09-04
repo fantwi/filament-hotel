@@ -26,7 +26,7 @@ class RestaurantFacilitySeeder extends Seeder
             'Bar' => '🍷',
             'Free WiFi' => '📶',
             'Live Music' => '🎵',
-            'Air Conditioned' => '❄️',
+            'Air Conditioning' => '❄️',
             'Family Friendly' => '👪',
             'Parking' => '🚗',
         ];
