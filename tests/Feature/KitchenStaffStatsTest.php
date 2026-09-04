@@ -42,6 +42,30 @@ class KitchenStaffStatsTest extends TestCase
         self::assertSame('10s', $this->invokeProtected(new KitchenStaffStats, 'getPollingInterval'));
     }
 
+    public function test_staff_summary_distinguishes_live_workload_from_selected_period_activity(): void
+    {
+        $widget = new KitchenStaffStats;
+        $widget->pageFilters = [
+            'period' => 'custom',
+            'start_date' => '2026-08-01',
+            'end_date' => '2026-08-31',
+        ];
+        $stats = $this->stats($widget);
+
+        self::assertSame('Current kitchen workload', $this->invokeProtected($widget, 'getHeading'));
+        self::assertSame(
+            'Live order stages refresh every 10 seconds. Served orders use the selected dashboard period.',
+            $this->invokeProtected($widget, 'getDescription'),
+        );
+        self::assertSame('Current active queue', $stats['Orders waiting to start']->getDescription());
+        self::assertSame('Current active queue', $stats['Orders preparing']->getDescription());
+        self::assertSame('Current active queue', $stats['Orders ready to serve']->getDescription());
+        self::assertSame(
+            'Selected period: Aug 1, 2026 - Aug 31, 2026',
+            $stats['Orders served']->getDescription(),
+        );
+    }
+
     public function test_staff_summary_uses_one_active_workload_aggregate_and_one_served_query(): void
     {
         $this->order('confirmed', 'WAITING-ONE', '2026-07-28 09:00:00');
