@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\KitchenProduction;
 use App\Models\MenuItem;
+use App\Models\RestaurantOrderItem;
 use Carbon\CarbonInterface;
 
 /**
@@ -18,6 +20,19 @@ class KitchenProductionReportService
         $from = $from->copy()->startOfDay();
         $until = $until->copy()->endOfDay();
 
+        $openingProduction = KitchenProduction::query()
+            ->where('production_date', '<', $from->toDateString())
+            ->selectRaw('menu_item_id, SUM(quantity_produced - quantity_wasted) as balance')
+            ->groupBy('menu_item_id')
+            ->pluck('balance', 'menu_item_id');
+        $openingSales = RestaurantOrderItem::query()
+            ->join('restaurant_orders', 'restaurant_orders.id', '=', 'restaurant_order_items.restaurant_order_id')
+            ->where('restaurant_orders.payment_status', 'completed')
+            ->where('restaurant_orders.created_at', '<', $from)
+            ->selectRaw('restaurant_order_items.menu_item_id, SUM(restaurant_order_items.quantity * restaurant_order_items.production_usage_per_sale) as balance')
+            ->groupBy('restaurant_order_items.menu_item_id')
+            ->pluck('balance', 'restaurant_order_items.menu_item_id');
+
         $rows = MenuItem::query()
             ->where('tracks_kitchen_production', true)
             ->with([
@@ -32,7 +47,7 @@ class KitchenProductionReportService
             ])
             ->orderBy('name')
             ->get()
-            ->map(function (MenuItem $item): array {
+            ->map(function (MenuItem $item) use ($openingProduction, $openingSales): array {
                 $produced = (float) $item->kitchenProductions->sum('quantity_produced');
                 $wasted = (float) $item->kitchenProductions->sum('quantity_wasted');
                 $items = $item->orderItems;
@@ -41,11 +56,14 @@ class KitchenProductionReportService
                     fn ($line): float => $line->quantity * (float) $line->production_usage_per_sale
                 );
                 $netProduced = $produced - $wasted;
-                $remaining = $netProduced - $amountSold;
+                $periodVariance = $netProduced - $amountSold;
+                $openingBalance = (float) $openingProduction->get($item->getKey(), 0)
+                    - (float) $openingSales->get($item->getKey(), 0);
+                $closingBalance = $openingBalance + $periodVariance;
                 $sellThrough = $netProduced > 0 ? ($amountSold / $netProduced) * 100 : 0;
-                $status = $remaining < 0
+                $stockStatus = $closingBalance < 0
                     ? 'negative'
-                    : ($remaining <= (float) $item->low_stock_threshold ? 'low' : 'healthy');
+                    : ($closingBalance <= (float) $item->low_stock_threshold ? 'low' : 'healthy');
 
                 return [
                     'name' => $item->name,
@@ -57,10 +75,14 @@ class KitchenProductionReportService
                     'net_produced' => $netProduced,
                     'sold_units' => $soldUnits,
                     'production_amount_sold' => $amountSold,
-                    'remaining' => $remaining,
+                    'opening_balance' => $openingBalance,
+                    'period_variance' => $periodVariance,
+                    'closing_balance' => $closingBalance,
+                    'remaining' => $periodVariance,
                     'sell_through' => $sellThrough,
                     'sales_revenue' => (float) $items->sum('total_price'),
-                    'status' => $status,
+                    'stock_status' => $stockStatus,
+                    'status' => $stockStatus,
                 ];
             });
 
@@ -68,9 +90,11 @@ class KitchenProductionReportService
             'rows' => $rows,
             'summary' => [
                 'tracked_items' => $rows->count(),
-                'healthy_items' => $rows->where('status', 'healthy')->count(),
-                'low_stock_items' => $rows->where('status', 'low')->count(),
-                'negative_variance_items' => $rows->where('status', 'negative')->count(),
+                'healthy_items' => $rows->where('stock_status', 'healthy')->count(),
+                'low_stock_items' => $rows->whereIn('stock_status', ['low', 'negative'])->count(),
+                'negative_variance_items' => $rows->filter(
+                    fn (array $row): bool => $row['period_variance'] < 0,
+                )->count(),
                 'sales_revenue' => $rows->sum('sales_revenue'),
             ],
         ];

@@ -34,7 +34,7 @@ class KitchenProductionStats extends StatsOverviewWidget
 
         return [
             Stat::make('Tracked Food Items', $r['tracked_items'])->description($this->dashboardDateRangeLabel())->color('primary'),
-            Stat::make('Low-Stock Items', $r['low_stock_items'])->description('At the end of selected range')->color('warning'),
+            Stat::make('Low finished-food balances', $r['low_stock_items'])->description('At or below threshold at period end')->color('warning'),
             Stat::make('Negative Variances', $r['negative_variance_items'])->description('Production compared with sales')->color('danger'),
             Stat::make('Food Revenue', 'GHS '.number_format($r['sales_revenue'], 2))->description($this->dashboardDateRangeLabel())->color('success'),
         ];

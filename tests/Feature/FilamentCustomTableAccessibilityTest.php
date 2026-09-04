@@ -13,7 +13,7 @@ class FilamentCustomTableAccessibilityTest extends TestCase
         'views/filament/admin/widgets/corporate-billing-overview.blade.php' => ['columnHeaders' => 6, 'rowHeaders' => 1],
         'views/filament/admin/pages/corporate-receivables.blade.php' => ['columnHeaders' => 6, 'rowHeaders' => 1],
         'views/filament/admin/pages/guest-report.blade.php' => ['columnHeaders' => 4, 'rowHeaders' => 1],
-        'views/filament/admin/pages/kitchen-production-report.blade.php' => ['columnHeaders' => 10, 'rowHeaders' => 1],
+        'views/filament/admin/pages/kitchen-production-report.blade.php' => ['columnHeaders' => 12, 'rowHeaders' => 1],
         'views/filament/admin/pages/restaurant-order-report.blade.php' => ['columnHeaders' => 6, 'rowHeaders' => 1],
     ];
 
@@ -118,7 +118,7 @@ class FilamentCustomTableAccessibilityTest extends TestCase
         }
 
         self::assertSame(5, $tableCount);
-        self::assertSame(32, $columnHeaderCount);
+        self::assertSame(34, $columnHeaderCount);
         self::assertSame(5, $rowHeaderCount);
         self::assertSame([], $violations, implode(PHP_EOL, $violations));
     }

@@ -54,16 +54,16 @@ class KitchenProductionReportStats extends StatsOverviewWidget
                 ->description($rangeLabel)
                 ->icon('heroicon-o-clipboard-document-list')
                 ->color('primary'),
-            Stat::make('Healthy stock', number_format((int) $summary['healthy_items']))
-                ->description('Within target after sales')
+            Stat::make('Healthy finished-food balances', number_format((int) $summary['healthy_items']))
+                ->description('Above threshold at period end')
                 ->icon('heroicon-o-check-circle')
                 ->color('success'),
-            Stat::make('Low stock', number_format((int) $summary['low_stock_items']))
-                ->description('Needs replenishment')
+            Stat::make('Low finished-food balances', number_format((int) $summary['low_stock_items']))
+                ->description('At or below threshold at period end')
                 ->icon('heroicon-o-exclamation-triangle')
                 ->color('warning'),
             Stat::make('Negative variance', number_format((int) $summary['negative_variance_items']))
-                ->description('Sales exceed net production')
+                ->description('Period sales exceed net production')
                 ->icon('heroicon-o-arrow-trending-down')
                 ->color('danger'),
             Stat::make('Food sales revenue', 'GHS '.number_format((float) $summary['sales_revenue'], 2))
