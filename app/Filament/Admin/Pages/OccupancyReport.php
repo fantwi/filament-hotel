@@ -71,6 +71,10 @@ class OccupancyReport extends Page
             ->whereNotIn('status', ['cancelled', 'no_show'])
             ->count();
 
+        $hasScheduledActivity = $hotelBookings > 0
+            || $conferenceBookings > 0
+            || $tableReservations > 0;
+
         $conferenceAvailability = app(CurrentVenueAvailability::class)->conferenceRooms($snapshotAt);
 
         $tableStatus = app(CurrentVenueAvailability::class)->restaurantTables($snapshotAt);
@@ -87,6 +91,7 @@ class OccupancyReport extends Page
             'occupancyRate' => $roomNightCapacity > 0 ? ($bookedRoomNights / $roomNightCapacity) * 100 : null,
             'conferenceBookings' => $conferenceBookings,
             'tableReservations' => $tableReservations,
+            'hasScheduledActivity' => $hasScheduledActivity,
             'conferenceAvailability' => $conferenceAvailability,
             'tableStatus' => $tableStatus,
         ];

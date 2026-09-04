@@ -7,6 +7,7 @@
             'roomNightCapacity' => $report['roomNightCapacity'],
         ];
         $scheduledUseUrls = [
+            'all' => $this->reservationCalendarUrl('all'),
             'hotel' => $this->reservationCalendarUrl('hotel'),
             'conference' => $this->reservationCalendarUrl('conference'),
             'restaurant' => $this->reservationCalendarUrl('restaurant'),
@@ -45,6 +46,7 @@
             )
 
             <x-filament::section heading="Scheduled use" description="{{ $this->periodLabel() }} reservations and bookings">
+                @if ($report['hasScheduledActivity'])
                 <ul aria-label="Scheduled use metrics" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                     <li class="min-w-0 rounded-xl border border-primary-200 bg-primary-50 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-primary-500/20 dark:bg-primary-500/10">
                         <a href="{{ $scheduledUseUrls['hotel'] }}" aria-label="View hotel stays for the selected period" class="group block rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">
@@ -95,6 +97,26 @@
                         </a>
                     </li>
                 </ul>
+                @else
+                    <div class="flex flex-col items-center px-4 py-10 text-center sm:py-12">
+                        <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-300">
+                            <x-filament::icon icon="heroicon-o-calendar-days" class="h-6 w-6" />
+                        </span>
+                        <h3 class="mt-4 text-base font-semibold text-gray-950 dark:text-white">No scheduled occupancy activity</h3>
+                        <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">
+                            No qualifying hotel stays, conference bookings, or table reservations were recorded for {{ strtolower($this->periodLabel()) }}.
+                        </p>
+                        <p class="mt-1 max-w-xl text-sm text-gray-500 dark:text-gray-400">Choose another reporting period above or review the complete reservation schedule.</p>
+                        <a
+                            href="{{ $scheduledUseUrls['all'] }}"
+                            aria-label="Open the booking calendar for the selected period"
+                            class="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                        >
+                            Open booking calendar
+                            <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4" />
+                        </a>
+                    </div>
+                @endif
             </x-filament::section>
         </section>
 

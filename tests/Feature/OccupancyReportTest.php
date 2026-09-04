@@ -599,6 +599,17 @@ class OccupancyReportTest extends TestCase
 
     public function test_scheduled_use_metrics_render_as_three_distinct_responsive_cards(): void
     {
+        $this->travelTo('2026-09-04 12:00:00');
+        [$guest, $room] = $this->occupancyBookingDependencies();
+        Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-09-03',
+            'check_out' => '2026-09-05',
+            'total_price' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
         $user = User::factory()->create(['department' => 'management']);
 
         $response = $this->actingAs($user)->get('/admin/occupancy-report');
@@ -621,6 +632,41 @@ class OccupancyReportTest extends TestCase
         foreach (['primary', 'info', 'warning'] as $index => $tone) {
             self::assertStringContainsString("border-{$tone}-200", $cards->item($index)->getAttribute('class'));
         }
+
+        $response->assertDontSee('No scheduled occupancy activity');
+    }
+
+    public function test_period_without_scheduled_activity_renders_guidance_instead_of_zero_cards(): void
+    {
+        $this->travelTo('2026-09-04 12:00:00');
+        $this->occupancyBookingDependencies();
+        $user = User::factory()->create(['department' => 'management']);
+
+        $response = $this->actingAs($user)->get(
+            '/admin/occupancy-report?period=custom&startDate=2026-09-01&endDate=2026-09-04',
+        );
+
+        $response->assertOk();
+        $response->assertSee('No scheduled occupancy activity');
+        $response->assertSee('Room occupancy');
+        $response->assertSee('Live operational snapshot');
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+
+        self::assertSame(0, $xpath->query('//ul[@aria-label="Scheduled use metrics"]')?->count());
+
+        $link = $xpath->query('//a[@aria-label="Open the booking calendar for the selected period"]')?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $link);
+        $url = $link->getAttribute('href');
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        self::assertSame('/admin/booking-calendar', parse_url($url, PHP_URL_PATH));
+        self::assertSame('all', $query['type'] ?? null);
+        self::assertSame('reportable', $query['status_scope'] ?? null);
+        self::assertSame('2026-09-01', $query['start_date'] ?? null);
+        self::assertSame('2026-09-04', $query['end_date'] ?? null);
     }
 
     public function test_occupancy_activity_stats_link_to_the_matching_hotel_calendar_scope(): void
@@ -641,6 +687,16 @@ class OccupancyReportTest extends TestCase
 
     public function test_scheduled_use_cards_link_to_matching_calendar_types_and_selected_dates(): void
     {
+        [$guest, $room] = $this->occupancyBookingDependencies();
+        Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-09-01',
+            'check_out' => '2026-09-02',
+            'total_price' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
         $user = User::factory()->create(['department' => 'management']);
 
         $response = $this->actingAs($user)->get(
