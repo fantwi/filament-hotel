@@ -54,15 +54,15 @@ class RestaurantOrderReportStats extends StatsOverviewWidget
                 ->description(number_format((int) $report['totalItems']).' item(s) in '.$periodLabel)
                 ->icon('heroicon-o-shopping-bag')
                 ->color('primary'),
-            Stat::make('Paid revenue', 'GHS '.number_format((float) $report['revenue'], 2))
-                ->description(number_format((int) $report['paidOrders']).' paid order(s)')
+            Stat::make('Net revenue', 'GHS '.number_format((float) $report['netRevenue'], 2))
+                ->description('GHS '.number_format((float) $report['revenue'], 2).' collected · GHS '.number_format((float) $report['refunds'], 2).' refunded')
                 ->icon('heroicon-o-banknotes')
-                ->color('success'),
+                ->color($report['netRevenue'] < 0 ? 'danger' : 'success'),
             Stat::make('Outstanding balance', 'GHS '.number_format((float) $report['outstanding'], 2))
-                ->description(number_format((int) $report['pendingOrders']).' pending payment(s)')
+                ->description('Remaining balance on open orders')
                 ->icon('heroicon-o-clock')
                 ->color('warning'),
-            Stat::make('Average paid order', 'GHS '.number_format((float) $report['averageOrderValue'], 2))
+            Stat::make('Average collected order', 'GHS '.number_format((float) $report['averageOrderValue'], 2))
                 ->description(number_format((float) $report['paymentRate'], 1).'% payment completion')
                 ->icon('heroicon-o-calculator')
                 ->color('info'),
