@@ -1,20 +1,20 @@
 <x-filament-panels::page>
     @php($report = $this->report)
 
-    <div class="space-y-6">
+    <div data-kitchen-production-report-page class="space-y-6">
         <x-filament.report-period-controls id="kitchen-production-report-period-controls" from-label="From" until-label="Until" />
 
         <section
             aria-label="Kitchen production report results"
             class="relative"
             wire:loading.attr="aria-busy"
-            wire:target="applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage"
+            wire:target="applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,exceptionFilter,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage"
         >
             <div
                 data-kitchen-production-report-results
                 class="space-y-6 transition-opacity duration-200"
                 wire:loading.class="pointer-events-none opacity-60"
-                wire:target="applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage"
+                wire:target="applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,exceptionFilter,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage"
             >
         @if ($report['total_rows'] === 0)
         <x-filament::section>
@@ -50,10 +50,10 @@
 
         @if ($report['has_period_activity'])
         <x-filament::section heading="Production register" description="Filter, sort, and review finished-food performance for the selected reporting period.">
-            <div data-kitchen-production-register-filters class="mb-6 rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-white/10 dark:bg-white/5">
+            <div data-kitchen-production-register-filters class="kitchen-production-register-filters mb-6 rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-white/10 dark:bg-white/5">
                 <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Filter production register</h2>
 
-                <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <label for="kitchen-report-search" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
                         Search menu items
                         <x-filament::input.wrapper class="mt-1">
@@ -86,6 +86,18 @@
                             <x-filament::input.select id="kitchen-report-stock-status" wire:model.live="stockStatus" wire:loading.attr="disabled">
                                 <option value="">All closing-stock statuses</option>
                                 @foreach ($this->stockStatusOptions() as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </x-filament::input.select>
+                        </x-filament::input.wrapper>
+                    </label>
+
+                    <label for="kitchen-report-exception" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Exceptions
+                        <x-filament::input.wrapper class="mt-1">
+                            <x-filament::input.select id="kitchen-report-exception" wire:model.live="exceptionFilter" wire:loading.attr="disabled">
+                                <option value="">All items</option>
+                                @foreach ($this->exceptionFilterOptions() as $value => $label)
                                     <option value="{{ $value }}">{{ $label }}</option>
                                 @endforeach
                             </x-filament::input.select>
@@ -131,7 +143,7 @@
                             Showing {{ number_format($report['rows']->total()) }} of {{ number_format($report['total_rows']) }} tracked {{ \Illuminate\Support\Str::plural('item', $report['total_rows']) }}
                         </p>
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Register filters do not change the period overview metrics.</p>
-                        <p wire:loading wire:target="reportSearch,categoryFilter,stockStatus,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage" class="mt-1 text-xs font-medium text-primary-600 dark:text-primary-400">Updating production register&hellip;</p>
+                        <p wire:loading wire:target="reportSearch,categoryFilter,stockStatus,exceptionFilter,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage" class="mt-1 text-xs font-medium text-primary-600 dark:text-primary-400">Updating production register&hellip;</p>
                     </div>
 
                     <x-filament::button
@@ -148,9 +160,12 @@
                 </div>
             </div>
 
-            <div data-kitchen-production-mobile-register class="grid gap-4 lg:grid-cols-2 2xl:hidden" aria-label="Production report cards">
+            <div data-kitchen-production-mobile-register class="kitchen-production-mobile-register grid gap-4 lg:grid-cols-2 2xl:hidden" aria-label="Production report cards">
                 @forelse ($report['rows'] as $row)
                     <article class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+                        @php($productionBatchesUrl = $this->productionBatchesUrl($row))
+                        @php($restaurantOrdersUrl = $this->restaurantOrdersUrl($row))
+
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <h3 class="font-semibold text-gray-950 dark:text-white">{{ $row['name'] }}</h3>
@@ -173,6 +188,23 @@
                             <div class="border-r border-gray-200 p-3 dark:border-gray-700"><dt class="text-xs text-gray-500 dark:text-gray-400">Available-stock sell-through</dt><dd class="mt-1 font-medium">{{ $row['sell_through'] === null ? 'N/A' : number_format($row['sell_through'], 1).'%' }}</dd></div>
                             <div class="p-3"><dt class="text-xs text-gray-500 dark:text-gray-400">Net revenue</dt><dd class="mt-1 font-medium {{ $row['net_revenue'] < 0 ? 'text-danger-600 dark:text-danger-400' : '' }}">GHS {{ number_format($row['net_revenue'], 2) }}</dd></div>
                         </dl>
+
+                        @if ($productionBatchesUrl || $restaurantOrdersUrl)
+                            <div class="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-gray-200 pt-4 text-sm font-semibold dark:border-white/10">
+                                @if ($productionBatchesUrl)
+                                    <a data-kitchen-production-batches-link href="{{ $productionBatchesUrl }}" class="inline-flex items-center gap-1.5 text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
+                                        View batches
+                                        <x-filament::icon icon="heroicon-m-arrow-right" class="h-4 w-4" />
+                                    </a>
+                                @endif
+                                @if ($restaurantOrdersUrl)
+                                    <a data-kitchen-production-orders-link href="{{ $restaurantOrdersUrl }}" class="inline-flex items-center gap-1.5 text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
+                                        View orders
+                                        <x-filament::icon icon="heroicon-m-arrow-right" class="h-4 w-4" />
+                                    </a>
+                                @endif
+                            </div>
+                        @endif
                     </article>
                 @empty
                     <p class="rounded-xl border border-dashed border-gray-300 px-4 py-10 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
@@ -181,13 +213,13 @@
                 @endforelse
             </div>
 
-            <div data-kitchen-production-desktop-register class="hidden 2xl:block">
+            <div data-kitchen-production-desktop-register class="kitchen-production-desktop-register hidden 2xl:block">
                 <div
                     data-kitchen-production-table-scroll
                     role="region"
                     tabindex="0"
                     aria-label="Production report table; scroll horizontally to review all metrics."
-                    class="overflow-x-auto rounded-lg border border-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-inset dark:border-gray-700"
+                    class="kitchen-production-table-scroll overflow-x-auto rounded-lg border border-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-inset dark:border-gray-700"
                 >
                     <table class="w-full min-w-[1450px] border-separate border-spacing-0 text-left text-sm">
                         <caption class="sr-only">Kitchen production, sales, and closing finished-food balance report</caption>
@@ -216,10 +248,22 @@
                         </thead>
                         <tbody class="bg-white text-gray-700 dark:bg-gray-900 dark:text-gray-200">
                             @forelse ($report['rows'] as $row)
+                                @php($productionBatchesUrl = $this->productionBatchesUrl($row))
+                                @php($restaurantOrdersUrl = $this->restaurantOrdersUrl($row))
                                 <tr class="group">
                                     <th scope="row" class="sticky left-0 z-20 w-64 min-w-64 border-b border-r border-gray-200 bg-white px-4 py-4 align-top shadow-[2px_0_0_0_rgb(229_231_235)] group-hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:shadow-[2px_0_0_0_rgb(55_65_81)] dark:group-hover:bg-gray-800">
                                         <p class="font-semibold text-gray-950 dark:text-white">{{ $row['name'] }}</p>
                                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $row['category'] }} · {{ number_format($row['usage_per_sale'], 3) }} {{ $row['unit'] }} per sale</p>
+                                        @if ($productionBatchesUrl || $restaurantOrdersUrl)
+                                            <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold">
+                                                @if ($productionBatchesUrl)
+                                                    <a data-kitchen-production-batches-link href="{{ $productionBatchesUrl }}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">View batches</a>
+                                                @endif
+                                                @if ($restaurantOrdersUrl)
+                                                    <a data-kitchen-production-orders-link href="{{ $restaurantOrdersUrl }}" class="text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300">View orders</a>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </th>
                                     <td class="sticky left-64 z-20 w-36 min-w-36 border-b border-r-2 border-gray-300 bg-white px-4 py-4 align-top shadow-[2px_0_0_0_rgb(209_213_219)] group-hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-900 dark:shadow-[2px_0_0_0_rgb(75_85_99)] dark:group-hover:bg-gray-800">
                                         <x-filament::badge :color="match ($row['status']) { 'healthy' => 'success', 'low' => 'warning', 'negative' => 'danger' }">
@@ -246,7 +290,7 @@
             </div>
 
             @if ($report['rows']->hasPages())
-                <div data-kitchen-production-register-pagination class="mt-6 border-t border-gray-200 pt-4 dark:border-white/10">
+                <div data-kitchen-production-register-pagination class="kitchen-production-register-pagination mt-6 border-t border-gray-200 pt-4 dark:border-white/10">
                     {{ $report['rows']->links() }}
                 </div>
             @endif
@@ -284,7 +328,7 @@
                 aria-live="polite"
                 aria-atomic="true"
                 wire:loading.flex
-                wire:target="applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage"
+                wire:target="applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,exceptionFilter,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage"
                 class="absolute inset-0 z-40 items-start justify-center rounded-xl bg-white/75 px-4 py-12 backdrop-blur-[1px] dark:bg-gray-950/75"
                 style="display: none;"
             >
@@ -295,4 +339,66 @@
             </div>
         </section>
     </div>
+
+    <style>
+        @media print {
+            @page {
+                size: landscape;
+                margin: 12mm;
+            }
+
+            .fi-sidebar,
+            .fi-topbar,
+            .fi-header,
+            .fi-breadcrumbs,
+            #kitchen-production-report-period-controls,
+            .kitchen-production-register-filters,
+            [data-kitchen-production-report-loading-overlay],
+            .kitchen-production-mobile-register,
+            .kitchen-production-register-pagination {
+                display: none !important;
+            }
+
+            .fi-main-ctn {
+                margin-inline-start: 0 !important;
+                min-height: auto !important;
+            }
+
+            .fi-main {
+                max-width: none !important;
+                padding: 0 !important;
+            }
+
+            [data-kitchen-production-report-page] {
+                gap: 1rem !important;
+            }
+
+            [data-kitchen-production-report-page] .fi-section,
+            [data-kitchen-production-report-page] article,
+            [data-kitchen-production-report-page] tr {
+                break-inside: avoid;
+            }
+
+            .kitchen-production-desktop-register {
+                display: block !important;
+            }
+
+            .kitchen-production-table-scroll {
+                overflow: visible !important;
+            }
+
+            .kitchen-production-desktop-register table {
+                min-width: 0 !important;
+            }
+
+            .kitchen-production-desktop-register .sticky {
+                position: static !important;
+            }
+
+            [data-kitchen-production-report-page] a {
+                color: inherit !important;
+                text-decoration: none !important;
+            }
+        }
+    </style>
 </x-filament-panels::page>

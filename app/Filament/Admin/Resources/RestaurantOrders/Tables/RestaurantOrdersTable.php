@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\RestaurantOrders\Tables;
 
+use App\Models\MenuItem;
 use App\Models\RestaurantOrder;
 use App\Models\User;
 use App\Services\RestaurantKitchenService;
@@ -101,6 +102,26 @@ class RestaurantOrdersTable
                         'failed' => 'Failed',
                         'refunded' => 'Refunded',
                     ]),
+                SelectFilter::make('menu_item')
+                    ->label('Menu item')
+                    ->options(fn (): array => MenuItem::query()
+                        ->whereHas('orderItems')
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->searchable()
+                    ->preload()
+                    ->query(function (Builder $query, array $data): Builder {
+                        $menuItemId = $data['value'] ?? null;
+
+                        return $query->when(
+                            filled($menuItemId),
+                            fn (Builder $query): Builder => $query->whereHas(
+                                'items',
+                                fn (Builder $items): Builder => $items->where('menu_item_id', $menuItemId),
+                            ),
+                        );
+                    }),
                 SelectFilter::make('prepared_by')
                     ->label('Prepared By')
                     ->relationship('preparedBy', 'first_name')
@@ -122,6 +143,37 @@ class RestaurantOrdersTable
                             $data['created_until'] ?? null,
                             fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '<=', $date),
                         )),
+                Filter::make('stock_movement_at')
+                    ->label('Stock movement date')
+                    ->schema([
+                        DatePicker::make('from')->label('Movement from'),
+                        DatePicker::make('until')->label('Movement until'),
+                    ])
+                    ->columns(2)
+                    ->query(function (Builder $query, array $data): Builder {
+                        $from = $data['from'] ?? null;
+                        $until = $data['until'] ?? null;
+
+                        if (blank($from) && blank($until)) {
+                            return $query;
+                        }
+
+                        return $query->where(function (Builder $events) use ($from, $until): void {
+                            $events
+                                ->where(function (Builder $deductions) use ($from, $until): void {
+                                    $deductions
+                                        ->whereNotNull('stock_deducted_at')
+                                        ->when($from, fn (Builder $query, string $date): Builder => $query->whereDate('stock_deducted_at', '>=', $date))
+                                        ->when($until, fn (Builder $query, string $date): Builder => $query->whereDate('stock_deducted_at', '<=', $date));
+                                })
+                                ->orWhere(function (Builder $reversals) use ($from, $until): void {
+                                    $reversals
+                                        ->whereNotNull('stock_reversed_at')
+                                        ->when($from, fn (Builder $query, string $date): Builder => $query->whereDate('stock_reversed_at', '>=', $date))
+                                        ->when($until, fn (Builder $query, string $date): Builder => $query->whereDate('stock_reversed_at', '<=', $date));
+                                });
+                        });
+                    }),
                 Filter::make('served_at')
                     ->label('Served date')
                     ->schema([

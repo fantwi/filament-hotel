@@ -121,6 +121,7 @@ class KitchenProductionReportService
                     : ($closingBalance <= (float) $item->low_stock_threshold ? 'low' : 'healthy');
 
                 return [
+                    'menu_item_id' => $item->getKey(),
                     'name' => $item->name,
                     'category' => $item->category_name ?? 'Uncategorised',
                     'unit' => $item->production_unit,

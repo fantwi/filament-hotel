@@ -3,11 +3,16 @@
 namespace App\Filament\Admin\Pages;
 
 use App\Filament\Admin\Concerns\InteractsWithReportPeriod;
+use App\Filament\Admin\Resources\KitchenProductions\KitchenProductionResource;
+use App\Filament\Admin\Resources\RestaurantOrders\RestaurantOrderResource;
 use App\Services\KitchenProductionReportService;
+use App\Support\Reporting\KitchenProductionReportCsv;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\WithPagination;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Provides the kitchen production report Filament administration page.
@@ -45,17 +50,75 @@ class KitchenProductionReport extends Page
         'net_revenue' => 'Net revenue',
     ];
 
+    private const EXCEPTION_FILTER_OPTIONS = [
+        'attention' => 'Stock needs attention',
+        'negative_variance' => 'Negative period variance',
+        'wastage' => 'Wastage recorded',
+    ];
+
     public string $reportSearch = '';
 
     public string $categoryFilter = '';
 
     public string $stockStatus = '';
 
+    public string $exceptionFilter = '';
+
     public string $sortBy = 'name';
 
     public string $sortDirection = 'asc';
 
     public int $perPage = 25;
+
+    /**
+     * Exposes spreadsheet export and browser printing for the applied report.
+     *
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('exportCsv')
+                ->label('Export CSV')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->action(fn (): StreamedResponse => $this->exportCsv()),
+            Action::make('printReport')
+                ->label('Print report')
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->alpineClickHandler('window.print()'),
+        ];
+    }
+
+    /**
+     * Streams every row matching the applied report and register filters.
+     */
+    public function exportCsv(): StreamedResponse
+    {
+        abort_unless(static::canAccess(), 403);
+
+        [$periodStart, $periodEnd] = $this->periodBounds();
+        $report = app(KitchenProductionReportService::class)->build($periodStart, $periodEnd);
+        $report['rows'] = $this->sortRows($this->filterRows($report['rows']));
+        $report['periodStart'] = $periodStart;
+        $report['periodEnd'] = $periodEnd;
+        $report['generatedAt'] = now();
+        $csv = app(KitchenProductionReportCsv::class)->toCsv($report, $this->periodLabel());
+        $filename = sprintf(
+            'kitchen-production-report-%s-to-%s.csv',
+            $periodStart->toDateString(),
+            $periodEnd->toDateString(),
+        );
+
+        return response()->streamDownload(
+            static function () use ($csv): void {
+                echo $csv;
+            },
+            $filename,
+            ['Content-Type' => 'text/csv; charset=UTF-8'],
+        );
+    }
 
     /**
      * Builds and returns report property.
@@ -104,6 +167,16 @@ class KitchenProductionReport extends Page
     }
 
     /**
+     * Returns operational exception choices for the production register.
+     *
+     * @return array<string, string>
+     */
+    public function exceptionFilterOptions(): array
+    {
+        return self::EXCEPTION_FILTER_OPTIONS;
+    }
+
+    /**
      * Determines whether the register differs from its default view.
      */
     public function hasRegisterFilters(): bool
@@ -111,6 +184,7 @@ class KitchenProductionReport extends Page
         return trim($this->reportSearch) !== ''
             || $this->categoryFilter !== ''
             || $this->stockStatus !== ''
+            || $this->exceptionFilter !== ''
             || $this->sortBy !== 'name'
             || $this->sortDirection !== 'asc'
             || $this->perPage !== 25;
@@ -124,6 +198,7 @@ class KitchenProductionReport extends Page
         $this->reportSearch = '';
         $this->categoryFilter = '';
         $this->stockStatus = '';
+        $this->exceptionFilter = '';
         $this->sortBy = 'name';
         $this->sortDirection = 'asc';
         $this->perPage = 25;
@@ -150,6 +225,14 @@ class KitchenProductionReport extends Page
      * Returns to the first page after the stock-status filter changes.
      */
     public function updatedStockStatus(): void
+    {
+        $this->resetProductionRowsPage();
+    }
+
+    /**
+     * Returns to the first page after the exception filter changes.
+     */
+    public function updatedExceptionFilter(): void
     {
         $this->resetProductionRowsPage();
     }
@@ -202,7 +285,66 @@ class KitchenProductionReport extends Page
             $rows = $rows->where('stock_status', $this->stockStatus);
         }
 
+        $rows = match ($this->exceptionFilter) {
+            'attention' => $rows->whereIn('stock_status', ['low', 'negative']),
+            'negative_variance' => $rows->filter(
+                fn (array $row): bool => (float) $row['period_variance'] < 0,
+            ),
+            'wastage' => $rows->filter(
+                fn (array $row): bool => (float) $row['wasted'] > 0,
+            ),
+            default => $rows,
+        };
+
         return $rows->values();
+    }
+
+    /**
+     * Links a report row to its production batches in the applied period.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    public function productionBatchesUrl(array $row): ?string
+    {
+        if (! KitchenProductionResource::canViewAny()) {
+            return null;
+        }
+
+        [$start, $end] = $this->periodBounds();
+
+        return KitchenProductionResource::getUrl('index', [
+            'filters' => [
+                'menu_item' => ['value' => $row['menu_item_id']],
+                'production_date' => [
+                    'from' => $start->toDateString(),
+                    'until' => $end->toDateString(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Links a report row to orders with matching stock events in the applied period.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    public function restaurantOrdersUrl(array $row): ?string
+    {
+        if (! RestaurantOrderResource::canViewAny()) {
+            return null;
+        }
+
+        [$start, $end] = $this->periodBounds();
+
+        return RestaurantOrderResource::getUrl('index', [
+            'filters' => [
+                'menu_item' => ['value' => $row['menu_item_id']],
+                'stock_movement_at' => [
+                    'from' => $start->toDateString(),
+                    'until' => $end->toDateString(),
+                ],
+            ],
+        ]);
     }
 
     /**

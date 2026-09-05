@@ -92,6 +92,7 @@ class KitchenProductionReportRegisterTest extends TestCase
             'reportSearch' => 'meal',
             'categoryFilter' => 'Mains',
             'stockStatus' => 'healthy',
+            'exceptionFilter' => 'wastage',
             'sortBy' => 'closing_balance',
             'sortDirection' => 'desc',
             'perPage' => 10,
@@ -108,6 +109,7 @@ class KitchenProductionReportRegisterTest extends TestCase
             ->assertSet('reportSearch', '')
             ->assertSet('categoryFilter', '')
             ->assertSet('stockStatus', '')
+            ->assertSet('exceptionFilter', '')
             ->assertSet('sortBy', 'name')
             ->assertSet('sortDirection', 'asc')
             ->assertSet('perPage', 25)
@@ -133,6 +135,8 @@ class KitchenProductionReportRegisterTest extends TestCase
             ->assertSee('Search menu items')
             ->assertSee('All categories')
             ->assertSee('All closing-stock statuses')
+            ->assertSee('Exceptions')
+            ->assertSee('Stock needs attention')
             ->assertSee('Sort by')
             ->assertSee('Rows per page')
             ->assertSee('Showing 3 of 3 tracked items')
@@ -234,7 +238,7 @@ class KitchenProductionReportRegisterTest extends TestCase
         $document = new \DOMDocument;
         @$document->loadHTML($html);
         $xpath = new \DOMXPath($document);
-        $loadingTargets = 'applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage';
+        $loadingTargets = 'applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,exceptionFilter,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage';
         $reportRegion = $xpath->query('//section[@aria-label="Kitchen production report results"]')?->item(0);
 
         self::assertInstanceOf(\DOMElement::class, $reportRegion);

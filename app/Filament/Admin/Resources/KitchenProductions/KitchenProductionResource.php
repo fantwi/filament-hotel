@@ -25,6 +25,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -300,6 +301,11 @@ class KitchenProductionResource extends SecureResource
                     ->visibleFrom('lg'),
             ])
             ->filters([
+                SelectFilter::make('menu_item')
+                    ->label('Menu item')
+                    ->relationship('menuItem', 'name')
+                    ->searchable()
+                    ->preload(),
                 Filter::make('production_date')
                     ->label('Production date')
                     ->schema([
