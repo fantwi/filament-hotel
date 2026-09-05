@@ -55,6 +55,24 @@
             ], key('restaurant-order-report-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
+        <section aria-label="Previous-period restaurant comparison">
+            @livewire(\App\Filament\Admin\Widgets\RestaurantOrderComparisonStats::class, [
+                'comparison' => $report['comparison'],
+            ], key('restaurant-order-comparison-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+        </section>
+
+        <section aria-label="Restaurant trend charts" class="grid gap-4 xl:grid-cols-2">
+            @livewire(\App\Filament\Admin\Widgets\RestaurantOrderVolumeTrendChart::class, [
+                'trend' => $report['trend'],
+                'periodLabel' => $this->periodLabel(),
+            ], key('restaurant-order-volume-trend-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+
+            @livewire(\App\Filament\Admin\Widgets\RestaurantOrderRevenueTrendChart::class, [
+                'trend' => $report['trend'],
+                'periodLabel' => $this->periodLabel(),
+            ], key('restaurant-order-revenue-trend-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+        </section>
+
         <section class="grid gap-4 lg:grid-cols-3">
             <x-filament::section heading="Payment status" description="{{ $this->periodLabel() }} at a glance">
                 <dl class="space-y-4">

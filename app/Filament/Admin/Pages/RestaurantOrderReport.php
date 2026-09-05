@@ -7,9 +7,11 @@ use App\Filament\Admin\Resources\RestaurantOrders\RestaurantOrderResource;
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantOrderItem;
+use Carbon\Carbon;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Livewire\WithPagination;
 
 /**
@@ -197,7 +199,53 @@ class RestaurantOrderReport extends Page
 
         return [
             ...$metrics,
+            ...$this->getReportAnalytics($metrics),
             'orders' => $this->paginatedOrders(),
+        ];
+    }
+
+    /**
+     * Calculates previous-period comparisons and zero-filled chart series.
+     *
+     * @param  array<string, float|int|bool>  $metrics
+     * @return array{
+     *     comparison: array<string, mixed>,
+     *     trend: array<string, mixed>
+     * }
+     */
+    public function getReportAnalytics(array $metrics): array
+    {
+        [$periodStart, $periodEnd] = $this->periodBounds();
+        [$previousStart, $previousEnd] = $this->previousPeriodBounds($periodStart, $periodEnd);
+        $previousOrders = $this->orderAggregates($previousStart, $previousEnd);
+        $previousFinancials = $this->financialAggregates($previousStart, $previousEnd);
+        $granularity = $this->trendGranularity($periodStart, $periodEnd);
+
+        return [
+            'comparison' => [
+                'previousPeriodLabel' => $this->dateRangeLabel($previousStart, $previousEnd),
+                'orders' => $this->comparisonMetric(
+                    (float) $metrics['totalOrders'],
+                    (float) $previousOrders['orders'],
+                    true,
+                ),
+                'items' => $this->comparisonMetric(
+                    (float) $metrics['totalItems'],
+                    (float) $previousOrders['items'],
+                    true,
+                ),
+                'netRevenue' => $this->comparisonMetric(
+                    (float) $metrics['netRevenue'],
+                    $previousFinancials['revenue'] - $previousFinancials['refunds'],
+                ),
+            ],
+            'trend' => $this->buildTrend(
+                $periodStart,
+                $periodEnd,
+                $granularity,
+                $this->orderTrendAggregates($periodStart, $periodEnd, $granularity),
+                $this->financialTrendAggregates($periodStart, $periodEnd, $granularity),
+            ),
         ];
     }
 
@@ -305,6 +353,307 @@ class RestaurantOrderReport extends Page
             'collectedOrderCount' => $collectedOrderCount,
             'averageOrderValue' => $collectedOrderCount === 0 ? 0.0 : $revenue / $collectedOrderCount,
         ];
+    }
+
+    /**
+     * Returns the immediately preceding inclusive period with the same day count.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function previousPeriodBounds(Carbon $periodStart, Carbon $periodEnd): array
+    {
+        $days = (int) $periodStart->copy()->startOfDay()
+            ->diffInDays($periodEnd->copy()->startOfDay()) + 1;
+        $previousEnd = $periodStart->copy()->subDay()->endOfDay();
+        $previousStart = $previousEnd->copy()->subDays($days - 1)->startOfDay();
+
+        return [$previousStart, $previousEnd];
+    }
+
+    /**
+     * Calculates order and item totals in one query for a comparison period.
+     *
+     * @return array{orders: int, items: int}
+     */
+    private function orderAggregates(Carbon $periodStart, Carbon $periodEnd): array
+    {
+        $totals = RestaurantOrder::query()
+            ->leftJoin(
+                'restaurant_order_items',
+                'restaurant_order_items.restaurant_order_id',
+                '=',
+                'restaurant_orders.id',
+            )
+            ->whereBetween('restaurant_orders.created_at', [$periodStart, $periodEnd])
+            ->selectRaw('COUNT(DISTINCT restaurant_orders.id) as total_orders')
+            ->selectRaw('COALESCE(SUM(restaurant_order_items.quantity), 0) as total_items')
+            ->first();
+
+        return [
+            'orders' => (int) ($totals->total_orders ?? 0),
+            'items' => (int) ($totals->total_items ?? 0),
+        ];
+    }
+
+    /**
+     * Calculates collection and refund movements in one comparison-period query.
+     *
+     * @return array{revenue: float, refunds: float}
+     */
+    private function financialAggregates(Carbon $periodStart, Carbon $periodEnd): array
+    {
+        $totals = Payment::query()
+            ->whereNotNull('restaurant_order_id')
+            ->where(function (Builder $query) use ($periodStart, $periodEnd): void {
+                $query
+                    ->where(function (Builder $collectionQuery) use ($periodStart, $periodEnd): void {
+                        $collectionQuery
+                            ->whereIn('payment_status', ['paid', 'completed', 'refunded', 'refund'])
+                            ->whereBetween('created_at', [$periodStart, $periodEnd]);
+                    })
+                    ->orWhereBetween('refunded_at', [$periodStart, $periodEnd]);
+            })
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN payment_status IN ('paid', 'completed', 'refunded', 'refund') AND created_at BETWEEN ? AND ? THEN amount ELSE 0 END), 0) as revenue",
+                [$periodStart, $periodEnd],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN refunded_at BETWEEN ? AND ? THEN amount ELSE 0 END), 0) as refunds',
+                [$periodStart, $periodEnd],
+            )
+            ->first();
+
+        return [
+            'revenue' => (float) ($totals->revenue ?? 0),
+            'refunds' => (float) ($totals->refunds ?? 0),
+        ];
+    }
+
+    /**
+     * Selects a readable chart resolution without generating excessive buckets.
+     */
+    private function trendGranularity(Carbon $periodStart, Carbon $periodEnd): string
+    {
+        $days = (int) $periodStart->copy()->startOfDay()
+            ->diffInDays($periodEnd->copy()->startOfDay()) + 1;
+
+        return match (true) {
+            $days === 1 => 'hour',
+            $days <= 45 => 'day',
+            $days <= 730 => 'month',
+            default => 'year',
+        };
+    }
+
+    /**
+     * Groups order counts and item quantities into one set of time buckets.
+     *
+     * @return Collection<string, object>
+     */
+    private function orderTrendAggregates(
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        string $granularity,
+    ): Collection {
+        $expression = $this->bucketExpression('restaurant_orders.created_at', $granularity);
+
+        return RestaurantOrder::query()
+            ->leftJoin(
+                'restaurant_order_items',
+                'restaurant_order_items.restaurant_order_id',
+                '=',
+                'restaurant_orders.id',
+            )
+            ->whereBetween('restaurant_orders.created_at', [$periodStart, $periodEnd])
+            ->selectRaw("{$expression} as bucket")
+            ->selectRaw('COUNT(DISTINCT restaurant_orders.id) as order_count')
+            ->selectRaw('COALESCE(SUM(restaurant_order_items.quantity), 0) as item_count')
+            ->groupByRaw($expression)
+            ->get()
+            ->keyBy(fn (object $aggregate): string => (string) $aggregate->bucket);
+    }
+
+    /**
+     * Groups collection and refund events in one database round trip.
+     *
+     * @return Collection<string, array{collected: float, refunds: float}>
+     */
+    private function financialTrendAggregates(
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        string $granularity,
+    ): Collection {
+        $collectionExpression = $this->bucketExpression('created_at', $granularity);
+        $refundExpression = $this->bucketExpression('refunded_at', $granularity);
+        $collections = Payment::query()
+            ->whereNotNull('restaurant_order_id')
+            ->whereIn('payment_status', ['paid', 'completed', 'refunded', 'refund'])
+            ->whereBetween('created_at', [$periodStart, $periodEnd])
+            ->selectRaw("{$collectionExpression} as bucket")
+            ->selectRaw('SUM(amount) as collected')
+            ->selectRaw('0 as refunds')
+            ->groupByRaw($collectionExpression);
+        $refunds = Payment::query()
+            ->whereNotNull('restaurant_order_id')
+            ->whereNotNull('refunded_at')
+            ->whereBetween('refunded_at', [$periodStart, $periodEnd])
+            ->selectRaw("{$refundExpression} as bucket")
+            ->selectRaw('0 as collected')
+            ->selectRaw('SUM(amount) as refunds')
+            ->groupByRaw($refundExpression);
+
+        return $collections
+            ->unionAll($refunds)
+            ->get()
+            ->groupBy(fn (object $aggregate): string => (string) $aggregate->bucket)
+            ->map(fn (Collection $aggregates): array => [
+                'collected' => (float) $aggregates->sum('collected'),
+                'refunds' => (float) $aggregates->sum('refunds'),
+            ]);
+    }
+
+    /**
+     * Builds every selected-period chart bucket, including periods without activity.
+     *
+     * @param  Collection<string, object>  $orderTrend
+     * @param  Collection<string, array{collected: float, refunds: float}>  $financialTrend
+     * @return array{
+     *     granularity: string,
+     *     labels: list<string>,
+     *     orders: list<int>,
+     *     items: list<int>,
+     *     collected: list<float>,
+     *     refunds: list<float>,
+     *     netRevenue: list<float>
+     * }
+     */
+    private function buildTrend(
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        string $granularity,
+        Collection $orderTrend,
+        Collection $financialTrend,
+    ): array {
+        $cursor = match ($granularity) {
+            'hour' => $periodStart->copy()->startOfHour(),
+            'day' => $periodStart->copy()->startOfDay(),
+            'month' => $periodStart->copy()->startOfMonth(),
+            default => $periodStart->copy()->startOfYear(),
+        };
+        $labels = [];
+        $orders = [];
+        $items = [];
+        $collected = [];
+        $refunds = [];
+
+        while ($cursor->lessThanOrEqualTo($periodEnd)) {
+            $key = $this->bucketKey($cursor, $granularity);
+            $orderAggregate = $orderTrend->get($key);
+            $financialAggregate = $financialTrend->get($key, ['collected' => 0.0, 'refunds' => 0.0]);
+
+            $labels[] = match ($granularity) {
+                'hour' => $cursor->format('g A'),
+                'day' => $cursor->format('M j'),
+                'month' => $cursor->format('M Y'),
+                default => $cursor->format('Y'),
+            };
+            $orders[] = (int) ($orderAggregate?->order_count ?? 0);
+            $items[] = (int) ($orderAggregate?->item_count ?? 0);
+            $collected[] = (float) $financialAggregate['collected'];
+            $refunds[] = (float) $financialAggregate['refunds'];
+
+            match ($granularity) {
+                'hour' => $cursor->addHour(),
+                'day' => $cursor->addDay(),
+                'month' => $cursor->addMonth(),
+                default => $cursor->addYear(),
+            };
+        }
+
+        return [
+            'granularity' => $granularity,
+            'labels' => $labels,
+            'orders' => $orders,
+            'items' => $items,
+            'collected' => $collected,
+            'refunds' => $refunds,
+            'netRevenue' => array_map(
+                fn (float $amount, int $index): float => $amount - $refunds[$index],
+                $collected,
+                array_keys($collected),
+            ),
+        ];
+    }
+
+    /**
+     * Returns a database-specific expression for a supported timestamp bucket.
+     */
+    private function bucketExpression(string $column, string $granularity): string
+    {
+        $driver = Payment::query()->getModel()->getConnection()->getDriverName();
+
+        return match ($driver) {
+            'sqlite' => match ($granularity) {
+                'hour' => "strftime('%Y-%m-%d %H:00:00', {$column})",
+                'day' => "strftime('%Y-%m-%d', {$column})",
+                'month' => "strftime('%Y-%m-01', {$column})",
+                default => "strftime('%Y-01-01', {$column})",
+            },
+            'pgsql' => match ($granularity) {
+                'hour' => "to_char(date_trunc('hour', {$column}), 'YYYY-MM-DD HH24:00:00')",
+                'day' => "to_char({$column}, 'YYYY-MM-DD')",
+                'month' => "to_char({$column}, 'YYYY-MM-01')",
+                default => "to_char({$column}, 'YYYY-01-01')",
+            },
+            default => match ($granularity) {
+                'hour' => "DATE_FORMAT({$column}, '%Y-%m-%d %H:00:00')",
+                'day' => "DATE_FORMAT({$column}, '%Y-%m-%d')",
+                'month' => "DATE_FORMAT({$column}, '%Y-%m-01')",
+                default => "DATE_FORMAT({$column}, '%Y-01-01')",
+            },
+        };
+    }
+
+    /**
+     * Formats a chart cursor to match its database aggregate key.
+     */
+    private function bucketKey(Carbon $cursor, string $granularity): string
+    {
+        return match ($granularity) {
+            'hour' => $cursor->format('Y-m-d H:00:00'),
+            'day' => $cursor->format('Y-m-d'),
+            'month' => $cursor->format('Y-m-01'),
+            default => $cursor->format('Y-01-01'),
+        };
+    }
+
+    /**
+     * Produces current, previous, absolute-change, and percentage values.
+     *
+     * @return array{current: float|int, previous: float|int, difference: float|int, percentageChange: float|null}
+     */
+    private function comparisonMetric(float $current, float $previous, bool $wholeNumbers = false): array
+    {
+        $difference = $current - $previous;
+
+        return [
+            'current' => $wholeNumbers ? (int) $current : $current,
+            'previous' => $wholeNumbers ? (int) $previous : $previous,
+            'difference' => $wholeNumbers ? (int) $difference : $difference,
+            'percentageChange' => $previous === 0.0
+                ? null
+                : round(($difference / abs($previous)) * 100, 1),
+        ];
+    }
+
+    /**
+     * Formats an inclusive period for the comparison widget.
+     */
+    private function dateRangeLabel(Carbon $start, Carbon $end): string
+    {
+        return $start->isSameDay($end)
+            ? $start->format('M j, Y')
+            : $start->format('M j, Y').' to '.$end->format('M j, Y');
     }
 
     /**

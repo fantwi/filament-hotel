@@ -249,7 +249,7 @@ class RestaurantOrderReportTest extends TestCase
             'Current active orders across all order dates',
             'Not affected by the selected report period',
         ]);
-        self::assertCount(7, $reportQueries, $reportQueries->implode(PHP_EOL));
+        self::assertCount(11, $reportQueries, $reportQueries->implode(PHP_EOL));
     }
 
     public function test_restaurant_report_exposes_an_accessible_loading_state_for_result_refreshes(): void
@@ -403,6 +403,9 @@ class RestaurantOrderReportTest extends TestCase
         $response->assertSee('1 active order is currently in the live kitchen queue');
         $response->assertSee('Change reporting period');
         $response->assertDontSee('Orders received');
+        $response->assertDontSee('Restaurant performance comparison');
+        $response->assertDontSee('Order volume trend');
+        $response->assertDontSee('Restaurant revenue trend');
         $response->assertDontSee('Payment status');
         $response->assertDontSee('Order register');
 
