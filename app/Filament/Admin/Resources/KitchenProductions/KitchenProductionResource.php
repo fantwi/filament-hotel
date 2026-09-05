@@ -5,6 +5,8 @@ namespace App\Filament\Admin\Resources\KitchenProductions;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\CreateKitchenProduction;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\EditKitchenProduction;
 use App\Filament\Admin\Resources\KitchenProductions\Pages\ListKitchenProductions;
+use App\Filament\Admin\Resources\KitchenProductions\Pages\ViewKitchenProduction;
+use App\Filament\Admin\Resources\KitchenProductions\Schemas\KitchenProductionInfolist;
 use App\Filament\Admin\Resources\SecureResource;
 use App\Models\Ingredient;
 use App\Models\KitchenProduction;
@@ -16,6 +18,7 @@ use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
@@ -45,6 +48,8 @@ use Illuminate\Validation\ValidationException;
 class KitchenProductionResource extends SecureResource
 {
     protected static ?string $model = KitchenProduction::class;
+
+    protected static ?string $recordTitleAttribute = 'batch_reference';
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
@@ -500,6 +505,14 @@ class KitchenProductionResource extends SecureResource
     }
 
     /**
+     * Configures the read-only batch and inventory details page.
+     */
+    public static function infolist(Schema $schema): Schema
+    {
+        return KitchenProductionInfolist::configure($schema);
+    }
+
+    /**
      * Configures the table data source, columns, and actions.
      */
     public static function table(Table $table): Table
@@ -593,6 +606,7 @@ class KitchenProductionResource extends SecureResource
             ])
             ->defaultSort('production_date', 'desc')
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
                 Action::make('void')
                     ->label('Void batch')
@@ -853,6 +867,11 @@ class KitchenProductionResource extends SecureResource
      */
     public static function getPages(): array
     {
-        return ['index' => ListKitchenProductions::route('/'), 'create' => CreateKitchenProduction::route('/create'), 'edit' => EditKitchenProduction::route('/{record}/edit')];
+        return [
+            'index' => ListKitchenProductions::route('/'),
+            'create' => CreateKitchenProduction::route('/create'),
+            'view' => ViewKitchenProduction::route('/{record}'),
+            'edit' => EditKitchenProduction::route('/{record}/edit'),
+        ];
     }
 }

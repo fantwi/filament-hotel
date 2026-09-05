@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Str;
 
 /**
@@ -73,5 +74,16 @@ class KitchenProduction extends Model
     public function ingredients(): HasMany
     {
         return $this->hasMany(KitchenProductionIngredient::class);
+    }
+
+    /**
+     * Returns immutable stock consumption and reversal entries for this batch.
+     */
+    public function stockMovements(): MorphMany
+    {
+        return $this->morphMany(KitchenStockMovement::class, 'reference')
+            ->chaperone('reference')
+            ->oldest('occurred_at')
+            ->oldest('id');
     }
 }
