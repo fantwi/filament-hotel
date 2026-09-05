@@ -74,6 +74,7 @@ class RestaurantOrderReport extends Page
     public function getReportMetrics(): array
     {
         $totals = $this->getOrdersQuery()
+            ->withoutEagerLoads()
             ->selectRaw('COUNT(*) as total_orders')
             ->selectRaw("SUM(CASE WHEN payment_status = 'completed' AND status != 'cancelled' THEN 1 ELSE 0 END) as paid_orders")
             ->selectRaw("SUM(CASE WHEN payment_status = 'pending' AND status != 'cancelled' THEN 1 ELSE 0 END) as pending_orders")

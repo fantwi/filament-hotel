@@ -6,9 +6,14 @@ use App\Filament\Admin\Pages\RestaurantOrderReport;
 use App\Filament\Admin\Widgets\RestaurantOrderReportStats;
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
+use App\Models\User;
+use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class RestaurantOrderReportTest extends TestCase
@@ -30,23 +35,49 @@ class RestaurantOrderReportTest extends TestCase
         self::assertSame(0, $report['totalOrders']);
     }
 
-    public function test_restaurant_report_stats_widget_uses_period_aware_overview_stats(): void
+    public function test_restaurant_report_stats_widget_uses_precomputed_data_without_queries(): void
     {
         self::assertTrue(is_subclass_of(RestaurantOrderReportStats::class, StatsOverviewWidget::class));
 
         $widget = new RestaurantOrderReportStats;
-        $widget->period = 'weekly';
+        $widget->reportData = [
+            'totalOrders' => 12,
+            'totalItems' => 30,
+            'revenue' => 1250.0,
+            'refunds' => 100.0,
+            'netRevenue' => 1150.0,
+            'outstanding' => 450.0,
+            'averageOrderValue' => 625.0,
+            'paymentRate' => 75.0,
+        ];
+        $widget->reportPeriodLabel = 'Quarterly';
         $method = new \ReflectionMethod($widget, 'getStats');
         $method->setAccessible(true);
 
-        $stats = $method->invoke($widget);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
 
+        try {
+            $stats = $method->invoke($widget);
+            $queries = DB::getQueryLog();
+        } finally {
+            DB::disableQueryLog();
+            DB::flushQueryLog();
+        }
+
+        self::assertCount(0, $queries, 'The stats widget should not repeat the report database queries.');
         self::assertCount(4, $stats);
+        self::assertSame('Orders received', $stats[0]->getLabel());
+        self::assertSame('12', $stats[0]->getValue());
+        self::assertSame('30 item(s) in Quarterly', $stats[0]->getDescription());
         self::assertSame('Net revenue', $stats[1]->getLabel());
-        self::assertSame('GHS 0.00', $stats[1]->getValue());
-        self::assertSame('GHS 0.00 collected · GHS 0.00 refunded', $stats[1]->getDescription());
+        self::assertSame('GHS 1,150.00', $stats[1]->getValue());
+        self::assertSame('GHS 1,250.00 collected · GHS 100.00 refunded', $stats[1]->getDescription());
+        self::assertSame('GHS 450.00', $stats[2]->getValue());
         self::assertSame('Remaining balance on open orders', $stats[2]->getDescription());
         self::assertSame('Average collected order', $stats[3]->getLabel());
+        self::assertSame('GHS 625.00', $stats[3]->getValue());
+        self::assertSame('75.0% payment completion', $stats[3]->getDescription());
     }
 
     public function test_restaurant_order_register_uses_server_side_pagination(): void
@@ -59,6 +90,49 @@ class RestaurantOrderReportTest extends TestCase
 
         self::assertInstanceOf(LengthAwarePaginator::class, $report['orders']);
         self::assertSame(0, $report['orders']->total());
+    }
+
+    public function test_restaurant_report_page_calculates_its_metrics_only_once(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $order = RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-REPORT-ONCE',
+            'subtotal' => 120,
+            'total' => 120,
+            'status' => 'served',
+            'payment_status' => 'completed',
+        ]);
+        Payment::query()->create([
+            'restaurant_order_id' => $order->id,
+            'amount' => 120,
+            'method' => 'card',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'FOOD-REPORT-ONCE-PAYMENT',
+        ]);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $component = Livewire::actingAs($accountant)
+                ->test(RestaurantOrderReport::class)
+                ->assertSuccessful();
+            $reportQueries = collect(DB::getQueryLog())
+                ->pluck('query')
+                ->filter(fn (string $query): bool => (bool) preg_match(
+                    '/\b(?:from|join)\s+["`]?(?:restaurant_orders|restaurant_order_items|payments)["`]?\b/i',
+                    $query,
+                ));
+        } finally {
+            DB::disableQueryLog();
+            DB::flushQueryLog();
+        }
+
+        $component->assertSee('GHS 120.00 collected · GHS 0.00 refunded');
+        self::assertCount(8, $reportQueries, $reportQueries->implode(PHP_EOL));
     }
 
     public function test_cancelled_orders_do_not_inflate_order_payment_outcome_metrics(): void

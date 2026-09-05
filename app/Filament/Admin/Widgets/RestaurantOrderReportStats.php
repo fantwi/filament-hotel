@@ -2,8 +2,6 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Filament\Admin\Pages\RestaurantOrderReport;
-use App\Support\Reporting\ReportPeriod;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -14,14 +12,19 @@ class RestaurantOrderReportStats extends StatsOverviewWidget
 {
     protected int|string|array $columnSpan = 'full';
 
-    /**
-     * The report period selected on the parent restaurant report page.
-     */
-    public string $period = 'monthly';
+    /** @var array{totalOrders: int, totalItems: int, revenue: float, refunds: float, netRevenue: float, outstanding: float, averageOrderValue: float, paymentRate: float} */
+    public array $reportData = [
+        'totalOrders' => 0,
+        'totalItems' => 0,
+        'revenue' => 0.0,
+        'refunds' => 0.0,
+        'netRevenue' => 0.0,
+        'outstanding' => 0.0,
+        'averageOrderValue' => 0.0,
+        'paymentRate' => 0.0,
+    ];
 
-    public string $startDate = '';
-
-    public string $endDate = '';
+    public string $reportPeriodLabel = 'Monthly';
 
     /**
      * Determines whether the current user may view this feature.
@@ -42,16 +45,11 @@ class RestaurantOrderReportStats extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
-        $reportPage = new RestaurantOrderReport;
-        $reportPage->period = $this->validPeriod($this->period);
-        $reportPage->startDate = $this->startDate;
-        $reportPage->endDate = $this->endDate;
-        $report = $reportPage->getReportMetrics();
-        $periodLabel = $reportPage->periodLabel();
+        $report = $this->reportData;
 
         return [
             Stat::make('Orders received', number_format((int) $report['totalOrders']))
-                ->description(number_format((int) $report['totalItems']).' item(s) in '.$periodLabel)
+                ->description(number_format((int) $report['totalItems']).' item(s) in '.$this->reportPeriodLabel)
                 ->icon('heroicon-o-shopping-bag')
                 ->color('primary'),
             Stat::make('Net revenue', 'GHS '.number_format((float) $report['netRevenue'], 2))
@@ -67,15 +65,5 @@ class RestaurantOrderReportStats extends StatsOverviewWidget
                 ->icon('heroicon-o-calculator')
                 ->color('info'),
         ];
-    }
-
-    /**
-     * Keeps nested widget state within the periods supported by the report page.
-     */
-    private function validPeriod(string $period): string
-    {
-        return array_key_exists($period, ReportPeriod::options())
-            ? $period
-            : 'monthly';
     }
 }

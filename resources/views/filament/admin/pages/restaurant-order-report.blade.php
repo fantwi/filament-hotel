@@ -21,7 +21,19 @@
         </x-filament::section>
 
         <section aria-label="Restaurant order overview">
-            @livewire(\App\Filament\Admin\Widgets\RestaurantOrderReportStats::class, ['period' => $this->period, 'startDate' => $this->startDate, 'endDate' => $this->endDate], key('restaurant-order-report-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
+            @livewire(\App\Filament\Admin\Widgets\RestaurantOrderReportStats::class, [
+                'reportData' => [
+                    'totalOrders' => $report['totalOrders'],
+                    'totalItems' => $report['totalItems'],
+                    'revenue' => $report['revenue'],
+                    'refunds' => $report['refunds'],
+                    'netRevenue' => $report['netRevenue'],
+                    'outstanding' => $report['outstanding'],
+                    'averageOrderValue' => $report['averageOrderValue'],
+                    'paymentRate' => $report['paymentRate'],
+                ],
+                'reportPeriodLabel' => $this->periodLabel(),
+            ], key('restaurant-order-report-stats-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
         <section class="grid gap-4 lg:grid-cols-3">
