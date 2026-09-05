@@ -25,6 +25,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -156,6 +157,7 @@ class KitchenProductionResource extends SecureResource
                                         ])
                                         ->all())
                                     ->searchable()
+                                    ->live()
                                     ->required()
                                     ->distinct()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
@@ -164,10 +166,22 @@ class KitchenProductionResource extends SecureResource
                                     ->numeric()
                                     ->minValue(.001)
                                     ->step(.001)
+                                    ->helperText('Enter this amount in the selected ingredient’s stock unit.')
                                     ->required(),
-                                TextInput::make('unit')
-                                    ->maxLength(30)
-                                    ->helperText('Use the ingredient stock unit, such as kg, litres, or pieces.'),
+                                TextEntry::make('stock_unit')
+                                    ->label('Stock Unit')
+                                    ->state(function (Get $get): string {
+                                        $ingredientId = $get('ingredient_id');
+
+                                        if (blank($ingredientId)) {
+                                            return 'Select an ingredient';
+                                        }
+
+                                        return Ingredient::query()->whereKey($ingredientId)->value('unit')
+                                            ?? 'Ingredient unavailable';
+                                    })
+                                    ->badge()
+                                    ->color(fn (string $state): string => $state === 'Ingredient unavailable' ? 'danger' : 'info'),
                                 TextInput::make('notes')->maxLength(255),
                             ])
                             ->minItems(1)

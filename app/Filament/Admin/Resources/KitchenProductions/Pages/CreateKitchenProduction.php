@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\KitchenProductions\Pages;
 
 use App\Filament\Admin\Resources\KitchenProductions\KitchenProductionResource;
+use App\Models\Ingredient;
 use App\Models\KitchenProduction;
 use App\Services\KitchenStockService;
 use Filament\Resources\Pages\CreateRecord;
@@ -35,13 +36,17 @@ class CreateKitchenProduction extends CreateRecord
             $ingredients = $data['ingredients'] ?? [];
             unset($data['ingredients']);
 
+            $ingredientUnits = Ingredient::query()
+                ->whereKey(collect($ingredients)->pluck('ingredient_id')->filter()->unique())
+                ->pluck('unit', 'id');
+
             $production = KitchenProduction::create($data);
 
             $production->ingredients()->createMany(array_map(
                 fn (array $ingredient): array => [
                     'ingredient_id' => $ingredient['ingredient_id'],
                     'quantity_used' => $ingredient['quantity_used'],
-                    'unit' => $ingredient['unit'] ?? null,
+                    'unit' => $ingredientUnits->get((int) $ingredient['ingredient_id']),
                     'notes' => $ingredient['notes'] ?? null,
                 ],
                 $ingredients,
