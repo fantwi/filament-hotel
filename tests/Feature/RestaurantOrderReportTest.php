@@ -4,8 +4,12 @@ namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\RestaurantOrderReport;
 use App\Filament\Admin\Widgets\RestaurantOrderReportStats;
+use App\Models\Guest;
+use App\Models\MenuCategory;
+use App\Models\MenuItem;
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
+use App\Models\RestaurantOrderItem;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Widgets\StatsOverviewWidget;
@@ -131,6 +135,63 @@ class RestaurantOrderReportTest extends TestCase
         self::assertSame(0, $report['orders']->total());
     }
 
+    public function test_restaurant_order_register_aggregates_item_quantities_without_loading_item_models(): void
+    {
+        $this->travelTo('2026-09-05 09:00:00');
+        $guest = Guest::query()->create([
+            'first_name' => 'Ama',
+            'last_name' => 'Mensah',
+            'email' => 'ama@example.test',
+        ]);
+        $menuItem = $this->menuItem('aggregated-items');
+        $order = RestaurantOrder::query()->create([
+            'guest_id' => $guest->id,
+            'order_number' => 'FOOD-AGGREGATED-ITEMS',
+            'ordering_channel' => 'web',
+            'subtotal' => 200,
+            'total' => 200,
+            'status' => 'confirmed',
+            'payment_status' => 'completed',
+        ]);
+
+        foreach ([2, 3] as $quantity) {
+            RestaurantOrderItem::query()->create([
+                'restaurant_order_id' => $order->id,
+                'menu_item_id' => $menuItem->id,
+                'item_name' => $menuItem->name,
+                'quantity' => $quantity,
+                'unit_price' => 40,
+                'total_price' => 40 * $quantity,
+            ]);
+        }
+
+        $reportPage = new RestaurantOrderReport;
+        $reportPage->period = 'custom';
+        $reportPage->startDate = '2026-09-01';
+        $reportPage->endDate = '2026-09-30';
+        $reportedOrder = $reportPage->paginatedOrders()->first();
+
+        self::assertFalse($reportedOrder->relationLoaded('items'));
+        self::assertSame(5, (int) $reportedOrder->items_sum_quantity);
+        self::assertTrue($reportedOrder->relationLoaded('guest'));
+        self::assertEqualsCanonicalizing(
+            ['id', 'first_name', 'last_name'],
+            array_keys($reportedOrder->guest->getAttributes()),
+        );
+        self::assertEqualsCanonicalizing([
+            'id',
+            'guest_id',
+            'order_number',
+            'customer_email',
+            'ordering_channel',
+            'status',
+            'payment_status',
+            'total',
+            'created_at',
+            'items_sum_quantity',
+        ], array_keys($reportedOrder->getAttributes()));
+    }
+
     public function test_restaurant_report_page_calculates_its_metrics_only_once(): void
     {
         Role::findOrCreate('accountant', 'web');
@@ -143,6 +204,15 @@ class RestaurantOrderReportTest extends TestCase
             'total' => 120,
             'status' => 'served',
             'payment_status' => 'completed',
+        ]);
+        $menuItem = $this->menuItem('rendered-total');
+        RestaurantOrderItem::query()->create([
+            'restaurant_order_id' => $order->id,
+            'menu_item_id' => $menuItem->id,
+            'item_name' => $menuItem->name,
+            'quantity' => 4,
+            'unit_price' => 30,
+            'total_price' => 120,
         ]);
         Payment::query()->create([
             'restaurant_order_id' => $order->id,
@@ -171,12 +241,13 @@ class RestaurantOrderReportTest extends TestCase
         }
 
         $component->assertSee('GHS 120.00 collected · GHS 0.00 refunded');
+        $component->assertSee('4 item(s)');
         $component->assertSeeInOrder([
             'Live kitchen queue',
             'Current active orders across all order dates',
             'Not affected by the selected report period',
         ]);
-        self::assertCount(8, $reportQueries, $reportQueries->implode(PHP_EOL));
+        self::assertCount(7, $reportQueries, $reportQueries->implode(PHP_EOL));
     }
 
     public function test_cancelled_orders_do_not_inflate_order_payment_outcome_metrics(): void
@@ -331,5 +402,20 @@ class RestaurantOrderReportTest extends TestCase
         self::assertStringContainsString('hasPages()', $view);
         self::assertStringContainsString('$report[\'orders\']->links()', $view);
         self::assertStringContainsString('Rows per page', $view);
+    }
+
+    private function menuItem(string $suffix): MenuItem
+    {
+        $category = MenuCategory::query()->create([
+            'name' => 'Main meals',
+            'slug' => 'main-meals-'.$suffix,
+        ]);
+
+        return MenuItem::query()->create([
+            'menu_category_id' => $category->id,
+            'name' => 'Jollof rice',
+            'slug' => 'jollof-rice-'.$suffix,
+            'price' => 40,
+        ]);
     }
 }

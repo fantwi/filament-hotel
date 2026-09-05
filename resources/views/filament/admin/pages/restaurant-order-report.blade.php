@@ -90,7 +90,7 @@
                             <p class="whitespace-nowrap text-sm font-bold text-primary-600 dark:text-primary-400">GHS {{ number_format($order->total, 2) }}</p>
                         </div>
                         <dl class="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-gray-200 p-3 text-sm dark:border-white/10">
-                            <div><dt class="text-xs text-gray-500 dark:text-gray-400">Items</dt><dd class="mt-1 font-medium">{{ number_format($order->items->sum('quantity')) }}</dd></div>
+                            <div><dt class="text-xs text-gray-500 dark:text-gray-400">Items</dt><dd class="mt-1 font-medium">{{ number_format($order->items_sum_quantity ?? 0) }}</dd></div>
                             <div><dt class="text-xs text-gray-500 dark:text-gray-400">Channel</dt><dd class="mt-1 capitalize font-medium">{{ $order->ordering_channel ?: 'web' }}</dd></div>
                             <div><dt class="text-xs text-gray-500 dark:text-gray-400">Fulfillment</dt><dd class="mt-1"><x-filament::badge :color="$statusColor">{{ str_replace('_', ' ', ucfirst($order->status)) }}</x-filament::badge></dd></div>
                             <div><dt class="text-xs text-gray-500 dark:text-gray-400">Payment</dt><dd class="mt-1"><x-filament::badge :color="$paymentColor">{{ str_replace('_', ' ', ucfirst($order->payment_status)) }}</x-filament::badge></dd></div>
@@ -134,7 +134,7 @@
                                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $order->guest?->full_name ?: $order->customer_email ?: 'Walk-in guest' }}</p>
                                     </th>
                                     <td class="px-4 py-4">
-                                        <p class="font-medium">{{ number_format($order->items->sum('quantity')) }} item(s)</p>
+                                        <p class="font-medium">{{ number_format($order->items_sum_quantity ?? 0) }} item(s)</p>
                                         <p class="mt-1 text-xs capitalize text-gray-500 dark:text-gray-400">{{ $order->ordering_channel ?: 'web' }} order</p>
                                     </td>
                                     <td class="px-4 py-4"><x-filament::badge :color="$statusColor">{{ str_replace('_', ' ', ucfirst($order->status)) }}</x-filament::badge></td>

@@ -39,7 +39,7 @@ class RestaurantOrderReport extends Page
     public function getOrdersQuery(): Builder
     {
         return $this->forReportPeriod(
-            RestaurantOrder::query()->with(['guest', 'items']),
+            RestaurantOrder::query(),
         );
     }
 
@@ -51,6 +51,19 @@ class RestaurantOrderReport extends Page
         $perPage = max(10, min(100, $this->perPage));
 
         return $this->getOrdersQuery()
+            ->select([
+                'id',
+                'guest_id',
+                'order_number',
+                'customer_email',
+                'ordering_channel',
+                'status',
+                'payment_status',
+                'total',
+                'created_at',
+            ])
+            ->with('guest:id,first_name,last_name')
+            ->withSum('items', 'quantity')
             ->latest()
             ->paginate($perPage, ['*'], 'orders_page');
     }
@@ -77,7 +90,6 @@ class RestaurantOrderReport extends Page
             ->kitchenQueue()
             ->selectRaw('COUNT(*)');
         $totals = $this->getOrdersQuery()
-            ->withoutEagerLoads()
             ->selectRaw('COUNT(*) as total_orders')
             ->selectRaw("SUM(CASE WHEN payment_status = 'completed' AND status != 'cancelled' THEN 1 ELSE 0 END) as paid_orders")
             ->selectRaw("SUM(CASE WHEN payment_status = 'pending' AND status != 'cancelled' THEN 1 ELSE 0 END) as pending_orders")
