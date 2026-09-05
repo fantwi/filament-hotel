@@ -107,7 +107,7 @@
                 </div>
             </div>
 
-            <div data-kitchen-production-mobile-register class="space-y-4 md:hidden" aria-label="Production report cards">
+            <div data-kitchen-production-mobile-register class="grid gap-4 lg:grid-cols-2 2xl:hidden" aria-label="Production report cards">
                 @forelse ($report['rows'] as $row)
                     <article class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
                         <div class="flex items-start justify-between gap-3">
@@ -140,7 +140,7 @@
                 @endforelse
             </div>
 
-            <div data-kitchen-production-desktop-register class="hidden md:block">
+            <div data-kitchen-production-desktop-register class="hidden 2xl:block">
                 <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
                     <table class="w-full min-w-[1450px] border-separate border-spacing-0 text-left text-sm">
                         <caption class="sr-only">Kitchen production, sales, and closing finished-food balance report</caption>

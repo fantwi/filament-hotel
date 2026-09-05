@@ -137,6 +137,33 @@ class KitchenProductionReportRegisterTest extends TestCase
             ->assertSee('Register filters do not change the period overview metrics.');
     }
 
+    public function test_report_keeps_cards_through_laptop_widths_and_defers_the_wide_table(): void
+    {
+        $html = Livewire::actingAs($this->authorizedUser())
+            ->test(KitchenProductionReport::class)
+            ->assertSuccessful()
+            ->html();
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $cardRegister = $xpath->query('//*[@data-kitchen-production-mobile-register]')?->item(0);
+        $tableRegister = $xpath->query('//*[@data-kitchen-production-desktop-register]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $cardRegister);
+        self::assertInstanceOf(\DOMElement::class, $tableRegister);
+
+        $cardClasses = preg_split('/\s+/', trim($cardRegister->getAttribute('class')));
+        $tableClasses = preg_split('/\s+/', trim($tableRegister->getAttribute('class')));
+
+        self::assertContains('grid', $cardClasses);
+        self::assertContains('lg:grid-cols-2', $cardClasses);
+        self::assertContains('2xl:hidden', $cardClasses);
+        self::assertNotContains('md:hidden', $cardClasses);
+        self::assertContains('hidden', $tableClasses);
+        self::assertContains('2xl:block', $tableClasses);
+        self::assertNotContains('md:block', $tableClasses);
+    }
+
     /**
      * @return array{MenuItem, MenuItem, MenuItem}
      */
