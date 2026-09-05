@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\KitchenProductionReport;
+use App\Filament\Admin\Resources\MenuItems\MenuItemResource;
 use App\Models\KitchenProduction;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
@@ -13,6 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class KitchenProductionReportRegisterTest extends TestCase
@@ -139,6 +141,9 @@ class KitchenProductionReportRegisterTest extends TestCase
 
     public function test_report_keeps_cards_through_laptop_widths_and_defers_the_wide_table(): void
     {
+        $this->travelTo('2026-09-05 09:00:00');
+        $this->reportFixtures();
+
         $html = Livewire::actingAs($this->authorizedUser())
             ->test(KitchenProductionReport::class)
             ->assertSuccessful()
@@ -265,6 +270,9 @@ class KitchenProductionReportRegisterTest extends TestCase
 
     public function test_desktop_report_table_scroll_region_is_keyboard_accessible(): void
     {
+        $this->travelTo('2026-09-05 09:00:00');
+        $this->reportFixtures();
+
         $html = Livewire::actingAs($this->authorizedUser())
             ->test(KitchenProductionReport::class)
             ->assertSuccessful()
@@ -302,6 +310,76 @@ class KitchenProductionReportRegisterTest extends TestCase
         self::assertStringContainsString('dark:text-gray-200', $mobileValues->getAttribute('class'));
         self::assertStringContainsString('text-gray-700', $desktopValues->getAttribute('class'));
         self::assertStringContainsString('dark:text-gray-200', $desktopValues->getAttribute('class'));
+    }
+
+    public function test_unconfigured_report_guides_content_managers_to_menu_items(): void
+    {
+        Permission::findOrCreate('view kitchen production reports', 'web');
+        Role::findOrCreate('manager', 'web');
+        $manager = User::factory()->create(['department' => 'management']);
+        $manager->assignRole('manager');
+        $manager->givePermissionTo('view kitchen production reports');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $html = Livewire::actingAs($manager)
+            ->test(KitchenProductionReport::class)
+            ->assertSuccessful()
+            ->html();
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $emptyState = $xpath->query('//*[@data-kitchen-production-unconfigured-state]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $emptyState);
+        self::assertStringContainsString('Production tracking is not configured', $emptyState->textContent);
+        self::assertSame(
+            MenuItemResource::getUrl(),
+            $xpath->query('.//a[normalize-space()="Manage menu items"]', $emptyState)?->item(0)?->getAttribute('href'),
+        );
+        self::assertSame(0, $xpath->query('//*[@aria-label="Kitchen production overview"]')?->count());
+        self::assertSame(0, $xpath->query('//*[@data-kitchen-production-register-filters]')?->count());
+    }
+
+    public function test_inactive_period_keeps_summary_and_replaces_the_zero_register_with_guidance(): void
+    {
+        $category = MenuCategory::query()->create([
+            'name' => 'Inactive period',
+            'slug' => 'inactive-period',
+        ]);
+        $this->trackedItem($category, 'Tracked without activity', 'tracked-without-activity');
+
+        $html = Livewire::actingAs($this->authorizedUser())
+            ->test(KitchenProductionReport::class)
+            ->assertSuccessful()
+            ->html();
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $emptyState = $xpath->query('//*[@data-kitchen-production-inactive-state]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $emptyState);
+        self::assertStringContainsString('No production or sales activity in this period', $emptyState->textContent);
+        self::assertSame(
+            '#kitchen-production-report-period-controls',
+            $xpath->query('.//a[normalize-space()="Change reporting period"]', $emptyState)?->item(0)?->getAttribute('href'),
+        );
+        self::assertSame(1, $xpath->query('//*[@aria-label="Kitchen production overview"]')?->count());
+        self::assertSame(0, $xpath->query('//*[@data-kitchen-production-register-filters]')?->count());
+        self::assertSame(0, $xpath->query('//*[@data-kitchen-production-mobile-register]')?->count());
+        self::assertSame(0, $xpath->query('//*[@data-kitchen-production-desktop-register]')?->count());
+    }
+
+    public function test_active_period_preserves_the_filter_specific_empty_state(): void
+    {
+        $this->travelTo('2026-09-05 09:00:00');
+        $this->reportFixtures();
+
+        Livewire::actingAs($this->authorizedUser())
+            ->test(KitchenProductionReport::class)
+            ->set('reportSearch', 'not a tracked menu item')
+            ->assertSee('No menu items match the current register filters.')
+            ->assertDontSee('No production or sales activity in this period')
+            ->assertDontSee('Production tracking is not configured');
     }
 
     /**

@@ -2,7 +2,7 @@
     @php($report = $this->report)
 
     <div class="space-y-6">
-        <x-filament.report-period-controls from-label="From" until-label="Until" />
+        <x-filament.report-period-controls id="kitchen-production-report-period-controls" from-label="From" until-label="Until" />
 
         <section
             aria-label="Kitchen production report results"
@@ -16,10 +16,39 @@
                 wire:loading.class="pointer-events-none opacity-60"
                 wire:target="applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage"
             >
+        @if ($report['total_rows'] === 0)
+        <x-filament::section>
+            <div
+                data-kitchen-production-unconfigured-state
+                role="status"
+                aria-label="Kitchen production tracking is not configured"
+                class="flex flex-col items-center px-4 py-12 text-center sm:py-16"
+            >
+                <span class="flex h-14 w-14 items-center justify-center rounded-full bg-warning-50 text-warning-600 dark:bg-warning-500/10 dark:text-warning-300">
+                    <x-filament::icon icon="heroicon-o-cog-6-tooth" class="h-7 w-7" />
+                </span>
+                <h2 class="mt-5 text-lg font-bold tracking-tight text-gray-950 dark:text-white">Production tracking is not configured</h2>
+                <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">No menu items are configured to track kitchen production. Enable production tracking and define a production unit before using this report.</p>
+
+                @if (\App\Filament\Admin\Resources\MenuItems\MenuItemResource::canViewAny())
+                    <a
+                        href="{{ \App\Filament\Admin\Resources\MenuItems\MenuItemResource::getUrl() }}"
+                        class="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                    >
+                        Manage menu items
+                        <x-filament::icon icon="heroicon-m-arrow-right" class="h-4 w-4" />
+                    </a>
+                @else
+                    <p class="mt-4 max-w-xl text-xs leading-5 text-gray-500 dark:text-gray-400">Ask a manager or administrator to enable kitchen production tracking on the appropriate menu items.</p>
+                @endif
+            </div>
+        </x-filament::section>
+        @else
         <section aria-label="Kitchen production overview">
             @livewire(\App\Filament\Admin\Widgets\KitchenProductionReportStats::class, ['summary' => $report['summary'], 'fromDate' => $this->startDate, 'untilDate' => $this->endDate], key('kitchen-production-report-stats-'.$this->startDate.'-'.$this->endDate))
         </section>
 
+        @if ($report['has_period_activity'])
         <x-filament::section heading="Production register" description="Filter, sort, and review finished-food performance for the selected reporting period.">
             <div data-kitchen-production-register-filters class="mb-6 rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-white/10 dark:bg-white/5">
                 <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Filter production register</h2>
@@ -222,6 +251,31 @@
                 </div>
             @endif
         </x-filament::section>
+        @else
+        <x-filament::section>
+            <div
+                data-kitchen-production-inactive-state
+                role="status"
+                aria-label="No kitchen production or sales activity for selected period"
+                class="flex flex-col items-center px-4 py-12 text-center sm:py-16"
+            >
+                <span class="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-300">
+                    <x-filament::icon icon="heroicon-o-calendar-days" class="h-7 w-7" />
+                </span>
+                <h2 class="mt-5 text-lg font-bold tracking-tight text-gray-950 dark:text-white">No production or sales activity in this period</h2>
+                <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">Tracked menu items exist, but no production, wastage, finished-food stock movements, payments, or refunds were recorded during {{ strtolower($this->periodLabel()) }}.</p>
+                <p class="mt-1 max-w-xl text-sm text-gray-500 dark:text-gray-400">Opening balances remain reflected in the stock-health summary above.</p>
+                <a
+                    href="#kitchen-production-report-period-controls"
+                    class="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                >
+                    Change reporting period
+                    <x-filament::icon icon="heroicon-m-arrow-up" class="h-4 w-4" />
+                </a>
+            </div>
+        </x-filament::section>
+        @endif
+        @endif
             </div>
 
             <div

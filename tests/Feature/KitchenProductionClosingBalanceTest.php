@@ -191,6 +191,65 @@ class KitchenProductionClosingBalanceTest extends TestCase
         self::assertNull($row['sell_through']);
     }
 
+    public function test_opening_balance_alone_is_not_selected_period_activity(): void
+    {
+        $item = $this->trackedMenuItem();
+        $this->production($item, '2026-07-20', produced: 10, wasted: 0);
+
+        $report = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        );
+
+        self::assertSame(10.0, $report['rows']->sole()['opening_balance']);
+        self::assertFalse($report['has_period_activity']);
+    }
+
+    public function test_net_zero_deduction_and_reversal_are_still_selected_period_activity(): void
+    {
+        $item = $this->trackedMenuItem();
+        $this->restaurantSale(
+            $item,
+            createdAt: '2026-08-10 12:00:00',
+            quantity: 2,
+            stockDeductedAt: '2026-08-10 13:00:00',
+            stockReversedAt: '2026-08-11 09:00:00',
+        );
+
+        $report = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        );
+
+        self::assertSame(0, $report['rows']->sole()['sold_units']);
+        self::assertSame(0.0, $report['rows']->sole()['production_amount_sold']);
+        self::assertTrue($report['has_period_activity']);
+    }
+
+    public function test_activity_for_an_untracked_item_does_not_activate_the_tracked_report(): void
+    {
+        $trackedItem = $this->trackedMenuItem();
+        $untrackedItem = MenuItem::create([
+            'menu_category_id' => $trackedItem->menu_category_id,
+            'name' => 'Untracked Meal',
+            'slug' => 'untracked-meal',
+            'price' => 20,
+            'tracks_kitchen_production' => false,
+            'production_unit' => 'portion',
+            'production_usage_per_sale' => 1,
+            'low_stock_threshold' => 5,
+        ]);
+        $this->production($untrackedItem, '2026-08-10', produced: 10, wasted: 0);
+
+        $report = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        );
+
+        self::assertCount(1, $report['rows']);
+        self::assertFalse($report['has_period_activity']);
+    }
+
     private function trackedMenuItem(): MenuItem
     {
         $category = MenuCategory::create([

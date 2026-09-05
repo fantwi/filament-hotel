@@ -21,25 +21,26 @@ class KitchenProductionReportService
         $from = $from->copy()->startOfDay();
         $until = $until->copy()->endOfDay();
 
-        $fromDate = $from->toDateString();
-        $untilDate = $until->toDateString();
-
         // Aggregate production in SQL so report memory usage remains constant as
         // the number of recorded batches grows.
         $productionTotals = DB::table('kitchen_productions')
-            ->where('production_date', '<=', $untilDate)
+            ->where('production_date', '<=', $until)
             ->select('menu_item_id')
             ->selectRaw(
                 'COALESCE(SUM(CASE WHEN production_date < ? THEN quantity_produced - quantity_wasted ELSE 0 END), 0) as opening_balance',
-                [$fromDate],
+                [$from],
             )
             ->selectRaw(
                 'COALESCE(SUM(CASE WHEN production_date BETWEEN ? AND ? THEN quantity_produced ELSE 0 END), 0) as produced',
-                [$fromDate, $untilDate],
+                [$from, $until],
             )
             ->selectRaw(
                 'COALESCE(SUM(CASE WHEN production_date BETWEEN ? AND ? THEN quantity_wasted ELSE 0 END), 0) as wasted',
-                [$fromDate, $untilDate],
+                [$from, $until],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN production_date BETWEEN ? AND ? THEN 1 ELSE 0 END), 0) as period_event_count',
+                [$from, $until],
             )
             ->groupBy('menu_item_id')
             ->get()
@@ -68,11 +69,16 @@ class KitchenProductionReportService
                 'COALESCE(SUM(CASE WHEN restaurant_orders.stock_deducted_at BETWEEN ? AND ? THEN restaurant_order_items.quantity * restaurant_order_items.production_usage_per_sale ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN restaurant_orders.stock_reversed_at BETWEEN ? AND ? THEN restaurant_order_items.quantity * restaurant_order_items.production_usage_per_sale ELSE 0 END), 0) as production_amount_sold',
                 [$from, $until, $from, $until],
             )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN restaurant_orders.stock_deducted_at BETWEEN ? AND ? THEN 1 ELSE 0 END), 0) + COALESCE(SUM(CASE WHEN restaurant_orders.stock_reversed_at BETWEEN ? AND ? THEN 1 ELSE 0 END), 0) as period_event_count',
+                [$from, $until, $from, $until],
+            )
             ->groupBy('restaurant_order_items.menu_item_id')
             ->get()
             ->keyBy('menu_item_id');
         $collectedRevenue = $this->allocatedPaymentAmounts($from, $until, 'created_at', collections: true);
         $refundedRevenue = $this->allocatedPaymentAmounts($from, $until, 'refunded_at', collections: false);
+        $hasPeriodActivity = false;
 
         $rows = MenuItem::query()
             ->leftJoin('menu_categories', 'menu_categories.id', '=', 'menu_items.menu_category_id')
@@ -87,7 +93,7 @@ class KitchenProductionReportService
             ])
             ->orderBy('menu_items.name')
             ->get()
-            ->map(function (MenuItem $item) use ($collectedRevenue, $consumptionTotals, $productionTotals, $refundedRevenue): array {
+            ->map(function (MenuItem $item) use ($collectedRevenue, $consumptionTotals, &$hasPeriodActivity, $productionTotals, $refundedRevenue): array {
                 $production = $productionTotals->get($item->getKey());
                 $consumption = $consumptionTotals->get($item->getKey());
                 $produced = (float) ($production->produced ?? 0);
@@ -105,6 +111,11 @@ class KitchenProductionReportService
                     : null;
                 $itemCollectedRevenue = round((float) $collectedRevenue->get($item->getKey(), 0), 2);
                 $itemRefundedRevenue = round((float) $refundedRevenue->get($item->getKey(), 0), 2);
+                $hasPeriodActivity = $hasPeriodActivity
+                    || (int) ($production->period_event_count ?? 0) > 0
+                    || (int) ($consumption->period_event_count ?? 0) > 0
+                    || abs($itemCollectedRevenue) > 0.00001
+                    || abs($itemRefundedRevenue) > 0.00001;
                 $stockStatus = $closingBalance < 0
                     ? 'negative'
                     : ($closingBalance <= (float) $item->low_stock_threshold ? 'low' : 'healthy');
@@ -134,6 +145,7 @@ class KitchenProductionReportService
 
         return [
             'rows' => $rows,
+            'has_period_activity' => $hasPeriodActivity,
             'summary' => [
                 'tracked_items' => $rows->count(),
                 'healthy_items' => $rows->where('stock_status', 'healthy')->count(),

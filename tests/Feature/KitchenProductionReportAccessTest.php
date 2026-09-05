@@ -34,7 +34,7 @@ class KitchenProductionReportAccessTest extends TestCase
         $this->get(KitchenProductionReport::getUrl())
             ->assertOk()
             ->assertSee('Kitchen Production vs Sales')
-            ->assertSee('Kitchen production overview');
+            ->assertSee('Production tracking is not configured');
 
         self::assertTrue(KitchenProductionReport::canAccess());
 
