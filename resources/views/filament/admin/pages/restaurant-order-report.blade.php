@@ -193,22 +193,26 @@
                         $paymentColor = $order->payment_status === 'completed' ? 'success' : ($order->payment_status === 'pending' ? 'warning' : 'gray');
                     @endphp
                     <article class="rounded-xl border border-gray-200 p-4 dark:border-white/10">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="min-w-0">
-                                <p class="break-all font-semibold text-gray-950 dark:text-white">
-                                    @if ($orderDetailsUrl)
-                                        <a data-restaurant-order-link href="{{ $orderDetailsUrl }}" class="inline-flex items-center gap-1 hover:text-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:text-primary-300">
-                                            {{ $order->order_number }}
-                                            <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4 shrink-0" />
-                                        </a>
-                                    @else
-                                        {{ $order->order_number }}
-                                    @endif
-                                </p>
-                                <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{{ $order->guest?->full_name ?: $order->customer_email ?: 'Walk-in guest' }}</p>
+                        <div data-mobile-order-reference class="min-w-0">
+                            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Order reference</p>
+                            <div class="mt-1 min-w-0">
+                                @if ($orderDetailsUrl)
+                                    <a
+                                        data-restaurant-order-link
+                                        href="{{ $orderDetailsUrl }}"
+                                        aria-label="Open order {{ $order->order_number }}"
+                                        class="inline-flex min-w-0 max-w-full items-start gap-1 font-semibold text-gray-950 hover:text-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-white dark:hover:text-primary-300"
+                                    >
+                                        <span data-mobile-order-reference-text class="min-w-0 break-all font-mono">{{ $order->order_number }}</span>
+                                        <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="mt-0.5 h-4 w-4 shrink-0" />
+                                    </a>
+                                @else
+                                    <span data-mobile-order-reference-text class="block min-w-0 break-all font-mono font-semibold text-gray-950 dark:text-white">{{ $order->order_number }}</span>
+                                @endif
                             </div>
-                            <p class="whitespace-nowrap text-sm font-bold text-primary-600 dark:text-primary-400">GHS {{ number_format($order->total, 2) }}</p>
+                            <p class="mt-2 truncate text-xs text-gray-500 dark:text-gray-400">{{ $order->guest?->full_name ?: $order->customer_email ?: 'Walk-in guest' }}</p>
                         </div>
+                        <p data-mobile-order-total class="mt-3 text-right text-sm font-bold tabular-nums text-primary-600 dark:text-primary-400">GHS {{ number_format($order->total, 2) }}</p>
                         <dl class="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-gray-200 p-3 text-sm dark:border-white/10">
                             <div><dt class="text-xs text-gray-500 dark:text-gray-400">Items</dt><dd class="mt-1 font-medium">{{ number_format($order->items_sum_quantity ?? 0) }}</dd></div>
                             <div><dt class="text-xs text-gray-500 dark:text-gray-400">Channel</dt><dd class="mt-1 capitalize font-medium">{{ $order->ordering_channel ?: 'web' }}</dd></div>

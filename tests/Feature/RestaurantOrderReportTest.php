@@ -742,6 +742,72 @@ class RestaurantOrderReportTest extends TestCase
         self::assertStringContainsString('Rows per page', $view);
     }
 
+    public function test_mobile_order_cards_preserve_long_references_for_editable_and_view_only_orders(): void
+    {
+        $this->travelTo('2026-09-05 09:00:00');
+        $reference = 'FOOD-20260905-CORPORATE-CONFERENCE-GUEST-ORDER-REFERENCE-000001';
+        $order = RestaurantOrder::query()->create([
+            'order_number' => $reference,
+            'ordering_channel' => 'web',
+            'subtotal' => 175,
+            'total' => 175,
+            'status' => 'confirmed',
+            'payment_status' => 'completed',
+        ]);
+        Role::findOrCreate('manager', 'web');
+        Permission::findOrCreate('manage kitchen orders', 'web');
+        $manager = User::factory()->create(['department' => 'management']);
+        $manager->assignRole('manager');
+        $manager->givePermissionTo('manage kitchen orders');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $managerResponse = $this->actingAs($manager)->get(RestaurantOrderReport::getUrl());
+        $managerResponse->assertOk();
+        $managerDocument = new \DOMDocument;
+        @$managerDocument->loadHTML($managerResponse->getContent());
+        $managerXPath = new \DOMXPath($managerDocument);
+        $mobileCard = $managerXPath->query('//div[@aria-label="Order cards"]//article')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $mobileCard);
+        $referenceBlock = $managerXPath->query('.//*[@data-mobile-order-reference]', $mobileCard)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $referenceBlock);
+        self::assertStringContainsString($reference, $referenceBlock->textContent);
+        self::assertStringContainsString('min-w-0', $referenceBlock->getAttribute('class'));
+
+        $referenceLink = $managerXPath->query('.//a[@data-restaurant-order-link]', $referenceBlock)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $referenceLink);
+        self::assertSame('Open order '.$reference, $referenceLink->getAttribute('aria-label'));
+        self::assertStringContainsString('max-w-full', $referenceLink->getAttribute('class'));
+        self::assertStringContainsString('min-w-0', $referenceLink->getAttribute('class'));
+        self::assertStringContainsString('items-start', $referenceLink->getAttribute('class'));
+
+        $referenceText = $managerXPath->query('.//*[@data-mobile-order-reference-text]', $referenceLink)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $referenceText);
+        self::assertSame($reference, trim($referenceText->textContent));
+        self::assertStringContainsString('min-w-0', $referenceText->getAttribute('class'));
+        self::assertStringContainsString('break-all', $referenceText->getAttribute('class'));
+        self::assertStringNotContainsString('truncate', $referenceText->getAttribute('class'));
+
+        $total = $managerXPath->query('./*[@data-mobile-order-total]', $mobileCard)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $total);
+        self::assertStringContainsString('GHS 175.00', $total->textContent);
+
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        $accountantResponse = $this->actingAs($accountant)->get(RestaurantOrderReport::getUrl());
+        $accountantResponse->assertOk();
+        $accountantDocument = new \DOMDocument;
+        @$accountantDocument->loadHTML($accountantResponse->getContent());
+        $accountantXPath = new \DOMXPath($accountantDocument);
+        $viewOnlyReference = $accountantXPath->query('//div[@aria-label="Order cards"]//*[@data-mobile-order-reference-text]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $viewOnlyReference);
+        self::assertSame($reference, trim($viewOnlyReference->textContent));
+        self::assertStringContainsString('break-all', $viewOnlyReference->getAttribute('class'));
+        self::assertSame(0, $accountantXPath->query('//div[@aria-label="Order cards"]//a[@data-restaurant-order-link]')?->count());
+    }
+
     private function menuItem(string $suffix): MenuItem
     {
         $category = MenuCategory::query()->create([
