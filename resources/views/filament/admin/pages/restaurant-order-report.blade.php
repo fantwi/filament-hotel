@@ -30,13 +30,13 @@
             aria-label="Restaurant report results"
             class="relative"
             wire:loading.attr="aria-busy"
-            wire:target="applyReportPeriod,resetReportPeriod,perPage,gotoPage,previousPage,nextPage"
+            wire:target="applyReportPeriod,resetReportPeriod,perPage,registerSearch,paymentStatus,fulfillmentStatus,orderingChannel,resetRegisterFilters,gotoPage,previousPage,nextPage"
         >
             <div
                 data-restaurant-report-results
                 class="space-y-6 transition-opacity duration-200"
                 wire:loading.class="pointer-events-none opacity-60"
-                wire:target="applyReportPeriod,resetReportPeriod,perPage,gotoPage,previousPage,nextPage"
+                wire:target="applyReportPeriod,resetReportPeriod,perPage,registerSearch,paymentStatus,fulfillmentStatus,orderingChannel,resetRegisterFilters,gotoPage,previousPage,nextPage"
             >
         @if ($report['hasPeriodActivity'])
         <section aria-label="Restaurant order overview">
@@ -88,9 +88,83 @@
         </section>
 
         <x-filament::section heading="Order register" description="Individual restaurant orders for {{ strtolower($this->periodLabel()) }}.">
+            <div data-restaurant-register-filters class="mb-6 rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-white/10 dark:bg-white/5">
+                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <label for="restaurant-register-search" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Search orders
+                        <x-filament::input.wrapper class="mt-1">
+                            <x-filament::input
+                                id="restaurant-register-search"
+                                type="search"
+                                wire:model.live.debounce.400ms="registerSearch"
+                                maxlength="100"
+                                placeholder="Order number, guest, or email"
+                            />
+                        </x-filament::input.wrapper>
+                    </label>
+
+                    <label for="restaurant-payment-status" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Payment status
+                        <x-filament::input.wrapper class="mt-1">
+                            <x-filament::input.select id="restaurant-payment-status" wire:model.live="paymentStatus">
+                                <option value="">All payment statuses</option>
+                                @foreach ($this->paymentStatusOptions() as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </x-filament::input.select>
+                        </x-filament::input.wrapper>
+                    </label>
+
+                    <label for="restaurant-fulfillment-status" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Fulfilment status
+                        <x-filament::input.wrapper class="mt-1">
+                            <x-filament::input.select id="restaurant-fulfillment-status" wire:model.live="fulfillmentStatus">
+                                <option value="">All fulfilment statuses</option>
+                                @foreach ($this->fulfillmentStatusOptions() as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </x-filament::input.select>
+                        </x-filament::input.wrapper>
+                    </label>
+
+                    <label for="restaurant-ordering-channel" class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Ordering channel
+                        <x-filament::input.wrapper class="mt-1">
+                            <x-filament::input.select id="restaurant-ordering-channel" wire:model.live="orderingChannel">
+                                <option value="">All ordering channels</option>
+                                @foreach ($this->orderingChannelOptions() as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </x-filament::input.select>
+                        </x-filament::input.wrapper>
+                    </label>
+                </div>
+
+                <div class="mt-4 flex flex-col gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+                    <div>
+                        <p data-restaurant-register-summary aria-live="polite" class="text-sm font-semibold text-gray-950 dark:text-white">
+                            Showing {{ number_format($report['orders']->total()) }} of {{ number_format($report['totalOrders']) }} orders
+                        </p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Register filters do not change the period overview metrics.</p>
+                    </div>
+                    <x-filament::button
+                        type="button"
+                        color="gray"
+                        icon="heroicon-o-x-mark"
+                        wire:click="resetRegisterFilters"
+                        wire:loading.attr="disabled"
+                        wire:target="resetRegisterFilters"
+                        :disabled="! $this->hasRegisterFilters()"
+                    >
+                        Clear filters
+                    </x-filament::button>
+                </div>
+            </div>
+
             <div class="space-y-4 md:hidden" aria-label="Order cards">
                 @forelse ($report['orders'] as $order)
                     @php
+                        $orderDetailsUrl = $this->orderDetailsUrl($order);
                         $statusColor = match ($order->status) {
                             'confirmed' => 'info',
                             'preparing' => 'warning',
@@ -103,7 +177,16 @@
                     <article class="rounded-xl border border-gray-200 p-4 dark:border-white/10">
                         <div class="flex items-start justify-between gap-4">
                             <div class="min-w-0">
-                                <p class="truncate font-semibold text-gray-950 dark:text-white">{{ $order->order_number }}</p>
+                                <p class="break-all font-semibold text-gray-950 dark:text-white">
+                                    @if ($orderDetailsUrl)
+                                        <a data-restaurant-order-link href="{{ $orderDetailsUrl }}" class="inline-flex items-center gap-1 hover:text-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:text-primary-300">
+                                            {{ $order->order_number }}
+                                            <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4 shrink-0" />
+                                        </a>
+                                    @else
+                                        {{ $order->order_number }}
+                                    @endif
+                                </p>
                                 <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{{ $order->guest?->full_name ?: $order->customer_email ?: 'Walk-in guest' }}</p>
                             </div>
                             <p class="whitespace-nowrap text-sm font-bold text-primary-600 dark:text-primary-400">GHS {{ number_format($order->total, 2) }}</p>
@@ -138,6 +221,7 @@
                         <tbody class="divide-y divide-gray-100 dark:divide-white/10">
                             @forelse ($report['orders'] as $order)
                                 @php
+                                    $orderDetailsUrl = $this->orderDetailsUrl($order);
                                     $statusColor = match ($order->status) {
                                         'confirmed' => 'info',
                                         'preparing' => 'warning',
@@ -149,7 +233,16 @@
                                 @endphp
                                 <tr class="align-top hover:bg-gray-50 dark:hover:bg-white/5">
                                     <th scope="row" class="px-4 py-4">
-                                        <p class="font-semibold">{{ $order->order_number }}</p>
+                                        <p class="font-semibold">
+                                            @if ($orderDetailsUrl)
+                                                <a data-restaurant-order-link href="{{ $orderDetailsUrl }}" class="inline-flex items-center gap-1 hover:text-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:text-primary-300">
+                                                    {{ $order->order_number }}
+                                                    <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4 shrink-0" />
+                                                </a>
+                                            @else
+                                                {{ $order->order_number }}
+                                            @endif
+                                        </p>
                                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $order->guest?->full_name ?: $order->customer_email ?: 'Walk-in guest' }}</p>
                                     </th>
                                     <td class="px-4 py-4">
@@ -221,7 +314,7 @@
                 aria-live="polite"
                 aria-atomic="true"
                 wire:loading.flex
-                wire:target="applyReportPeriod,resetReportPeriod,perPage,gotoPage,previousPage,nextPage"
+                wire:target="applyReportPeriod,resetReportPeriod,perPage,registerSearch,paymentStatus,fulfillmentStatus,orderingChannel,resetRegisterFilters,gotoPage,previousPage,nextPage"
                 class="absolute inset-0 z-10 items-start justify-center rounded-xl bg-white/75 px-4 py-12 backdrop-blur-[1px] dark:bg-gray-950/75"
                 style="display: none;"
             >

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Pages\RestaurantOrderReport;
+use App\Filament\Admin\Resources\RestaurantOrders\RestaurantOrderResource;
 use App\Filament\Admin\Widgets\RestaurantOrderReportStats;
 use App\Models\Guest;
 use App\Models\MenuCategory;
@@ -17,6 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -273,7 +275,7 @@ class RestaurantOrderReportTest extends TestCase
         $document = new \DOMDocument;
         @$document->loadHTML($response->getContent());
         $xpath = new \DOMXPath($document);
-        $loadingTargets = 'applyReportPeriod,resetReportPeriod,perPage,gotoPage,previousPage,nextPage';
+        $loadingTargets = 'applyReportPeriod,resetReportPeriod,perPage,registerSearch,paymentStatus,fulfillmentStatus,orderingChannel,resetRegisterFilters,gotoPage,previousPage,nextPage';
         $reportRegion = $xpath->query('//section[@aria-label="Restaurant report results"]')?->item(0);
 
         self::assertInstanceOf(\DOMElement::class, $reportRegion);
@@ -415,6 +417,172 @@ class RestaurantOrderReportTest extends TestCase
             $xpath->query('.//a[contains(normalize-space(.), "Change reporting period")]', $emptyState)?->item(0)?->getAttribute('href'),
         );
         self::assertSame(1, $xpath->query('//form[@id="restaurant-report-period-controls"]')?->count());
+    }
+
+    public function test_order_register_search_matches_references_and_guest_email_fields(): void
+    {
+        $this->travelTo('2026-09-05 09:00:00');
+        $guest = Guest::query()->create([
+            'first_name' => 'Ama',
+            'last_name' => 'Owusu',
+            'email' => 'ama.owusu@example.test',
+        ]);
+        $guestOrder = RestaurantOrder::query()->create([
+            'guest_id' => $guest->id,
+            'order_number' => 'FOOD-GUEST-REFERENCE',
+            'ordering_channel' => 'web',
+            'subtotal' => 90,
+            'total' => 90,
+            'status' => 'served',
+            'payment_status' => 'completed',
+        ]);
+        $walkInOrder = RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-WALK-IN',
+            'customer_email' => 'walkin@example.test',
+            'ordering_channel' => 'staff',
+            'subtotal' => 40,
+            'total' => 40,
+            'status' => 'pending',
+            'payment_status' => 'pending',
+        ]);
+
+        $reportPage = new RestaurantOrderReport;
+        $reportPage->period = 'custom';
+        $reportPage->startDate = '2026-09-01';
+        $reportPage->endDate = '2026-09-30';
+
+        $reportPage->registerSearch = 'guest-reference';
+        self::assertSame([$guestOrder->id], $reportPage->paginatedOrders()->pluck('id')->all());
+
+        $reportPage->registerSearch = 'ama.owusu@example.test';
+        self::assertSame([$guestOrder->id], $reportPage->paginatedOrders()->pluck('id')->all());
+
+        $reportPage->registerSearch = 'walkin@example.test';
+        self::assertSame([$walkInOrder->id], $reportPage->paginatedOrders()->pluck('id')->all());
+    }
+
+    public function test_order_register_combines_valid_filters_without_narrowing_period_metrics(): void
+    {
+        $this->travelTo('2026-09-05 09:00:00');
+        $matchingOrder = RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-FILTER-MATCH',
+            'ordering_channel' => 'qr',
+            'subtotal' => 100,
+            'total' => 100,
+            'status' => 'ready',
+            'payment_status' => 'completed',
+        ]);
+        RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-WRONG-PAYMENT',
+            'ordering_channel' => 'qr',
+            'subtotal' => 75,
+            'total' => 75,
+            'status' => 'ready',
+            'payment_status' => 'pending',
+        ]);
+        RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-WRONG-CHANNEL',
+            'ordering_channel' => 'web',
+            'subtotal' => 50,
+            'total' => 50,
+            'status' => 'ready',
+            'payment_status' => 'completed',
+        ]);
+
+        $reportPage = new RestaurantOrderReport;
+        $reportPage->period = 'custom';
+        $reportPage->startDate = '2026-09-01';
+        $reportPage->endDate = '2026-09-30';
+        $reportPage->paymentStatus = 'completed';
+        $reportPage->fulfillmentStatus = 'ready';
+        $reportPage->orderingChannel = 'qr';
+        $report = $reportPage->getReportData();
+
+        self::assertSame(3, $report['totalOrders']);
+        self::assertSame(1, $report['orders']->total());
+        self::assertSame($matchingOrder->id, $report['orders']->first()->id);
+
+        $reportPage->paymentStatus = 'not-a-payment-status';
+        $reportPage->fulfillmentStatus = 'not-an-order-status';
+        $reportPage->orderingChannel = 'not-a-channel';
+
+        self::assertSame(3, $reportPage->paginatedOrders()->total());
+    }
+
+    public function test_order_register_filter_changes_and_clear_action_reset_pagination(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+
+        $component = Livewire::actingAs($accountant)->test(RestaurantOrderReport::class);
+
+        foreach ([
+            'registerSearch' => 'FOOD',
+            'paymentStatus' => 'completed',
+            'fulfillmentStatus' => 'ready',
+            'orderingChannel' => 'qr',
+        ] as $property => $value) {
+            $component
+                ->set('paginators.orders_page', 3)
+                ->set($property, $value)
+                ->assertSet('paginators.orders_page', 1);
+        }
+
+        $component
+            ->set('paginators.orders_page', 3)
+            ->call('resetRegisterFilters')
+            ->assertSet('registerSearch', '')
+            ->assertSet('paymentStatus', '')
+            ->assertSet('fulfillmentStatus', '')
+            ->assertSet('orderingChannel', '')
+            ->assertSet('paginators.orders_page', 1);
+    }
+
+    public function test_order_register_renders_responsive_controls_and_only_authorized_detail_links(): void
+    {
+        $this->travelTo('2026-09-05 09:00:00');
+        $order = RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-PERMISSION-LINK',
+            'ordering_channel' => 'web',
+            'subtotal' => 110,
+            'total' => 110,
+            'status' => 'confirmed',
+            'payment_status' => 'completed',
+        ]);
+        Role::findOrCreate('manager', 'web');
+        Permission::findOrCreate('manage kitchen orders', 'web');
+        $manager = User::factory()->create(['department' => 'management']);
+        $manager->assignRole('manager');
+        $manager->givePermissionTo('manage kitchen orders');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $managerResponse = $this->actingAs($manager)->get(RestaurantOrderReport::getUrl());
+        $managerResponse->assertOk();
+        $managerDocument = new \DOMDocument;
+        @$managerDocument->loadHTML($managerResponse->getContent());
+        $managerXPath = new \DOMXPath($managerDocument);
+        $editUrl = RestaurantOrderResource::getUrl('edit', ['record' => $order]);
+
+        self::assertSame(1, $managerXPath->query('//*[@data-restaurant-register-filters]')?->count());
+        self::assertSame(1, $managerXPath->query('//input[@id="restaurant-register-search"]')?->count());
+        self::assertSame(1, $managerXPath->query('//select[@id="restaurant-payment-status"]')?->count());
+        self::assertSame(1, $managerXPath->query('//select[@id="restaurant-fulfillment-status"]')?->count());
+        self::assertSame(1, $managerXPath->query('//select[@id="restaurant-ordering-channel"]')?->count());
+        self::assertSame(2, $managerXPath->query('//a[@data-restaurant-order-link and @href="'.$editUrl.'"]')?->count());
+        self::assertStringContainsString('Showing 1 of 1 orders', $managerResponse->getContent());
+
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        $accountantResponse = $this->actingAs($accountant)->get(RestaurantOrderReport::getUrl());
+        $accountantResponse->assertOk();
+        $accountantDocument = new \DOMDocument;
+        @$accountantDocument->loadHTML($accountantResponse->getContent());
+        $accountantXPath = new \DOMXPath($accountantDocument);
+
+        self::assertSame(0, $accountantXPath->query('//a[@data-restaurant-order-link]')?->count());
+        self::assertStringContainsString('FOOD-PERMISSION-LINK', $accountantResponse->getContent());
     }
 
     public function test_cancelled_orders_do_not_inflate_order_payment_outcome_metrics(): void

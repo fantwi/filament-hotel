@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Pages;
 
 use App\Filament\Admin\Concerns\InteractsWithReportPeriod;
+use App\Filament\Admin\Resources\RestaurantOrders\RestaurantOrderResource;
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantOrderItem;
@@ -31,7 +32,37 @@ class RestaurantOrderReport extends Page
 
     protected string $view = 'filament.admin.pages.restaurant-order-report';
 
+    private const PAYMENT_STATUS_OPTIONS = [
+        'pending' => 'Pending',
+        'completed' => 'Completed',
+        'failed' => 'Failed',
+        'refunded' => 'Refunded',
+    ];
+
+    private const FULFILLMENT_STATUS_OPTIONS = [
+        'pending' => 'Pending',
+        'confirmed' => 'Confirmed',
+        'preparing' => 'Preparing',
+        'ready' => 'Ready',
+        'served' => 'Served',
+        'cancelled' => 'Cancelled',
+    ];
+
+    private const ORDERING_CHANNEL_OPTIONS = [
+        'web' => 'Website',
+        'qr' => 'Table QR',
+        'staff' => 'Staff entry',
+    ];
+
     public int $perPage = 25;
+
+    public string $registerSearch = '';
+
+    public string $paymentStatus = '';
+
+    public string $fulfillmentStatus = '';
+
+    public string $orderingChannel = '';
 
     /**
      * Builds and returns orders query.
@@ -50,7 +81,7 @@ class RestaurantOrderReport extends Page
     {
         $perPage = max(10, min(100, $this->perPage));
 
-        return $this->getOrdersQuery()
+        return $this->getFilteredOrdersQuery()
             ->select([
                 'id',
                 'guest_id',
@@ -66,6 +97,95 @@ class RestaurantOrderReport extends Page
             ->withSum('items', 'quantity')
             ->latest()
             ->paginate($perPage, ['*'], 'orders_page');
+    }
+
+    /**
+     * Applies register-only search and operational filters.
+     */
+    public function getFilteredOrdersQuery(): Builder
+    {
+        $query = $this->getOrdersQuery();
+        $search = trim($this->registerSearch);
+
+        if ($search !== '') {
+            $like = '%'.$search.'%';
+            $query->where(function (Builder $searchQuery) use ($like): void {
+                $searchQuery
+                    ->where('order_number', 'like', $like)
+                    ->orWhere('customer_email', 'like', $like)
+                    ->orWhereHas('guest', function (Builder $guestQuery) use ($like): void {
+                        $guestQuery
+                            ->where('first_name', 'like', $like)
+                            ->orWhere('last_name', 'like', $like)
+                            ->orWhere('email', 'like', $like);
+                    });
+            });
+        }
+
+        if (array_key_exists($this->paymentStatus, self::PAYMENT_STATUS_OPTIONS)) {
+            $query->where('payment_status', $this->paymentStatus);
+        }
+
+        if (array_key_exists($this->fulfillmentStatus, self::FULFILLMENT_STATUS_OPTIONS)) {
+            $query->where('status', $this->fulfillmentStatus);
+        }
+
+        if (array_key_exists($this->orderingChannel, self::ORDERING_CHANNEL_OPTIONS)) {
+            $query->where('ordering_channel', $this->orderingChannel);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Returns valid payment-status choices for the register.
+     *
+     * @return array<string, string>
+     */
+    public function paymentStatusOptions(): array
+    {
+        return self::PAYMENT_STATUS_OPTIONS;
+    }
+
+    /**
+     * Returns valid fulfilment-status choices for the register.
+     *
+     * @return array<string, string>
+     */
+    public function fulfillmentStatusOptions(): array
+    {
+        return self::FULFILLMENT_STATUS_OPTIONS;
+    }
+
+    /**
+     * Returns valid ordering-channel choices for the register.
+     *
+     * @return array<string, string>
+     */
+    public function orderingChannelOptions(): array
+    {
+        return self::ORDERING_CHANNEL_OPTIONS;
+    }
+
+    /**
+     * Determines whether the order register is currently narrowed.
+     */
+    public function hasRegisterFilters(): bool
+    {
+        return trim($this->registerSearch) !== ''
+            || array_key_exists($this->paymentStatus, self::PAYMENT_STATUS_OPTIONS)
+            || array_key_exists($this->fulfillmentStatus, self::FULFILLMENT_STATUS_OPTIONS)
+            || array_key_exists($this->orderingChannel, self::ORDERING_CHANNEL_OPTIONS);
+    }
+
+    /**
+     * Returns a resource URL only when the current user may manage the order.
+     */
+    public function orderDetailsUrl(RestaurantOrder $order): ?string
+    {
+        return RestaurantOrderResource::canEdit($order)
+            ? RestaurantOrderResource::getUrl('edit', ['record' => $order])
+            : null;
     }
 
     /**
@@ -192,6 +312,50 @@ class RestaurantOrderReport extends Page
      */
     public function updatedPerPage(): void
     {
+        $this->resetPage('orders_page');
+    }
+
+    /**
+     * Resets the register to its first page after the search changes.
+     */
+    public function updatedRegisterSearch(): void
+    {
+        $this->resetPage('orders_page');
+    }
+
+    /**
+     * Resets the register to its first page after the payment filter changes.
+     */
+    public function updatedPaymentStatus(): void
+    {
+        $this->resetPage('orders_page');
+    }
+
+    /**
+     * Resets the register to its first page after the fulfilment filter changes.
+     */
+    public function updatedFulfillmentStatus(): void
+    {
+        $this->resetPage('orders_page');
+    }
+
+    /**
+     * Resets the register to its first page after the channel filter changes.
+     */
+    public function updatedOrderingChannel(): void
+    {
+        $this->resetPage('orders_page');
+    }
+
+    /**
+     * Clears every order-register filter and restores its first page.
+     */
+    public function resetRegisterFilters(): void
+    {
+        $this->registerSearch = '';
+        $this->paymentStatus = '';
+        $this->fulfillmentStatus = '';
+        $this->orderingChannel = '';
         $this->resetPage('orders_page');
     }
 
