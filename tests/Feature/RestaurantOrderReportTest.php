@@ -252,6 +252,15 @@ class RestaurantOrderReportTest extends TestCase
 
     public function test_restaurant_report_exposes_an_accessible_loading_state_for_result_refreshes(): void
     {
+        $this->travelTo('2026-09-05 09:00:00');
+        RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-LOADING-STATE',
+            'subtotal' => 75,
+            'total' => 75,
+            'status' => 'confirmed',
+            'payment_status' => 'pending',
+        ]);
+
         Role::findOrCreate('accountant', 'web');
         $accountant = User::factory()->create(['department' => 'accountant']);
         $accountant->assignRole('accountant');
@@ -292,6 +301,120 @@ class RestaurantOrderReportTest extends TestCase
         self::assertSame('disabled', $pageSize->getAttribute('wire:loading.attr'));
         self::assertSame('perPage', $pageSize->getAttribute('wire:target'));
         self::assertSame(0, $xpath->query('.//form[@*[name()="wire:submit"]="applyReportPeriod"]', $reportRegion)?->count());
+    }
+
+    public function test_period_activity_excludes_the_live_queue_but_includes_payment_events(): void
+    {
+        $this->travelTo('2026-07-10 09:00:00');
+        $olderActiveOrder = RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-OLDER-LIVE-QUEUE',
+            'subtotal' => 120,
+            'total' => 120,
+            'status' => 'confirmed',
+            'payment_status' => 'completed',
+        ]);
+
+        $reportPage = new RestaurantOrderReport;
+        $reportPage->period = 'custom';
+        $reportPage->startDate = '2026-08-01';
+        $reportPage->endDate = '2026-08-31';
+        $emptyMetrics = $reportPage->getReportMetrics();
+
+        self::assertSame(0, $emptyMetrics['totalOrders']);
+        self::assertSame(1, $emptyMetrics['liveKitchenOrders']);
+        self::assertArrayHasKey('hasPeriodActivity', $emptyMetrics);
+        self::assertFalse($emptyMetrics['hasPeriodActivity']);
+
+        $this->travelTo('2026-08-05 09:00:00');
+        Payment::query()->create([
+            'restaurant_order_id' => $olderActiveOrder->id,
+            'amount' => 120,
+            'method' => 'card',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'FOOD-OLDER-LIVE-QUEUE-PAYMENT',
+        ]);
+
+        $paymentMetrics = $reportPage->getReportMetrics();
+
+        self::assertSame(0, $paymentMetrics['totalOrders']);
+        self::assertSame(120.0, $paymentMetrics['revenue']);
+        self::assertTrue($paymentMetrics['hasPeriodActivity']);
+    }
+
+    public function test_refund_events_are_treated_as_period_activity_without_new_orders(): void
+    {
+        $this->travelTo('2026-07-10 09:00:00');
+        $order = RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-REFUND-ONLY-PERIOD',
+            'subtotal' => 80,
+            'total' => 80,
+            'status' => 'served',
+            'payment_status' => 'refunded',
+        ]);
+        $payment = Payment::query()->create([
+            'restaurant_order_id' => $order->id,
+            'amount' => 80,
+            'method' => 'card',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'FOOD-REFUND-ONLY-PERIOD-PAYMENT',
+        ]);
+
+        $this->travelTo('2026-08-12 09:00:00');
+        $payment->update(['payment_status' => 'refunded']);
+
+        $reportPage = new RestaurantOrderReport;
+        $reportPage->period = 'custom';
+        $reportPage->startDate = '2026-08-01';
+        $reportPage->endDate = '2026-08-31';
+        $metrics = $reportPage->getReportMetrics();
+
+        self::assertSame(0, $metrics['totalOrders']);
+        self::assertSame(0.0, $metrics['revenue']);
+        self::assertSame(80.0, $metrics['refunds']);
+        self::assertTrue($metrics['hasPeriodActivity']);
+    }
+
+    public function test_empty_period_renders_one_actionable_state_and_preserves_the_live_queue_count(): void
+    {
+        $this->travelTo('2026-07-10 09:00:00');
+        RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-OUTSIDE-EMPTY-PERIOD',
+            'subtotal' => 60,
+            'total' => 60,
+            'status' => 'preparing',
+            'payment_status' => 'completed',
+        ]);
+
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(RestaurantOrderReport::getUrl([
+            'period' => 'custom',
+            'startDate' => '2026-08-01',
+            'endDate' => '2026-08-31',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('No restaurant activity in this period');
+        $response->assertSee('1 active order is currently in the live kitchen queue');
+        $response->assertSee('Change reporting period');
+        $response->assertDontSee('Orders received');
+        $response->assertDontSee('Payment status');
+        $response->assertDontSee('Order register');
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $emptyState = $xpath->query('//*[@data-restaurant-report-empty-state and @role="status"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $emptyState);
+        self::assertSame(
+            '#restaurant-report-period-controls',
+            $xpath->query('.//a[contains(normalize-space(.), "Change reporting period")]', $emptyState)?->item(0)?->getAttribute('href'),
+        );
+        self::assertSame(1, $xpath->query('//form[@id="restaurant-report-period-controls"]')?->count());
     }
 
     public function test_cancelled_orders_do_not_inflate_order_payment_outcome_metrics(): void

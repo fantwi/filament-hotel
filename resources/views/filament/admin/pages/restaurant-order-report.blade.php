@@ -9,7 +9,7 @@
                 <h2 class="mt-1 text-2xl font-bold tracking-tight">Order performance</h2>
                 <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Review period-based food-order and payment performance alongside the current kitchen queue.</p>
             </div>
-            <x-filament.report-period-controls class="mt-5" />
+            <x-filament.report-period-controls id="restaurant-report-period-controls" class="mt-5" />
             <label for="restaurant-report-per-page" class="mt-4 block max-w-xs text-sm font-semibold text-gray-700 dark:text-gray-200">
                 Rows per page
                 <select
@@ -38,6 +38,7 @@
                 wire:loading.class="pointer-events-none opacity-60"
                 wire:target="applyReportPeriod,resetReportPeriod,perPage,gotoPage,previousPage,nextPage"
             >
+        @if ($report['hasPeriodActivity'])
         <section aria-label="Restaurant order overview">
             @livewire(\App\Filament\Admin\Widgets\RestaurantOrderReportStats::class, [
                 'reportData' => [
@@ -174,6 +175,44 @@
                 </div>
             @endif
         </x-filament::section>
+        @else
+        <x-filament::section>
+            <div
+                data-restaurant-report-empty-state
+                role="status"
+                aria-label="No restaurant activity for selected period"
+                class="flex flex-col items-center px-4 py-12 text-center sm:py-16"
+            >
+                <span class="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-300">
+                    <x-filament::icon icon="heroicon-o-calendar-days" class="h-7 w-7" />
+                </span>
+                <h2 class="mt-5 text-lg font-bold tracking-tight text-gray-950 dark:text-white">No restaurant activity in this period</h2>
+                <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">No food orders were created and no restaurant payments or refunds were recorded during {{ strtolower($this->periodLabel()) }}.</p>
+
+                @if ($report['liveKitchenOrders'] > 0)
+                    <div data-restaurant-live-queue-note role="note" class="mt-5 flex max-w-xl items-start gap-3 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-left dark:border-warning-500/20 dark:bg-warning-500/10">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-warning-100 text-warning-700 dark:bg-warning-500/20 dark:text-warning-300">
+                            <x-filament::icon icon="heroicon-o-fire" class="h-5 w-5" />
+                        </span>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-950 dark:text-white">
+                                {{ number_format($report['liveKitchenOrders']) }} {{ $report['liveKitchenOrders'] === 1 ? 'active order is' : 'active orders are' }} currently in the live kitchen queue
+                            </p>
+                            <p class="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300">This live operational work falls outside the selected reporting period.</p>
+                        </div>
+                    </div>
+                @endif
+
+                <a
+                    href="#restaurant-report-period-controls"
+                    class="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                >
+                    Change reporting period
+                    <x-filament::icon icon="heroicon-m-arrow-up" class="h-4 w-4" />
+                </a>
+            </div>
+        </x-filament::section>
+        @endif
             </div>
 
             <div

@@ -104,11 +104,12 @@ class RestaurantOrderReport extends Page
             ->sum('quantity');
 
         $paidOrders = (int) ($totals->paid_orders ?? 0);
+        $totalOrders = (int) ($totals->total_orders ?? 0);
         $nonCancelledOrders = (int) ($totals->non_cancelled_orders ?? 0);
         $financials = $this->getFinancialMetrics();
 
         return [
-            'totalOrders' => (int) ($totals->total_orders ?? 0),
+            'totalOrders' => $totalOrders,
             'totalItems' => (int) $totalItems,
             'paidOrders' => $paidOrders,
             'pendingOrders' => (int) ($totals->pending_orders ?? 0),
@@ -122,6 +123,9 @@ class RestaurantOrderReport extends Page
             'collectedOrderCount' => $financials['collectedOrderCount'],
             'averageOrderValue' => $financials['averageOrderValue'],
             'paymentRate' => $nonCancelledOrders === 0 ? 0 : round(($paidOrders / $nonCancelledOrders) * 100, 1),
+            'hasPeriodActivity' => $totalOrders > 0
+                || $financials['collectedOrderCount'] > 0
+                || $financials['refunds'] > 0,
         ];
     }
 
