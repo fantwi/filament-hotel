@@ -14,6 +14,7 @@ use BackedEnum;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Configures Filament administration for menu item resource.
@@ -54,6 +55,15 @@ class MenuItemResource extends ContentResource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->visibleTo(auth()->user());
+    }
+
+    /**
+     * Prevent menu items with posted production history from being deleted.
+     */
+    public static function canDelete(Model $record): bool
+    {
+        return parent::canDelete($record)
+            && ! $record->kitchenProductions()->exists();
     }
 
     /**

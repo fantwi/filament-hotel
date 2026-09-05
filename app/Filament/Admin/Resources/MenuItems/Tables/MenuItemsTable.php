@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\MenuItems\Tables;
 
 use App\Filament\Admin\Resources\MenuItems\MenuItemResource;
+use App\Models\MenuItem;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -80,7 +81,16 @@ class MenuItemsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->modalDescription('Only menu items without production history will be deleted. Unpublish historical items instead.')
+                        ->authorizeIndividualRecords(
+                            fn (MenuItem $record): bool => MenuItemResource::canDelete($record)
+                        )
+                        ->missingBulkAuthorizationFailureNotificationMessage(
+                            fn (int $failureCount): string => $failureCount === 1
+                                ? 'One menu item was not deleted because it has production history. Unpublish it instead.'
+                                : "{$failureCount} menu items were not deleted because they have production history. Unpublish them instead."
+                        ),
                 ]),
             ]);
     }
