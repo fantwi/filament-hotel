@@ -10,6 +10,7 @@ use App\Models\Ingredient;
 use App\Models\KitchenProduction;
 use App\Models\MenuItem;
 use App\Models\Restaurant;
+use App\Services\KitchenProductionRecipeService;
 use App\Services\KitchenStockService;
 use BackedEnum;
 use Closure;
@@ -24,6 +25,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -34,6 +36,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Configures Filament administration for kitchen production resource.
@@ -140,6 +143,7 @@ class KitchenProductionResource extends SecureResource
                             ->numeric()
                             ->minValue(.001)
                             ->step(.001)
+                            ->live(debounce: 500)
                             ->helperText('Enter the finished quantity prepared in this batch.')
                             ->disabledOn('edit')
                             ->required(),
@@ -161,6 +165,53 @@ class KitchenProductionResource extends SecureResource
                                 },
                             ])
                             ->required(),
+                        Placeholder::make('recipe_prefill_status')
+                            ->label('Recipe Estimate')
+                            ->content(fn (Get $get): string => static::recipePrefillStatus($get))
+                            ->visible(fn (Get $get, string $operation): bool => $operation === 'create'
+                                && static::selectedInventoryConsumptionMode($get) === 'production_batch')
+                            ->columnSpanFull(),
+                        Actions::make([
+                            Action::make('loadRecipeEstimate')
+                                ->label('Load recipe estimate')
+                                ->icon('heroicon-o-document-arrow-down')
+                                ->color('info')
+                                ->disabled(fn (Get $get): bool => ! static::canLoadRecipeEstimate($get))
+                                ->requiresConfirmation()
+                                ->modalHeading('Replace ingredient rows with the recipe estimate?')
+                                ->modalDescription('This replaces the current ingredient entries. Review and adjust every estimated quantity to the actual amount used before saving the batch.')
+                                ->modalSubmitActionLabel('Load recipe estimate')
+                                ->action(function (Get $schemaGet, Set $schemaSet): void {
+                                    try {
+                                        $ingredients = app(KitchenProductionRecipeService::class)->estimate(
+                                            (int) $schemaGet('menu_item_id'),
+                                            (int) $schemaGet('restaurant_id'),
+                                            (float) $schemaGet('quantity_produced'),
+                                        );
+                                    } catch (ValidationException $exception) {
+                                        Notification::make()
+                                            ->title('Recipe cannot be loaded')
+                                            ->body(collect($exception->errors())->flatten()->join(' '))
+                                            ->danger()
+                                            ->send();
+
+                                        return;
+                                    }
+
+                                    $schemaSet('ingredients', $ingredients);
+
+                                    Notification::make()
+                                        ->title('Recipe estimate loaded')
+                                        ->body('Review the quantities and replace estimates with the actual ingredient usage before saving.')
+                                        ->success()
+                                        ->send();
+                                }),
+                        ])
+                            ->key('recipe_estimate_actions')
+                            ->visible(fn (Get $get, string $operation): bool => $operation === 'create'
+                                && static::selectedInventoryConsumptionMode($get) === 'production_batch')
+                            ->fullWidth()
+                            ->columnSpanFull(),
                         Repeater::make('ingredients')
                             ->label('Raw Ingredients Consumed')
                             ->helperText('Record the actual quantity of each ingredient used for this batch. These amounts are deducted from kitchen stock when saved.')
@@ -240,7 +291,10 @@ class KitchenProductionResource extends SecureResource
                                     })
                                     ->helperText('The final balance is verified again under a database lock when the batch is saved.')
                                     ->columnSpanFull(),
-                                TextInput::make('notes')->maxLength(255),
+                                Textarea::make('notes')
+                                    ->label('Usage Notes')
+                                    ->rows(2)
+                                    ->columnSpanFull(),
                             ])
                             ->minItems(1)
                             ->defaultItems(1)
@@ -518,6 +572,63 @@ class KitchenProductionResource extends SecureResource
         }
 
         return MenuItem::query()->whereKey($menuItemId)->value('inventory_consumption_mode');
+    }
+
+    /**
+     * Describes whether the selected menu item can populate a recipe estimate.
+     */
+    private static function recipePrefillStatus(Get $get): string
+    {
+        $menuItemId = $get('menu_item_id');
+
+        if (blank($menuItemId)) {
+            return 'Select a production-batch menu item to check its recipe.';
+        }
+
+        $recipeCount = MenuItem::query()
+            ->whereKey($menuItemId)
+            ->withCount('recipeIngredients')
+            ->value('recipe_ingredients_count') ?? 0;
+
+        if ($recipeCount === 0) {
+            return 'No recipe ingredients are configured for this menu item. Add its recipe from Menu Items, or enter actual usage manually.';
+        }
+
+        if (blank($get('restaurant_id'))) {
+            return 'Select the restaurant whose stock will be used.';
+        }
+
+        if (blank($get('quantity_produced')) || (float) $get('quantity_produced') <= 0) {
+            return 'Enter the finished quantity to scale the recipe estimate.';
+        }
+
+        return sprintf(
+            'The configured recipe has %d ingredient%s. Loading it replaces the current rows; review the estimate against actual usage.',
+            $recipeCount,
+            $recipeCount === 1 ? '' : 's',
+        );
+    }
+
+    /**
+     * Determines whether all inputs needed to calculate a recipe estimate exist.
+     */
+    private static function canLoadRecipeEstimate(Get $get): bool
+    {
+        if (blank($get('restaurant_id')) || blank($get('menu_item_id'))) {
+            return false;
+        }
+
+        $quantityProduced = $get('quantity_produced');
+
+        if (blank($quantityProduced) || (float) $quantityProduced <= 0) {
+            return false;
+        }
+
+        return MenuItem::query()
+            ->whereKey($get('menu_item_id'))
+            ->where('inventory_consumption_mode', 'production_batch')
+            ->whereHas('recipeIngredients')
+            ->exists();
     }
 
     /**
