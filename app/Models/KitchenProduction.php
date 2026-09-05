@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
  */
 class KitchenProduction extends Model
 {
-    protected $fillable = ['menu_item_id', 'batch_reference', 'production_date', 'quantity_produced', 'quantity_wasted', 'produced_by', 'notes', 'voided_at', 'voided_by', 'void_reason'];
+    protected $fillable = ['menu_item_id', 'restaurant_id', 'batch_reference', 'production_date', 'quantity_produced', 'quantity_wasted', 'produced_by', 'notes', 'voided_at', 'voided_by', 'void_reason'];
 
     protected $casts = ['production_date' => 'date', 'quantity_produced' => 'decimal:3', 'quantity_wasted' => 'decimal:3', 'voided_at' => 'datetime'];
 
@@ -33,6 +33,14 @@ class KitchenProduction extends Model
     public function menuItem(): BelongsTo
     {
         return $this->belongsTo(MenuItem::class);
+    }
+
+    /**
+     * Identifies the restaurant whose ingredient inventory this batch uses.
+     */
+    public function restaurant(): BelongsTo
+    {
+        return $this->belongsTo(Restaurant::class);
     }
 
     /**

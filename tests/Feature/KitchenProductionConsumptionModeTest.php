@@ -27,9 +27,10 @@ class KitchenProductionConsumptionModeTest extends TestCase
     public function test_batch_mode_creation_requires_actual_ingredient_usage(): void
     {
         $menuItem = $this->menuItem('production_batch');
+        $restaurant = $this->restaurant();
 
         try {
-            $this->createPage()->persist($this->productionData($menuItem));
+            $this->createPage()->persist($this->productionData($menuItem, $restaurant->id));
             self::fail('A production-batch item must not be posted without ingredient usage.');
         } catch (ValidationException $exception) {
             self::assertArrayHasKey('ingredients', $exception->errors());
@@ -45,7 +46,7 @@ class KitchenProductionConsumptionModeTest extends TestCase
         $menuItem = $this->menuItem($mode);
 
         $production = $this->createPage()->persist([
-            ...$this->productionData($menuItem),
+            ...$this->productionData($menuItem, $ingredient->restaurant_id),
             'ingredients' => [[
                 'ingredient_id' => $ingredient->getKey(),
                 'quantity_used' => 2,
@@ -120,9 +121,10 @@ class KitchenProductionConsumptionModeTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function productionData(MenuItem $menuItem): array
+    private function productionData(MenuItem $menuItem, int $restaurantId): array
     {
         return [
+            'restaurant_id' => $restaurantId,
             'menu_item_id' => $menuItem->getKey(),
             'production_date' => today()->toDateString(),
             'quantity_produced' => 10,
@@ -132,12 +134,7 @@ class KitchenProductionConsumptionModeTest extends TestCase
 
     private function ingredient(): Ingredient
     {
-        $restaurant = Restaurant::query()->create([
-            'name' => 'Consumption Mode Restaurant',
-            'description' => 'Kitchen production consumption mode tests.',
-            'opening_time' => '08:00',
-            'closing_time' => '22:00',
-        ]);
+        $restaurant = $this->restaurant();
 
         return Ingredient::query()->create([
             'restaurant_id' => $restaurant->getKey(),
@@ -147,6 +144,16 @@ class KitchenProductionConsumptionModeTest extends TestCase
             'reorder_level' => 2,
             'unit_cost' => 5,
             'is_active' => true,
+        ]);
+    }
+
+    private function restaurant(): Restaurant
+    {
+        return Restaurant::query()->create([
+            'name' => 'Consumption Mode Restaurant '.str()->random(6),
+            'description' => 'Kitchen production consumption mode tests.',
+            'opening_time' => '08:00',
+            'closing_time' => '22:00',
         ]);
     }
 

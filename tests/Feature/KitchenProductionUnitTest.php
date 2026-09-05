@@ -35,6 +35,7 @@ class KitchenProductionUnitTest extends TestCase
 
         $production = $page->persist([
             'menu_item_id' => $menuItem->getKey(),
+            'restaurant_id' => $ingredient->restaurant_id,
             'production_date' => today()->toDateString(),
             'quantity_produced' => 4,
             'quantity_wasted' => 0,

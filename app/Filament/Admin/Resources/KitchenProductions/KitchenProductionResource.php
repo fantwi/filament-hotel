@@ -9,6 +9,7 @@ use App\Filament\Admin\Resources\SecureResource;
 use App\Models\Ingredient;
 use App\Models\KitchenProduction;
 use App\Models\MenuItem;
+use App\Models\Restaurant;
 use App\Services\KitchenStockService;
 use BackedEnum;
 use Closure;
@@ -26,6 +27,7 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -96,6 +98,21 @@ class KitchenProductionResource extends SecureResource
                         ? 'Inventory-controlled fields are locked after the batch is posted. Only production notes can be updated.'
                         : 'Record the finished food prepared by the kitchen.')
                     ->schema([
+                        Select::make('restaurant_id')
+                            ->label('Restaurant')
+                            ->relationship('restaurant', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->orderBy('name'))
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->default(function (): ?int {
+                                $restaurantIds = Restaurant::query()->orderBy('id')->limit(2)->pluck('id');
+
+                                return $restaurantIds->count() === 1 ? $restaurantIds->first() : null;
+                            })
+                            ->afterStateUpdated(fn (Set $set): mixed => $set('ingredients', []))
+                            ->helperText('Ingredient choices are limited to this restaurant’s active stock.')
+                            ->disabledOn('edit')
+                            ->required(fn (string $operation): bool => $operation === 'create'),
                         Select::make('menu_item_id')
                             ->label('Menu Item')
                             ->relationship(
@@ -149,7 +166,8 @@ class KitchenProductionResource extends SecureResource
                             ->helperText('Record the actual quantity of each ingredient used for this batch. These amounts are deducted from kitchen stock when saved.')
                             ->schema([
                                 Select::make('ingredient_id')
-                                    ->options(fn (): array => Ingredient::query()
+                                    ->options(fn (Get $get): array => Ingredient::query()
+                                        ->where('restaurant_id', $get('../../restaurant_id'))
                                         ->where('is_active', true)
                                         ->orderBy('name')
                                         ->get()
@@ -159,6 +177,10 @@ class KitchenProductionResource extends SecureResource
                                         ->all())
                                     ->searchable()
                                     ->live()
+                                    ->disabled(fn (Get $get): bool => blank($get('../../restaurant_id')))
+                                    ->helperText(fn (Get $get): ?string => blank($get('../../restaurant_id'))
+                                        ? 'Select a restaurant before choosing ingredients.'
+                                        : null)
                                     ->required()
                                     ->distinct()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
@@ -342,6 +364,12 @@ class KitchenProductionResource extends SecureResource
                         number_format((float) $record->quantity_produced, 3),
                         number_format((float) $record->quantity_wasted, 3),
                     )),
+                TextColumn::make('restaurant.name')
+                    ->label('Restaurant')
+                    ->placeholder('Legacy batch')
+                    ->sortable()
+                    ->toggleable()
+                    ->visibleFrom('md'),
                 TextColumn::make('batch_reference')
                     ->label('Batch')
                     ->searchable()
@@ -372,6 +400,11 @@ class KitchenProductionResource extends SecureResource
                     ->description(fn (KitchenProduction $record): ?string => $record->voided_at ? $record->void_reason : null),
             ])
             ->filters([
+                SelectFilter::make('restaurant_id')
+                    ->label('Restaurant')
+                    ->relationship('restaurant', 'name')
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('menu_item')
                     ->label('Menu item')
                     ->relationship('menuItem', 'name')

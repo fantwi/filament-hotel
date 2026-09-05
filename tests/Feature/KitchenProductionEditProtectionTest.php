@@ -209,6 +209,7 @@ class KitchenProductionEditProtectionTest extends TestCase
         $menuItem = $this->menuItem('Audit Jollof Rice');
         $production = KitchenProduction::query()->create([
             'menu_item_id' => $menuItem->getKey(),
+            'restaurant_id' => $ingredient->restaurant_id,
             'production_date' => today()->subDays(2),
             'quantity_produced' => 10,
             'quantity_wasted' => 1,

@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\KitchenProductions\KitchenProductionResource;
 use App\Models\Ingredient;
 use App\Models\KitchenProduction;
 use App\Models\MenuItem;
+use App\Models\Restaurant;
 use App\Services\KitchenStockService;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -38,6 +39,14 @@ class CreateKitchenProduction extends CreateRecord
             $ingredients = $data['ingredients'] ?? [];
             unset($data['ingredients']);
 
+            $restaurantId = $data['restaurant_id'] ?? null;
+
+            if (blank($restaurantId) || ! Restaurant::query()->whereKey($restaurantId)->exists()) {
+                throw ValidationException::withMessages([
+                    'restaurant_id' => 'Select the restaurant preparing this production batch.',
+                ]);
+            }
+
             $menuItem = MenuItem::query()->findOrFail($data['menu_item_id']);
 
             if ($menuItem->inventory_consumption_mode !== 'production_batch') {
@@ -50,7 +59,15 @@ class CreateKitchenProduction extends CreateRecord
 
             $ingredientUnits = Ingredient::query()
                 ->whereKey(collect($ingredients)->pluck('ingredient_id')->filter()->unique())
+                ->where('restaurant_id', $restaurantId)
+                ->where('is_active', true)
                 ->pluck('unit', 'id');
+
+            if ($ingredientUnits->count() !== collect($ingredients)->pluck('ingredient_id')->filter()->unique()->count()) {
+                throw ValidationException::withMessages([
+                    'ingredients' => 'Every ingredient must belong to the selected restaurant.',
+                ]);
+            }
 
             $production = KitchenProduction::create($data);
 
