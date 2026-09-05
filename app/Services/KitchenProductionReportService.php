@@ -98,8 +98,11 @@ class KitchenProductionReportService
                 $periodVariance = $netProduced - $amountSold;
                 $openingBalance = (float) ($production->opening_balance ?? 0)
                     - (float) ($consumption->opening_consumption ?? 0);
+                $availableStock = $openingBalance + $netProduced;
                 $closingBalance = $openingBalance + $periodVariance;
-                $sellThrough = $netProduced > 0 ? ($amountSold / $netProduced) * 100 : 0;
+                $sellThrough = $availableStock > 0 && $amountSold >= 0
+                    ? ($amountSold / $availableStock) * 100
+                    : null;
                 $itemCollectedRevenue = round((float) $collectedRevenue->get($item->getKey(), 0), 2);
                 $itemRefundedRevenue = round((float) $refundedRevenue->get($item->getKey(), 0), 2);
                 $stockStatus = $closingBalance < 0

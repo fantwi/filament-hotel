@@ -109,6 +109,88 @@ class KitchenProductionClosingBalanceTest extends TestCase
         self::assertSame(10.0, $row['closing_balance']);
     }
 
+    public function test_sell_through_counts_sales_from_opening_stock(): void
+    {
+        $item = $this->trackedMenuItem();
+        $this->production($item, '2026-07-20', produced: 10, wasted: 0);
+        $this->restaurantSale($item, '2026-08-10 12:00:00', quantity: 4);
+
+        $row = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        )['rows']->sole();
+
+        self::assertSame(40.0, $row['sell_through']);
+    }
+
+    public function test_sell_through_uses_opening_stock_and_net_production_as_availability(): void
+    {
+        $item = $this->trackedMenuItem();
+        $this->production($item, '2026-07-20', produced: 10, wasted: 0);
+        $this->production($item, '2026-08-05', produced: 6, wasted: 1);
+        $this->restaurantSale($item, '2026-07-25 12:00:00', quantity: 2);
+        $this->restaurantSale($item, '2026-08-10 12:00:00', quantity: 3);
+
+        $row = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        )['rows']->sole();
+
+        // Opening balance is 8 and net production is 5, so 3 / 13 = 23.0769%.
+        self::assertEqualsWithDelta(23.0769, $row['sell_through'], 0.0001);
+    }
+
+    public function test_sell_through_above_one_hundred_percent_exposes_over_consumption(): void
+    {
+        $item = $this->trackedMenuItem();
+        $this->production($item, '2026-07-20', produced: 5, wasted: 0);
+        $this->production($item, '2026-08-05', produced: 5, wasted: 0);
+        $this->restaurantSale($item, '2026-08-10 12:00:00', quantity: 12);
+
+        $row = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        )['rows']->sole();
+
+        self::assertSame(120.0, $row['sell_through']);
+        self::assertSame(-2.0, $row['closing_balance']);
+    }
+
+    public function test_sell_through_is_unavailable_without_positive_available_stock(): void
+    {
+        $item = $this->trackedMenuItem();
+        $this->production($item, '2026-07-20', produced: 5, wasted: 0);
+        $this->restaurantSale($item, '2026-07-25 12:00:00', quantity: 7);
+
+        $row = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        )['rows']->sole();
+
+        self::assertSame(-2.0, $row['opening_balance']);
+        self::assertNull($row['sell_through']);
+    }
+
+    public function test_sell_through_is_unavailable_during_net_stock_restoration(): void
+    {
+        $item = $this->trackedMenuItem();
+        $this->production($item, '2026-07-20', produced: 10, wasted: 0);
+        $this->restaurantSale(
+            $item,
+            createdAt: '2026-07-25 12:00:00',
+            quantity: 2,
+            stockReversedAt: '2026-08-10 09:00:00',
+        );
+
+        $row = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        )['rows']->sole();
+
+        self::assertSame(-2.0, $row['production_amount_sold']);
+        self::assertNull($row['sell_through']);
+    }
+
     private function trackedMenuItem(): MenuItem
     {
         $category = MenuCategory::create([

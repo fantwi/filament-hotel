@@ -129,5 +129,7 @@ class KitchenProductionReportTest extends TestCase
 
         self::assertCount(5, $refreshedReportQueries);
         self::assertStringContainsString('Aug 10, 2026 - Aug 12, 2026', $component->html());
+        self::assertStringContainsString('Available-stock sell-through', $component->html());
+        self::assertStringContainsString('N/A', $component->html());
     }
 }
