@@ -19,9 +19,9 @@ class KitchenProductionClosingBalanceTest extends TestCase
     {
         $item = $this->trackedMenuItem();
         $this->production($item, '2026-07-20', produced: 10, wasted: 0);
-        $this->completedSale($item, '2026-07-25 12:00:00', quantity: 2);
+        $this->restaurantSale($item, '2026-07-25 12:00:00', quantity: 2);
         $this->production($item, '2026-08-05', produced: 3, wasted: 1);
-        $this->completedSale($item, '2026-08-10 12:00:00', quantity: 3);
+        $this->restaurantSale($item, '2026-08-10 12:00:00', quantity: 3);
 
         $report = app(KitchenProductionReportService::class)->build(
             Carbon::parse('2026-08-01'),
@@ -42,7 +42,7 @@ class KitchenProductionClosingBalanceTest extends TestCase
     {
         $item = $this->trackedMenuItem();
         $this->production($item, '2026-08-05', produced: 10, wasted: 0);
-        $this->completedSale(
+        $this->restaurantSale(
             $item,
             createdAt: '2026-07-25 12:00:00',
             quantity: 2,
@@ -61,11 +61,35 @@ class KitchenProductionClosingBalanceTest extends TestCase
         self::assertSame(8.0, $row['closing_balance']);
     }
 
+    public function test_pending_corporate_credit_consumption_is_included_when_stock_is_deducted(): void
+    {
+        $item = $this->trackedMenuItem();
+        $this->production($item, '2026-08-05', produced: 10, wasted: 0);
+        $this->restaurantSale(
+            $item,
+            createdAt: '2026-08-10 12:00:00',
+            quantity: 2,
+            stockDeductedAt: '2026-08-10 13:00:00',
+            paymentStatus: 'pending',
+            paymentMethod: 'corporate_account',
+        );
+
+        $report = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        );
+        $row = $report['rows']->sole();
+
+        self::assertSame(2, $row['sold_units']);
+        self::assertSame(2.0, $row['production_amount_sold']);
+        self::assertSame(8.0, $row['closing_balance']);
+    }
+
     public function test_a_stock_reversal_restores_finished_food_in_the_reversal_period(): void
     {
         $item = $this->trackedMenuItem();
         $this->production($item, '2026-07-20', produced: 10, wasted: 0);
-        $this->completedSale(
+        $this->restaurantSale(
             $item,
             createdAt: '2026-07-25 12:00:00',
             quantity: 2,
@@ -114,12 +138,14 @@ class KitchenProductionClosingBalanceTest extends TestCase
         ]);
     }
 
-    private function completedSale(
+    private function restaurantSale(
         MenuItem $item,
         string $createdAt,
         int $quantity,
         ?string $stockDeductedAt = null,
         ?string $stockReversedAt = null,
+        string $paymentStatus = 'completed',
+        ?string $paymentMethod = null,
     ): void {
         $order = RestaurantOrder::create([
             'order_number' => 'BALANCE-'.str()->upper(str()->random(10)),
@@ -127,7 +153,8 @@ class KitchenProductionClosingBalanceTest extends TestCase
             'subtotal' => $quantity * 20,
             'total' => $quantity * 20,
             'status' => 'served',
-            'payment_status' => 'completed',
+            'payment_status' => $paymentStatus,
+            'payment_method' => $paymentMethod,
             'stock_deducted_at' => $stockDeductedAt ?? $createdAt,
             'stock_reversed_at' => $stockReversedAt,
         ]);

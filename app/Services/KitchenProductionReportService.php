@@ -25,6 +25,8 @@ class KitchenProductionReportService
             ->selectRaw('menu_item_id, SUM(quantity_produced - quantity_wasted) as balance')
             ->groupBy('menu_item_id')
             ->pluck('balance', 'menu_item_id');
+        // Finished-food balances follow inventory events rather than payment
+        // status, so deducted corporate-credit orders remain reportable.
         $openingConsumption = RestaurantOrderItem::query()
             ->join('restaurant_orders', 'restaurant_orders.id', '=', 'restaurant_order_items.restaurant_order_id')
             ->whereNotNull('restaurant_orders.stock_deducted_at')
