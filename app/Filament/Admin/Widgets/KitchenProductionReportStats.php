@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Filament\Admin\Pages\KitchenProductionReport;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -12,6 +11,19 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 class KitchenProductionReportStats extends StatsOverviewWidget
 {
     protected int|string|array $columnSpan = 'full';
+
+    /**
+     * Summary calculated once by the parent kitchen report page.
+     *
+     * @var array{tracked_items: int, healthy_items: int, low_stock_items: int, negative_variance_items: int, net_revenue: float}
+     */
+    public array $summary = [
+        'tracked_items' => 0,
+        'healthy_items' => 0,
+        'low_stock_items' => 0,
+        'negative_variance_items' => 0,
+        'net_revenue' => 0.0,
+    ];
 
     /**
      * Start date selected on the parent kitchen report page.
@@ -38,16 +50,14 @@ class KitchenProductionReportStats extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
-        $reportPage = new KitchenProductionReport;
-        $reportPage->period = 'custom';
-        $reportPage->startDate = filled($this->fromDate)
+        $summary = $this->summary;
+        $fromDate = filled($this->fromDate)
             ? $this->fromDate
             : now()->startOfMonth()->toDateString();
-        $reportPage->endDate = filled($this->untilDate)
+        $untilDate = filled($this->untilDate)
             ? $this->untilDate
             : today()->toDateString();
-        $summary = $reportPage->getReportProperty()['summary'];
-        $rangeLabel = $this->rangeLabel($reportPage->startDate, $reportPage->endDate);
+        $rangeLabel = $this->rangeLabel($fromDate, $untilDate);
 
         return [
             Stat::make('Tracked items', number_format((int) $summary['tracked_items']))

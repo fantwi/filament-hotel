@@ -1,13 +1,15 @@
 <x-filament-panels::page>
+    @php($report = $this->report)
+
     <div class="space-y-6">
         <x-filament.report-period-controls from-label="From" until-label="Until" />
 
         <section aria-label="Kitchen production overview">
-            @livewire(\App\Filament\Admin\Widgets\KitchenProductionReportStats::class, ['fromDate' => $this->startDate, 'untilDate' => $this->endDate], key('kitchen-production-report-stats-'.$this->startDate.'-'.$this->endDate))
+            @livewire(\App\Filament\Admin\Widgets\KitchenProductionReportStats::class, ['summary' => $report['summary'], 'fromDate' => $this->startDate, 'untilDate' => $this->endDate], key('kitchen-production-report-stats-'.$this->startDate.'-'.$this->endDate))
         </section>
 
         <div class="space-y-4 md:hidden">
-            @forelse ($this->report['rows'] as $row)
+            @forelse ($report['rows'] as $row)
                 <x-filament::section>
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -47,7 +49,7 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white dark:bg-gray-900">
-                        @forelse ($this->report['rows'] as $row)
+                        @forelse ($report['rows'] as $row)
                             <tr>
                                 <th scope="row" class="border-b border-r border-gray-200 px-4 py-4 align-top dark:border-gray-700"><p class="font-medium">{{ $row['name'] }}</p><p class="mt-1 text-xs text-gray-500">{{ $row['category'] }} · {{ number_format($row['usage_per_sale'], 3) }} {{ $row['unit'] }} per sale</p></th>
                                 <td class="border-b border-r border-gray-200 px-4 py-4 align-top whitespace-nowrap dark:border-gray-700">{{ number_format($row['produced'], 3) }} {{ $row['unit'] }}</td><td class="border-b border-r border-gray-200 px-4 py-4 align-top whitespace-nowrap dark:border-gray-700">{{ number_format($row['wasted'], 3) }} {{ $row['unit'] }}</td><td class="border-b border-r border-gray-200 px-4 py-4 align-top whitespace-nowrap dark:border-gray-700">{{ number_format($row['net_produced'], 3) }} {{ $row['unit'] }}</td><td class="border-b border-r border-gray-200 px-4 py-4 align-top whitespace-nowrap dark:border-gray-700">{{ number_format($row['sold_units']) }}</td><td class="border-b border-r border-gray-200 px-4 py-4 align-top whitespace-nowrap dark:border-gray-700">{{ number_format($row['production_amount_sold'], 3) }} {{ $row['unit'] }}</td><td class="border-b border-r border-gray-200 px-4 py-4 align-top whitespace-nowrap dark:border-gray-700">{{ number_format($row['opening_balance'], 3) }} {{ $row['unit'] }}</td><td class="border-b border-r border-gray-200 px-4 py-4 align-top font-medium whitespace-nowrap dark:border-gray-700 {{ $row['period_variance'] < 0 ? 'text-danger-600' : '' }}">{{ number_format($row['period_variance'], 3) }} {{ $row['unit'] }}</td><td class="border-b border-r border-gray-200 px-4 py-4 align-top font-medium whitespace-nowrap dark:border-gray-700 {{ $row['closing_balance'] < 0 ? 'text-danger-600' : '' }}">{{ number_format($row['closing_balance'], 3) }} {{ $row['unit'] }}</td><td class="border-b border-r border-gray-200 px-4 py-4 align-top whitespace-nowrap dark:border-gray-700">{{ number_format($row['sell_through'], 1) }}%</td><td class="border-b border-r border-gray-200 px-4 py-4 align-top whitespace-nowrap dark:border-gray-700 {{ $row['net_revenue'] < 0 ? 'text-danger-600' : '' }}">GHS {{ number_format($row['net_revenue'], 2) }}</td>
