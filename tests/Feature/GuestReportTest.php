@@ -37,20 +37,53 @@ class GuestReportTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guest_report_uses_one_selected_period_for_structured_guest_data(): void
+    public function test_guest_report_returns_an_exact_empty_period_contract(): void
     {
+        $this->travelTo('2026-09-05 12:34:56');
         $reportPage = new GuestReport;
-        $reportPage->period = 'yearly';
+        $reportPage->period = 'custom';
+        $reportPage->startDate = '2026-09-01';
+        $reportPage->endDate = '2026-09-02';
 
-        self::assertSame('Yearly', $reportPage->periodLabel());
+        self::assertSame('Sep 1, 2026 to Sep 2, 2026', $reportPage->periodLabel());
 
         $report = $reportPage->report();
 
-        self::assertArrayHasKey('payingGuests', $report);
-        self::assertArrayHasKey('returningGuests', $report);
-        self::assertArrayHasKey('activity', $report);
-        self::assertArrayHasKey('food', $report['activity']);
-        self::assertArrayHasKey('other', $report['activity']);
+        self::assertSame('2026-09-01 00:00:00', $report['periodStart']->toDateTimeString());
+        self::assertSame('2026-09-02 23:59:59', $report['periodEnd']->toDateTimeString());
+        self::assertTrue($report['generatedAt']->equalTo(now()));
+        self::assertSame(0, $report['totalGuests']);
+        self::assertSame(0, $report['newGuests']);
+        self::assertFalse($report['hasPeriodActivity']);
+        self::assertSame(0, $report['payingGuests']);
+        self::assertSame(0, $report['returningGuests']);
+        self::assertSame(0, $report['averageSpend']);
+        self::assertSame(0.0, $report['totalPaid']);
+        self::assertSame(0.0, $report['refundTotal']);
+        self::assertSame(0, $report['refundCount']);
+        self::assertSame(0.0, $report['netSpend']);
+        self::assertSame(0, $report['paymentCount']);
+        self::assertSame([
+            'hotel' => 0,
+            'conference' => 0,
+            'table' => 0,
+            'food' => 0,
+            'other' => 0,
+        ], $report['activity']);
+        self::assertTrue($report['topGuests']->isEmpty());
+        self::assertSame([
+            'previousPeriodLabel' => 'Aug 30, 2026 to Aug 31, 2026',
+            'newGuests' => ['current' => 0, 'previous' => 0, 'difference' => 0, 'percentageChange' => null],
+            'payingGuests' => ['current' => 0, 'previous' => 0, 'difference' => 0, 'percentageChange' => null],
+            'returningGuests' => ['current' => 0, 'previous' => 0, 'difference' => 0, 'percentageChange' => null],
+        ], $report['comparison']);
+        self::assertSame([
+            'granularity' => 'day',
+            'labels' => ['Sep 1', 'Sep 2'],
+            'newGuests' => [0, 0],
+            'payingGuests' => [0, 0],
+            'returningGuests' => [0, 0],
+        ], $report['trend']);
     }
 
     public function test_guest_report_marks_a_selected_period_without_activity_as_empty(): void
