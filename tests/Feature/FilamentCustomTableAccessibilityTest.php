@@ -7,14 +7,14 @@ use Tests\TestCase;
 class FilamentCustomTableAccessibilityTest extends TestCase
 {
     /**
-     * @var array<string, array{columnHeaders: int, rowHeaders: int}>
+     * @var array<string, array{columnHeaders: int, columnGroups: int, rowHeaders: int}>
      */
     private const MAINTAINED_TABLES = [
-        'views/filament/admin/widgets/corporate-billing-overview.blade.php' => ['columnHeaders' => 6, 'rowHeaders' => 1],
-        'views/filament/admin/pages/corporate-receivables.blade.php' => ['columnHeaders' => 6, 'rowHeaders' => 1],
-        'views/filament/admin/pages/guest-report.blade.php' => ['columnHeaders' => 4, 'rowHeaders' => 1],
-        'views/filament/admin/pages/kitchen-production-report.blade.php' => ['columnHeaders' => 12, 'rowHeaders' => 1],
-        'views/filament/admin/pages/restaurant-order-report.blade.php' => ['columnHeaders' => 6, 'rowHeaders' => 1],
+        'views/filament/admin/widgets/corporate-billing-overview.blade.php' => ['columnHeaders' => 6, 'columnGroups' => 0, 'rowHeaders' => 1],
+        'views/filament/admin/pages/corporate-receivables.blade.php' => ['columnHeaders' => 6, 'columnGroups' => 0, 'rowHeaders' => 1],
+        'views/filament/admin/pages/guest-report.blade.php' => ['columnHeaders' => 4, 'columnGroups' => 0, 'rowHeaders' => 1],
+        'views/filament/admin/pages/kitchen-production-report.blade.php' => ['columnHeaders' => 12, 'columnGroups' => 5, 'rowHeaders' => 1],
+        'views/filament/admin/pages/restaurant-order-report.blade.php' => ['columnHeaders' => 6, 'columnGroups' => 0, 'rowHeaders' => 1],
     ];
 
     public function test_maintained_custom_admin_tables_have_valid_captions_and_header_scopes(): void
@@ -53,19 +53,46 @@ class FilamentCustomTableAccessibilityTest extends TestCase
                     $theadMarkup = $thead[1];
                 }
 
-                preg_match_all('/<th\b[^>]*>/i', $theadMarkup, $columnHeaders);
-                $columnHeaderCount += count($columnHeaders[0]);
+                preg_match_all('/<th\b[^>]*>/i', $theadMarkup, $theadHeaders);
+                $tableColumnHeaderCount = 0;
+                $tableColumnGroupCount = 0;
 
-                if (count($columnHeaders[0]) !== $expected['columnHeaders']) {
+                foreach ($theadHeaders[0] as $headerIndex => $header) {
+                    preg_match_all('/\bscope\s*=\s*([\'"])(.*?)\1/i', $header, $scopes);
+
+                    if (count($scopes[0]) !== 1) {
+                        $violations[] = "{$tableLabel} thead header ".($headerIndex + 1).' must have exactly one scope attribute.';
+
+                        continue;
+                    }
+
+                    if (($scopes[2][0] ?? '') === 'col') {
+                        $tableColumnHeaderCount++;
+
+                        continue;
+                    }
+
+                    if (($scopes[2][0] ?? '') === 'colgroup') {
+                        $tableColumnGroupCount++;
+
+                        if (! preg_match('/\bcolspan\s*=\s*[\'"](?:[2-9]|[1-9]\d+)[\'"]/i', $header)) {
+                            $violations[] = "{$tableLabel} column group header ".($headerIndex + 1).' must span at least two columns.';
+                        }
+
+                        continue;
+                    }
+
+                    $violations[] = "{$tableLabel} thead header ".($headerIndex + 1).' must use scope="col" or scope="colgroup".';
+                }
+
+                $columnHeaderCount += $tableColumnHeaderCount;
+
+                if ($tableColumnHeaderCount !== $expected['columnHeaders']) {
                     $violations[] = "{$tableLabel} must have {$expected['columnHeaders']} column headers.";
                 }
 
-                foreach ($columnHeaders[0] as $headerIndex => $header) {
-                    preg_match_all('/\bscope\s*=\s*([\'"])(.*?)\1/i', $header, $scopes);
-
-                    if (count($scopes[0]) !== 1 || ($scopes[2][0] ?? '') !== 'col') {
-                        $violations[] = "{$tableLabel} column header ".($headerIndex + 1).' must have exactly scope="col".';
-                    }
+                if ($tableColumnGroupCount !== $expected['columnGroups']) {
+                    $violations[] = "{$tableLabel} must have {$expected['columnGroups']} column group headers.";
                 }
 
                 if (! preg_match('/<tbody\b[^>]*>(.*?)<\/tbody>/is', $table, $tbody)) {
@@ -109,7 +136,7 @@ class FilamentCustomTableAccessibilityTest extends TestCase
                 }
 
                 preg_match_all('/<th\b[^>]*>/i', $table, $allHeaders);
-                $expectedHeaderCount = $expected['columnHeaders'] + $expected['rowHeaders'];
+                $expectedHeaderCount = $expected['columnHeaders'] + $expected['columnGroups'] + $expected['rowHeaders'];
 
                 if (count($allHeaders[0]) !== $expectedHeaderCount) {
                     $violations[] = "{$tableLabel} must contain exactly {$expectedHeaderCount} total headers.";

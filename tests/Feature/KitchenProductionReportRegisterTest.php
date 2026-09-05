@@ -164,6 +164,62 @@ class KitchenProductionReportRegisterTest extends TestCase
         self::assertNotContains('md:block', $tableClasses);
     }
 
+    public function test_desktop_register_prioritizes_stock_status_and_groups_related_metrics(): void
+    {
+        $this->travelTo('2026-09-05 09:00:00');
+        $this->reportFixtures();
+
+        $html = Livewire::actingAs($this->authorizedUser())
+            ->test(KitchenProductionReport::class)
+            ->assertSuccessful()
+            ->html();
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $table = $xpath->query('//*[@data-kitchen-production-desktop-register]//table')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $table);
+
+        $groupHeaders = $xpath->query('.//thead/tr[1]/th[@scope="colgroup"]', $table);
+        self::assertCount(5, $groupHeaders);
+        self::assertSame(
+            ['Item & stock', 'Production', 'Sales', 'Inventory balance', 'Performance'],
+            array_map(
+                static fn (\DOMNode $header): string => trim($header->textContent),
+                iterator_to_array($groupHeaders),
+            ),
+        );
+        self::assertSame(
+            ['2', '3', '2', '3', '2'],
+            array_map(
+                static fn (\DOMElement $header): string => $header->getAttribute('colspan'),
+                iterator_to_array($groupHeaders),
+            ),
+        );
+
+        $columnHeaders = $xpath->query('.//thead/tr[2]/th[@scope="col"]', $table);
+        self::assertCount(12, $columnHeaders);
+        self::assertSame('Menu item', trim($columnHeaders->item(0)->textContent));
+        self::assertSame('Closing stock', trim($columnHeaders->item(1)->textContent));
+        self::assertStringContainsString('sticky', $columnHeaders->item(0)->getAttribute('class'));
+        self::assertStringContainsString('left-0', $columnHeaders->item(0)->getAttribute('class'));
+        self::assertStringContainsString('sticky', $columnHeaders->item(1)->getAttribute('class'));
+        self::assertStringContainsString('left-64', $columnHeaders->item(1)->getAttribute('class'));
+
+        $firstDataRow = $xpath->query('.//tbody/tr[1]', $table)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $firstDataRow);
+        $leadingCells = $xpath->query('./th | ./td', $firstDataRow);
+        self::assertStringContainsString('sticky', $leadingCells->item(0)->getAttribute('class'));
+        self::assertStringContainsString('left-0', $leadingCells->item(0)->getAttribute('class'));
+        self::assertStringContainsString('sticky', $leadingCells->item(1)->getAttribute('class'));
+        self::assertStringContainsString('left-64', $leadingCells->item(1)->getAttribute('class'));
+
+        foreach (range(2, 11) as $columnIndex) {
+            self::assertStringContainsString('text-right', $columnHeaders->item($columnIndex)->getAttribute('class'));
+            self::assertStringContainsString('tabular-nums', $leadingCells->item($columnIndex)->getAttribute('class'));
+        }
+    }
+
     /**
      * @return array{MenuItem, MenuItem, MenuItem}
      */
