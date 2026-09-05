@@ -9,11 +9,14 @@ use App\Filament\Admin\Resources\Payments\PaymentResource;
 use App\Models\Guest;
 use App\Models\Payment;
 use App\Services\PaymentReportFilters;
+use App\Support\Reporting\GuestReportCsv;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Provides the guest report Filament administration page.
@@ -37,11 +40,57 @@ class GuestReport extends Page
     protected string $view = 'filament.admin.pages.guest-report';
 
     /**
+     * Exposes spreadsheet export and browser printing for the applied report.
+     *
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('exportCsv')
+                ->label('Export CSV')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->action(fn (): StreamedResponse => $this->exportCsv()),
+            Action::make('printReport')
+                ->label('Print report')
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->alpineClickHandler('window.print()'),
+        ];
+    }
+
+    /**
+     * Streams the currently applied guest report range as a CSV download.
+     */
+    public function exportCsv(): StreamedResponse
+    {
+        abort_unless(static::canAccess(), 403);
+
+        $report = $this->report();
+        $csv = app(GuestReportCsv::class)->toCsv($report, $this->periodLabel());
+        $filename = sprintf(
+            'guest-report-%s-to-%s.csv',
+            $report['periodStart']->toDateString(),
+            $report['periodEnd']->toDateString(),
+        );
+
+        return response()->streamDownload(
+            static function () use ($csv): void {
+                echo $csv;
+            },
+            $filename,
+            ['Content-Type' => 'text/csv; charset=UTF-8'],
+        );
+    }
+
+    /**
      * Configures report for the Filament administration interface.
      */
     public function report(): array
     {
         [$periodStart, $periodEnd] = $this->periodBounds();
+        $generatedAt = now();
         [$previousStart, $previousEnd] = $this->previousPeriodBounds($periodStart, $periodEnd);
         $collectedPayments = $this->collectedGuestPayments();
         $refundedPayments = $this->refundedGuestPayments();
@@ -101,6 +150,9 @@ class GuestReport extends Page
         $returningGuestTrend = $this->returningGuestTrendAggregates($collectedPayments, $granularity);
 
         return [
+            'periodStart' => $periodStart,
+            'periodEnd' => $periodEnd,
+            'generatedAt' => $generatedAt,
             'totalGuests' => (int) $guestSummary->total_guests,
             'newGuests' => (int) $guestSummary->new_guests,
             'hasPeriodActivity' => (int) $guestSummary->new_guests > 0

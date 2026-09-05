@@ -40,7 +40,7 @@
             ],
         ];
     @endphp
-    <div class="space-y-6">
+    <div data-guest-report-page class="space-y-6">
         <x-filament::section>
             <div>
                 <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Guest insights</p>
@@ -337,6 +337,7 @@
             </div>
 
             <div
+                data-guest-loading-overlay
                 role="status"
                 aria-live="polite"
                 aria-atomic="true"
@@ -359,4 +360,46 @@
             </div>
         </x-filament::section>
     </div>
+
+    <style>
+        @media print {
+            @page {
+                size: landscape;
+                margin: 12mm;
+            }
+
+            .fi-sidebar,
+            .fi-topbar,
+            .fi-header,
+            .fi-breadcrumbs,
+            #guest-report-period-controls,
+            [data-guest-loading-overlay] {
+                display: none !important;
+            }
+
+            .fi-main-ctn {
+                margin-inline-start: 0 !important;
+                min-height: auto !important;
+            }
+
+            .fi-main {
+                max-width: none !important;
+                padding: 0 !important;
+            }
+
+            [data-guest-report-page] {
+                gap: 1rem !important;
+            }
+
+            [data-guest-report-page] .fi-section,
+            [data-guest-report-page] article {
+                break-inside: avoid;
+            }
+
+            [data-guest-report-page] a {
+                color: inherit !important;
+                text-decoration: none !important;
+            }
+        }
+    </style>
 </x-filament::page>
