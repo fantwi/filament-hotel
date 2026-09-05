@@ -220,6 +220,90 @@ class KitchenProductionReportRegisterTest extends TestCase
         }
     }
 
+    public function test_report_exposes_an_accessible_loading_state_for_all_result_refreshes(): void
+    {
+        $html = Livewire::actingAs($this->authorizedUser())
+            ->test(KitchenProductionReport::class)
+            ->assertSuccessful()
+            ->html();
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $loadingTargets = 'applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage';
+        $reportRegion = $xpath->query('//section[@aria-label="Kitchen production report results"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $reportRegion);
+        self::assertSame('aria-busy', $reportRegion->getAttribute('wire:loading.attr'));
+        self::assertSame($loadingTargets, $reportRegion->getAttribute('wire:target'));
+
+        $results = $xpath->query('./div[@data-kitchen-production-report-results]', $reportRegion)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $results);
+        self::assertSame($loadingTargets, $results->getAttribute('wire:target'));
+        self::assertStringContainsString('pointer-events-none', $results->getAttribute('wire:loading.class'));
+        self::assertStringContainsString('opacity-60', $results->getAttribute('wire:loading.class'));
+
+        $status = $xpath->query('./div[@data-kitchen-production-report-loading-overlay and @role="status"]', $reportRegion)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $status);
+        self::assertSame('polite', $status->getAttribute('aria-live'));
+        self::assertSame('true', $status->getAttribute('aria-atomic'));
+        self::assertSame($loadingTargets, $status->getAttribute('wire:target'));
+        self::assertTrue($status->hasAttribute('wire:loading.flex'));
+        self::assertStringContainsString('Updating kitchen production report', $status->textContent);
+
+        $periodForm = $xpath->query('//form[@*[name()="wire:submit"]="applyReportPeriod"]')?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $periodForm);
+        $periodFields = $xpath->query(
+            './/select[@*[name()="wire:loading.attr"]="disabled"] | .//input[@*[name()="wire:loading.attr"]="disabled"]',
+            $periodForm,
+        );
+        self::assertCount(3, $periodFields);
+
+        foreach ($periodFields as $field) {
+            self::assertSame('applyReportPeriod,resetReportPeriod', $field->getAttribute('wire:target'));
+        }
+    }
+
+    public function test_desktop_report_table_scroll_region_is_keyboard_accessible(): void
+    {
+        $html = Livewire::actingAs($this->authorizedUser())
+            ->test(KitchenProductionReport::class)
+            ->assertSuccessful()
+            ->html();
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $scrollRegion = $xpath->query('//*[@data-kitchen-production-table-scroll]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $scrollRegion);
+        self::assertSame('region', $scrollRegion->getAttribute('role'));
+        self::assertSame('0', $scrollRegion->getAttribute('tabindex'));
+        self::assertSame('Production report table; scroll horizontally to review all metrics.', $scrollRegion->getAttribute('aria-label'));
+        self::assertStringContainsString('focus-visible:ring-2', $scrollRegion->getAttribute('class'));
+    }
+
+    public function test_report_values_define_readable_dark_theme_contrast(): void
+    {
+        $this->travelTo('2026-09-05 09:00:00');
+        $this->reportFixtures();
+
+        $html = Livewire::actingAs($this->authorizedUser())
+            ->test(KitchenProductionReport::class)
+            ->assertSuccessful()
+            ->html();
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        $mobileValues = $xpath->query('//*[@data-kitchen-production-mobile-register]//article[1]/dl')?->item(0);
+        $desktopValues = $xpath->query('//*[@data-kitchen-production-desktop-register]//tbody')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $mobileValues);
+        self::assertInstanceOf(\DOMElement::class, $desktopValues);
+        self::assertStringContainsString('text-gray-700', $mobileValues->getAttribute('class'));
+        self::assertStringContainsString('dark:text-gray-200', $mobileValues->getAttribute('class'));
+        self::assertStringContainsString('text-gray-700', $desktopValues->getAttribute('class'));
+        self::assertStringContainsString('dark:text-gray-200', $desktopValues->getAttribute('class'));
+    }
+
     /**
      * @return array{MenuItem, MenuItem, MenuItem}
      */

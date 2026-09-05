@@ -11,7 +11,11 @@
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
             Report period
             <x-filament::input.wrapper class="mt-1">
-                <x-filament::input.select wire:model.live="draftPeriod">
+                <x-filament::input.select
+                    wire:model.live="draftPeriod"
+                    wire:loading.attr="disabled"
+                    wire:target="applyReportPeriod,resetReportPeriod"
+                >
                     @foreach (\App\Support\Reporting\ReportPeriod::options() as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
                     @endforeach
@@ -29,6 +33,8 @@
                     wire:model="draftStartDate"
                     type="date"
                     :disabled="$this->draftPeriod !== 'custom'"
+                    wire:loading.attr="disabled"
+                    wire:target="applyReportPeriod,resetReportPeriod"
                 />
             </x-filament::input.wrapper>
             @error('draftStartDate')
@@ -43,6 +49,8 @@
                     wire:model="draftEndDate"
                     type="date"
                     :disabled="$this->draftPeriod !== 'custom'"
+                    wire:loading.attr="disabled"
+                    wire:target="applyReportPeriod,resetReportPeriod"
                 />
             </x-filament::input.wrapper>
             @error('draftEndDate')

@@ -4,6 +4,18 @@
     <div class="space-y-6">
         <x-filament.report-period-controls from-label="From" until-label="Until" />
 
+        <section
+            aria-label="Kitchen production report results"
+            class="relative"
+            wire:loading.attr="aria-busy"
+            wire:target="applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage"
+        >
+            <div
+                data-kitchen-production-report-results
+                class="space-y-6 transition-opacity duration-200"
+                wire:loading.class="pointer-events-none opacity-60"
+                wire:target="applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage"
+            >
         <section aria-label="Kitchen production overview">
             @livewire(\App\Filament\Admin\Widgets\KitchenProductionReportStats::class, ['summary' => $report['summary'], 'fromDate' => $this->startDate, 'untilDate' => $this->endDate], key('kitchen-production-report-stats-'.$this->startDate.'-'.$this->endDate))
         </section>
@@ -120,7 +132,7 @@
                             </x-filament::badge>
                         </div>
 
-                        <dl class="mt-4 grid grid-cols-2 overflow-hidden rounded-lg border border-gray-200 text-sm dark:border-gray-700">
+                        <dl class="mt-4 grid grid-cols-2 overflow-hidden rounded-lg border border-gray-200 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-200">
                             <div class="border-b border-r border-gray-200 p-3 dark:border-gray-700"><dt class="text-xs text-gray-500 dark:text-gray-400">Produced</dt><dd class="mt-1 font-medium">{{ number_format($row['produced'], 3) }} {{ $row['unit'] }}</dd></div>
                             <div class="border-b border-gray-200 p-3 dark:border-gray-700"><dt class="text-xs text-gray-500 dark:text-gray-400">Wasted</dt><dd class="mt-1 font-medium">{{ number_format($row['wasted'], 3) }} {{ $row['unit'] }}</dd></div>
                             <div class="border-b border-r border-gray-200 p-3 dark:border-gray-700"><dt class="text-xs text-gray-500 dark:text-gray-400">Net produced</dt><dd class="mt-1 font-medium">{{ number_format($row['net_produced'], 3) }} {{ $row['unit'] }}</dd></div>
@@ -141,7 +153,13 @@
             </div>
 
             <div data-kitchen-production-desktop-register class="hidden 2xl:block">
-                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                <div
+                    data-kitchen-production-table-scroll
+                    role="region"
+                    tabindex="0"
+                    aria-label="Production report table; scroll horizontally to review all metrics."
+                    class="overflow-x-auto rounded-lg border border-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-inset dark:border-gray-700"
+                >
                     <table class="w-full min-w-[1450px] border-separate border-spacing-0 text-left text-sm">
                         <caption class="sr-only">Kitchen production, sales, and closing finished-food balance report</caption>
                         <thead class="text-xs uppercase">
@@ -167,7 +185,7 @@
                                 <th scope="col" class="border-b border-gray-200 bg-violet-50/60 px-4 py-4 text-right whitespace-nowrap text-gray-600 dark:border-gray-700 dark:bg-violet-950/30 dark:text-gray-300">Net revenue</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white dark:bg-gray-900">
+                        <tbody class="bg-white text-gray-700 dark:bg-gray-900 dark:text-gray-200">
                             @forelse ($report['rows'] as $row)
                                 <tr class="group">
                                     <th scope="row" class="sticky left-0 z-20 w-64 min-w-64 border-b border-r border-gray-200 bg-white px-4 py-4 align-top shadow-[2px_0_0_0_rgb(229_231_235)] group-hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:shadow-[2px_0_0_0_rgb(55_65_81)] dark:group-hover:bg-gray-800">
@@ -204,5 +222,23 @@
                 </div>
             @endif
         </x-filament::section>
+            </div>
+
+            <div
+                data-kitchen-production-report-loading-overlay
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                wire:loading.flex
+                wire:target="applyReportPeriod,resetReportPeriod,reportSearch,categoryFilter,stockStatus,sortBy,sortDirection,perPage,resetRegisterFilters,gotoPage,previousPage,nextPage"
+                class="absolute inset-0 z-40 items-start justify-center rounded-xl bg-white/75 px-4 py-12 backdrop-blur-[1px] dark:bg-gray-950/75"
+                style="display: none;"
+            >
+                <div class="inline-flex items-center gap-3 rounded-xl border border-primary-200 bg-white px-4 py-3 font-medium text-primary-700 shadow-lg dark:border-primary-500/30 dark:bg-gray-900 dark:text-primary-300">
+                    <x-filament::icon icon="heroicon-o-arrow-path" class="h-5 w-5 animate-spin" />
+                    <span>Updating kitchen production report&hellip;</span>
+                </div>
+            </div>
+        </section>
     </div>
 </x-filament-panels::page>
