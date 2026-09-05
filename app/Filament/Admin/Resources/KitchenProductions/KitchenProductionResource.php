@@ -36,6 +36,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -134,9 +135,19 @@ class KitchenProductionResource extends SecureResource
                             ->searchable(['name', 'description'])
                             ->preload()
                             ->live()
+                            ->afterStateHydrated(fn (mixed $state, Set $set): mixed => $set(
+                                'production_unit_display',
+                                static::productionUnitForMenuItem($state),
+                            ))
+                            ->afterStateUpdated(fn (mixed $state, Set $set): mixed => $set(
+                                'production_unit_display',
+                                static::productionUnitForMenuItem($state),
+                            ))
                             ->helperText('Loaded from Menu Items. Enable “Track Kitchen Production” on a menu item to make it selectable here.')
                             ->disabledOn('edit')
                             ->required(),
+                        Hidden::make('production_unit_display')
+                            ->dehydrated(false),
                         DatePicker::make('production_date')->default(today())->maxDate(today())->disabledOn('edit')->required(),
                         TextInput::make('quantity_produced')
                             ->label('Quantity Produced')
@@ -144,6 +155,10 @@ class KitchenProductionResource extends SecureResource
                             ->minValue(.001)
                             ->step(.001)
                             ->live(debounce: 500)
+                            ->suffix(fn (Get $get): string => static::productionUnitLabel(
+                                $get,
+                                $get('quantity_produced'),
+                            ))
                             ->helperText('Enter the finished quantity prepared in this batch.')
                             ->disabledOn('edit')
                             ->required(),
@@ -153,6 +168,11 @@ class KitchenProductionResource extends SecureResource
                             ->minValue(0)
                             ->step(.001)
                             ->default(0)
+                            ->live(debounce: 500)
+                            ->suffix(fn (Get $get): string => static::productionUnitLabel(
+                                $get,
+                                $get('quantity_wasted'),
+                            ))
                             ->helperText('Enter 0 if there was no finished-food waste.')
                             ->disabledOn('edit')
                             ->rules([
@@ -165,6 +185,50 @@ class KitchenProductionResource extends SecureResource
                                 },
                             ])
                             ->required(),
+                        Section::make('Live Yield Summary')
+                            ->key('live_yield_summary')
+                            ->description('Updates as produced and wasted quantities change.')
+                            ->schema([
+                                TextEntry::make('produced_yield_summary')
+                                    ->label('Produced')
+                                    ->state(fn (Get $get): string => static::formattedProductionQuantity(
+                                        $get,
+                                        $get('quantity_produced'),
+                                    ))
+                                    ->badge()
+                                    ->color('info'),
+                                TextEntry::make('wasted_yield_summary')
+                                    ->label('Wasted')
+                                    ->state(fn (Get $get): string => static::formattedProductionQuantity(
+                                        $get,
+                                        $get('quantity_wasted'),
+                                    ))
+                                    ->badge()
+                                    ->color(fn (Get $get): string => match (true) {
+                                        static::hasInvalidProductionWaste($get) => 'danger',
+                                        (float) ($get('quantity_wasted') ?? 0) > 0 => 'warning',
+                                        default => 'gray',
+                                    }),
+                                TextEntry::make('net_yield_summary')
+                                    ->label('Net Yield')
+                                    ->state(fn (Get $get): string => static::netProductionYield($get))
+                                    ->badge()
+                                    ->color(fn (string $state): string => $state === 'Invalid waste quantity'
+                                        ? 'danger'
+                                        : 'success'),
+                                TextEntry::make('waste_rate_summary')
+                                    ->label('Waste Percentage')
+                                    ->state(fn (Get $get): string => static::productionWasteRate($get))
+                                    ->badge()
+                                    ->color(fn (string $state): string => match ($state) {
+                                        'Check waste quantity' => 'danger',
+                                        '—' => 'gray',
+                                        default => 'info',
+                                    }),
+                            ])
+                            ->columns(['default' => 1, 'sm' => 2, 'lg' => 4])
+                            ->columnSpanFull()
+                            ->visible(fn (Get $get): bool => filled($get('menu_item_id'))),
                         Placeholder::make('recipe_prefill_status')
                             ->label('Recipe Estimate')
                             ->content(fn (Get $get): string => static::recipePrefillStatus($get))
@@ -572,6 +636,99 @@ class KitchenProductionResource extends SecureResource
         }
 
         return MenuItem::query()->whereKey($menuItemId)->value('inventory_consumption_mode');
+    }
+
+    /**
+     * Returns the production unit configured for the selected menu item.
+     */
+    private static function selectedProductionUnit(Get $get): string
+    {
+        $unit = $get('production_unit_display');
+
+        if (filled($unit)) {
+            return (string) $unit;
+        }
+
+        return static::productionUnitForMenuItem($get('menu_item_id'));
+    }
+
+    /**
+     * Looks up a menu item's production unit, with a readable fallback.
+     */
+    private static function productionUnitForMenuItem(mixed $menuItemId): string
+    {
+        if (blank($menuItemId)) {
+            return 'unit';
+        }
+
+        return MenuItem::query()->whereKey($menuItemId)->value('production_unit') ?: 'unit';
+    }
+
+    /**
+     * Returns a singular or plural unit label for the supplied quantity.
+     */
+    private static function productionUnitLabel(Get $get, mixed $quantity): string
+    {
+        return Str::plural(static::selectedProductionUnit($get), abs((float) ($quantity ?? 0)));
+    }
+
+    /**
+     * Formats a finished-food quantity with its configured production unit.
+     */
+    private static function formattedProductionQuantity(Get $get, mixed $quantity): string
+    {
+        $quantity = (float) ($quantity ?? 0);
+
+        return sprintf(
+            '%s %s',
+            number_format($quantity, 3),
+            static::productionUnitLabel($get, $quantity),
+        );
+    }
+
+    /**
+     * Determines whether finished-food waste exceeds the produced quantity.
+     */
+    private static function hasInvalidProductionWaste(Get $get): bool
+    {
+        if (blank($get('quantity_produced')) || blank($get('quantity_wasted'))) {
+            return false;
+        }
+
+        return (float) $get('quantity_wasted') > (float) $get('quantity_produced');
+    }
+
+    /**
+     * Calculates and formats usable finished-food yield after waste.
+     */
+    private static function netProductionYield(Get $get): string
+    {
+        if (static::hasInvalidProductionWaste($get)) {
+            return 'Invalid waste quantity';
+        }
+
+        return static::formattedProductionQuantity(
+            $get,
+            max((float) ($get('quantity_produced') ?? 0) - (float) ($get('quantity_wasted') ?? 0), 0),
+        );
+    }
+
+    /**
+     * Calculates finished-food waste as a percentage of produced quantity.
+     */
+    private static function productionWasteRate(Get $get): string
+    {
+        if (static::hasInvalidProductionWaste($get)) {
+            return 'Check waste quantity';
+        }
+
+        $produced = (float) ($get('quantity_produced') ?? 0);
+
+        if ($produced <= 0) {
+            return '—';
+        }
+
+        return number_format(((float) ($get('quantity_wasted') ?? 0) / $produced) * 100, 2).'%';
     }
 
     /**
