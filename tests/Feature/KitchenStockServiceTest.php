@@ -9,8 +9,10 @@ use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use App\Models\Restaurant;
 use App\Models\RestaurantOrder;
+use App\Models\User;
 use App\Services\KitchenStockService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class KitchenStockServiceTest extends TestCase
@@ -101,6 +103,93 @@ class KitchenStockServiceTest extends TestCase
         $ingredient->refresh();
         $this->assertSame('8.000', $ingredient->current_stock);
         $this->assertSame(1, KitchenStockMovement::query()->whereMorphedTo('reference', $production)->where('type', KitchenStockMovement::TYPE_CONSUMPTION)->count());
+    }
+
+    public function test_voiding_a_production_batch_restores_stock_and_preserves_its_audit_record(): void
+    {
+        [$actor, $ingredient, $production] = $this->postedProductionBatch();
+        $stock = app(KitchenStockService::class);
+        $stock->voidProduction($production, 'Batch was entered twice.', $actor);
+
+        $production->refresh();
+
+        $this->assertSame('10.000', $ingredient->refresh()->current_stock);
+        $this->assertNotNull($production->voided_at);
+        $this->assertSame($actor->id, $production->voided_by);
+        $this->assertSame('Batch was entered twice.', $production->void_reason);
+        $this->assertDatabaseHas('kitchen_productions', ['id' => $production->id]);
+        $this->assertDatabaseHas('kitchen_production_ingredients', [
+            'kitchen_production_id' => $production->id,
+            'ingredient_id' => $ingredient->id,
+        ]);
+        $this->assertDatabaseHas('kitchen_stock_movements', [
+            'ingredient_id' => $ingredient->id,
+            'type' => KitchenStockMovement::TYPE_REVERSAL,
+            'direction' => KitchenStockMovement::DIRECTION_IN,
+            'quantity' => 2,
+            'reference_type' => $production->getMorphClass(),
+            'reference_id' => $production->id,
+            'performed_by' => $actor->id,
+        ]);
+    }
+
+    public function test_voiding_a_production_batch_twice_does_not_restore_stock_twice(): void
+    {
+        [$actor, $ingredient, $production] = $this->postedProductionBatch();
+        $stock = app(KitchenStockService::class);
+        $stock->voidProduction($production, 'Original void reason.', $actor);
+        $stock->voidProduction($production, 'Duplicate request.', $actor);
+
+        $this->assertSame('10.000', $ingredient->refresh()->current_stock);
+        $this->assertSame('Original void reason.', $production->refresh()->void_reason);
+        $this->assertSame(
+            1,
+            KitchenStockMovement::query()
+                ->whereMorphedTo('reference', $production)
+                ->where('type', KitchenStockMovement::TYPE_REVERSAL)
+                ->count(),
+        );
+    }
+
+    public function test_voiding_a_production_batch_requires_an_audit_reason(): void
+    {
+        [$actor, $ingredient, $production] = $this->postedProductionBatch();
+        $stock = app(KitchenStockService::class);
+
+        try {
+            $stock->voidProduction($production, '   ', $actor);
+            $this->fail('A blank void reason should be rejected.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('reason', $exception->errors());
+        }
+
+        $this->assertSame('8.000', $ingredient->refresh()->current_stock);
+        $this->assertNull($production->refresh()->voided_at);
+        $this->assertSame(0, KitchenStockMovement::query()->where('type', KitchenStockMovement::TYPE_REVERSAL)->count());
+    }
+
+    /**
+     * @return array{User, Ingredient, KitchenProduction}
+     */
+    private function postedProductionBatch(): array
+    {
+        $actor = User::factory()->create(['department' => 'kitchen_manager']);
+        $ingredient = $this->ingredient(10);
+        $menuItem = $this->menuItem('production_batch');
+        $production = KitchenProduction::create([
+            'menu_item_id' => $menuItem->id,
+            'production_date' => today(),
+            'quantity_produced' => 4,
+            'quantity_wasted' => 0,
+        ]);
+        $production->ingredients()->create([
+            'ingredient_id' => $ingredient->id,
+            'quantity_used' => 2,
+            'unit' => 'kg',
+        ]);
+        app(KitchenStockService::class)->consumeForProduction($production);
+
+        return [$actor, $ingredient, $production];
     }
 
     private function ingredient(float $stock = 0): Ingredient

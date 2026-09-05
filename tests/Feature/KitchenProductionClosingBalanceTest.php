@@ -205,6 +205,29 @@ class KitchenProductionClosingBalanceTest extends TestCase
         self::assertFalse($report['has_period_activity']);
     }
 
+    public function test_voided_batches_are_excluded_from_production_totals(): void
+    {
+        $item = $this->trackedMenuItem();
+        $this->production($item, '2026-08-05', produced: 10, wasted: 1);
+        KitchenProduction::create([
+            'menu_item_id' => $item->getKey(),
+            'production_date' => '2026-08-06',
+            'quantity_produced' => 7,
+            'quantity_wasted' => 0,
+            'voided_at' => '2026-08-07 09:00:00',
+            'void_reason' => 'Duplicate batch.',
+        ]);
+
+        $row = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        )['rows']->sole();
+
+        self::assertSame(10.0, $row['produced']);
+        self::assertSame(1.0, $row['wasted']);
+        self::assertSame(9.0, $row['closing_balance']);
+    }
+
     public function test_net_zero_deduction_and_reversal_are_still_selected_period_activity(): void
     {
         $item = $this->trackedMenuItem();

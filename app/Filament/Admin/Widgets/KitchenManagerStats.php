@@ -80,7 +80,7 @@ class KitchenManagerStats extends StatsOverviewWidget
                 $this->restaurantOrderDrillDownUrl('ready'),
             ),
             $this->drillDown(
-                Stat::make('Production batches', number_format($this->forDashboardDateRange(KitchenProduction::query(), 'production_date')->count()))
+                Stat::make('Production batches', number_format($this->forDashboardDateRange(KitchenProduction::query()->notVoided(), 'production_date')->count()))
                     ->description($periodLabel)
                     ->icon('heroicon-o-clipboard-document-list')
                     ->color('primary'),

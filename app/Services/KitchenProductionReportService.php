@@ -26,6 +26,7 @@ class KitchenProductionReportService
         // the number of recorded batches grows.
         $productionTotals = DB::table('kitchen_productions')
             ->where('production_date', '<=', $until)
+            ->whereNull('voided_at')
             ->select('menu_item_id')
             ->selectRaw(
                 'COALESCE(SUM(CASE WHEN production_date < ? THEN quantity_produced - quantity_wasted ELSE 0 END), 0) as opening_balance',

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Resources\KitchenProductions\Pages\EditKitchenProduction;
+use App\Filament\Admin\Resources\KitchenProductions\Pages\ListKitchenProductions;
 use App\Models\Ingredient;
 use App\Models\KitchenProduction;
 use App\Models\KitchenStockMovement;
@@ -122,6 +123,68 @@ class KitchenProductionEditProtectionTest extends TestCase
         self::assertSame('Authorized notes-only correction.', $production->notes);
         self::assertSame('8.000', $fixture['ingredient']->refresh()->current_stock);
         self::assertSame(1, KitchenStockMovement::query()->whereMorphedTo('reference', $production)->count());
+    }
+
+    public function test_authorized_manager_can_void_a_batch_from_the_register_without_deleting_it(): void
+    {
+        $this->kitchenManager->givePermissionTo(Permission::findOrCreate('void kitchen production', 'web'));
+        $fixture = $this->productionBatch();
+
+        Livewire::actingAs($this->kitchenManager)
+            ->test(ListKitchenProductions::class)
+            ->assertTableActionDoesNotExist('delete')
+            ->assertTableActionVisible('void', $fixture['production'])
+            ->callTableAction('void', $fixture['production'], [
+                'reason' => 'Duplicate production batch.',
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $production = $fixture['production']->refresh();
+
+        self::assertNotNull($production->voided_at);
+        self::assertSame($this->kitchenManager->getKey(), $production->voided_by);
+        self::assertSame('Duplicate production batch.', $production->void_reason);
+        self::assertSame('10.000', $fixture['ingredient']->refresh()->current_stock);
+        self::assertDatabaseHas('kitchen_productions', ['id' => $production->getKey()]);
+    }
+
+    public function test_kitchen_staff_cannot_void_a_posted_batch_even_if_the_permission_is_assigned_directly(): void
+    {
+        $kitchenStaff = User::factory()->create(['department' => 'kitchen_staff']);
+        $kitchenStaff->givePermissionTo([
+            Permission::findOrCreate('manage kitchen production', 'web'),
+            Permission::findOrCreate('void kitchen production', 'web'),
+        ]);
+        $fixture = $this->productionBatch();
+
+        Livewire::actingAs($kitchenStaff)
+            ->test(ListKitchenProductions::class)
+            ->assertCanSeeTableRecords([$fixture['production']])
+            ->assertTableActionHidden('void', $fixture['production']);
+
+        self::assertNull($fixture['production']->refresh()->voided_at);
+        self::assertSame('8.000', $fixture['ingredient']->refresh()->current_stock);
+    }
+
+    public function test_production_register_can_filter_voided_batches_without_hiding_the_audit_record(): void
+    {
+        $this->kitchenManager->givePermissionTo(Permission::findOrCreate('void kitchen production', 'web'));
+        $posted = $this->productionBatch();
+        $voided = $this->productionBatch();
+        app(KitchenStockService::class)->voidProduction(
+            $voided['production'],
+            'Incorrect quantity recorded.',
+            $this->kitchenManager,
+        );
+
+        Livewire::actingAs($this->kitchenManager)
+            ->test(ListKitchenProductions::class)
+            ->assertCanSeeTableRecords([$posted['production'], $voided['production']])
+            ->filterTable('inventory_status', 'voided')
+            ->assertCanSeeTableRecords([$voided['production']])
+            ->assertCanNotSeeTableRecords([$posted['production']])
+            ->assertSee('Voided')
+            ->assertSee('Incorrect quantity recorded.');
     }
 
     /**

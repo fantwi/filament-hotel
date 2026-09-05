@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\KitchenProduction;
 use App\Models\KitchenStockMovement;
 use App\Models\RestaurantOrder;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -166,6 +167,72 @@ class KitchenStockService
     }
 
     /**
+     * Voids a posted production batch while restoring its deducted ingredients.
+     */
+    public function voidProduction(KitchenProduction $production, string $reason, User $actor): void
+    {
+        $reason = trim($reason);
+
+        if ($reason === '') {
+            throw ValidationException::withMessages(['reason' => 'A reason is required to void a production batch.']);
+        }
+
+        DB::transaction(function () use ($actor, $production, $reason): void {
+            $production = KitchenProduction::query()->lockForUpdate()->findOrFail($production->id);
+
+            if ($production->voided_at) {
+                return;
+            }
+
+            $quantities = KitchenStockMovement::query()
+                ->whereMorphedTo('reference', $production)
+                ->where('type', KitchenStockMovement::TYPE_CONSUMPTION)
+                ->where('direction', KitchenStockMovement::DIRECTION_OUT)
+                ->selectRaw('ingredient_id, sum(quantity) as quantity')
+                ->groupBy('ingredient_id')
+                ->orderBy('ingredient_id')
+                ->pluck('quantity', 'ingredient_id');
+
+            $ingredients = Ingredient::query()
+                ->whereIn('id', $quantities->keys())
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            foreach ($quantities as $ingredientId => $quantity) {
+                $ingredient = $ingredients->get($ingredientId);
+
+                if (! $ingredient) {
+                    continue;
+                }
+
+                $before = (float) $ingredient->current_stock;
+                $after = round($before + (float) $quantity, 3);
+                $ingredient->update(['current_stock' => $after]);
+                $this->movement(
+                    $ingredient,
+                    KitchenStockMovement::TYPE_REVERSAL,
+                    KitchenStockMovement::DIRECTION_IN,
+                    (float) $quantity,
+                    $before,
+                    $after,
+                    (float) $ingredient->unit_cost,
+                    $production,
+                    "Production batch {$production->batch_reference} voided: {$reason}",
+                    performedBy: $actor->id,
+                );
+            }
+
+            $production->update([
+                'voided_at' => now(),
+                'voided_by' => $actor->id,
+                'void_reason' => $reason,
+            ]);
+        });
+    }
+
+    /**
      * Creates stock movements for the supplied ingredient requirements.
      */
     private function deductRequirements(array $requirements, Model $reference, string $notes): void
@@ -238,7 +305,7 @@ class KitchenStockService
     /**
      * Creates an auditable kitchen-stock movement for an ingredient.
      */
-    private function movement(Ingredient $ingredient, string $type, string $direction, float $quantity, float $before, float $after, ?float $unitCost, Model|string|null $referenceOrNumber = null, ?string $notes = null, ?string $supplierName = null): KitchenStockMovement
+    private function movement(Ingredient $ingredient, string $type, string $direction, float $quantity, float $before, float $after, ?float $unitCost, Model|string|null $referenceOrNumber = null, ?string $notes = null, ?string $supplierName = null, ?int $performedBy = null): KitchenStockMovement
     {
         $reference = $referenceOrNumber instanceof Model ? $referenceOrNumber : null;
 
@@ -249,7 +316,7 @@ class KitchenStockService
             'reference_number' => is_string($referenceOrNumber) ? $referenceOrNumber : null,
             'supplier_name' => $supplierName,
             'reference_type' => $reference?->getMorphClass(), 'reference_id' => $reference?->getKey(),
-            'performed_by' => auth()->id(), 'occurred_at' => now(), 'notes' => $notes,
+            'performed_by' => $performedBy ?? auth()->id(), 'occurred_at' => now(), 'notes' => $notes,
         ]);
     }
 

@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Resources\KitchenProductions\KitchenProductionResource;
+use App\Filament\Admin\Widgets\KitchenManagerStats;
 use App\Filament\Admin\Widgets\ManagerOperationsStats;
 use App\Filament\Admin\Widgets\ManagerStats;
 use App\Models\KitchenProduction;
+use App\Models\MenuCategory;
+use App\Models\MenuItem;
 use Filament\Facades\Filament;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -121,6 +124,38 @@ class ManagerDashboardExperienceTest extends TestCase
             'Stock movements',
         ], array_keys($stats));
         self::assertCount(4, $queries);
+    }
+
+    public function test_dashboard_production_counts_exclude_voided_batches(): void
+    {
+        $category = MenuCategory::query()->create([
+            'name' => 'Dashboard Production',
+            'slug' => 'dashboard-production',
+        ]);
+        $item = MenuItem::query()->create([
+            'menu_category_id' => $category->getKey(),
+            'name' => 'Dashboard Meal',
+            'slug' => 'dashboard-meal',
+            'price' => 20,
+        ]);
+
+        KitchenProduction::query()->create([
+            'menu_item_id' => $item->getKey(),
+            'production_date' => '2026-08-05',
+            'quantity_produced' => 10,
+            'quantity_wasted' => 0,
+        ]);
+        KitchenProduction::query()->create([
+            'menu_item_id' => $item->getKey(),
+            'production_date' => '2026-08-06',
+            'quantity_produced' => 10,
+            'quantity_wasted' => 0,
+            'voided_at' => '2026-08-07 09:00:00',
+            'void_reason' => 'Duplicate batch.',
+        ]);
+
+        self::assertSame('1', $this->stats(new ManagerOperationsStats)['Production batches']->getValue());
+        self::assertSame('1', $this->stats(new KitchenManagerStats)['Production batches']->getValue());
     }
 
     /**
