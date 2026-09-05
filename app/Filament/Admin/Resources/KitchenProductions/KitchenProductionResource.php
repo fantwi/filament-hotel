@@ -10,11 +10,14 @@ use App\Filament\Admin\Resources\KitchenProductions\Schemas\KitchenProductionInf
 use App\Filament\Admin\Resources\SecureResource;
 use App\Models\Ingredient;
 use App\Models\KitchenProduction;
+use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use App\Models\Restaurant;
+use App\Models\User;
 use App\Services\KitchenProductionRecipeService;
 use App\Services\KitchenStockService;
 use BackedEnum;
+use Carbon\CarbonImmutable;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -580,9 +583,53 @@ class KitchenProductionResource extends SecureResource
                     ->preload(),
                 SelectFilter::make('menu_item')
                     ->label('Menu item')
-                    ->relationship('menuItem', 'name')
+                    ->options(fn (): array => MenuItem::query()
+                        ->whereHas('kitchenProductions')
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        filled($data['value'] ?? null),
+                        fn (Builder $query): Builder => $query->where('menu_item_id', $data['value']),
+                    )),
+                SelectFilter::make('category')
+                    ->label('Menu category')
+                    ->options(fn (): array => MenuCategory::query()
+                        ->whereHas('menuItems.kitchenProductions')
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->searchable()
+                    ->preload()
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        filled($data['value'] ?? null),
+                        fn (Builder $query): Builder => $query->whereHas(
+                            'menuItem',
+                            fn (Builder $query): Builder => $query->where('menu_category_id', $data['value']),
+                        ),
+                    )),
+                SelectFilter::make('produced_by')
+                    ->label('Produced by')
+                    ->options(fn (): array => User::query()
+                        ->whereIn(
+                            'id',
+                            KitchenProduction::query()
+                                ->select('produced_by')
+                                ->whereNotNull('produced_by'),
+                        )
+                        ->orderBy('first_name')
+                        ->orderBy('last_name')
+                        ->get()
+                        ->mapWithKeys(fn (User $user): array => [$user->id => $user->name])
+                        ->all())
+                    ->searchable()
+                    ->preload()
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        filled($data['value'] ?? null),
+                        fn (Builder $query): Builder => $query->where('produced_by', $data['value']),
+                    )),
                 SelectFilter::make('inventory_status')
                     ->label('Batch status')
                     ->options([
@@ -594,11 +641,38 @@ class KitchenProductionResource extends SecureResource
                         'voided' => $query->whereNotNull('voided_at'),
                         default => $query,
                     }),
+                Filter::make('waste_only')
+                    ->label('Has finished-food waste')
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->where('quantity_wasted', '>', 0)),
+                SelectFilter::make('date_preset')
+                    ->label('Quick period')
+                    ->options([
+                        'today' => 'Today',
+                        'last_7_days' => 'Last 7 days',
+                        'this_month' => 'This month',
+                        'previous_month' => 'Previous month',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        [$start, $endExclusive] = static::productionDatePresetBounds($data['value'] ?? null);
+
+                        if ($start === null || $endExclusive === null) {
+                            return $query;
+                        }
+
+                        return $query
+                            ->where('production_date', '>=', $start)
+                            ->where('production_date', '<', $endExclusive);
+                    }),
                 Filter::make('production_date')
                     ->label('Production date')
                     ->schema([
-                        DatePicker::make('from')->label('From'),
-                        DatePicker::make('until')->label('Until'),
+                        DatePicker::make('from')
+                            ->label('From')
+                            ->maxDate(fn (Get $get): mixed => $get('until')),
+                        DatePicker::make('until')
+                            ->label('Until')
+                            ->minDate(fn (Get $get): mixed => $get('from')),
                     ])
                     ->columns(2)
                     ->query(fn (Builder $query, array $data): Builder => $query
@@ -611,7 +685,9 @@ class KitchenProductionResource extends SecureResource
                             fn (Builder $query, string $date): Builder => $query->whereDate('production_date', '<=', $date),
                         )),
             ])
-            ->defaultSort('production_date', 'desc')
+            ->defaultSort(fn (Builder $query): Builder => $query
+                ->orderByDesc('production_date')
+                ->orderByDesc('id'))
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
@@ -644,6 +720,24 @@ class KitchenProductionResource extends SecureResource
                     }),
             ], RecordActionsPosition::BeforeColumns)
             ->stackedOnMobile();
+    }
+
+    /**
+     * Returns index-friendly inclusive-start and exclusive-end period bounds.
+     *
+     * @return array{CarbonImmutable|null, CarbonImmutable|null}
+     */
+    private static function productionDatePresetBounds(?string $preset): array
+    {
+        $today = today()->toImmutable()->startOfDay();
+
+        return match ($preset) {
+            'today' => [$today, $today->addDay()],
+            'last_7_days' => [$today->subDays(6), $today->addDay()],
+            'this_month' => [$today->startOfMonth(), $today->startOfMonth()->addMonth()],
+            'previous_month' => [$today->startOfMonth()->subMonth(), $today->startOfMonth()],
+            default => [null, null],
+        };
     }
 
     /**
