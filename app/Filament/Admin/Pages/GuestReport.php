@@ -62,10 +62,11 @@ class GuestReport extends Page
             ->selectRaw('COUNT(DISTINCT '.self::RESOLVED_GUEST_ID.') as paying_guests')
             ->selectRaw('COALESCE(SUM(payments.amount), 0) as total_paid')
             ->selectRaw('COUNT(payments.id) as payment_count')
-            ->selectRaw('COUNT(payments.booking_id) as hotel_payment_count')
-            ->selectRaw('COUNT(payments.conference_booking_id) as conference_payment_count')
-            ->selectRaw('COUNT(payments.restaurant_reservation_id) as table_payment_count')
-            ->selectRaw('COUNT(payments.restaurant_order_id) as food_payment_count')
+            ->selectRaw('COUNT(CASE WHEN payments.booking_id IS NOT NULL THEN payments.id END) as hotel_payment_count')
+            ->selectRaw('COUNT(CASE WHEN payments.booking_id IS NULL AND payments.conference_booking_id IS NOT NULL THEN payments.id END) as conference_payment_count')
+            ->selectRaw('COUNT(CASE WHEN payments.booking_id IS NULL AND payments.conference_booking_id IS NULL AND payments.restaurant_reservation_id IS NOT NULL THEN payments.id END) as table_payment_count')
+            ->selectRaw('COUNT(CASE WHEN payments.booking_id IS NULL AND payments.conference_booking_id IS NULL AND payments.restaurant_reservation_id IS NULL AND payments.restaurant_order_id IS NOT NULL THEN payments.id END) as food_payment_count')
+            ->selectRaw('COUNT(CASE WHEN payments.booking_id IS NULL AND payments.conference_booking_id IS NULL AND payments.restaurant_reservation_id IS NULL AND payments.restaurant_order_id IS NULL THEN payments.id END) as other_payment_count')
             ->first();
 
         $refundSummary = (clone $refundedPayments)
@@ -118,6 +119,7 @@ class GuestReport extends Page
                 'conference' => (int) $collectedSummary->conference_payment_count,
                 'table' => (int) $collectedSummary->table_payment_count,
                 'food' => (int) $collectedSummary->food_payment_count,
+                'other' => (int) $collectedSummary->other_payment_count,
             ],
             'topGuests' => $topGuests,
             'comparison' => [
@@ -394,7 +396,7 @@ class GuestReport extends Page
      *     grossSpend: string|null,
      *     refunds: string|null,
      *     netSpend: string|null,
-     *     activity: array{hotel: string|null, conference: string|null, table: string|null, food: string|null}
+     *     activity: array{hotel: string|null, conference: string|null, table: string|null, food: string|null, other: string|null}
      * }
      */
     public function drillDownUrls(): array
@@ -428,6 +430,7 @@ class GuestReport extends Page
                 'conference' => $this->paymentOrTransactionUrl('revenue', 'conference_bookings', 'transaction-breakdown'),
                 'table' => $this->paymentOrTransactionUrl('revenue', 'table_reservations', 'transaction-breakdown'),
                 'food' => $this->paymentOrTransactionUrl('revenue', 'food_orders', 'transaction-breakdown'),
+                'other' => $this->paymentOrTransactionUrl('revenue', 'other', 'transaction-breakdown'),
             ],
         ];
     }

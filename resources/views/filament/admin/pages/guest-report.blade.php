@@ -2,6 +2,43 @@
     @php
         $report = $this->report();
         $drillDownUrls = $this->drillDownUrls();
+        $activityPresentations = [
+            'hotel' => [
+                'label' => 'Hotel bookings',
+                'icon' => 'heroicon-o-building-office-2',
+                'classes' => 'border-primary-200 bg-primary-50/70 dark:border-primary-500/20 dark:bg-primary-500/10',
+                'iconClasses' => 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300',
+                'barClasses' => 'bg-primary-500',
+            ],
+            'conference' => [
+                'label' => 'Conference bookings',
+                'icon' => 'heroicon-o-building-office',
+                'classes' => 'border-info-200 bg-info-50/70 dark:border-info-500/20 dark:bg-info-500/10',
+                'iconClasses' => 'bg-info-100 text-info-700 dark:bg-info-500/20 dark:text-info-300',
+                'barClasses' => 'bg-info-500',
+            ],
+            'table' => [
+                'label' => 'Table reservations',
+                'icon' => 'heroicon-o-calendar-days',
+                'classes' => 'border-warning-200 bg-warning-50/70 dark:border-warning-500/20 dark:bg-warning-500/10',
+                'iconClasses' => 'bg-warning-100 text-warning-700 dark:bg-warning-500/20 dark:text-warning-300',
+                'barClasses' => 'bg-warning-500',
+            ],
+            'food' => [
+                'label' => 'Food orders',
+                'icon' => 'heroicon-o-shopping-bag',
+                'classes' => 'border-success-200 bg-success-50/70 dark:border-success-500/20 dark:bg-success-500/10',
+                'iconClasses' => 'bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-300',
+                'barClasses' => 'bg-success-500',
+            ],
+            'other' => [
+                'label' => 'Other / direct',
+                'icon' => 'heroicon-o-banknotes',
+                'classes' => 'border-gray-200 bg-gray-50/70 dark:border-white/10 dark:bg-white/5',
+                'iconClasses' => 'bg-gray-200 text-gray-700 dark:bg-white/10 dark:text-gray-300',
+                'barClasses' => 'bg-gray-500',
+            ],
+        ];
     @endphp
     <div class="space-y-6">
         <x-filament::section>
@@ -137,35 +174,63 @@
         </x-filament::section>
 
         <section class="grid gap-4 lg:grid-cols-3">
-            <x-filament::section heading="Guest activity" description="{{ $this->periodLabel() }} paid transaction activity">
-                <div class="space-y-4">
-                    <div class="rounded-xl bg-primary-50 p-4 dark:bg-primary-500/10">
-                        <p class="text-sm font-medium text-gray-600 dark:text-gray-300">Returning guests</p>
-                        <p class="mt-1 text-2xl font-bold text-primary-700 dark:text-primary-300">{{ number_format($report['returningGuests']) }}</p>
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Two or more distinct paid service visits in range</p>
-                    </div>
+            <x-filament::section aria-label="Paid service mix" heading="Paid service mix" description="Collected guest payments during {{ strtolower($this->periodLabel()) }}">
+                @if ($report['paymentCount'] > 0)
+                    <div class="space-y-3">
+                        <p class="text-sm font-semibold tabular-nums text-gray-700 dark:text-gray-200">
+                            {{ number_format($report['paymentCount']) }} collected {{ $report['paymentCount'] === 1 ? 'payment' : 'payments' }}
+                        </p>
 
-                    <dl class="space-y-3">
-                        @foreach ([
-                            'hotel' => 'Hotel bookings',
-                            'conference' => 'Conference bookings',
-                            'table' => 'Table reservations',
-                            'food' => 'Food orders',
-                        ] as $key => $label)
-                            <div class="flex items-center justify-between gap-4">
-                                <dt class="text-sm text-gray-600 dark:text-gray-300">{{ $label }}</dt>
-                                <dd class="flex items-center gap-2 font-semibold">
-                                    {{ number_format($report['activity'][$key]) }} payment(s)
-                                    @if ($drillDownUrls['activity'][$key])
-                                        <a href="{{ $drillDownUrls['activity'][$key] }}" aria-label="View {{ $key }} guest payment activity" class="rounded-md text-primary-600 hover:text-primary-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-primary-400 dark:hover:text-primary-300">
-                                            <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4" />
-                                        </a>
-                                    @endif
-                                </dd>
-                            </div>
+                        @foreach ($activityPresentations as $key => $presentation)
+                            @php
+                                $count = $report['activity'][$key];
+                                $share = ($count / $report['paymentCount']) * 100;
+                                $boundedShare = max(0, min(100, $share));
+                            @endphp
+                            <article data-service-mix-channel="{{ $key }}" class="min-w-0 rounded-xl border p-3 {{ $presentation['classes'] }}">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ $presentation['iconClasses'] }}">
+                                        <x-filament::icon :icon="$presentation['icon']" class="h-5 w-5" />
+                                    </span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <h3 class="text-sm font-semibold text-gray-950 dark:text-white">{{ $presentation['label'] }}</h3>
+                                            @if ($drillDownUrls['activity'][$key])
+                                                <a href="{{ $drillDownUrls['activity'][$key] }}" aria-label="View {{ $key }} guest payment activity" class="shrink-0 rounded-md text-gray-500 transition hover:text-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-400 dark:hover:text-primary-300">
+                                                    <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4" />
+                                                </a>
+                                            @endif
+                                        </div>
+                                        <div class="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
+                                            <p class="font-semibold tabular-nums text-gray-700 dark:text-gray-200">
+                                                {{ number_format($count) }} {{ $count === 1 ? 'payment' : 'payments' }}
+                                            </p>
+                                            <p class="font-semibold tabular-nums text-gray-600 dark:text-gray-300">{{ number_format($share, 1) }}%</p>
+                                        </div>
+                                        <div
+                                            role="progressbar"
+                                            aria-label="{{ $presentation['label'] }} share of collected guest payments"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100"
+                                            aria-valuenow="{{ round($boundedShare, 1) }}"
+                                            class="mt-2 h-2 overflow-hidden rounded-full bg-white/80 ring-1 ring-inset ring-gray-950/5 dark:bg-white/10 dark:ring-white/10"
+                                        >
+                                            <span class="block h-full rounded-full {{ $presentation['barClasses'] }}" style="width: {{ $boundedShare }}%"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
                         @endforeach
-                    </dl>
-                </div>
+                    </div>
+                @else
+                    <div role="status" aria-label="No collected payment activity" class="flex flex-col items-center px-3 py-8 text-center">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-300">
+                            <x-filament::icon icon="heroicon-o-banknotes" class="h-6 w-6" />
+                        </span>
+                        <h3 class="mt-4 text-sm font-semibold text-gray-950 dark:text-white">No collected payment activity</h3>
+                        <p class="mt-2 text-xs leading-5 text-gray-600 dark:text-gray-300">No guest payments were collected during {{ strtolower($this->periodLabel()) }}.</p>
+                    </div>
+                @endif
             </x-filament::section>
 
             <x-filament::section heading="Top guests by gross spend" description="Gross collections recorded during {{ strtolower($this->periodLabel()) }}" class="lg:col-span-2">

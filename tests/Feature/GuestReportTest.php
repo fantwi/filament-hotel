@@ -50,6 +50,7 @@ class GuestReportTest extends TestCase
         self::assertArrayHasKey('returningGuests', $report);
         self::assertArrayHasKey('activity', $report);
         self::assertArrayHasKey('food', $report['activity']);
+        self::assertArrayHasKey('other', $report['activity']);
     }
 
     public function test_guest_report_marks_a_selected_period_without_activity_as_empty(): void
@@ -121,6 +122,7 @@ class GuestReportTest extends TestCase
         self::assertSame('conference_bookings', $this->urlFilters($urls['activity']['conference'])['transaction_type']);
         self::assertSame('table_reservations', $this->urlFilters($urls['activity']['table'])['transaction_type']);
         self::assertSame('food_orders', $this->urlFilters($urls['activity']['food'])['transaction_type']);
+        self::assertSame('other', $this->urlFilters($urls['activity']['other'])['transaction_type']);
         self::assertSame('/admin/transaction-dashboard', parse_url($urls['netSpend'], PHP_URL_PATH));
         self::assertSame('collection-performance', parse_url($urls['netSpend'], PHP_URL_FRAGMENT));
         self::assertSame(
@@ -279,10 +281,65 @@ class GuestReportTest extends TestCase
             'conference' => 1,
             'table' => 1,
             'food' => 1,
+            'other' => 0,
         ], $report['activity']);
         self::assertCount(1, $report['topGuests']);
         self::assertSame($guest->id, $report['topGuests']->first()->guest->id);
         self::assertEqualsWithDelta(1000.0, (float) $report['topGuests']->first()->total_spend, 0.001);
+    }
+
+    public function test_guest_report_builds_an_exclusive_service_mix_and_includes_direct_guest_payments(): void
+    {
+        [$guest, $room, $conferenceRoom] = $this->serviceFixture();
+        $hotel = Booking::query()->create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'check_in' => '2026-09-10',
+            'check_out' => '2026-09-11',
+            'total_price' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+        $conference = ConferenceBooking::query()->create([
+            'guest_id' => $guest->id,
+            'conference_room_id' => $conferenceRoom->id,
+            'booking_date' => '2026-09-10',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'attendees' => 10,
+            'total_price' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+        ]);
+
+        Payment::query()->create([
+            'booking_id' => $hotel->id,
+            'conference_booking_id' => $conference->id,
+            'guest_id' => $guest->id,
+            'amount' => 100,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-REPORT-SERVICE-PRECEDENCE',
+        ]);
+        Payment::query()->create([
+            'guest_id' => $guest->id,
+            'amount' => 50,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-REPORT-DIRECT-PAYMENT',
+        ]);
+
+        $report = (new GuestReport)->report();
+
+        self::assertSame(2, $report['paymentCount']);
+        self::assertSame([
+            'hotel' => 1,
+            'conference' => 0,
+            'table' => 0,
+            'food' => 0,
+            'other' => 1,
+        ], $report['activity']);
+        self::assertSame(2, array_sum($report['activity']));
     }
 
     public function test_guest_report_prefers_the_payment_guest_over_the_source_transaction_guest(): void
@@ -824,7 +881,7 @@ class GuestReportTest extends TestCase
             'Previous-period comparison',
             'Guest trend',
             'Guest spending',
-            'Guest activity',
+            'Paid service mix',
             'Top guests by gross spend',
         ]);
 
@@ -979,7 +1036,7 @@ class GuestReportTest extends TestCase
             $xpath->query('.//a[@aria-label="View net guest spend analysis"]', $results)?->item(0)?->getAttribute('href'),
         );
 
-        foreach (['hotel', 'conference', 'table', 'food'] as $type) {
+        foreach (['hotel', 'conference', 'table', 'food', 'other'] as $type) {
             self::assertSame(
                 $urls['activity'][$type],
                 $xpath->query('.//a[@aria-label="View '.$type.' guest payment activity"]', $results)?->item(0)?->getAttribute('href'),
@@ -987,6 +1044,81 @@ class GuestReportTest extends TestCase
         }
 
         self::assertCount(2, $xpath->query('.//a[@aria-label="View guest Linked Guest"]', $results));
+    }
+
+    public function test_guest_report_renders_paid_service_mix_with_relative_contribution(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        $guest = Guest::query()->create([
+            'first_name' => 'Service',
+            'last_name' => 'Mix',
+            'email' => 'service-mix@example.test',
+            'phone_number' => '0240000017',
+        ]);
+        foreach ([125, 75] as $index => $amount) {
+            Payment::query()->create([
+                'guest_id' => $guest->id,
+                'amount' => $amount,
+                'method' => 'cash',
+                'payment_status' => 'completed',
+                'transaction_reference' => 'GUEST-REPORT-SERVICE-MIX-'.$index,
+            ]);
+        }
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(GuestReport::getUrl());
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $serviceMix = $xpath->query('//section[@aria-label="Paid service mix"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $serviceMix);
+        self::assertStringContainsString('2 collected payments', $serviceMix->textContent);
+        self::assertStringNotContainsString('Returning guests', $serviceMix->textContent);
+        self::assertCount(5, $xpath->query('.//*[@data-service-mix-channel]', $serviceMix));
+
+        $other = $xpath->query('.//*[@data-service-mix-channel="other"]', $serviceMix)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $other);
+        self::assertStringContainsString('Other / direct', $other->textContent);
+        self::assertStringContainsString('2 payments', $other->textContent);
+        self::assertStringContainsString('100.0%', $other->textContent);
+
+        $otherShare = $xpath->query('.//*[@role="progressbar"]', $other)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $otherShare);
+        self::assertSame('100', $otherShare->getAttribute('aria-valuenow'));
+    }
+
+    public function test_guest_report_service_mix_uses_a_focused_empty_state_without_zero_rows(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Guest::query()->create([
+            'first_name' => 'New',
+            'last_name' => 'Only',
+            'email' => 'new-only@example.test',
+            'phone_number' => '0240000018',
+        ]);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(GuestReport::getUrl());
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $serviceMix = $xpath->query('//section[@aria-label="Paid service mix"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $serviceMix);
+        self::assertStringContainsString('No collected payment activity', $serviceMix->textContent);
+        self::assertCount(0, $xpath->query('.//*[@data-service-mix-channel]', $serviceMix));
+        self::assertCount(0, $xpath->query('.//*[@role="progressbar"]', $serviceMix));
     }
 
     public function test_an_empty_selected_period_replaces_zero_heavy_sections_with_one_actionable_state(): void
