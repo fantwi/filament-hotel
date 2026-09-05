@@ -113,6 +113,7 @@ class KitchenProductionResource extends SecureResource
                             )
                             ->searchable(['name', 'description'])
                             ->preload()
+                            ->live()
                             ->helperText('Loaded from Menu Items. Enable “Track Kitchen Production” on a menu item to make it selectable here.')
                             ->disabledOn('edit')
                             ->required(),
@@ -189,7 +190,20 @@ class KitchenProductionResource extends SecureResource
                             ->addActionLabel('Add ingredient')
                             ->columns(['default' => 1, 'sm' => 2])
                             ->columnSpanFull()
-                            ->visibleOn('create'),
+                            ->visible(fn (Get $get, string $operation): bool => $operation === 'create'
+                                && static::selectedInventoryConsumptionMode($get) === 'production_batch')
+                            ->dehydrated(fn (Get $get): bool => static::selectedInventoryConsumptionMode($get) === 'production_batch'),
+                        Placeholder::make('ingredient_deduction_mode')
+                            ->label('Ingredient Stock Deduction')
+                            ->content(fn (Get $get): string => match (static::selectedInventoryConsumptionMode($get)) {
+                                'per_order' => 'Raw ingredients are deducted when preparation starts for each customer order, not when this production record is saved.',
+                                'none' => 'This menu item does not deduct raw ingredient stock. Saving this production record only updates finished-food reporting.',
+                                default => '',
+                            })
+                            ->visible(fn (Get $get, string $operation): bool => $operation === 'create'
+                                && filled($get('menu_item_id'))
+                                && static::selectedInventoryConsumptionMode($get) !== 'production_batch')
+                            ->columnSpanFull(),
                         TextEntry::make('recorded_ingredients')
                             ->label('Recorded ingredients consumed')
                             ->state(fn (?KitchenProduction $record): array => $record?->ingredients()
@@ -422,6 +436,20 @@ class KitchenProductionResource extends SecureResource
                             ->send();
                     }),
             ]);
+    }
+
+    /**
+     * Returns the stock-deduction mode configured for the selected menu item.
+     */
+    private static function selectedInventoryConsumptionMode(Get $get): ?string
+    {
+        $menuItemId = $get('menu_item_id');
+
+        if (blank($menuItemId)) {
+            return null;
+        }
+
+        return MenuItem::query()->whereKey($menuItemId)->value('inventory_consumption_mode');
     }
 
     /**

@@ -5,10 +5,12 @@ namespace App\Filament\Admin\Resources\KitchenProductions\Pages;
 use App\Filament\Admin\Resources\KitchenProductions\KitchenProductionResource;
 use App\Models\Ingredient;
 use App\Models\KitchenProduction;
+use App\Models\MenuItem;
 use App\Services\KitchenStockService;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Configures Filament administration for create kitchen production.
@@ -35,6 +37,16 @@ class CreateKitchenProduction extends CreateRecord
         return DB::transaction(function () use ($data): KitchenProduction {
             $ingredients = $data['ingredients'] ?? [];
             unset($data['ingredients']);
+
+            $menuItem = MenuItem::query()->findOrFail($data['menu_item_id']);
+
+            if ($menuItem->inventory_consumption_mode !== 'production_batch') {
+                $ingredients = [];
+            } elseif ($ingredients === []) {
+                throw ValidationException::withMessages([
+                    'ingredients' => 'Record at least one ingredient consumed for a production-batch item.',
+                ]);
+            }
 
             $ingredientUnits = Ingredient::query()
                 ->whereKey(collect($ingredients)->pluck('ingredient_id')->filter()->unique())
