@@ -38,6 +38,53 @@ class KitchenProductionClosingBalanceTest extends TestCase
         self::assertSame(1, $report['summary']['negative_variance_items']);
     }
 
+    public function test_consumption_is_attributed_to_the_stock_deduction_date_instead_of_the_order_creation_date(): void
+    {
+        $item = $this->trackedMenuItem();
+        $this->production($item, '2026-08-05', produced: 10, wasted: 0);
+        $this->completedSale(
+            $item,
+            createdAt: '2026-07-25 12:00:00',
+            quantity: 2,
+            stockDeductedAt: '2026-08-10 12:00:00',
+        );
+
+        $report = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        );
+        $row = $report['rows']->sole();
+
+        self::assertSame(0.0, $row['opening_balance']);
+        self::assertSame(2.0, $row['production_amount_sold']);
+        self::assertSame(8.0, $row['period_variance']);
+        self::assertSame(8.0, $row['closing_balance']);
+    }
+
+    public function test_a_stock_reversal_restores_finished_food_in_the_reversal_period(): void
+    {
+        $item = $this->trackedMenuItem();
+        $this->production($item, '2026-07-20', produced: 10, wasted: 0);
+        $this->completedSale(
+            $item,
+            createdAt: '2026-07-25 12:00:00',
+            quantity: 2,
+            stockDeductedAt: '2026-07-25 14:00:00',
+            stockReversedAt: '2026-08-10 09:00:00',
+        );
+
+        $report = app(KitchenProductionReportService::class)->build(
+            Carbon::parse('2026-08-01'),
+            Carbon::parse('2026-08-31'),
+        );
+        $row = $report['rows']->sole();
+
+        self::assertSame(8.0, $row['opening_balance']);
+        self::assertSame(-2.0, $row['production_amount_sold']);
+        self::assertSame(2.0, $row['period_variance']);
+        self::assertSame(10.0, $row['closing_balance']);
+    }
+
     private function trackedMenuItem(): MenuItem
     {
         $category = MenuCategory::create([
@@ -67,8 +114,13 @@ class KitchenProductionClosingBalanceTest extends TestCase
         ]);
     }
 
-    private function completedSale(MenuItem $item, string $createdAt, int $quantity): void
-    {
+    private function completedSale(
+        MenuItem $item,
+        string $createdAt,
+        int $quantity,
+        ?string $stockDeductedAt = null,
+        ?string $stockReversedAt = null,
+    ): void {
         $order = RestaurantOrder::create([
             'order_number' => 'BALANCE-'.str()->upper(str()->random(10)),
             'ordering_channel' => 'web',
@@ -76,6 +128,8 @@ class KitchenProductionClosingBalanceTest extends TestCase
             'total' => $quantity * 20,
             'status' => 'served',
             'payment_status' => 'completed',
+            'stock_deducted_at' => $stockDeductedAt ?? $createdAt,
+            'stock_reversed_at' => $stockReversedAt,
         ]);
         $order->forceFill([
             'created_at' => $createdAt,
