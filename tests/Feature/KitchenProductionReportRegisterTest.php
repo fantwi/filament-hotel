@@ -140,7 +140,8 @@ class KitchenProductionReportRegisterTest extends TestCase
             ->assertSee('Sort by')
             ->assertSee('Rows per page')
             ->assertSee('Showing 3 of 3 tracked items')
-            ->assertSee('Register filters do not change the period overview metrics.');
+            ->assertSee('Register filters do not change the period overview metrics.')
+            ->assertSee('Threshold: 5.000 portion');
     }
 
     public function test_report_keeps_cards_through_laptop_widths_and_defers_the_wide_table(): void

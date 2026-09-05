@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Http\Responses\LogoutResponse as CustomLogoutResponse;
 use App\Models\HotelSetting;
+use App\Models\MenuItem;
+use App\Observers\MenuItemObserver;
 use Filament\Http\Responses\Auth\Contracts\LogoutResponse;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -32,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()/* : void */
     {
+        MenuItem::observe(MenuItemObserver::class);
+
         View::composer(['layouts.guest', 'layouts.auth', 'layouts.app'], function ($view): void {
             $view->with('hotelBranding', HotelSetting::current());
         });

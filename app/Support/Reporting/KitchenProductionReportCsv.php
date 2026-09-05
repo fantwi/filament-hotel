@@ -57,6 +57,7 @@ final class KitchenProductionReportCsv
                 'Gross collections (GHS)',
                 'Refunds (GHS)',
                 'Net revenue (GHS)',
+                'Low-stock threshold',
                 'Closing stock',
             ],
         ];
@@ -80,6 +81,7 @@ final class KitchenProductionReportCsv
                 $this->amount($row['collected_revenue']),
                 $this->amount($row['refunded_revenue']),
                 $this->amount($row['net_revenue']),
+                $this->quantity($row['low_stock_threshold']),
                 $this->safeSpreadsheetText(self::STOCK_STATUS_LABELS[$stockStatus] ?? ucfirst($stockStatus)),
             ];
         }

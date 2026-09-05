@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\MenuItem;
+use App\Models\MenuItemStockThresholdHistory;
 use App\Models\RestaurantOrderItem;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -80,6 +81,17 @@ class KitchenProductionReportService
         $refundedRevenue = $this->allocatedPaymentAmounts($from, $until, 'refunded_at', collections: false);
         $hasPeriodActivity = false;
 
+        $thresholdAtPeriodEnd = MenuItemStockThresholdHistory::query()
+            ->select('threshold')
+            ->whereColumn(
+                'menu_item_stock_threshold_histories.menu_item_id',
+                'menu_items.id',
+            )
+            ->where('effective_from', '<=', $until)
+            ->orderByDesc('effective_from')
+            ->orderByDesc('id')
+            ->limit(1);
+
         $rows = MenuItem::query()
             ->leftJoin('menu_categories', 'menu_categories.id', '=', 'menu_items.menu_category_id')
             ->where('menu_items.tracks_kitchen_production', true)
@@ -91,6 +103,7 @@ class KitchenProductionReportService
                 'menu_items.low_stock_threshold',
                 'menu_categories.name as category_name',
             ])
+            ->addSelect(['report_low_stock_threshold' => $thresholdAtPeriodEnd])
             ->orderBy('menu_items.name')
             ->get()
             ->map(function (MenuItem $item) use ($collectedRevenue, $consumptionTotals, &$hasPeriodActivity, $productionTotals, $refundedRevenue): array {
@@ -111,6 +124,7 @@ class KitchenProductionReportService
                     : null;
                 $itemCollectedRevenue = round((float) $collectedRevenue->get($item->getKey(), 0), 2);
                 $itemRefundedRevenue = round((float) $refundedRevenue->get($item->getKey(), 0), 2);
+                $lowStockThreshold = (float) ($item->report_low_stock_threshold ?? $item->low_stock_threshold);
                 $hasPeriodActivity = $hasPeriodActivity
                     || (int) ($production->period_event_count ?? 0) > 0
                     || (int) ($consumption->period_event_count ?? 0) > 0
@@ -118,7 +132,7 @@ class KitchenProductionReportService
                     || abs($itemRefundedRevenue) > 0.00001;
                 $stockStatus = $closingBalance < 0
                     ? 'negative'
-                    : ($closingBalance <= (float) $item->low_stock_threshold ? 'low' : 'healthy');
+                    : ($closingBalance <= $lowStockThreshold ? 'low' : 'healthy');
 
                 return [
                     'menu_item_id' => $item->getKey(),
@@ -134,6 +148,7 @@ class KitchenProductionReportService
                     'opening_balance' => $openingBalance,
                     'period_variance' => $periodVariance,
                     'closing_balance' => $closingBalance,
+                    'low_stock_threshold' => $lowStockThreshold,
                     'remaining' => $periodVariance,
                     'sell_through' => $sellThrough,
                     'collected_revenue' => $itemCollectedRevenue,

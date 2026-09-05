@@ -171,9 +171,12 @@
                                 <h3 class="font-semibold text-gray-950 dark:text-white">{{ $row['name'] }}</h3>
                                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $row['category'] }} · {{ number_format($row['usage_per_sale'], 3) }} {{ $row['unit'] }} per sale</p>
                             </div>
-                            <x-filament::badge :color="match ($row['status']) { 'healthy' => 'success', 'low' => 'warning', 'negative' => 'danger' }">
-                                {{ match ($row['status']) { 'healthy' => 'Healthy', 'low' => 'Low balance', 'negative' => 'Below zero' } }}
-                            </x-filament::badge>
+                            <div class="shrink-0 text-right">
+                                <x-filament::badge :color="match ($row['status']) { 'healthy' => 'success', 'low' => 'warning', 'negative' => 'danger' }">
+                                    {{ match ($row['status']) { 'healthy' => 'Healthy', 'low' => 'Low balance', 'negative' => 'Below zero' } }}
+                                </x-filament::badge>
+                                <p class="mt-1 text-[0.6875rem] font-medium text-gray-500 dark:text-gray-400">Threshold: {{ number_format($row['low_stock_threshold'], 3) }} {{ $row['unit'] }}</p>
+                            </div>
                         </div>
 
                         <dl class="mt-4 grid grid-cols-2 overflow-hidden rounded-lg border border-gray-200 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-200">
@@ -269,6 +272,7 @@
                                         <x-filament::badge :color="match ($row['status']) { 'healthy' => 'success', 'low' => 'warning', 'negative' => 'danger' }">
                                             {{ match ($row['status']) { 'healthy' => 'Healthy', 'low' => 'Low balance', 'negative' => 'Below zero' } }}
                                         </x-filament::badge>
+                                        <p class="mt-1 text-[0.6875rem] font-medium text-gray-500 dark:text-gray-400">Threshold: {{ number_format($row['low_stock_threshold'], 3) }} {{ $row['unit'] }}</p>
                                     </td>
                                     <td class="border-b border-r border-gray-200 px-4 py-4 text-right align-top tabular-nums whitespace-nowrap dark:border-gray-700">{{ number_format($row['produced'], 3) }} {{ $row['unit'] }}</td>
                                     <td class="border-b border-r border-gray-200 px-4 py-4 text-right align-top tabular-nums whitespace-nowrap dark:border-gray-700">{{ number_format($row['wasted'], 3) }} {{ $row['unit'] }}</td>

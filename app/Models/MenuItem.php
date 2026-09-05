@@ -71,6 +71,16 @@ class MenuItem extends Model
     }
 
     /**
+     * Defines the chronological low-stock thresholds used by historical reports.
+     */
+    public function stockThresholdHistory(): HasMany
+    {
+        return $this->hasMany(MenuItemStockThresholdHistory::class)
+            ->orderBy('effective_from')
+            ->orderBy('id');
+    }
+
+    /**
      * Defines the recipe ingredients relationship or domain behavior for this model.
      */
     public function recipeIngredients(): HasMany

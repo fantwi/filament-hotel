@@ -164,6 +164,7 @@ class KitchenProductionReportActionsTest extends TestCase
                     'opening_balance' => 2,
                     'period_variance' => 5,
                     'closing_balance' => 7,
+                    'low_stock_threshold' => 3,
                     'sell_through' => 36.3636,
                     'collected_revenue' => 200.50,
                     'refunded_revenue' => 25,
@@ -199,6 +200,7 @@ class KitchenProductionReportActionsTest extends TestCase
             '200.50',
             '25.00',
             '175.50',
+            '3.000',
             'Healthy',
         ], $rows);
     }
