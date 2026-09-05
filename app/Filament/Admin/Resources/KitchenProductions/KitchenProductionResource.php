@@ -20,6 +20,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -76,7 +77,9 @@ class KitchenProductionResource extends SecureResource
         return $schema->components([
             Grid::make(['default' => 1, 'lg' => 2])->schema([
                 Section::make('Kitchen Production Batch')
-                    ->description('Record the finished food prepared by the kitchen.')
+                    ->description(fn (string $operation): string => $operation === 'edit'
+                        ? 'Inventory-controlled fields are locked after the batch is posted. Only production notes can be updated.'
+                        : 'Record the finished food prepared by the kitchen.')
                     ->schema([
                         Select::make('menu_item_id')
                             ->label('Menu Item')
@@ -96,14 +99,16 @@ class KitchenProductionResource extends SecureResource
                             ->searchable(['name', 'description'])
                             ->preload()
                             ->helperText('Loaded from Menu Items. Enable “Track Kitchen Production” on a menu item to make it selectable here.')
+                            ->disabledOn('edit')
                             ->required(),
-                        DatePicker::make('production_date')->default(today())->maxDate(today())->required(),
+                        DatePicker::make('production_date')->default(today())->maxDate(today())->disabledOn('edit')->required(),
                         TextInput::make('quantity_produced')
                             ->label('Quantity Produced')
                             ->numeric()
                             ->minValue(.001)
                             ->step(.001)
                             ->helperText('Enter the finished quantity prepared in this batch.')
+                            ->disabledOn('edit')
                             ->required(),
                         TextInput::make('quantity_wasted')
                             ->label('Quantity Wasted')
@@ -112,6 +117,7 @@ class KitchenProductionResource extends SecureResource
                             ->step(.001)
                             ->default(0)
                             ->helperText('Enter 0 if there was no finished-food waste.')
+                            ->disabledOn('edit')
                             ->rules([
                                 fn (callable $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get): void {
                                     $produced = $get('quantity_produced');
@@ -156,6 +162,23 @@ class KitchenProductionResource extends SecureResource
                             ->columns(['default' => 1, 'sm' => 2])
                             ->columnSpanFull()
                             ->visibleOn('create'),
+                        TextEntry::make('recorded_ingredients')
+                            ->label('Recorded ingredients consumed')
+                            ->state(fn (?KitchenProduction $record): array => $record?->ingredients()
+                                ->with('ingredient:id,name,unit')
+                                ->get()
+                                ->map(fn ($line): string => sprintf(
+                                    '%s — %s %s',
+                                    $line->ingredient?->name ?? 'Deleted ingredient',
+                                    number_format((float) $line->quantity_used, 3),
+                                    $line->unit ?: ($line->ingredient?->unit ?? 'unit'),
+                                ))
+                                ->all() ?? [])
+                            ->helperText('These quantities have already been posted to the kitchen stock ledger. Use an audited correction workflow instead of changing them here.')
+                            ->placeholder('No ingredient consumption was recorded for this batch.')
+                            ->bulleted()
+                            ->columnSpanFull()
+                            ->visibleOn('edit'),
                         Textarea::make('notes')->rows(4)->columnSpanFull(),
                         Hidden::make('produced_by')->default(fn (): ?int => auth()->id()),
                     ])
