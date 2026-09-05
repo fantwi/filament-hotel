@@ -12,7 +12,13 @@
             <x-filament.report-period-controls class="mt-5" />
             <label for="restaurant-report-per-page" class="mt-4 block max-w-xs text-sm font-semibold text-gray-700 dark:text-gray-200">
                 Rows per page
-                <select id="restaurant-report-per-page" wire:model.live="perPage" class="fi-input mt-1 w-full">
+                <select
+                    id="restaurant-report-per-page"
+                    wire:model.live="perPage"
+                    wire:loading.attr="disabled"
+                    wire:target="perPage"
+                    class="fi-input mt-1 w-full"
+                >
                     <option value="25">25</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
@@ -20,6 +26,18 @@
             </label>
         </x-filament::section>
 
+        <section
+            aria-label="Restaurant report results"
+            class="relative"
+            wire:loading.attr="aria-busy"
+            wire:target="applyReportPeriod,resetReportPeriod,perPage,gotoPage,previousPage,nextPage"
+        >
+            <div
+                data-restaurant-report-results
+                class="space-y-6 transition-opacity duration-200"
+                wire:loading.class="pointer-events-none opacity-60"
+                wire:target="applyReportPeriod,resetReportPeriod,perPage,gotoPage,previousPage,nextPage"
+            >
         <section aria-label="Restaurant order overview">
             @livewire(\App\Filament\Admin\Widgets\RestaurantOrderReportStats::class, [
                 'reportData' => [
@@ -156,5 +174,23 @@
                 </div>
             @endif
         </x-filament::section>
+            </div>
+
+            <div
+                data-restaurant-report-loading-overlay
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                wire:loading.flex
+                wire:target="applyReportPeriod,resetReportPeriod,perPage,gotoPage,previousPage,nextPage"
+                class="absolute inset-0 z-10 items-start justify-center rounded-xl bg-white/75 px-4 py-12 backdrop-blur-[1px] dark:bg-gray-950/75"
+                style="display: none;"
+            >
+                <div class="inline-flex items-center gap-3 rounded-xl border border-primary-200 bg-white px-4 py-3 font-medium text-primary-700 shadow-lg dark:border-primary-500/30 dark:bg-gray-900 dark:text-primary-300">
+                    <x-filament::icon icon="heroicon-o-arrow-path" class="h-5 w-5 animate-spin" />
+                    <span>Updating restaurant report&hellip;</span>
+                </div>
+            </div>
+        </section>
     </div>
 </x-filament::page>

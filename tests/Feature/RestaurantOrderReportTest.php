@@ -250,6 +250,50 @@ class RestaurantOrderReportTest extends TestCase
         self::assertCount(7, $reportQueries, $reportQueries->implode(PHP_EOL));
     }
 
+    public function test_restaurant_report_exposes_an_accessible_loading_state_for_result_refreshes(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(RestaurantOrderReport::getUrl());
+
+        $response->assertOk();
+
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $loadingTargets = 'applyReportPeriod,resetReportPeriod,perPage,gotoPage,previousPage,nextPage';
+        $reportRegion = $xpath->query('//section[@aria-label="Restaurant report results"]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $reportRegion);
+        self::assertSame('aria-busy', $reportRegion->getAttribute('wire:loading.attr'));
+        self::assertSame($loadingTargets, $reportRegion->getAttribute('wire:target'));
+
+        $results = $xpath->query('./div[@data-restaurant-report-results]', $reportRegion)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $results);
+        self::assertSame($loadingTargets, $results->getAttribute('wire:target'));
+        self::assertStringContainsString('pointer-events-none', $results->getAttribute('wire:loading.class'));
+        self::assertStringContainsString('opacity-60', $results->getAttribute('wire:loading.class'));
+        self::assertStringContainsString('Live kitchen queue', $results->textContent);
+        self::assertStringContainsString('Order register', $results->textContent);
+
+        $status = $xpath->query('./div[@data-restaurant-report-loading-overlay and @role="status"]', $reportRegion)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $status);
+        self::assertSame('polite', $status->getAttribute('aria-live'));
+        self::assertSame('true', $status->getAttribute('aria-atomic'));
+        self::assertSame($loadingTargets, $status->getAttribute('wire:target'));
+        self::assertTrue($status->hasAttribute('wire:loading.flex'));
+        self::assertStringContainsString('Updating restaurant report', $status->textContent);
+
+        $pageSize = $xpath->query('//select[@id="restaurant-report-per-page"]')?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $pageSize);
+        self::assertSame('disabled', $pageSize->getAttribute('wire:loading.attr'));
+        self::assertSame('perPage', $pageSize->getAttribute('wire:target'));
+        self::assertSame(0, $xpath->query('.//form[@*[name()="wire:submit"]="applyReportPeriod"]', $reportRegion)?->count());
+    }
+
     public function test_cancelled_orders_do_not_inflate_order_payment_outcome_metrics(): void
     {
         $this->travelTo('2026-09-18 14:30:00');
