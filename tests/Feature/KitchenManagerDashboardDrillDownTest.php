@@ -55,23 +55,17 @@ class KitchenManagerDashboardDrillDownTest extends TestCase
         ]);
     }
 
-    public function test_finished_food_cards_link_to_the_report_and_paid_order_records(): void
+    public function test_finished_food_cards_link_to_their_date_filtered_report(): void
     {
         $stats = $this->stats(new KitchenProductionStats);
 
-        foreach (['Tracked Food Items', 'Low finished-food balances', 'Negative Variances'] as $label) {
+        foreach (['Tracked Food Items', 'Low finished-food balances', 'Negative Variances', 'Tracked-item net revenue'] as $label) {
             $this->assertFilteredLink($stats[$label], '/admin/kitchen-production-report', [
                 'period' => 'custom',
                 'startDate' => '2026-08-01',
                 'endDate' => '2026-08-15',
             ]);
         }
-
-        $this->assertFilteredLink($stats['Food Revenue'], '/admin/restaurant-orders', [
-            'filters.payment_status.value' => 'completed',
-            'filters.created_at.created_from' => '2026-08-01',
-            'filters.created_at.created_until' => '2026-08-15',
-        ]);
     }
 
     public function test_ingredient_cards_link_to_their_exact_current_stock_scopes(): void

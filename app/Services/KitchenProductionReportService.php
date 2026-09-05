@@ -6,6 +6,7 @@ use App\Models\KitchenProduction;
 use App\Models\MenuItem;
 use App\Models\RestaurantOrderItem;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Collection;
 
 /**
  * Encapsulates business rules for kitchen production report service.
@@ -39,6 +40,8 @@ class KitchenProductionReportService
             ->selectRaw('restaurant_order_items.menu_item_id, SUM(restaurant_order_items.quantity * restaurant_order_items.production_usage_per_sale) as balance')
             ->groupBy('restaurant_order_items.menu_item_id')
             ->pluck('balance', 'restaurant_order_items.menu_item_id');
+        $collectedRevenue = $this->allocatedPaymentAmounts($from, $until, 'created_at', collections: true);
+        $refundedRevenue = $this->allocatedPaymentAmounts($from, $until, 'refunded_at', collections: false);
 
         $rows = MenuItem::query()
             ->where('tracks_kitchen_production', true)
@@ -57,7 +60,7 @@ class KitchenProductionReportService
             ])
             ->orderBy('name')
             ->get()
-            ->map(function (MenuItem $item) use ($from, $openingConsumption, $openingProduction, $until): array {
+            ->map(function (MenuItem $item) use ($collectedRevenue, $from, $openingConsumption, $openingProduction, $refundedRevenue, $until): array {
                 $produced = (float) $item->kitchenProductions->sum('quantity_produced');
                 $wasted = (float) $item->kitchenProductions->sum('quantity_wasted');
                 $items = $item->orderItems;
@@ -81,6 +84,8 @@ class KitchenProductionReportService
                     - (float) $openingConsumption->get($item->getKey(), 0);
                 $closingBalance = $openingBalance + $periodVariance;
                 $sellThrough = $netProduced > 0 ? ($amountSold / $netProduced) * 100 : 0;
+                $itemCollectedRevenue = round((float) $collectedRevenue->get($item->getKey(), 0), 2);
+                $itemRefundedRevenue = round((float) $refundedRevenue->get($item->getKey(), 0), 2);
                 $stockStatus = $closingBalance < 0
                     ? 'negative'
                     : ($closingBalance <= (float) $item->low_stock_threshold ? 'low' : 'healthy');
@@ -100,8 +105,9 @@ class KitchenProductionReportService
                     'closing_balance' => $closingBalance,
                     'remaining' => $periodVariance,
                     'sell_through' => $sellThrough,
-                    'sales_revenue' => (float) $deductedItems->sum('total_price')
-                        - (float) $reversedItems->sum('total_price'),
+                    'collected_revenue' => $itemCollectedRevenue,
+                    'refunded_revenue' => $itemRefundedRevenue,
+                    'net_revenue' => round($itemCollectedRevenue - $itemRefundedRevenue, 2),
                     'stock_status' => $stockStatus,
                     'status' => $stockStatus,
                 ];
@@ -116,8 +122,53 @@ class KitchenProductionReportService
                 'negative_variance_items' => $rows->filter(
                     fn (array $row): bool => $row['period_variance'] < 0,
                 )->count(),
-                'sales_revenue' => $rows->sum('sales_revenue'),
+                'collected_revenue' => round((float) $rows->sum('collected_revenue'), 2),
+                'refunded_revenue' => round((float) $rows->sum('refunded_revenue'), 2),
+                'net_revenue' => round((float) $rows->sum('net_revenue'), 2),
             ],
         ];
+    }
+
+    /**
+     * Allocates order-level collections or refunds across their menu-item
+     * lines, preserving discounts and charges recorded in the payment ledger.
+     *
+     * @return Collection<int, float|string>
+     */
+    private function allocatedPaymentAmounts(
+        CarbonInterface $from,
+        CarbonInterface $until,
+        string $eventColumn,
+        bool $collections,
+    ): Collection {
+        $orderLineTotals = RestaurantOrderItem::query()
+            ->select('restaurant_order_id')
+            ->selectRaw('SUM(total_price) as order_line_total')
+            ->groupBy('restaurant_order_id');
+
+        $query = RestaurantOrderItem::query()
+            ->joinSub($orderLineTotals, 'order_item_totals', function ($join): void {
+                $join->on(
+                    'order_item_totals.restaurant_order_id',
+                    '=',
+                    'restaurant_order_items.restaurant_order_id',
+                );
+            })
+            ->join('payments', 'payments.restaurant_order_id', '=', 'restaurant_order_items.restaurant_order_id')
+            ->where('order_item_totals.order_line_total', '>', 0)
+            ->whereBetween("payments.{$eventColumn}", [$from, $until]);
+
+        if ($collections) {
+            $query->whereIn('payments.payment_status', ['paid', 'completed', 'refunded', 'refund']);
+        } else {
+            $query->whereNotNull('payments.refunded_at');
+        }
+
+        return $query
+            ->selectRaw(
+                'restaurant_order_items.menu_item_id, COALESCE(SUM((payments.amount * restaurant_order_items.total_price) / NULLIF(order_item_totals.order_line_total, 0)), 0) as allocated_amount',
+            )
+            ->groupBy('restaurant_order_items.menu_item_id')
+            ->pluck('allocated_amount', 'restaurant_order_items.menu_item_id');
     }
 }

@@ -22,7 +22,7 @@ class KitchenProductionStats extends StatsOverviewWidget
 
     protected ?string $heading = 'Finished-food production';
 
-    protected ?string $description = 'Selected-period production balances, variances, and food revenue.';
+    protected ?string $description = 'Selected-period production balances, variances, and allocated net revenue.';
 
     /**
      * Determines whether the current user may view this feature.
@@ -64,11 +64,11 @@ class KitchenProductionStats extends StatsOverviewWidget
                 $reportUrl,
             ),
             $this->drillDown(
-                Stat::make('Food Revenue', 'GHS '.number_format($r['sales_revenue'], 2))
-                    ->description($this->dashboardDateRangeLabel())
+                Stat::make('Tracked-item net revenue', 'GHS '.number_format($r['net_revenue'], 2))
+                    ->description('Allocated collections less refunds · '.$this->dashboardDateRangeLabel())
                     ->icon('heroicon-o-banknotes')
-                    ->color('success'),
-                $this->restaurantOrderDrillDownUrl(paymentStatus: 'completed'),
+                    ->color((float) $r['net_revenue'] < 0 ? 'danger' : 'success'),
+                $reportUrl,
             ),
         ];
     }

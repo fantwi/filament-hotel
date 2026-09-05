@@ -66,10 +66,10 @@ class KitchenProductionReportStats extends StatsOverviewWidget
                 ->description('Period sales exceed net production')
                 ->icon('heroicon-o-arrow-trending-down')
                 ->color('danger'),
-            Stat::make('Food sales revenue', 'GHS '.number_format((float) $summary['sales_revenue'], 2))
-                ->description($rangeLabel)
+            Stat::make('Tracked-item net revenue', 'GHS '.number_format((float) $summary['net_revenue'], 2))
+                ->description('Allocated collections less refunds · '.$rangeLabel)
                 ->icon('heroicon-o-banknotes')
-                ->color('success'),
+                ->color((float) $summary['net_revenue'] < 0 ? 'danger' : 'success'),
         ];
     }
 
