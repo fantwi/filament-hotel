@@ -35,6 +35,45 @@ class RestaurantOrderReportTest extends TestCase
         self::assertSame(0, $report['totalOrders']);
     }
 
+    public function test_live_kitchen_queue_is_current_and_independent_of_the_report_period(): void
+    {
+        $this->travelTo('2026-07-10 09:00:00');
+        RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-OLDER-ACTIVE',
+            'subtotal' => 100,
+            'total' => 100,
+            'status' => 'confirmed',
+            'payment_status' => 'completed',
+        ]);
+        RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-OLDER-SERVED',
+            'subtotal' => 80,
+            'total' => 80,
+            'status' => 'served',
+            'payment_status' => 'completed',
+        ]);
+
+        $this->travelTo('2026-08-10 09:00:00');
+        RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-PERIOD-ACTIVE',
+            'subtotal' => 120,
+            'total' => 120,
+            'status' => 'preparing',
+            'payment_status' => 'completed',
+        ]);
+
+        $reportPage = new RestaurantOrderReport;
+        $reportPage->period = 'custom';
+        $reportPage->startDate = '2026-08-01';
+        $reportPage->endDate = '2026-08-31';
+        $metrics = $reportPage->getReportMetrics();
+
+        self::assertArrayHasKey('liveKitchenOrders', $metrics);
+        self::assertSame(1, $metrics['totalOrders']);
+        self::assertSame(1, $metrics['activeOrders']);
+        self::assertSame(2, $metrics['liveKitchenOrders']);
+    }
+
     public function test_restaurant_report_stats_widget_uses_precomputed_data_without_queries(): void
     {
         self::assertTrue(is_subclass_of(RestaurantOrderReportStats::class, StatsOverviewWidget::class));
@@ -132,6 +171,11 @@ class RestaurantOrderReportTest extends TestCase
         }
 
         $component->assertSee('GHS 120.00 collected · GHS 0.00 refunded');
+        $component->assertSeeInOrder([
+            'Live kitchen queue',
+            'Current active orders across all order dates',
+            'Not affected by the selected report period',
+        ]);
         self::assertCount(8, $reportQueries, $reportQueries->implode(PHP_EOL));
     }
 

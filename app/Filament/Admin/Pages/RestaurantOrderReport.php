@@ -73,6 +73,9 @@ class RestaurantOrderReport extends Page
      */
     public function getReportMetrics(): array
     {
+        $liveKitchenQueue = RestaurantOrder::query()
+            ->kitchenQueue()
+            ->selectRaw('COUNT(*)');
         $totals = $this->getOrdersQuery()
             ->withoutEagerLoads()
             ->selectRaw('COUNT(*) as total_orders')
@@ -81,6 +84,7 @@ class RestaurantOrderReport extends Page
             ->selectRaw("SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_orders")
             ->selectRaw("SUM(CASE WHEN status IN ('confirmed', 'preparing', 'ready') THEN 1 ELSE 0 END) as active_orders")
             ->selectRaw("SUM(CASE WHEN status != 'cancelled' THEN 1 ELSE 0 END) as non_cancelled_orders")
+            ->selectSub($liveKitchenQueue, 'live_kitchen_orders')
             ->first();
 
         $totalItems = RestaurantOrderItem::query()
@@ -98,6 +102,7 @@ class RestaurantOrderReport extends Page
             'pendingOrders' => (int) ($totals->pending_orders ?? 0),
             'cancelledOrders' => (int) ($totals->cancelled_orders ?? 0),
             'activeOrders' => (int) ($totals->active_orders ?? 0),
+            'liveKitchenOrders' => (int) ($totals->live_kitchen_orders ?? 0),
             'revenue' => $financials['revenue'],
             'refunds' => $financials['refunds'],
             'netRevenue' => $financials['netRevenue'],

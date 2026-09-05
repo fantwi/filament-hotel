@@ -7,7 +7,7 @@
             <div>
                 <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Restaurant operations</p>
                 <h2 class="mt-1 text-2xl font-bold tracking-tight">Order performance</h2>
-                <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Review food-order volume, payment performance, outstanding balances, and kitchen activity for the selected period.</p>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Review period-based food-order and payment performance alongside the current kitchen queue.</p>
             </div>
             <x-filament.report-period-controls class="mt-5" />
             <label for="restaurant-report-per-page" class="mt-4 block max-w-xs text-sm font-semibold text-gray-700 dark:text-gray-200">
@@ -54,15 +54,15 @@
                 </dl>
             </x-filament::section>
 
-            <x-filament::section heading="Kitchen activity" description="Orders currently in the fulfillment flow" class="lg:col-span-2">
+            <x-filament::section heading="Live kitchen queue" description="Current active orders across all order dates" class="lg:col-span-2">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p class="text-4xl font-bold text-primary-600 dark:text-primary-400">{{ number_format($report['activeOrders']) }}</p>
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Confirmed, preparing, or ready to serve</p>
+                        <p class="text-4xl font-bold text-primary-600 dark:text-primary-400">{{ number_format($report['liveKitchenOrders']) }}</p>
+                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Paid or corporate orders that are confirmed, preparing, or ready to serve</p>
                     </div>
                     <div class="rounded-xl bg-gray-50 px-4 py-3 text-sm dark:bg-white/5">
-                        <p class="font-semibold">Selected period</p>
-                        <p class="mt-1 text-gray-600 dark:text-gray-300">{{ $this->periodLabel() }}</p>
+                        <p class="font-semibold">Live operational snapshot</p>
+                        <p class="mt-1 text-gray-600 dark:text-gray-300">Not affected by the selected report period</p>
                     </div>
                 </div>
             </x-filament::section>
