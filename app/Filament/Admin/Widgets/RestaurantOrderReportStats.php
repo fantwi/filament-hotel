@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
+use App\Filament\Admin\Pages\RestaurantOrderReport;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Str;
@@ -32,11 +33,7 @@ class RestaurantOrderReportStats extends StatsOverviewWidget
      */
     public static function canView(): bool
     {
-        $user = auth()->user();
-
-        return $user?->can('view restaurant reports')
-            || $user?->hasAnyRole(['super_admin', 'admin', 'manager', 'accountant'])
-            || false;
+        return RestaurantOrderReport::canAccess();
     }
 
     /**
