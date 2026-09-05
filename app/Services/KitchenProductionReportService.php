@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\KitchenProduction;
 use App\Models\MenuItem;
 use App\Models\RestaurantOrderItem;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Encapsulates business rules for kitchen production report service.
@@ -21,67 +21,83 @@ class KitchenProductionReportService
         $from = $from->copy()->startOfDay();
         $until = $until->copy()->endOfDay();
 
-        $openingProduction = KitchenProduction::query()
-            ->where('production_date', '<', $from->toDateString())
-            ->selectRaw('menu_item_id, SUM(quantity_produced - quantity_wasted) as balance')
+        $fromDate = $from->toDateString();
+        $untilDate = $until->toDateString();
+
+        // Aggregate production in SQL so report memory usage remains constant as
+        // the number of recorded batches grows.
+        $productionTotals = DB::table('kitchen_productions')
+            ->where('production_date', '<=', $untilDate)
+            ->select('menu_item_id')
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN production_date < ? THEN quantity_produced - quantity_wasted ELSE 0 END), 0) as opening_balance',
+                [$fromDate],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN production_date BETWEEN ? AND ? THEN quantity_produced ELSE 0 END), 0) as produced',
+                [$fromDate, $untilDate],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN production_date BETWEEN ? AND ? THEN quantity_wasted ELSE 0 END), 0) as wasted',
+                [$fromDate, $untilDate],
+            )
             ->groupBy('menu_item_id')
-            ->pluck('balance', 'menu_item_id');
-        // Finished-food balances follow inventory events rather than payment
-        // status, so deducted corporate-credit orders remain reportable.
-        $openingConsumption = RestaurantOrderItem::query()
+            ->get()
+            ->keyBy('menu_item_id');
+
+        // Finished-food balances follow stock events rather than payment status,
+        // so deducted corporate-credit orders remain reportable. Reversals are
+        // subtracted in the period in which inventory was restored.
+        $consumptionTotals = DB::table('restaurant_order_items')
             ->join('restaurant_orders', 'restaurant_orders.id', '=', 'restaurant_order_items.restaurant_order_id')
-            ->whereNotNull('restaurant_orders.stock_deducted_at')
-            ->where('restaurant_orders.stock_deducted_at', '<', $from)
-            ->where(function ($query) use ($from): void {
+            ->where(function ($query) use ($until): void {
                 $query
-                    ->whereNull('restaurant_orders.stock_reversed_at')
-                    ->orWhere('restaurant_orders.stock_reversed_at', '>=', $from);
+                    ->where('restaurant_orders.stock_deducted_at', '<=', $until)
+                    ->orWhere('restaurant_orders.stock_reversed_at', '<=', $until);
             })
-            ->selectRaw('restaurant_order_items.menu_item_id, SUM(restaurant_order_items.quantity * restaurant_order_items.production_usage_per_sale) as balance')
+            ->select('restaurant_order_items.menu_item_id')
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN restaurant_orders.stock_deducted_at < ? THEN restaurant_order_items.quantity * restaurant_order_items.production_usage_per_sale ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN restaurant_orders.stock_reversed_at < ? THEN restaurant_order_items.quantity * restaurant_order_items.production_usage_per_sale ELSE 0 END), 0) as opening_consumption',
+                [$from, $from],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN restaurant_orders.stock_deducted_at BETWEEN ? AND ? THEN restaurant_order_items.quantity ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN restaurant_orders.stock_reversed_at BETWEEN ? AND ? THEN restaurant_order_items.quantity ELSE 0 END), 0) as sold_units',
+                [$from, $until, $from, $until],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN restaurant_orders.stock_deducted_at BETWEEN ? AND ? THEN restaurant_order_items.quantity * restaurant_order_items.production_usage_per_sale ELSE 0 END), 0) - COALESCE(SUM(CASE WHEN restaurant_orders.stock_reversed_at BETWEEN ? AND ? THEN restaurant_order_items.quantity * restaurant_order_items.production_usage_per_sale ELSE 0 END), 0) as production_amount_sold',
+                [$from, $until, $from, $until],
+            )
             ->groupBy('restaurant_order_items.menu_item_id')
-            ->pluck('balance', 'restaurant_order_items.menu_item_id');
+            ->get()
+            ->keyBy('menu_item_id');
         $collectedRevenue = $this->allocatedPaymentAmounts($from, $until, 'created_at', collections: true);
         $refundedRevenue = $this->allocatedPaymentAmounts($from, $until, 'refunded_at', collections: false);
 
         $rows = MenuItem::query()
-            ->where('tracks_kitchen_production', true)
-            ->with([
-                'category:id,name',
-                'kitchenProductions' => fn ($query) => $query
-                    ->whereBetween('production_date', [$from->toDateString(), $until->toDateString()]),
-                'orderItems' => fn ($query) => $query
-                    ->whereHas('order', fn ($query) => $query
-                        ->where(function ($eventQuery) use ($from, $until): void {
-                            $eventQuery
-                                ->whereBetween('stock_deducted_at', [$from, $until])
-                                ->orWhereBetween('stock_reversed_at', [$from, $until]);
-                        }))
-                    ->with(['order:id,stock_deducted_at,stock_reversed_at']),
+            ->leftJoin('menu_categories', 'menu_categories.id', '=', 'menu_items.menu_category_id')
+            ->where('menu_items.tracks_kitchen_production', true)
+            ->select([
+                'menu_items.id',
+                'menu_items.name',
+                'menu_items.production_unit',
+                'menu_items.production_usage_per_sale',
+                'menu_items.low_stock_threshold',
+                'menu_categories.name as category_name',
             ])
-            ->orderBy('name')
+            ->orderBy('menu_items.name')
             ->get()
-            ->map(function (MenuItem $item) use ($collectedRevenue, $from, $openingConsumption, $openingProduction, $refundedRevenue, $until): array {
-                $produced = (float) $item->kitchenProductions->sum('quantity_produced');
-                $wasted = (float) $item->kitchenProductions->sum('quantity_wasted');
-                $items = $item->orderItems;
-                $deductedItems = $items->filter(
-                    fn ($line): bool => $line->order?->stock_deducted_at?->betweenIncluded($from, $until) ?? false,
-                );
-                $reversedItems = $items->filter(
-                    fn ($line): bool => $line->order?->stock_reversed_at?->betweenIncluded($from, $until) ?? false,
-                );
-                $soldUnits = (int) $deductedItems->sum('quantity') - (int) $reversedItems->sum('quantity');
-                $amountDeducted = (float) $deductedItems->sum(
-                    fn ($line): float => $line->quantity * (float) $line->production_usage_per_sale
-                );
-                $amountReversed = (float) $reversedItems->sum(
-                    fn ($line): float => $line->quantity * (float) $line->production_usage_per_sale
-                );
-                $amountSold = $amountDeducted - $amountReversed;
+            ->map(function (MenuItem $item) use ($collectedRevenue, $consumptionTotals, $productionTotals, $refundedRevenue): array {
+                $production = $productionTotals->get($item->getKey());
+                $consumption = $consumptionTotals->get($item->getKey());
+                $produced = (float) ($production->produced ?? 0);
+                $wasted = (float) ($production->wasted ?? 0);
+                $soldUnits = (int) ($consumption->sold_units ?? 0);
+                $amountSold = (float) ($consumption->production_amount_sold ?? 0);
                 $netProduced = $produced - $wasted;
                 $periodVariance = $netProduced - $amountSold;
-                $openingBalance = (float) $openingProduction->get($item->getKey(), 0)
-                    - (float) $openingConsumption->get($item->getKey(), 0);
+                $openingBalance = (float) ($production->opening_balance ?? 0)
+                    - (float) ($consumption->opening_consumption ?? 0);
                 $closingBalance = $openingBalance + $periodVariance;
                 $sellThrough = $netProduced > 0 ? ($amountSold / $netProduced) * 100 : 0;
                 $itemCollectedRevenue = round((float) $collectedRevenue->get($item->getKey(), 0), 2);
@@ -92,7 +108,7 @@ class KitchenProductionReportService
 
                 return [
                     'name' => $item->name,
-                    'category' => $item->category?->name ?? 'Uncategorised',
+                    'category' => $item->category_name ?? 'Uncategorised',
                     'unit' => $item->production_unit,
                     'usage_per_sale' => (float) $item->production_usage_per_sale,
                     'produced' => $produced,
