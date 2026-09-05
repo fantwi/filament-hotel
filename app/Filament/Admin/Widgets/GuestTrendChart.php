@@ -10,11 +10,11 @@ use Illuminate\Contracts\Support\Htmlable;
  */
 class GuestTrendChart extends ChartWidget
 {
-    protected ?string $heading = 'Guest trend';
+    protected ?string $heading = 'Guest activity over time';
 
-    protected ?string $emptyStateHeading = 'No guest activity for this period';
+    protected ?string $emptyStateHeading = 'No guest activity in this period';
 
-    protected ?string $emptyStateDescription = 'Choose another reporting period to view guest growth and paid visits.';
+    protected ?string $emptyStateDescription = 'Choose another reporting period to view new guest profiles, collected payments, and repeat service use.';
 
     protected ?string $pollingInterval = null;
 
@@ -39,7 +39,7 @@ class GuestTrendChart extends ChartWidget
     public function getDescription(): string|Htmlable|null
     {
         return sprintf(
-            '%s guest activity grouped by %s; returning guests are recalculated within each bucket.',
+            'Guest activity for %s, grouped by %s. Repeat-service guests are counted separately in each interval.',
             $this->periodLabel,
             $this->trend['granularity'],
         );
@@ -73,7 +73,7 @@ class GuestTrendChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'New guests',
+                    'label' => 'New guest profiles',
                     'data' => $this->trend['newGuests'],
                     'borderColor' => '#059669',
                     'backgroundColor' => 'rgba(5, 150, 105, 0.14)',
@@ -84,7 +84,7 @@ class GuestTrendChart extends ChartWidget
                     'fill' => false,
                 ],
                 [
-                    'label' => 'Paying guests',
+                    'label' => 'Guests with collected payments',
                     'data' => $this->trend['payingGuests'],
                     'borderColor' => '#2563EB',
                     'backgroundColor' => 'rgba(37, 99, 235, 0.14)',
@@ -95,7 +95,7 @@ class GuestTrendChart extends ChartWidget
                     'fill' => false,
                 ],
                 [
-                    'label' => 'Returning guests',
+                    'label' => 'Repeat-service guests',
                     'data' => $this->trend['returningGuests'],
                     'borderColor' => '#7C3AED',
                     'backgroundColor' => 'rgba(124, 58, 237, 0.14)',

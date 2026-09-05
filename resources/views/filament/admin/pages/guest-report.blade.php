@@ -32,7 +32,7 @@
                 'barClasses' => 'bg-success-500',
             ],
             'other' => [
-                'label' => 'Other / direct',
+                'label' => 'Direct or uncategorized payments',
                 'icon' => 'heroicon-o-banknotes',
                 'classes' => 'border-gray-200 bg-gray-50/70 dark:border-white/10 dark:bg-white/5',
                 'iconClasses' => 'bg-gray-200 text-gray-700 dark:bg-white/10 dark:text-gray-300',
@@ -44,8 +44,8 @@
         <x-filament::section>
             <div>
                 <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Guest insights</p>
-                <h2 class="mt-1 text-2xl font-bold tracking-tight">Guest performance</h2>
-                <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Monitor guest growth, paying-guest activity, repeat visits, and spend for one consistent reporting period.</p>
+                <h2 class="mt-1 text-2xl font-bold tracking-tight">Guest activity report</h2>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Track new guest profiles, collected payments, repeat service use, and guest revenue for one reporting period.</p>
             </div>
             <x-filament.report-period-controls id="guest-report-period-controls" class="mt-5" />
         </x-filament::section>
@@ -66,8 +66,8 @@
             <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-stretch">
                 <div class="flex min-w-0 flex-col justify-center">
                     <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Selected period</p>
-                    <h2 id="guest-overview-heading" class="mt-1 text-xl font-bold tracking-tight text-gray-950 dark:text-white">Selected-period overview</h2>
-                    <p class="mt-1 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">Guest acquisition, paid activity, repeat visits, and average spend for {{ strtolower($this->periodLabel()) }}.</p>
+                    <h2 id="guest-overview-heading" class="mt-1 text-xl font-bold tracking-tight text-gray-950 dark:text-white">Guest overview</h2>
+                    <p class="mt-1 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">New profiles, collected payments, repeat service use, and average revenue for the selected reporting period.</p>
                 </div>
 
                 <div
@@ -125,14 +125,14 @@
             ], key('guest-trend-chart-'.$this->period.'-'.$this->startDate.'-'.$this->endDate))
         </section>
 
-        <x-filament::section heading="Guest spending" description="Collections and refund events recorded during {{ strtolower($this->periodLabel()) }}">
+        <x-filament::section heading="Guest revenue" description="Collections and refunds recorded in the selected reporting period">
             <dl class="grid gap-4 sm:grid-cols-3">
                 <div class="rounded-xl border border-primary-200 bg-primary-50 p-4 dark:border-primary-500/20 dark:bg-primary-500/10">
-                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-300">Gross guest spend</dt>
+                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-300">Gross guest revenue</dt>
                     <dd class="mt-1 text-2xl font-bold tabular-nums text-primary-700 dark:text-primary-300">GHS {{ number_format($report['totalPaid'], 2) }}</dd>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Payments received in the selected period</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Guest payments collected in the selected period</p>
                     @if ($drillDownUrls['grossSpend'])
-                        <a href="{{ $drillDownUrls['grossSpend'] }}" aria-label="View gross guest spend payments" class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-700 hover:text-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-primary-300 dark:hover:text-primary-200">
+                        <a href="{{ $drillDownUrls['grossSpend'] }}" aria-label="View gross guest revenue payments" class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-700 hover:text-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-primary-300 dark:hover:text-primary-200">
                             View payments
                             <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4" />
                         </a>
@@ -141,7 +141,7 @@
                 <div class="rounded-xl border border-danger-200 bg-danger-50 p-4 dark:border-danger-500/20 dark:bg-danger-500/10">
                     <dt class="text-sm font-medium text-gray-600 dark:text-gray-300">Refunds processed</dt>
                     <dd class="mt-1 text-2xl font-bold tabular-nums text-danger-700 dark:text-danger-300">GHS {{ number_format($report['refundTotal'], 2) }}</dd>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($report['refundCount']) }} refund event(s) in the selected period</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ number_format($report['refundCount']) }} {{ $report['refundCount'] === 1 ? 'refund' : 'refunds' }} processed in the selected period</p>
                     @if ($drillDownUrls['refunds'])
                         <a href="{{ $drillDownUrls['refunds'] }}" aria-label="View guest refund payments" class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-danger-700 hover:text-danger-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-danger-500 dark:text-danger-300 dark:hover:text-danger-200">
                             View refunds
@@ -155,16 +155,16 @@
                     'border-danger-200 bg-danger-50 dark:border-danger-500/20 dark:bg-danger-500/10' => $report['netSpend'] < 0,
                     'border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/5' => $report['netSpend'] === 0.0,
                 ])>
-                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-300">Net guest spend</dt>
+                    <dt class="text-sm font-medium text-gray-600 dark:text-gray-300">Net guest revenue</dt>
                     <dd @class([
                         'mt-1 text-2xl font-bold tabular-nums',
                         'text-success-700 dark:text-success-300' => $report['netSpend'] > 0,
                         'text-danger-700 dark:text-danger-300' => $report['netSpend'] < 0,
                         'text-gray-900 dark:text-white' => $report['netSpend'] === 0.0,
                     ])>GHS {{ number_format($report['netSpend'], 2) }}</dd>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Gross collections less refunds processed</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Gross guest revenue less processed refunds</p>
                     @if ($drillDownUrls['netSpend'])
-                        <a href="{{ $drillDownUrls['netSpend'] }}" aria-label="View net guest spend analysis" class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-gray-700 hover:text-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-300 dark:hover:text-primary-300">
+                        <a href="{{ $drillDownUrls['netSpend'] }}" aria-label="View net guest revenue analysis" class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-gray-700 hover:text-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-300 dark:hover:text-primary-300">
                             View analysis
                             <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="h-4 w-4" />
                         </a>
@@ -174,7 +174,7 @@
         </x-filament::section>
 
         <section class="grid gap-4 lg:grid-cols-3">
-            <x-filament::section aria-label="Paid service mix" heading="Paid service mix" description="Collected guest payments during {{ strtolower($this->periodLabel()) }}">
+            <x-filament::section aria-label="Paid service mix" heading="Paid service mix" description="Collected guest payments by service for the selected reporting period">
                 @if ($report['paymentCount'] > 0)
                     <div class="space-y-3">
                         <p class="text-sm font-semibold tabular-nums text-gray-700 dark:text-gray-200">
@@ -233,14 +233,14 @@
                 @endif
             </x-filament::section>
 
-            <x-filament::section heading="Top guests by gross spend" description="Gross collections recorded during {{ strtolower($this->periodLabel()) }}" class="lg:col-span-2">
+            <x-filament::section heading="Top guests by gross revenue" description="Highest gross guest revenue in the selected reporting period" class="lg:col-span-2">
                 @if ($report['topGuests']->isEmpty())
                     <div role="status" aria-label="No top guests" class="flex flex-col items-center px-4 py-10 text-center sm:py-12">
                         <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-300">
                             <x-filament::icon icon="heroicon-o-user-group" class="h-6 w-6" />
                         </span>
-                        <h3 class="mt-4 text-base font-semibold text-gray-950 dark:text-white">No paying guests in this period</h3>
-                        <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">No paid guest activity was recorded for {{ strtolower($this->periodLabel()) }}.</p>
+                        <h3 class="mt-4 text-base font-semibold text-gray-950 dark:text-white">No guests with collected payments</h3>
+                        <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">No guest payments were collected in the selected reporting period.</p>
                     </div>
                 @else
                     <ol aria-label="Top guests mobile list" class="space-y-3 md:hidden">
@@ -271,7 +271,7 @@
                                         <dd class="mt-1 font-semibold tabular-nums text-gray-950 dark:text-white">{{ number_format($payment->payment_count) }}</dd>
                                     </div>
                                     <div class="min-w-0 text-right">
-                                        <dt class="text-xs text-gray-500 dark:text-gray-400">Gross spend</dt>
+                                        <dt class="text-xs text-gray-500 dark:text-gray-400">Gross revenue</dt>
                                         <dd class="mt-1 break-words font-bold tabular-nums text-primary-700 dark:text-primary-300">GHS {{ number_format($payment->total_spend, 2) }}</dd>
                                     </div>
                                 </dl>
@@ -282,13 +282,13 @@
                     <div aria-label="Top guests desktop table" class="hidden md:block">
                         <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-white/10">
                             <table class="w-full min-w-[640px] divide-y divide-gray-200 text-sm dark:divide-white/10">
-                                <caption class="sr-only">Top guests by gross spend</caption>
+                                <caption class="sr-only">Top guests by gross revenue</caption>
                                 <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500 dark:bg-white/5 dark:text-gray-400">
                                     <tr>
                                         <th scope="col" class="px-4 py-3 font-semibold">Guest</th>
                                         <th scope="col" class="px-4 py-3 font-semibold">Email</th>
                                         <th scope="col" class="px-4 py-3 text-right font-semibold">Payments</th>
-                                        <th scope="col" class="px-4 py-3 text-right font-semibold">Gross spend</th>
+                                        <th scope="col" class="px-4 py-3 text-right font-semibold">Gross revenue</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 dark:divide-white/10">
@@ -323,7 +323,7 @@
                         <x-filament::icon icon="heroicon-o-calendar-days" class="h-7 w-7" />
                     </span>
                     <h2 class="mt-5 text-lg font-bold tracking-tight text-gray-950 dark:text-white">No guest activity in this period</h2>
-                    <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">No guest profiles were created, payments collected, or refunds processed during {{ strtolower($this->periodLabel()) }}.</p>
+                    <p class="mt-2 max-w-xl text-sm leading-6 text-gray-600 dark:text-gray-300">No new guest profiles, collected payments, or processed refunds were recorded in the selected reporting period.</p>
                     <a
                         href="#guest-report-period-controls"
                         class="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
@@ -352,10 +352,10 @@
             </div>
         </section>
 
-        <x-filament::section heading="Report notes">
+        <x-filament::section heading="How these metrics are calculated">
             <div class="grid gap-4 text-sm text-gray-600 dark:text-gray-300 sm:grid-cols-2">
-                <p><span class="font-semibold text-gray-900 dark:text-white">Paying guests</span> are distinct guests whose payments were received in the selected period, including collections refunded later.</p>
-                <p><span class="font-semibold text-gray-900 dark:text-white">Guest spend</span> records gross collections by payment date and refunds by processing date; unlinked transactions are excluded.</p>
+                <p><span class="font-semibold text-gray-900 dark:text-white">Guests with collected payments</span> are distinct guests linked to payments received in the selected period, including payments refunded later.</p>
+                <p><span class="font-semibold text-gray-900 dark:text-white">Guest revenue</span> records collections by payment date and refunds by processing date; transactions without an associated guest are excluded.</p>
             </div>
         </x-filament::section>
     </div>

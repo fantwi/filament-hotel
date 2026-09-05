@@ -41,7 +41,7 @@ class GuestComparisonStats extends StatsOverviewWidget
      */
     public function getDescription(): ?string
     {
-        return 'Changes against '.$this->comparison['previousPeriodLabel'].'.';
+        return 'Selected period compared with '.$this->comparison['previousPeriodLabel'].'.';
     }
 
     /**
@@ -60,9 +60,9 @@ class GuestComparisonStats extends StatsOverviewWidget
     protected function getStats(): array
     {
         return [
-            $this->makeStat('New guest change', $this->comparison['newGuests'], 'heroicon-o-user-plus'),
-            $this->makeStat('Paying guest change', $this->comparison['payingGuests'], 'heroicon-o-credit-card'),
-            $this->makeStat('Returning guest change', $this->comparison['returningGuests'], 'heroicon-o-arrow-path-rounded-square'),
+            $this->makeStat('New guest profiles', $this->comparison['newGuests'], 'heroicon-o-user-plus'),
+            $this->makeStat('Guests with collected payments', $this->comparison['payingGuests'], 'heroicon-o-credit-card'),
+            $this->makeStat('Repeat-service guests', $this->comparison['returningGuests'], 'heroicon-o-arrow-path-rounded-square'),
         ];
     }
 
@@ -75,15 +75,15 @@ class GuestComparisonStats extends StatsOverviewWidget
     {
         $direction = $metric['difference'] <=> 0;
         $percentage = match (true) {
-            $metric['percentageChange'] === null => 'No previous-period baseline',
-            $direction > 0 => 'Up '.number_format(abs($metric['percentageChange']), 1).'%',
-            $direction < 0 => 'Down '.number_format(abs($metric['percentageChange']), 1).'%',
+            $metric['percentageChange'] === null => 'No previous-period comparison',
+            $direction > 0 => 'Increased by '.number_format(abs($metric['percentageChange']), 1).'%',
+            $direction < 0 => 'Decreased by '.number_format(abs($metric['percentageChange']), 1).'%',
             default => 'No change',
         };
 
         return Stat::make($label, $this->formatDifference($metric['difference']))
             ->description(sprintf(
-                'Current %s · Previous %s · %s',
+                'Selected period %s · Previous period %s · %s',
                 number_format($metric['current']),
                 number_format($metric['previous']),
                 $percentage,

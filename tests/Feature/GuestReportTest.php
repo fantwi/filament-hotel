@@ -683,7 +683,7 @@ class GuestReportTest extends TestCase
 
         self::assertCount(0, $queries);
         self::assertSame(
-            ['New guest change', 'Paying guest change', 'Returning guest change'],
+            ['New guest profiles', 'Guests with collected payments', 'Repeat-service guests'],
             array_map(fn ($stat): string => $stat->getLabel(), $stats),
         );
         self::assertSame(['+1', '-2', '0'], array_map(fn ($stat): string => $stat->getValue(), $stats));
@@ -691,10 +691,10 @@ class GuestReportTest extends TestCase
             fn ($stat): string|array|null => $stat->getColor(),
             $stats,
         ));
-        self::assertStringContainsString('Current 2', $stats[0]->getDescription());
-        self::assertStringContainsString('Previous 1', $stats[0]->getDescription());
-        self::assertStringContainsString('Up 100.0%', $stats[0]->getDescription());
-        self::assertStringContainsString('No previous-period baseline', $stats[2]->getDescription());
+        self::assertStringContainsString('Selected period 2', $stats[0]->getDescription());
+        self::assertStringContainsString('Previous period 1', $stats[0]->getDescription());
+        self::assertStringContainsString('Increased by 100.0%', $stats[0]->getDescription());
+        self::assertStringContainsString('No previous-period comparison', $stats[2]->getDescription());
     }
 
     public function test_guest_trend_chart_uses_precomputed_values_and_accessible_count_options(): void
@@ -727,7 +727,7 @@ class GuestReportTest extends TestCase
         self::assertCount(0, $queries);
         self::assertSame(['Aug 10', 'Aug 11', 'Aug 12'], $data['labels']);
         self::assertSame(
-            ['New guests', 'Paying guests', 'Returning guests'],
+            ['New guest profiles', 'Guests with collected payments', 'Repeat-service guests'],
             array_column($data['datasets'], 'label'),
         );
         self::assertSame(
@@ -744,6 +744,10 @@ class GuestReportTest extends TestCase
         self::assertTrue($options['responsive']);
         self::assertSame(0, $options['scales']['y']['ticks']['precision']);
         self::assertSame('Guest count', $options['scales']['y']['title']['text']);
+        self::assertSame(
+            'Guest activity for Aug 10, 2026 to Aug 12, 2026, grouped by day. Repeat-service guests are counted separately in each interval.',
+            $widget->getDescription(),
+        );
     }
 
     public function test_guest_report_uses_a_consolidated_query_budget(): void
@@ -846,8 +850,8 @@ class GuestReportTest extends TestCase
         self::assertInstanceOf(\DOMElement::class, $results);
         self::assertStringContainsString('pointer-events-none', $results->getAttribute('wire:loading.class'));
         self::assertStringContainsString('opacity-60', $results->getAttribute('wire:loading.class'));
-        self::assertStringContainsString('Guest spending', $results->textContent);
-        self::assertStringContainsString('Top guests by gross spend', $results->textContent);
+        self::assertStringContainsString('Guest revenue', $results->textContent);
+        self::assertStringContainsString('Top guests by gross revenue', $results->textContent);
         self::assertStringNotContainsString('Report notes', $results->textContent);
 
         $status = $xpath->query('./div[@role="status"]', $selectedPeriod)?->item(0);
@@ -879,10 +883,10 @@ class GuestReportTest extends TestCase
         $response->assertOk()->assertSeeInOrder([
             'Guest profiles',
             'Previous-period comparison',
-            'Guest trend',
-            'Guest spending',
+            'Guest activity over time',
+            'Guest revenue',
             'Paid service mix',
-            'Top guests by gross spend',
+            'Top guests by gross revenue',
         ]);
 
         $document = new \DOMDocument;
@@ -920,7 +924,7 @@ class GuestReportTest extends TestCase
         $overview = $xpath->query('//section[@aria-labelledby="guest-overview-heading"]')?->item(0);
 
         self::assertInstanceOf(\DOMElement::class, $overview);
-        self::assertStringContainsString('Selected-period overview', $overview->textContent);
+        self::assertStringContainsString('Guest overview', $overview->textContent);
 
         $guestBase = $xpath->query('.//*[@role="note" and @aria-label="All-time guest base"]', $overview)?->item(0);
 
@@ -1012,20 +1016,20 @@ class GuestReportTest extends TestCase
         );
         self::assertSame(
             $urls['newGuests'],
-            $xpath->query('.//a[contains(normalize-space(.), "New guests")]', $results)?->item(0)?->getAttribute('href'),
+            $xpath->query('.//a[contains(normalize-space(.), "New guest profiles")]', $results)?->item(0)?->getAttribute('href'),
         );
         self::assertSame(
             $urls['payingGuests'],
-            $xpath->query('.//a[contains(normalize-space(.), "Paying guests")]', $results)?->item(0)?->getAttribute('href'),
+            $xpath->query('.//a[contains(normalize-space(.), "Guests with collected payments")]', $results)?->item(0)?->getAttribute('href'),
         );
         self::assertSame(
             $urls['averageSpend'],
-            $xpath->query('.//a[contains(normalize-space(.), "Average gross spend")]', $results)?->item(0)?->getAttribute('href'),
+            $xpath->query('.//a[contains(normalize-space(.), "Average collected per paying guest")]', $results)?->item(0)?->getAttribute('href'),
         );
-        self::assertCount(0, $xpath->query('.//a[contains(normalize-space(.), "Returning guests")]', $results));
+        self::assertCount(0, $xpath->query('.//a[contains(normalize-space(.), "Repeat-service guests")]', $results));
         self::assertSame(
             $urls['grossSpend'],
-            $xpath->query('.//a[@aria-label="View gross guest spend payments"]', $results)?->item(0)?->getAttribute('href'),
+            $xpath->query('.//a[@aria-label="View gross guest revenue payments"]', $results)?->item(0)?->getAttribute('href'),
         );
         self::assertSame(
             $urls['refunds'],
@@ -1033,7 +1037,7 @@ class GuestReportTest extends TestCase
         );
         self::assertSame(
             $urls['netSpend'],
-            $xpath->query('.//a[@aria-label="View net guest spend analysis"]', $results)?->item(0)?->getAttribute('href'),
+            $xpath->query('.//a[@aria-label="View net guest revenue analysis"]', $results)?->item(0)?->getAttribute('href'),
         );
 
         foreach (['hotel', 'conference', 'table', 'food', 'other'] as $type) {
@@ -1084,13 +1088,58 @@ class GuestReportTest extends TestCase
 
         $other = $xpath->query('.//*[@data-service-mix-channel="other"]', $serviceMix)?->item(0);
         self::assertInstanceOf(\DOMElement::class, $other);
-        self::assertStringContainsString('Other / direct', $other->textContent);
+        self::assertStringContainsString('Direct or uncategorized payments', $other->textContent);
         self::assertStringContainsString('2 payments', $other->textContent);
         self::assertStringContainsString('100.0%', $other->textContent);
 
         $otherShare = $xpath->query('.//*[@role="progressbar"]', $other)?->item(0);
         self::assertInstanceOf(\DOMElement::class, $otherShare);
         self::assertSame('100', $otherShare->getAttribute('aria-valuenow'));
+    }
+
+    public function test_guest_report_uses_clear_business_terminology_consistently(): void
+    {
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        $guest = Guest::query()->create([
+            'first_name' => 'Clear',
+            'last_name' => 'Labels',
+            'email' => 'clear-labels@example.test',
+            'phone_number' => '0240000019',
+        ]);
+        Payment::query()->create([
+            'guest_id' => $guest->id,
+            'amount' => 200,
+            'method' => 'cash',
+            'payment_status' => 'completed',
+            'transaction_reference' => 'GUEST-REPORT-CLEAR-LABELS',
+        ]);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $response = $this->actingAs($accountant)->get(GuestReport::getUrl());
+
+        $response->assertOk()->assertSeeInOrder([
+            'Guest activity report',
+            'Guest overview',
+            'New guest profiles',
+            'Guests with collected payments',
+            'Repeat-service guests',
+            'Average collected per paying guest',
+            'Gross guest revenue',
+            'Net guest revenue',
+            'Direct or uncategorized payments',
+            'Top guests by gross revenue',
+            'How these metrics are calculated',
+        ]);
+        $response->assertDontSeeText('Guest performance');
+        $response->assertDontSeeText('Selected-period overview');
+        $response->assertDontSeeText('Average gross spend');
+        $response->assertDontSeeText('Gross guest spend');
+        $response->assertDontSeeText('Net guest spend');
+        $response->assertDontSeeText('Other / direct');
+        $response->assertDontSeeText('Top guests by gross spend');
+        $response->assertDontSeeText('Report notes');
     }
 
     public function test_guest_report_service_mix_uses_a_focused_empty_state_without_zero_rows(): void
@@ -1188,8 +1237,12 @@ class GuestReportTest extends TestCase
             ['4', '3', '2', 'GHS 1,250.50'],
             array_map(fn ($stat): string => $stat->getValue(), $stats),
         );
-        self::assertSame('Profiles created in Yearly', $stats[0]->getDescription());
-        self::assertSame('Gross collections per paying guest in Yearly', $stats[3]->getDescription());
+        self::assertSame(
+            ['New guest profiles', 'Guests with collected payments', 'Repeat-service guests', 'Average collected per paying guest'],
+            array_map(fn ($stat): string => $stat->getLabel(), $stats),
+        );
+        self::assertSame('Profiles created · Yearly', $stats[0]->getDescription());
+        self::assertSame('Gross guest revenue per paying guest · Yearly', $stats[3]->getDescription());
         self::assertSame('/admin/guests?joined=yearly', $stats[0]->getUrl());
         self::assertSame('/admin/payments?scope=guests', $stats[1]->getUrl());
         self::assertNull($stats[2]->getUrl());

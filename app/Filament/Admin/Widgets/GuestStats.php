@@ -52,29 +52,29 @@ class GuestStats extends StatsOverviewWidget
 
         return [
             $this->withDrillDown(
-                Stat::make('New guests', number_format((int) $report['newGuests']))
-                    ->description('Profiles created in '.$periodLabel)
+                Stat::make('New guest profiles', number_format((int) $report['newGuests']))
+                    ->description('Profiles created · '.$periodLabel)
                     ->icon('heroicon-o-user-plus')
                     ->color('success'),
                 'newGuests',
             ),
             $this->withDrillDown(
-                Stat::make('Paying guests', number_format((int) $report['payingGuests']))
-                    ->description('Guests with paid activity')
+                Stat::make('Guests with collected payments', number_format((int) $report['payingGuests']))
+                    ->description('Distinct guests linked to collected payments')
                     ->icon('heroicon-o-credit-card')
                     ->color('info'),
                 'payingGuests',
             ),
             $this->withDrillDown(
-                Stat::make('Returning guests', number_format((int) $report['returningGuests']))
+                Stat::make('Repeat-service guests', number_format((int) $report['returningGuests']))
                     ->description('Two or more paid service visits')
                     ->icon('heroicon-o-arrow-path-rounded-square')
                     ->color('warning'),
                 'returningGuests',
             ),
             $this->withDrillDown(
-                Stat::make('Average gross spend', 'GHS '.number_format((float) $report['averageSpend'], 2))
-                    ->description('Gross collections per paying guest in '.$periodLabel)
+                Stat::make('Average collected per paying guest', 'GHS '.number_format((float) $report['averageSpend'], 2))
+                    ->description('Gross guest revenue per paying guest · '.$periodLabel)
                     ->icon('heroicon-o-banknotes')
                     ->color('success'),
                 'averageSpend',
