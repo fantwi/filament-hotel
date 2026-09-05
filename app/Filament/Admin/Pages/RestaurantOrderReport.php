@@ -74,13 +74,13 @@ class RestaurantOrderReport extends Page
     {
         $totals = $this->getOrdersQuery()
             ->selectRaw('COUNT(*) as total_orders')
-            ->selectRaw("SUM(CASE WHEN payment_status = 'completed' THEN 1 ELSE 0 END) as paid_orders")
-            ->selectRaw("SUM(CASE WHEN payment_status = 'pending' THEN 1 ELSE 0 END) as pending_orders")
+            ->selectRaw("SUM(CASE WHEN payment_status = 'completed' AND status != 'cancelled' THEN 1 ELSE 0 END) as paid_orders")
+            ->selectRaw("SUM(CASE WHEN payment_status = 'pending' AND status != 'cancelled' THEN 1 ELSE 0 END) as pending_orders")
             ->selectRaw("SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_orders")
             ->selectRaw("SUM(CASE WHEN status IN ('confirmed', 'preparing', 'ready') THEN 1 ELSE 0 END) as active_orders")
-            ->selectRaw("SUM(CASE WHEN payment_status = 'completed' THEN total ELSE 0 END) as revenue")
+            ->selectRaw("SUM(CASE WHEN payment_status = 'completed' AND status != 'cancelled' THEN total ELSE 0 END) as revenue")
             ->selectRaw("SUM(CASE WHEN payment_status = 'pending' AND status != 'cancelled' THEN total ELSE 0 END) as outstanding")
-            ->selectRaw('AVG(CASE WHEN payment_status = \'completed\' THEN total END) as average_order_value')
+            ->selectRaw("AVG(CASE WHEN payment_status = 'completed' AND status != 'cancelled' THEN total END) as average_order_value")
             ->selectRaw("SUM(CASE WHEN status != 'cancelled' THEN 1 ELSE 0 END) as non_cancelled_orders")
             ->first();
 
