@@ -6,6 +6,7 @@ use App\Support\Reporting\ReportPeriod;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 /**
  * Provides deferred, validated period controls for custom Filament reports.
@@ -46,11 +47,16 @@ trait InteractsWithReportPeriod
         $period = array_key_exists($this->period, ReportPeriod::options())
             ? $this->period
             : 'monthly';
-        [$start, $end] = ReportPeriod::range(
-            $period,
-            filled($this->startDate) ? $this->startDate : null,
-            filled($this->endDate) ? $this->endDate : null,
-        );
+        try {
+            [$start, $end] = ReportPeriod::range(
+                $period,
+                filled($this->startDate) ? $this->startDate : null,
+                filled($this->endDate) ? $this->endDate : null,
+            );
+        } catch (InvalidArgumentException) {
+            $period = 'monthly';
+            [$start, $end] = ReportPeriod::range($period);
+        }
 
         $this->setAppliedReportPeriod($period, $start, $end);
         $this->setDraftReportPeriod($period, $start, $end);

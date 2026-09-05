@@ -76,6 +76,21 @@ class ReportPeriodControlsTest extends TestCase
             ]);
     }
 
+    #[DataProvider('invalidCustomPeriodQueries')]
+    public function test_invalid_custom_period_query_parameters_fall_back_to_the_current_month(array $query): void
+    {
+        $this->travelTo('2026-09-18 14:30:00');
+
+        Livewire::withQueryParams($query)
+            ->test(ReportPeriodHarness::class)
+            ->assertSet('period', 'monthly')
+            ->assertSet('startDate', '2026-09-01')
+            ->assertSet('endDate', '2026-09-18')
+            ->assertSet('draftPeriod', 'monthly')
+            ->assertSet('draftStartDate', '2026-09-01')
+            ->assertSet('draftEndDate', '2026-09-18');
+    }
+
     #[DataProvider('reportViews')]
     public function test_report_views_render_the_shared_period_control(string $view): void
     {
@@ -117,6 +132,31 @@ class ReportPeriodControlsTest extends TestCase
             'occupancy report' => ['occupancy-report'],
             'restaurant order report' => ['restaurant-order-report'],
             'kitchen production report' => ['kitchen-production-report'],
+        ];
+    }
+
+    public static function invalidCustomPeriodQueries(): array
+    {
+        return [
+            'missing both dates' => [['period' => 'custom']],
+            'missing start date' => [[
+                'period' => 'custom',
+                'endDate' => '2026-09-18',
+            ]],
+            'missing end date' => [[
+                'period' => 'custom',
+                'startDate' => '2026-09-01',
+            ]],
+            'invalid start date' => [[
+                'period' => 'custom',
+                'startDate' => 'not-a-date',
+                'endDate' => '2026-09-18',
+            ]],
+            'reversed dates' => [[
+                'period' => 'custom',
+                'startDate' => '2026-09-20',
+                'endDate' => '2026-09-10',
+            ]],
         ];
     }
 }
