@@ -35,6 +35,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -518,18 +519,25 @@ class KitchenProductionResource extends SecureResource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['menuItem', 'restaurant']))
             ->columns([
+                TextColumn::make('mobile_summary')
+                    ->label('Production Batch')
+                    ->state(fn (KitchenProduction $record): string => $record->menuItem?->name ?? 'Menu item unavailable')
+                    ->description(fn (KitchenProduction $record): string => sprintf(
+                        '%s · %s · %s',
+                        $record->batch_reference ?: 'Batch not recorded',
+                        $record->restaurant?->name ?: 'Legacy batch',
+                        $record->production_date?->format('M d, Y') ?? 'Date not recorded',
+                    ))
+                    ->wrap()
+                    ->weight('bold')
+                    ->hiddenFrom('md'),
                 TextColumn::make('menuItem.name')
                     ->label('Menu Item')
                     ->searchable()
                     ->weight('bold')
-                    ->description(fn (KitchenProduction $record): string => sprintf(
-                        '%s · %s · Produced %s · Waste %s',
-                        $record->batch_reference,
-                        $record->production_date->format('M d, Y'),
-                        number_format((float) $record->quantity_produced, 3),
-                        number_format((float) $record->quantity_wasted, 3),
-                    )),
+                    ->visibleFrom('md'),
                 TextColumn::make('restaurant.name')
                     ->label('Restaurant')
                     ->placeholder('Legacy batch')
@@ -546,14 +554,13 @@ class KitchenProductionResource extends SecureResource
                     ->date('M d, Y')
                     ->sortable()
                     ->visibleFrom('md'),
-                TextColumn::make('quantity_produced')
-                    ->label('Produced')
-                    ->numeric(decimalPlaces: 3)
-                    ->visibleFrom('md'),
-                TextColumn::make('quantity_wasted')
-                    ->label('Wasted')
-                    ->numeric(decimalPlaces: 3)
-                    ->visibleFrom('md'),
+                TextColumn::make('yield_summary')
+                    ->label('Yield')
+                    ->state(fn (KitchenProduction $record): array => static::productionTableYieldSummary($record))
+                    ->badge()
+                    ->color(fn (string $state, KitchenProduction $record): string => static::productionTableYieldColor($state, $record))
+                    ->listWithLineBreaks()
+                    ->wrap(),
                 TextColumn::make('producer.name')
                     ->label('Produced By')
                     ->toggleable()
@@ -635,7 +642,8 @@ class KitchenProductionResource extends SecureResource
                             ->success()
                             ->send();
                     }),
-            ]);
+            ], RecordActionsPosition::BeforeColumns)
+            ->stackedOnMobile();
     }
 
     /**
@@ -743,6 +751,66 @@ class KitchenProductionResource extends SecureResource
         }
 
         return number_format(((float) ($get('quantity_wasted') ?? 0) / $produced) * 100, 2).'%';
+    }
+
+    /**
+     * Builds the compact produced, net, and waste values displayed in the register.
+     *
+     * @return list<string>
+     */
+    private static function productionTableYieldSummary(KitchenProduction $record): array
+    {
+        $produced = (float) $record->quantity_produced;
+        $wasted = (float) $record->quantity_wasted;
+        $invalidWaste = $wasted < 0 || $wasted > $produced;
+
+        return [
+            'Produced '.static::productionTableQuantity($record, $produced),
+            $invalidWaste
+                ? 'Net Invalid waste quantity'
+                : 'Net '.static::productionTableQuantity($record, max($produced - $wasted, 0)),
+            sprintf(
+                'Waste %s (%s)',
+                static::productionTableQuantity($record, $wasted),
+                $invalidWaste
+                    ? 'Check quantity'
+                    : ($produced > 0 ? number_format(($wasted / $produced) * 100, 2).'%' : '—'),
+            ),
+        ];
+    }
+
+    /**
+     * Formats a register quantity with the menu item's configured production unit.
+     */
+    private static function productionTableQuantity(KitchenProduction $record, float $quantity): string
+    {
+        $unit = $record->menuItem?->production_unit ?: 'unit';
+
+        return sprintf(
+            '%s %s',
+            number_format($quantity, 3),
+            Str::plural($unit, abs($quantity)),
+        );
+    }
+
+    /**
+     * Assigns a semantic color to each register yield badge.
+     */
+    private static function productionTableYieldColor(string $state, KitchenProduction $record): string
+    {
+        if (str_starts_with($state, 'Produced ')) {
+            return 'info';
+        }
+
+        if (str_starts_with($state, 'Net ')) {
+            return str_contains($state, 'Invalid waste quantity') ? 'danger' : 'success';
+        }
+
+        if ((float) $record->quantity_wasted < 0 || (float) $record->quantity_wasted > (float) $record->quantity_produced) {
+            return 'danger';
+        }
+
+        return (float) $record->quantity_wasted > 0 ? 'warning' : 'gray';
     }
 
     /**
