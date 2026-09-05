@@ -130,6 +130,7 @@ class KitchenProductionRestaurantScopeTest extends TestCase
                     $options = $component->getOptions();
 
                     return array_key_exists($activeIngredient->id, $options)
+                        && $options[$activeIngredient->id] === 'Rice — 10.000 kg available'
                         && ! array_key_exists($inactiveIngredient->id, $options)
                         && ! array_key_exists($otherIngredient->id, $options);
                 },

@@ -172,7 +172,12 @@ class KitchenProductionResource extends SecureResource
                                         ->orderBy('name')
                                         ->get()
                                         ->mapWithKeys(fn (Ingredient $ingredient): array => [
-                                            $ingredient->id => "{$ingredient->name} ({$ingredient->unit})",
+                                            $ingredient->id => sprintf(
+                                                '%s — %s %s available',
+                                                $ingredient->name,
+                                                number_format((float) $ingredient->current_stock, 3),
+                                                $ingredient->unit,
+                                            ),
                                         ])
                                         ->all())
                                     ->searchable()
@@ -189,7 +194,26 @@ class KitchenProductionResource extends SecureResource
                                     ->numeric()
                                     ->minValue(.001)
                                     ->step(.001)
+                                    ->live(onBlur: true)
                                     ->helperText('Enter this amount in the selected ingredient’s stock unit.')
+                                    ->rules([
+                                        fn (Get $get): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get): void {
+                                            $ingredient = static::selectedProductionIngredient($get);
+
+                                            if (! $ingredient || blank($value)) {
+                                                return;
+                                            }
+
+                                            if ((float) $value > (float) $ingredient->current_stock) {
+                                                $fail(sprintf(
+                                                    '%s has only %s %s available.',
+                                                    $ingredient->name,
+                                                    number_format((float) $ingredient->current_stock, 3),
+                                                    $ingredient->unit,
+                                                ));
+                                            }
+                                        },
+                                    ])
                                     ->required(),
                                 TextEntry::make('stock_unit')
                                     ->label('Stock Unit')
@@ -205,6 +229,17 @@ class KitchenProductionResource extends SecureResource
                                     })
                                     ->badge()
                                     ->color(fn (string $state): string => $state === 'Ingredient unavailable' ? 'danger' : 'info'),
+                                TextEntry::make('stock_availability')
+                                    ->label('Live Stock Availability')
+                                    ->state(fn (Get $get): string => static::productionStockAvailability($get))
+                                    ->badge()
+                                    ->color(fn (string $state): string => match (true) {
+                                        str_contains($state, 'Short by') => 'danger',
+                                        str_starts_with($state, 'Select an ingredient') => 'gray',
+                                        default => 'success',
+                                    })
+                                    ->helperText('The final balance is verified again under a database lock when the batch is saved.')
+                                    ->columnSpanFull(),
                                 TextInput::make('notes')->maxLength(255),
                             ])
                             ->minItems(1)
@@ -483,6 +518,66 @@ class KitchenProductionResource extends SecureResource
         }
 
         return MenuItem::query()->whereKey($menuItemId)->value('inventory_consumption_mode');
+    }
+
+    /**
+     * Returns the active ingredient selected from the production batch's restaurant.
+     */
+    private static function selectedProductionIngredient(Get $get): ?Ingredient
+    {
+        $ingredientId = $get('ingredient_id');
+        $restaurantId = $get('../../restaurant_id');
+
+        if (blank($ingredientId) || blank($restaurantId)) {
+            return null;
+        }
+
+        return Ingredient::query()
+            ->whereKey($ingredientId)
+            ->where('restaurant_id', $restaurantId)
+            ->where('is_active', true)
+            ->first();
+    }
+
+    /**
+     * Describes the selected ingredient balance before and after the requested usage.
+     */
+    private static function productionStockAvailability(Get $get): string
+    {
+        $ingredient = static::selectedProductionIngredient($get);
+
+        if (! $ingredient) {
+            return 'Select an ingredient to view its stock balance';
+        }
+
+        $available = (float) $ingredient->current_stock;
+        $requested = $get('quantity_used');
+        $balance = sprintf('%s %s available', number_format($available, 3), $ingredient->unit);
+
+        if (blank($requested)) {
+            return $balance;
+        }
+
+        $requested = (float) $requested;
+        $requestedLabel = sprintf('%s %s requested', number_format($requested, 3), $ingredient->unit);
+
+        if ($requested > $available) {
+            return sprintf(
+                '%s · %s · Short by %s %s',
+                $balance,
+                $requestedLabel,
+                number_format($requested - $available, 3),
+                $ingredient->unit,
+            );
+        }
+
+        return sprintf(
+            '%s · %s · %s %s remaining',
+            $balance,
+            $requestedLabel,
+            number_format($available - $requested, 3),
+            $ingredient->unit,
+        );
     }
 
     /**

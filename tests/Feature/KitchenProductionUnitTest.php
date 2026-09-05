@@ -78,6 +78,88 @@ class KitchenProductionUnitTest extends TestCase
             );
     }
 
+    public function test_create_form_shows_available_requested_and_remaining_stock(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $staff = $this->kitchenStaff();
+        $ingredient = $this->ingredient('kg', 10);
+
+        Livewire::actingAs($staff)
+            ->test(CreateKitchenProduction::class)
+            ->fillForm([
+                'restaurant_id' => $ingredient->restaurant_id,
+                'menu_item_id' => $this->menuItem()->getKey(),
+                'ingredients' => [[
+                    'ingredient_id' => $ingredient->getKey(),
+                    'quantity_used' => 2,
+                ]],
+            ])
+            ->assertSchemaComponentExists(
+                'ingredients.0.stock_availability',
+                checkComponentUsing: fn ($component): bool => $component instanceof TextEntry
+                    && $component->getState() === '10.000 kg available · 2.000 kg requested · 8.000 kg remaining'
+                    && $component->getColor($component->getState()) === 'success',
+            );
+    }
+
+    public function test_create_form_warns_when_requested_stock_exceeds_the_available_balance(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $staff = $this->kitchenStaff();
+        $ingredient = $this->ingredient('kg', 10);
+
+        Livewire::actingAs($staff)
+            ->test(CreateKitchenProduction::class)
+            ->fillForm([
+                'restaurant_id' => $ingredient->restaurant_id,
+                'menu_item_id' => $this->menuItem()->getKey(),
+                'ingredients' => [[
+                    'ingredient_id' => $ingredient->getKey(),
+                    'quantity_used' => 12,
+                ]],
+            ])
+            ->assertSchemaComponentExists(
+                'ingredients.0.stock_availability',
+                checkComponentUsing: fn ($component): bool => $component instanceof TextEntry
+                    && $component->getState() === '10.000 kg available · 12.000 kg requested · Short by 2.000 kg'
+                    && $component->getColor($component->getState()) === 'danger',
+            );
+    }
+
+    public function test_create_form_attaches_an_insufficient_stock_error_to_the_quantity_field(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $staff = $this->kitchenStaff();
+        $ingredient = $this->ingredient('kg', 10);
+
+        Livewire::actingAs($staff)
+            ->test(CreateKitchenProduction::class)
+            ->fillForm([
+                'restaurant_id' => $ingredient->restaurant_id,
+                'menu_item_id' => $this->menuItem()->getKey(),
+                'production_date' => today()->toDateString(),
+                'quantity_produced' => 20,
+                'quantity_wasted' => 0,
+                'ingredients' => [[
+                    'ingredient_id' => $ingredient->getKey(),
+                    'quantity_used' => 12,
+                ]],
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['ingredients.0.quantity_used']);
+
+        self::assertDatabaseCount('kitchen_productions', 0);
+        self::assertSame('10.000', $ingredient->refresh()->current_stock);
+    }
+
+    private function kitchenStaff(): User
+    {
+        $staff = User::factory()->create(['department' => 'kitchen_manager']);
+        $staff->givePermissionTo(Permission::findOrCreate('manage kitchen production', 'web'));
+
+        return $staff;
+    }
+
     private function ingredient(string $unit, float $stock): Ingredient
     {
         $restaurant = Restaurant::query()->create([
