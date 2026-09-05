@@ -7,13 +7,16 @@ use App\Filament\Admin\Resources\RestaurantOrders\RestaurantOrderResource;
 use App\Models\Payment;
 use App\Models\RestaurantOrder;
 use App\Models\RestaurantOrderItem;
+use App\Support\Reporting\RestaurantOrderReportCsv;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Livewire\WithPagination;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Provides the restaurant order report Filament administration page.
@@ -66,6 +69,83 @@ class RestaurantOrderReport extends Page
     public string $fulfillmentStatus = '';
 
     public string $orderingChannel = '';
+
+    /**
+     * Exposes spreadsheet export and browser printing for the applied report.
+     *
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('exportCsv')
+                ->label('Export CSV')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->action(fn (): StreamedResponse => $this->exportCsv()),
+            Action::make('printReport')
+                ->label('Print report')
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->alpineClickHandler('window.print()'),
+        ];
+    }
+
+    /**
+     * Streams the complete currently applied restaurant report as a CSV download.
+     */
+    public function exportCsv(): StreamedResponse
+    {
+        abort_unless(static::canAccess(), 403);
+
+        $metrics = $this->getReportMetrics();
+        [$periodStart, $periodEnd] = $this->periodBounds();
+        $report = [
+            ...$metrics,
+            ...$this->getReportAnalytics($metrics),
+            'periodStart' => $periodStart,
+            'periodEnd' => $periodEnd,
+            'generatedAt' => now(),
+            'orders' => $this->ordersForExport(),
+        ];
+        $csv = app(RestaurantOrderReportCsv::class)->toCsv($report, $this->periodLabel());
+        $filename = sprintf(
+            'restaurant-order-report-%s-to-%s.csv',
+            $periodStart->toDateString(),
+            $periodEnd->toDateString(),
+        );
+
+        return response()->streamDownload(
+            static function () use ($csv): void {
+                echo $csv;
+            },
+            $filename,
+            ['Content-Type' => 'text/csv; charset=UTF-8'],
+        );
+    }
+
+    /**
+     * Returns every order in the applied period independently of register pagination and filters.
+     */
+    private function ordersForExport(): Collection
+    {
+        return $this->getOrdersQuery()
+            ->select([
+                'id',
+                'guest_id',
+                'order_number',
+                'customer_email',
+                'ordering_channel',
+                'status',
+                'payment_status',
+                'total',
+                'created_at',
+            ])
+            ->with('guest:id,first_name,last_name,email')
+            ->withSum('items', 'quantity')
+            ->latest()
+            ->get();
+    }
 
     /**
      * Builds and returns orders query.

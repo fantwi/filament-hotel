@@ -2,8 +2,8 @@
     @php
         $report = $this->getReportData();
     @endphp
-    <div class="space-y-6">
-        <x-filament::section>
+    <div data-restaurant-report-page class="space-y-6">
+        <x-filament::section data-restaurant-report-controls>
             <div>
                 <p class="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">Restaurant operations</p>
                 <h2 class="mt-1 text-2xl font-bold tracking-tight">Order performance</h2>
@@ -179,7 +179,7 @@
                 </div>
             </div>
 
-            <div class="space-y-4 md:hidden" aria-label="Order cards">
+            <div data-restaurant-mobile-register class="space-y-4 md:hidden" aria-label="Order cards">
                 @forelse ($report['orders'] as $order)
                     @php
                         $orderDetailsUrl = $this->orderDetailsUrl($order);
@@ -226,7 +226,7 @@
                 @endforelse
             </div>
 
-            <div class="hidden md:block">
+            <div data-restaurant-desktop-register class="hidden md:block">
                 <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-white/10">
                     <table class="w-full min-w-[760px] divide-y divide-gray-200 text-left text-sm dark:divide-white/10">
                         <caption class="sr-only">Restaurant order register</caption>
@@ -285,7 +285,7 @@
             </div>
 
             @if ($report['orders']->hasPages())
-                <div class="mt-6 border-t border-gray-200 pt-4 dark:border-white/10">
+                <div data-restaurant-register-pagination class="mt-6 border-t border-gray-200 pt-4 dark:border-white/10">
                     {{ $report['orders']->links() }}
                 </div>
             @endif
@@ -347,4 +347,62 @@
             </div>
         </section>
     </div>
+
+    <style>
+        @media print {
+            @page {
+                size: landscape;
+                margin: 12mm;
+            }
+
+            .fi-sidebar,
+            .fi-topbar,
+            .fi-header,
+            .fi-breadcrumbs,
+            [data-restaurant-report-controls],
+            [data-restaurant-register-filters],
+            [data-restaurant-report-loading-overlay],
+            [data-restaurant-mobile-register],
+            [data-restaurant-register-pagination] {
+                display: none !important;
+            }
+
+            .fi-main-ctn {
+                margin-inline-start: 0 !important;
+                min-height: auto !important;
+            }
+
+            .fi-main {
+                max-width: none !important;
+                padding: 0 !important;
+            }
+
+            [data-restaurant-report-page] {
+                gap: 1rem !important;
+            }
+
+            [data-restaurant-report-page] .fi-section,
+            [data-restaurant-report-page] article,
+            [data-restaurant-report-page] tr {
+                break-inside: avoid;
+            }
+
+            [data-restaurant-desktop-register] {
+                display: block !important;
+            }
+
+            [data-restaurant-desktop-register] > div {
+                overflow: visible !important;
+            }
+
+            [data-restaurant-desktop-register] table {
+                min-width: 0 !important;
+            }
+
+            [data-restaurant-report-page] a {
+                color: inherit !important;
+                text-decoration: none !important;
+            }
+        }
+    </style>
 </x-filament::page>
