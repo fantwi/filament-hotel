@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Widgets;
 
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Str;
 
 /**
  * Provides a period-aware order summary for the restaurant report.
@@ -46,10 +47,11 @@ class RestaurantOrderReportStats extends StatsOverviewWidget
     protected function getStats(): array
     {
         $report = $this->reportData;
+        $totalItems = (int) $report['totalItems'];
 
         return [
             Stat::make('Orders received', number_format((int) $report['totalOrders']))
-                ->description(number_format((int) $report['totalItems']).' item(s) in '.$this->reportPeriodLabel)
+                ->description(number_format($totalItems).' '.Str::plural('item', $totalItems).' in '.$this->reportPeriodLabel)
                 ->icon('heroicon-o-shopping-bag')
                 ->color('primary'),
             Stat::make('Net revenue', 'GHS '.number_format((float) $report['netRevenue'], 2))

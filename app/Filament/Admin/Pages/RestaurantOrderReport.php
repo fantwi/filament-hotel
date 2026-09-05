@@ -12,6 +12,7 @@ use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Livewire\WithPagination;
 
 /**
@@ -167,6 +168,45 @@ class RestaurantOrderReport extends Page
     public function orderingChannelOptions(): array
     {
         return self::ORDERING_CHANNEL_OPTIONS;
+    }
+
+    /**
+     * Returns the business-facing label for an order channel.
+     */
+    public function orderingChannelLabel(?string $channel): string
+    {
+        $channel = filled($channel) ? $channel : 'web';
+
+        return self::ORDERING_CHANNEL_OPTIONS[$channel] ?? Str::headline($channel);
+    }
+
+    /**
+     * Returns the business-facing label for a payment status.
+     */
+    public function paymentStatusLabel(?string $status): string
+    {
+        return match ($status) {
+            'completed' => 'Completed',
+            'paid' => 'Paid',
+            'pending' => 'Pending',
+            'failed' => 'Failed',
+            'refunded', 'refund' => 'Refunded',
+            default => Str::headline(filled($status) ? $status : 'unknown'),
+        };
+    }
+
+    /**
+     * Maps payment outcomes to consistent Filament semantic colours.
+     */
+    public function paymentStatusColor(?string $status): string
+    {
+        return match ($status) {
+            'completed', 'paid' => 'success',
+            'pending' => 'warning',
+            'failed' => 'danger',
+            'refunded', 'refund' => 'info',
+            default => 'gray',
+        };
     }
 
     /**

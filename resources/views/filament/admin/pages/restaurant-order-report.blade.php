@@ -161,7 +161,7 @@
                 <div class="mt-4 flex flex-col gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
                     <div>
                         <p data-restaurant-register-summary aria-live="polite" class="text-sm font-semibold text-gray-950 dark:text-white">
-                            Showing {{ number_format($report['orders']->total()) }} of {{ number_format($report['totalOrders']) }} orders
+                            Showing {{ number_format($report['orders']->total()) }} of {{ number_format($report['totalOrders']) }} {{ \Illuminate\Support\Str::plural('order', $report['totalOrders']) }}
                         </p>
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Register filters do not change the period overview metrics.</p>
                     </div>
@@ -190,7 +190,7 @@
                             'cancelled' => 'danger',
                             default => 'gray',
                         };
-                        $paymentColor = $order->payment_status === 'completed' ? 'success' : ($order->payment_status === 'pending' ? 'warning' : 'gray');
+                        $paymentColor = $this->paymentStatusColor($order->payment_status);
                     @endphp
                     <article class="rounded-xl border border-gray-200 p-4 dark:border-white/10">
                         <div data-mobile-order-reference class="min-w-0">
@@ -215,9 +215,9 @@
                         <p data-mobile-order-total class="mt-3 text-right text-sm font-bold tabular-nums text-primary-600 dark:text-primary-400">GHS {{ number_format($order->total, 2) }}</p>
                         <dl class="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-gray-200 p-3 text-sm dark:border-white/10">
                             <div><dt class="text-xs text-gray-500 dark:text-gray-400">Items</dt><dd class="mt-1 font-medium">{{ number_format($order->items_sum_quantity ?? 0) }}</dd></div>
-                            <div><dt class="text-xs text-gray-500 dark:text-gray-400">Channel</dt><dd class="mt-1 capitalize font-medium">{{ $order->ordering_channel ?: 'web' }}</dd></div>
+                            <div><dt class="text-xs text-gray-500 dark:text-gray-400">Channel</dt><dd class="mt-1 font-medium">{{ $this->orderingChannelLabel($order->ordering_channel) }}</dd></div>
                             <div><dt class="text-xs text-gray-500 dark:text-gray-400">Fulfillment</dt><dd class="mt-1"><x-filament::badge :color="$statusColor">{{ str_replace('_', ' ', ucfirst($order->status)) }}</x-filament::badge></dd></div>
-                            <div><dt class="text-xs text-gray-500 dark:text-gray-400">Payment</dt><dd class="mt-1"><x-filament::badge :color="$paymentColor">{{ str_replace('_', ' ', ucfirst($order->payment_status)) }}</x-filament::badge></dd></div>
+                            <div><dt class="text-xs text-gray-500 dark:text-gray-400">Payment</dt><dd class="mt-1"><x-filament::badge :color="$paymentColor">{{ $this->paymentStatusLabel($order->payment_status) }}</x-filament::badge></dd></div>
                         </dl>
                         <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">Created {{ $order->created_at?->format('M d, Y · g:i A') }}</p>
                     </article>
@@ -251,7 +251,7 @@
                                         'cancelled' => 'danger',
                                         default => 'gray',
                                     };
-                                    $paymentColor = $order->payment_status === 'completed' ? 'success' : ($order->payment_status === 'pending' ? 'warning' : 'gray');
+                                    $paymentColor = $this->paymentStatusColor($order->payment_status);
                                 @endphp
                                 <tr class="align-top hover:bg-gray-50 dark:hover:bg-white/5">
                                     <th scope="row" class="px-4 py-4">
@@ -268,11 +268,11 @@
                                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $order->guest?->full_name ?: $order->customer_email ?: 'Walk-in guest' }}</p>
                                     </th>
                                     <td class="px-4 py-4">
-                                        <p class="font-medium">{{ number_format($order->items_sum_quantity ?? 0) }} item(s)</p>
-                                        <p class="mt-1 text-xs capitalize text-gray-500 dark:text-gray-400">{{ $order->ordering_channel ?: 'web' }} order</p>
+                                        <p class="font-medium">{{ number_format($order->items_sum_quantity ?? 0) }} {{ \Illuminate\Support\Str::plural('item', $order->items_sum_quantity ?? 0) }}</p>
+                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ $this->orderingChannelLabel($order->ordering_channel) }} channel</p>
                                     </td>
                                     <td class="px-4 py-4"><x-filament::badge :color="$statusColor">{{ str_replace('_', ' ', ucfirst($order->status)) }}</x-filament::badge></td>
-                                    <td class="px-4 py-4"><x-filament::badge :color="$paymentColor">{{ str_replace('_', ' ', ucfirst($order->payment_status)) }}</x-filament::badge></td>
+                                    <td class="px-4 py-4"><x-filament::badge :color="$paymentColor">{{ $this->paymentStatusLabel($order->payment_status) }}</x-filament::badge></td>
                                     <td class="px-4 py-4 text-right font-semibold">GHS {{ number_format($order->total, 2) }}</td>
                                     <td class="whitespace-nowrap px-4 py-4 text-xs text-gray-600 dark:text-gray-300">{{ $order->created_at?->format('M d, Y') }}<span class="mt-1 block text-gray-500 dark:text-gray-400">{{ $order->created_at?->format('g:i A') }}</span></td>
                                 </tr>

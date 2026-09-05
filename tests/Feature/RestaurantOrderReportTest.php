@@ -114,7 +114,7 @@ class RestaurantOrderReportTest extends TestCase
         self::assertCount(4, $stats);
         self::assertSame('Orders received', $stats[0]->getLabel());
         self::assertSame('12', $stats[0]->getValue());
-        self::assertSame('30 item(s) in Quarterly', $stats[0]->getDescription());
+        self::assertSame('30 items in Quarterly', $stats[0]->getDescription());
         self::assertSame('Net revenue', $stats[1]->getLabel());
         self::assertSame('GHS 1,150.00', $stats[1]->getValue());
         self::assertSame('GHS 1,250.00 collected · GHS 100.00 refunded', $stats[1]->getDescription());
@@ -123,6 +123,11 @@ class RestaurantOrderReportTest extends TestCase
         self::assertSame('Average collected order', $stats[3]->getLabel());
         self::assertSame('GHS 625.00', $stats[3]->getValue());
         self::assertSame('75.0% payment completion', $stats[3]->getDescription());
+
+        $widget->reportData['totalItems'] = 1;
+        $singleItemStats = $method->invoke($widget);
+
+        self::assertSame('1 item in Quarterly', $singleItemStats[0]->getDescription());
     }
 
     public function test_restaurant_order_register_uses_server_side_pagination(): void
@@ -243,7 +248,7 @@ class RestaurantOrderReportTest extends TestCase
         }
 
         $component->assertSee('GHS 120.00 collected · GHS 0.00 refunded');
-        $component->assertSee('4 item(s)');
+        $component->assertSee('4 items');
         $component->assertSeeInOrder([
             'Live kitchen queue',
             'Current active orders across all order dates',
@@ -573,7 +578,7 @@ class RestaurantOrderReportTest extends TestCase
         self::assertSame(1, $managerXPath->query('//select[@id="restaurant-fulfillment-status"]')?->count());
         self::assertSame(1, $managerXPath->query('//select[@id="restaurant-ordering-channel"]')?->count());
         self::assertSame(2, $managerXPath->query('//a[@data-restaurant-order-link and @href="'.$editUrl.'"]')?->count());
-        self::assertStringContainsString('Showing 1 of 1 orders', $managerResponse->getContent());
+        self::assertStringContainsString('Showing 1 of 1 order', $managerResponse->getContent());
 
         Role::findOrCreate('accountant', 'web');
         $accountant = User::factory()->create(['department' => 'accountant']);
@@ -806,6 +811,64 @@ class RestaurantOrderReportTest extends TestCase
         self::assertSame($reference, trim($viewOnlyReference->textContent));
         self::assertStringContainsString('break-all', $viewOnlyReference->getAttribute('class'));
         self::assertSame(0, $accountantXPath->query('//div[@aria-label="Order cards"]//a[@data-restaurant-order-link]')?->count());
+    }
+
+    public function test_order_register_uses_consistent_status_channel_and_count_presentation(): void
+    {
+        $this->travelTo('2026-09-05 09:00:00');
+        $menuItem = $this->menuItem('presentation');
+        $failedQrOrder = RestaurantOrder::query()->create([
+            'order_number' => 'FOOD-PRESENTATION-FAILED-QR',
+            'ordering_channel' => 'qr',
+            'subtotal' => 40,
+            'total' => 40,
+            'status' => 'confirmed',
+            'payment_status' => 'failed',
+        ]);
+        RestaurantOrderItem::query()->create([
+            'restaurant_order_id' => $failedQrOrder->id,
+            'menu_item_id' => $menuItem->id,
+            'item_name' => $menuItem->name,
+            'quantity' => 1,
+            'unit_price' => 40,
+            'total_price' => 40,
+        ]);
+        Role::findOrCreate('accountant', 'web');
+        $accountant = User::factory()->create(['department' => 'accountant']);
+        $accountant->assignRole('accountant');
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $reportPage = new RestaurantOrderReport;
+        self::assertSame('Website', $reportPage->orderingChannelLabel('web'));
+        self::assertSame('Table QR', $reportPage->orderingChannelLabel('qr'));
+        self::assertSame('Staff entry', $reportPage->orderingChannelLabel('staff'));
+        self::assertSame('danger', $reportPage->paymentStatusColor('failed'));
+        self::assertSame('info', $reportPage->paymentStatusColor('refunded'));
+
+        $response = $this->actingAs($accountant)->get(RestaurantOrderReport::getUrl());
+        $response->assertOk();
+        $document = new \DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($document);
+        $mobileCard = $xpath->query('//div[@aria-label="Order cards"]/article[.//*[@data-mobile-order-reference-text and normalize-space(.)="FOOD-PRESENTATION-FAILED-QR"]]')?->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $mobileCard);
+        $mobileChannel = $xpath->query('.//dt[normalize-space(.)="Channel"]/following-sibling::dd[1]', $mobileCard)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $mobileChannel);
+        self::assertSame('Table QR', trim($mobileChannel->textContent));
+        $mobilePayment = $xpath->query('.//dt[normalize-space(.)="Payment"]/following-sibling::dd[1]//*[contains(concat(" ", normalize-space(@class), " "), " fi-badge ")]', $mobileCard)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $mobilePayment);
+        self::assertSame('Failed', trim($mobilePayment->textContent));
+        self::assertStringContainsString('fi-color-danger', $mobilePayment->getAttribute('class'));
+
+        $desktopRow = $xpath->query('//table//tbody/tr[.//th[contains(normalize-space(.), "FOOD-PRESENTATION-FAILED-QR")]]')?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $desktopRow);
+        self::assertStringContainsString('1 item', $desktopRow->textContent);
+        self::assertStringContainsString('Table QR', $desktopRow->textContent);
+        $desktopPayment = $xpath->query('./td[3]/*[contains(concat(" ", normalize-space(@class), " "), " fi-badge ")]', $desktopRow)?->item(0);
+        self::assertInstanceOf(\DOMElement::class, $desktopPayment);
+        self::assertSame('Failed', trim($desktopPayment->textContent));
+        self::assertStringContainsString('fi-color-danger', $desktopPayment->getAttribute('class'));
     }
 
     private function menuItem(string $suffix): MenuItem
