@@ -6,6 +6,7 @@ use App\Models\KitchenStockMovement;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\RecordActionsPosition;
@@ -128,7 +129,25 @@ class KitchenStockMovementsTable
             ->filters([
                 SelectFilter::make('ingredient_id')->relationship('ingredient', 'name')->searchable()->preload(),
                 SelectFilter::make('type')->options(['opening_stock' => 'Opening Stock', 'receipt' => 'Receipt', 'consumption' => 'Consumption', 'wastage' => 'Wastage', 'adjustment_in' => 'Adjustment In', 'adjustment_out' => 'Adjustment Out', 'reversal' => 'Reversal']),
-                Filter::make('occurred_at')->schema([DatePicker::make('from'), DatePicker::make('until')])->query(fn (Builder $query, array $data): Builder => $query->when($data['from'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('occurred_at', '>=', $date))->when($data['until'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('occurred_at', '<=', $date))),
+                Filter::make('occurred_at')
+                    ->label('Date range')
+                    ->schema([
+                        DatePicker::make('from')
+                            ->label('From')
+                            ->maxDate(fn (Get $get): mixed => $get('until')),
+                        DatePicker::make('until')
+                            ->label('Until')
+                            ->minDate(fn (Get $get): mixed => $get('from')),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['from'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('occurred_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['until'] ?? null,
+                            fn (Builder $query, string $date): Builder => $query->whereDate('occurred_at', '<=', $date),
+                        )),
             ])
             ->defaultSort('occurred_at', 'desc')
             ->recordActions([
