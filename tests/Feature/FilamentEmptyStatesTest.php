@@ -40,7 +40,9 @@ class FilamentEmptyStatesTest extends TestCase
         string $icon,
         array $actionNames,
     ): void {
-        $table = $tableClass::configure(Table::make($this->createMock(HasTable::class)));
+        $livewire = $this->createMock(HasTable::class);
+        $table = $tableClass::configure(Table::make($livewire));
+        $livewire->method('getTable')->willReturn($table);
 
         self::assertSame($heading, $table->getEmptyStateHeading());
         self::assertNotEmpty($table->getEmptyStateDescription());
@@ -68,7 +70,7 @@ class FilamentEmptyStatesTest extends TestCase
             'conference facilities' => [ConferenceFacilitiesTable::class, 'No conference facilities found', 'heroicon-o-building-office-2', ['create']],
             'facilities' => [FacilitiesTable::class, 'No facilities found', 'heroicon-o-building-office', ['create']],
             'ingredients' => [IngredientsTable::class, 'No ingredients found', 'heroicon-o-beaker', ['create', 'resetFilters']],
-            'kitchen stock movements' => [KitchenStockMovementsTable::class, 'No kitchen stock movements found', 'heroicon-o-arrows-right-left', ['resetFilters']],
+            'kitchen stock movements' => [KitchenStockMovementsTable::class, 'No stock movements recorded', 'heroicon-o-arrows-right-left', ['clearSearch', 'resetFilters']],
             'menu categories' => [MenuCategoriesTable::class, 'No menu categories found', 'heroicon-o-tag', ['create', 'resetFilters']],
             'menu items' => [MenuItemsTable::class, 'No menu items found', 'heroicon-o-clipboard-document-list', ['create', 'resetFilters']],
             'restaurant order items' => [RestaurantOrderItemsTable::class, 'No restaurant order items found', 'heroicon-o-queue-list', ['resetFilters']],

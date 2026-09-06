@@ -15,7 +15,9 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\RecordActionsPosition;
+use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -32,17 +34,34 @@ class KitchenStockMovementsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->emptyStateHeading('No kitchen stock movements found')
-            ->emptyStateDescription('Stock receipts, consumption, and adjustments will appear here. Reset filters to review the full stock history.')
-            ->emptyStateIcon('heroicon-o-arrows-right-left')
+            ->emptyStateHeading(fn (HasTable $livewire): string => match (true) {
+                $livewire->hasTableSearch() => 'No stock movements match your search',
+                self::hasActiveTableFilters($livewire) => 'No stock movements match these filters',
+                default => 'No stock movements recorded',
+            })
+            ->emptyStateDescription(fn (HasTable $livewire): string => match (true) {
+                $livewire->hasTableSearch() => 'Clear the search to return to the complete stock ledger.',
+                self::hasActiveTableFilters($livewire) => 'Reset the filters to return to the complete stock ledger.',
+                default => 'Stock receipts, consumption, wastage, and adjustments will appear here automatically after stock activity is recorded.',
+            })
+            ->emptyStateIcon(fn (HasTable $livewire): string => match (true) {
+                $livewire->hasTableSearch() => 'heroicon-o-magnifying-glass',
+                self::hasActiveTableFilters($livewire) => 'heroicon-o-funnel',
+                default => 'heroicon-o-arrows-right-left',
+            })
             ->emptyStateActions([
+                Action::make('clearSearch')
+                    ->label('Clear search')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('gray')
+                    ->visible(fn (HasTable $livewire): bool => $livewire->hasTableSearch())
+                    ->action(fn (HasTable $livewire) => $livewire->resetTableSearch()),
                 Action::make('resetFilters')
                     ->label('Reset filters')
                     ->icon('heroicon-o-arrow-path')
                     ->color('gray')
-                    ->action(function ($livewire): void {
-                        $livewire->resetTableFiltersForm();
-                    }),
+                    ->visible(fn (HasTable $livewire): bool => ! $livewire->hasTableSearch() && self::hasActiveTableFilters($livewire))
+                    ->action(fn (HasTable $livewire) => $livewire->resetTableFiltersForm()),
             ])
             ->columns([
                 TextColumn::make('mobile_summary')
@@ -237,6 +256,15 @@ class KitchenStockMovementsTable
                     ->modalWidth(Width::FiveExtraLarge),
             ], RecordActionsPosition::AfterColumns)
             ->stackedOnMobile();
+    }
+
+    /**
+     * Determines whether any table filter currently narrows the ledger.
+     */
+    private static function hasActiveTableFilters(HasTable $livewire): bool
+    {
+        return collect($livewire->getTable()->getFilters())
+            ->contains(fn (BaseFilter $filter): bool => $filter->getIndicators() !== []);
     }
 
     /**
