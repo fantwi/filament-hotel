@@ -68,9 +68,38 @@ class KitchenStockMovementTableReadabilityTest extends TestCase
 
         self::assertSame('Rice', $column->getState());
         self::assertSame(
-            'Aug 28, 2026 2:25 PM · Receipt · 10 kg in · Balance 47.5 → 57.5 kg',
+            'Aug 28, 2026 2:25 PM · Receipt · 10 kg Stock in · Balance 47.5 → 57.5 kg',
             $column->getDescriptionBelow(),
         );
+    }
+
+    public function test_movement_badges_use_clear_labels_icons_and_semantic_colors(): void
+    {
+        $table = $this->table();
+        $direction = $table->getColumn('direction');
+        $type = $table->getColumn('type');
+
+        foreach ([
+            KitchenStockMovement::DIRECTION_IN => ['Stock in', 'success', 'heroicon-o-arrow-down-tray'],
+            KitchenStockMovement::DIRECTION_OUT => ['Stock out', 'danger', 'heroicon-o-arrow-up-tray'],
+        ] as $state => [$label, $color, $icon]) {
+            self::assertSame($label, $direction?->formatState($state));
+            self::assertSame($color, $direction?->getColor($state));
+            self::assertSame($icon, $direction?->getIcon($state));
+        }
+
+        foreach ([
+            KitchenStockMovement::TYPE_OPENING_STOCK => ['gray', 'heroicon-o-archive-box'],
+            KitchenStockMovement::TYPE_RECEIPT => ['success', 'heroicon-o-arrow-down-tray'],
+            KitchenStockMovement::TYPE_CONSUMPTION => ['danger', 'heroicon-o-arrow-up-tray'],
+            KitchenStockMovement::TYPE_WASTAGE => ['warning', 'heroicon-o-trash'],
+            KitchenStockMovement::TYPE_ADJUSTMENT_IN => ['info', 'heroicon-o-plus-circle'],
+            KitchenStockMovement::TYPE_ADJUSTMENT_OUT => ['warning', 'heroicon-o-minus-circle'],
+            KitchenStockMovement::TYPE_REVERSAL => ['primary', 'heroicon-o-arrow-uturn-left'],
+        ] as $state => [$color, $icon]) {
+            self::assertSame($color, $type?->getColor($state));
+            self::assertSame($icon, $type?->getIcon($state));
+        }
     }
 
     public function test_quantities_show_the_ingredient_unit_without_insignificant_zeroes(): void

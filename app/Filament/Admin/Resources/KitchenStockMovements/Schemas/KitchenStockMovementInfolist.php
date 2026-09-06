@@ -35,11 +35,37 @@ class KitchenStockMovementInfolist
                         TextEntry::make('type')
                             ->label('Movement type')
                             ->formatStateUsing(fn (string $state): string => str($state)->replace('_', ' ')->headline()->toString())
-                            ->badge(),
-                        TextEntry::make('direction')
-                            ->formatStateUsing(fn (string $state): string => str($state)->upper()->toString())
                             ->badge()
-                            ->color(fn (string $state): string => $state === KitchenStockMovement::DIRECTION_IN ? 'success' : 'danger'),
+                            ->color(fn (string $state): string => match ($state) {
+                                KitchenStockMovement::TYPE_RECEIPT => 'success',
+                                KitchenStockMovement::TYPE_CONSUMPTION => 'danger',
+                                KitchenStockMovement::TYPE_WASTAGE, KitchenStockMovement::TYPE_ADJUSTMENT_OUT => 'warning',
+                                KitchenStockMovement::TYPE_ADJUSTMENT_IN => 'info',
+                                KitchenStockMovement::TYPE_REVERSAL => 'primary',
+                                default => 'gray',
+                            })
+                            ->icon(fn (string $state): string => match ($state) {
+                                KitchenStockMovement::TYPE_RECEIPT => 'heroicon-o-arrow-down-tray',
+                                KitchenStockMovement::TYPE_CONSUMPTION => 'heroicon-o-arrow-up-tray',
+                                KitchenStockMovement::TYPE_WASTAGE => 'heroicon-o-trash',
+                                KitchenStockMovement::TYPE_ADJUSTMENT_IN => 'heroicon-o-plus-circle',
+                                KitchenStockMovement::TYPE_ADJUSTMENT_OUT => 'heroicon-o-minus-circle',
+                                KitchenStockMovement::TYPE_REVERSAL => 'heroicon-o-arrow-uturn-left',
+                                default => 'heroicon-o-archive-box',
+                            }),
+                        TextEntry::make('direction')
+                            ->formatStateUsing(fn (string $state): string => self::directionLabel($state))
+                            ->badge()
+                            ->color(fn (string $state): string => match ($state) {
+                                KitchenStockMovement::DIRECTION_IN => 'success',
+                                KitchenStockMovement::DIRECTION_OUT => 'danger',
+                                default => 'gray',
+                            })
+                            ->icon(fn (string $state): string => match ($state) {
+                                KitchenStockMovement::DIRECTION_IN => 'heroicon-o-arrow-down-tray',
+                                KitchenStockMovement::DIRECTION_OUT => 'heroicon-o-arrow-up-tray',
+                                default => 'heroicon-o-question-mark-circle',
+                            }),
                         TextEntry::make('quantity_display')
                             ->label('Quantity')
                             ->state(fn (KitchenStockMovement $record): string => sprintf(
@@ -136,5 +162,17 @@ class KitchenStockMovementInfolist
     private static function formatQuantity(float $quantity): string
     {
         return rtrim(rtrim(number_format($quantity, 3), '0'), '.');
+    }
+
+    /**
+     * Converts the stored ledger direction into an operational label.
+     */
+    private static function directionLabel(string $direction): string
+    {
+        return match ($direction) {
+            KitchenStockMovement::DIRECTION_IN => 'Stock in',
+            KitchenStockMovement::DIRECTION_OUT => 'Stock out',
+            default => str($direction)->headline()->toString(),
+        };
     }
 }

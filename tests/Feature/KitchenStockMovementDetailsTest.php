@@ -85,4 +85,24 @@ class KitchenStockMovementDetailsTest extends TestCase
         self::assertSame('10 kg', $quantity->getState());
         self::assertSame('47.5 → 57.125 kg', $balance->getState());
     }
+
+    public function test_details_use_the_same_accessible_movement_badges_as_the_register(): void
+    {
+        $livewire = new class extends Component implements HasSchemas
+        {
+            use InteractsWithSchemas;
+        };
+        $schema = KitchenStockMovementResource::infolist(Schema::make($livewire));
+        $direction = $schema->getComponent('direction');
+        $type = $schema->getComponent('type');
+
+        self::assertSame('Stock in', $direction->formatState(KitchenStockMovement::DIRECTION_IN));
+        self::assertSame('heroicon-o-arrow-down-tray', $direction->getIcon(KitchenStockMovement::DIRECTION_IN));
+        self::assertSame('Stock out', $direction->formatState(KitchenStockMovement::DIRECTION_OUT));
+        self::assertSame('heroicon-o-arrow-up-tray', $direction->getIcon(KitchenStockMovement::DIRECTION_OUT));
+        self::assertSame('success', $type->getColor(KitchenStockMovement::TYPE_RECEIPT));
+        self::assertSame('heroicon-o-arrow-down-tray', $type->getIcon(KitchenStockMovement::TYPE_RECEIPT));
+        self::assertSame('danger', $type->getColor(KitchenStockMovement::TYPE_CONSUMPTION));
+        self::assertSame('heroicon-o-arrow-up-tray', $type->getIcon(KitchenStockMovement::TYPE_CONSUMPTION));
+    }
 }
