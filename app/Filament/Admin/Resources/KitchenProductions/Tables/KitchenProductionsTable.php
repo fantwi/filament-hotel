@@ -19,7 +19,9 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\RecordActionsPosition;
+use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -31,6 +33,42 @@ final class KitchenProductionsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->emptyStateHeading(fn (HasTable $livewire): string => match (true) {
+                $livewire->hasTableSearch() => 'No production batches match your search',
+                self::hasActiveTableFilters($livewire) => 'No production batches match these filters',
+                default => 'No production batches recorded',
+            })
+            ->emptyStateDescription(fn (HasTable $livewire): string => match (true) {
+                $livewire->hasTableSearch() => 'Clear the search to return to all production batches.',
+                self::hasActiveTableFilters($livewire) => 'Reset the filters to return to all production batches.',
+                default => 'Record the first production batch to track prepared food and ingredient usage.',
+            })
+            ->emptyStateIcon(fn (HasTable $livewire): string => match (true) {
+                $livewire->hasTableSearch() => 'heroicon-o-magnifying-glass',
+                self::hasActiveTableFilters($livewire) => 'heroicon-o-funnel',
+                default => 'heroicon-o-clipboard-document-list',
+            })
+            ->emptyStateActions([
+                Action::make('clearSearch')
+                    ->label('Clear search')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('gray')
+                    ->visible(fn (HasTable $livewire): bool => $livewire->hasTableSearch())
+                    ->action(fn (HasTable $livewire) => $livewire->resetTableSearch()),
+                Action::make('resetFilters')
+                    ->label('Reset filters')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('gray')
+                    ->visible(fn (HasTable $livewire): bool => self::hasActiveTableFilters($livewire))
+                    ->action(fn (HasTable $livewire) => $livewire->resetTableFiltersForm()),
+                Action::make('create')
+                    ->label('Create production batch')
+                    ->icon('heroicon-o-plus')
+                    ->url(fn (): string => KitchenProductionResource::getUrl('create'))
+                    ->visible(fn (HasTable $livewire): bool => ! $livewire->hasTableSearch()
+                        && ! self::hasActiveTableFilters($livewire)
+                        && KitchenProductionResource::canCreate()),
+            ])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['menuItem', 'restaurant', 'producer']))
             ->columns([
                 TextColumn::make('mobile_summary')
@@ -240,6 +278,15 @@ final class KitchenProductionsTable
                 ])->label('More actions'),
             ], RecordActionsPosition::BeforeColumns)
             ->stackedOnMobile();
+    }
+
+    /**
+     * Determines whether any table filter currently narrows the register.
+     */
+    private static function hasActiveTableFilters(HasTable $livewire): bool
+    {
+        return collect($livewire->getTable()->getFilters())
+            ->contains(fn (BaseFilter $filter): bool => $filter->getIndicators() !== []);
     }
 
     /**
