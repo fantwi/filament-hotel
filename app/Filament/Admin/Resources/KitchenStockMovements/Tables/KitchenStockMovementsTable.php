@@ -2,7 +2,13 @@
 
 namespace App\Filament\Admin\Resources\KitchenStockMovements\Tables;
 
+use App\Models\Ingredient;
+use App\Models\KitchenProduction;
 use App\Models\KitchenStockMovement;
+use App\Models\Restaurant;
+use App\Models\RestaurantOrder;
+use App\Models\User;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
@@ -129,6 +135,77 @@ class KitchenStockMovementsTable
             ->filters([
                 SelectFilter::make('ingredient_id')->label('Ingredient')->relationship('ingredient', 'name')->searchable()->preload(),
                 SelectFilter::make('type')->options(['opening_stock' => 'Opening Stock', 'receipt' => 'Receipt', 'consumption' => 'Consumption', 'wastage' => 'Wastage', 'adjustment_in' => 'Adjustment In', 'adjustment_out' => 'Adjustment Out', 'reversal' => 'Reversal']),
+                SelectFilter::make('direction')
+                    ->options([
+                        KitchenStockMovement::DIRECTION_IN => 'Stock in',
+                        KitchenStockMovement::DIRECTION_OUT => 'Stock out',
+                    ]),
+                SelectFilter::make('restaurant')
+                    ->options(fn (): array => Restaurant::query()
+                        ->whereIn(
+                            'id',
+                            Ingredient::query()
+                                ->select('restaurant_id')
+                                ->whereNotNull('restaurant_id')
+                                ->whereHas('stockMovements'),
+                        )
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->searchable()
+                    ->preload()
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        filled($data['value'] ?? null),
+                        fn (Builder $query): Builder => $query->whereHas(
+                            'ingredient',
+                            fn (Builder $query): Builder => $query->where('restaurant_id', $data['value']),
+                        ),
+                    )),
+                SelectFilter::make('performed_by')
+                    ->label('Recorded by')
+                    ->options(fn (): array => User::query()
+                        ->whereIn(
+                            'id',
+                            KitchenStockMovement::query()
+                                ->select('performed_by')
+                                ->whereNotNull('performed_by'),
+                        )
+                        ->orderBy('first_name')
+                        ->orderBy('last_name')
+                        ->get()
+                        ->mapWithKeys(fn (User $user): array => [$user->id => $user->name])
+                        ->all())
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('source')
+                    ->options(fn (): array => [
+                        (new KitchenProduction)->getMorphClass() => 'Production batch',
+                        (new RestaurantOrder)->getMorphClass() => 'Food order',
+                        'manual' => 'Manual entry',
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        'manual' => $query->whereNull('reference_type'),
+                        null, '' => $query,
+                        default => $query->where('reference_type', $data['value']),
+                    }),
+                SelectFilter::make('date_preset')
+                    ->label('Quick period')
+                    ->options([
+                        'today' => 'Today',
+                        'last_7_days' => 'Last 7 days',
+                        'this_month' => 'This month',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        [$start, $endExclusive] = self::datePresetBounds($data['value'] ?? null);
+
+                        if ($start === null || $endExclusive === null) {
+                            return $query;
+                        }
+
+                        return $query
+                            ->where('occurred_at', '>=', $start)
+                            ->where('occurred_at', '<', $endExclusive);
+                    }),
                 Filter::make('occurred_at')
                     ->label('Date range')
                     ->schema([
@@ -139,6 +216,8 @@ class KitchenStockMovementsTable
                             ->label('Until')
                             ->minDate(fn (Get $get): mixed => $get('from')),
                     ])
+                    ->columns(['default' => 1, 'sm' => 2])
+                    ->columnSpan(['default' => 1, 'md' => 2])
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when(
                             $data['from'] ?? null,
@@ -149,6 +228,8 @@ class KitchenStockMovementsTable
                             fn (Builder $query, string $date): Builder => $query->whereDate('occurred_at', '<=', $date),
                         )),
             ])
+            ->filtersFormColumns(['default' => 1, 'md' => 2, 'xl' => 3])
+            ->filtersFormWidth(Width::FourExtraLarge)
             ->defaultSort('occurred_at', 'desc')
             ->recordActions([
                 ViewAction::make()
@@ -156,6 +237,23 @@ class KitchenStockMovementsTable
                     ->modalWidth(Width::FiveExtraLarge),
             ], RecordActionsPosition::AfterColumns)
             ->stackedOnMobile();
+    }
+
+    /**
+     * Returns inclusive-start and exclusive-end bounds for a quick period.
+     *
+     * @return array{CarbonImmutable|null, CarbonImmutable|null}
+     */
+    private static function datePresetBounds(?string $preset): array
+    {
+        $today = today()->toImmutable()->startOfDay();
+
+        return match ($preset) {
+            'today' => [$today, $today->addDay()],
+            'last_7_days' => [$today->subDays(6), $today->addDay()],
+            'this_month' => [$today->startOfMonth(), $today->startOfMonth()->addMonth()],
+            default => [null, null],
+        };
     }
 
     /**
