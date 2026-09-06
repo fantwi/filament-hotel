@@ -55,7 +55,10 @@ class KitchenStockMovementTableReadabilityTest extends TestCase
             'balance_after' => 57.5,
             'occurred_at' => '2026-08-28 14:25:00',
         ]);
-        $movement->setRelation('ingredient', new Ingredient(['name' => 'Rice']));
+        $movement->setRelation('ingredient', new Ingredient([
+            'name' => 'Rice',
+            'unit' => 'kg',
+        ]));
 
         $column = $this->table()->getColumn('mobile_summary');
 
@@ -65,9 +68,34 @@ class KitchenStockMovementTableReadabilityTest extends TestCase
 
         self::assertSame('Rice', $column->getState());
         self::assertSame(
-            'Aug 28, 2026 2:25 PM · Receipt · 10.000 in · Balance 47.500 → 57.500',
+            'Aug 28, 2026 2:25 PM · Receipt · 10 kg in · Balance 47.5 → 57.5 kg',
             $column->getDescriptionBelow(),
         );
+    }
+
+    public function test_quantities_show_the_ingredient_unit_without_insignificant_zeroes(): void
+    {
+        $movement = new KitchenStockMovement([
+            'quantity' => 10,
+            'balance_before' => 47.5,
+            'balance_after' => 57.125,
+        ]);
+        $movement->setRelation('ingredient', new Ingredient([
+            'name' => 'Rice',
+            'unit' => 'kg',
+        ]));
+        $table = $this->table();
+
+        foreach ([
+            'quantity' => '10 kg',
+            'balance_before' => '47.5 kg',
+            'balance_after' => '57.125 kg',
+        ] as $columnName => $expected) {
+            $column = $table->getColumn($columnName);
+            $column?->record($movement)->clearCachedState();
+
+            self::assertSame($expected, $column?->getState());
+        }
     }
 
     public function test_secondary_audit_columns_are_hidden_by_default_on_desktop(): void

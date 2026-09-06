@@ -43,16 +43,16 @@ class KitchenStockMovementInfolist
                         TextEntry::make('quantity_display')
                             ->label('Quantity')
                             ->state(fn (KitchenStockMovement $record): string => sprintf(
-                                '%.3f %s',
-                                (float) $record->quantity,
+                                '%s %s',
+                                self::formatQuantity((float) $record->quantity),
                                 $record->ingredient?->unit ?: 'unit',
                             )),
                         TextEntry::make('balance_change_display')
                             ->label('Stock balance')
                             ->state(fn (KitchenStockMovement $record): string => sprintf(
-                                '%.3f → %.3f %s',
-                                (float) $record->balance_before,
-                                (float) $record->balance_after,
+                                '%s → %s %s',
+                                self::formatQuantity((float) $record->balance_before),
+                                self::formatQuantity((float) $record->balance_after),
                                 $record->ingredient?->unit ?: 'unit',
                             )),
                         TextEntry::make('occurred_at')
@@ -128,5 +128,13 @@ class KitchenStockMovementInfolist
                     ->columns(['default' => 1, 'md' => 2])
                     ->columnSpanFull(),
             ]);
+    }
+
+    /**
+     * Formats stock quantities with meaningful precision up to three decimals.
+     */
+    private static function formatQuantity(float $quantity): string
+    {
+        return rtrim(rtrim(number_format($quantity, 3), '0'), '.');
     }
 }

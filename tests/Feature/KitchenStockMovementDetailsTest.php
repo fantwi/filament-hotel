@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Filament\Admin\Resources\KitchenStockMovements\KitchenStockMovementResource;
+use App\Models\Ingredient;
+use App\Models\KitchenStockMovement;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
@@ -56,5 +58,31 @@ class KitchenStockMovementDetailsTest extends TestCase
         }
 
         self::assertNull($schema->getComponent('notes')->getCharacterLimit());
+    }
+
+    public function test_details_quantities_use_the_ingredient_unit_and_meaningful_precision(): void
+    {
+        $movement = new KitchenStockMovement([
+            'quantity' => 10,
+            'balance_before' => 47.5,
+            'balance_after' => 57.125,
+        ]);
+        $movement->setRelation('ingredient', new Ingredient([
+            'name' => 'Rice',
+            'unit' => 'kg',
+        ]));
+        $livewire = new class extends Component implements HasSchemas
+        {
+            use InteractsWithSchemas;
+        };
+        $schema = KitchenStockMovementResource::infolist(
+            Schema::make($livewire)->record($movement),
+        );
+
+        $quantity = $schema->getComponent('quantity_display');
+        $balance = $schema->getComponent('balance_change_display');
+
+        self::assertSame('10 kg', $quantity->getState());
+        self::assertSame('47.5 → 57.125 kg', $balance->getState());
     }
 }
