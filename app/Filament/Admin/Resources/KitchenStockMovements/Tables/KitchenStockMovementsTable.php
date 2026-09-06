@@ -127,7 +127,7 @@ class KitchenStockMovementsTable
                 TextColumn::make('notes')->wrap()->limit(60)->toggleable(isToggledHiddenByDefault: true)->visibleFrom('md'),
             ])
             ->filters([
-                SelectFilter::make('ingredient_id')->relationship('ingredient', 'name')->searchable()->preload(),
+                SelectFilter::make('ingredient_id')->label('Ingredient')->relationship('ingredient', 'name')->searchable()->preload(),
                 SelectFilter::make('type')->options(['opening_stock' => 'Opening Stock', 'receipt' => 'Receipt', 'consumption' => 'Consumption', 'wastage' => 'Wastage', 'adjustment_in' => 'Adjustment In', 'adjustment_out' => 'Adjustment Out', 'reversal' => 'Reversal']),
                 Filter::make('occurred_at')
                     ->label('Date range')

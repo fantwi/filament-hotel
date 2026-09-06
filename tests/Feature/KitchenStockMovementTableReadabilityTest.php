@@ -170,6 +170,11 @@ class KitchenStockMovementTableReadabilityTest extends TestCase
         self::assertSame(RecordActionsPosition::AfterColumns, $table->getRecordActionsPosition());
     }
 
+    public function test_ingredient_filter_uses_a_user_facing_label(): void
+    {
+        self::assertSame('Ingredient', $this->table()->getFilter('ingredient_id')?->getLabel());
+    }
+
     private function table(): Table
     {
         return KitchenStockMovementResource::table(
