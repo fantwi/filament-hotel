@@ -107,9 +107,9 @@ class KitchenProductionTableReadabilityTest extends TestCase
         $states = $column->getState();
 
         self::assertSame([
-            'Produced 80.000 portions',
-            'Net 75.000 portions',
-            'Waste 5.000 portions (6.25%)',
+            'Produced 80 portions',
+            'Net 75 portions',
+            'Waste 5 portions (6.25%)',
         ], $states);
         self::assertSame(['info', 'success', 'warning'], array_map(
             fn (string $state): string|array|null => $column->getColor($state),
@@ -129,11 +129,27 @@ class KitchenProductionTableReadabilityTest extends TestCase
         $states = $column->getState();
 
         self::assertSame([
-            'Produced 1.000 tray',
-            'Net 1.000 tray',
-            'Waste 0.000 trays (0.00%)',
+            'Produced 1 tray',
+            'Net 1 tray',
+            'Waste 0 trays (0.00%)',
         ], $states);
         self::assertSame('gray', $column->getColor($states[2]));
+    }
+
+    public function test_yield_summary_preserves_meaningful_fractional_precision(): void
+    {
+        $production = $this->production(produced: 10.5, wasted: 0.25, unit: 'portion');
+        $column = $this->table()->getColumn('yield_summary');
+
+        self::assertInstanceOf(TextColumn::class, $column);
+
+        $column->record($production)->clearCachedState();
+
+        self::assertSame([
+            'Produced 10.5 portions',
+            'Net 10.25 portions',
+            'Waste 0.25 portions (2.38%)',
+        ], $column->getState());
     }
 
     public function test_yield_summary_flags_invalid_legacy_waste_without_showing_negative_yield(): void
@@ -148,9 +164,9 @@ class KitchenProductionTableReadabilityTest extends TestCase
         $states = $column->getState();
 
         self::assertSame([
-            'Produced 10.000 pieces',
+            'Produced 10 pieces',
             'Net Invalid waste quantity',
-            'Waste 12.000 pieces (Check quantity)',
+            'Waste 12 pieces (Check quantity)',
         ], $states);
         self::assertSame(['info', 'danger', 'danger'], array_map(
             fn (string $state): string|array|null => $column->getColor($state),
@@ -170,9 +186,9 @@ class KitchenProductionTableReadabilityTest extends TestCase
         $states = $column->getState();
 
         self::assertSame([
-            'Produced 10.000 pieces',
+            'Produced 10 pieces',
             'Net Invalid waste quantity',
-            'Waste -1.000 piece (Check quantity)',
+            'Waste -1 piece (Check quantity)',
         ], $states);
         self::assertSame(['info', 'danger', 'danger'], array_map(
             fn (string $state): string|array|null => $column->getColor($state),

@@ -339,10 +339,11 @@ final class KitchenProductionsTable
     private static function productionTableQuantity(KitchenProduction $record, float $quantity): string
     {
         $unit = $record->menuItem?->production_unit ?: 'unit';
+        $formattedQuantity = rtrim(rtrim(number_format($quantity, 3), '0'), '.');
 
         return sprintf(
             '%s %s',
-            number_format($quantity, 3),
+            $formattedQuantity,
             Str::plural($unit, abs($quantity)),
         );
     }

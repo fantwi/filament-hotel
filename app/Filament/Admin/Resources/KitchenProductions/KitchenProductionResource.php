@@ -30,6 +30,10 @@ class KitchenProductionResource extends SecureResource
 
     protected static ?string $navigationLabel = 'Kitchen Production';
 
+    protected static ?string $modelLabel = 'production batch';
+
+    protected static ?string $pluralModelLabel = 'production batches';
+
     protected static ?int $navigationSort = 30;
 
     /**
