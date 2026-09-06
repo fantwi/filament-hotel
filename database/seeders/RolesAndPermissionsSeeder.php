@@ -27,7 +27,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view restaurant reservations', 'manage restaurant reservations', 'view restaurant orders', 'manage restaurant orders', 'manage restaurant menu', 'view restaurant reports',
             'view payments', 'manage payments', 'view financial reports', 'process refunds', 'view operational reports', 'view activity logs',
             'manage kitchen orders', 'view kitchen dashboard', 'manage kitchen production', 'void kitchen production', 'view kitchen production reports',
-            'view kitchen stock', 'manage kitchen stock', 'view kitchen stock movements', 'manage menu item recipes',
+            'view kitchen stock', 'manage kitchen stock', 'view kitchen stock movements', 'export kitchen stock movements', 'manage menu item recipes',
         ];
 
         foreach ($permissions as $permission) {
@@ -44,19 +44,19 @@ class RolesAndPermissionsSeeder extends Seeder
             'view conference bookings', 'manage conference bookings', 'view restaurant reservations', 'manage restaurant reservations',
             'view restaurant orders', 'manage restaurant orders', 'manage restaurant menu', 'view restaurant reports', 'view payments',
             'view operational reports', 'view activity logs', 'manage kitchen orders', 'view kitchen dashboard', 'manage kitchen production', 'void kitchen production', 'view kitchen production reports',
-            'view kitchen stock', 'manage kitchen stock', 'view kitchen stock movements', 'manage menu item recipes',
+            'view kitchen stock', 'manage kitchen stock', 'view kitchen stock movements', 'export kitchen stock movements', 'manage menu item recipes',
         ]);
         $roles['accountant']->syncPermissions([
             'view accountant dashboard', 'view transaction dashboard', 'view payments', 'manage payments', 'view financial reports', 'process refunds',
             'view bookings', 'view conference bookings', 'view restaurant reservations', 'view restaurant orders', 'view restaurant reports', 'view kitchen production reports',
-            'view kitchen stock', 'view kitchen stock movements',
+            'view kitchen stock', 'view kitchen stock movements', 'export kitchen stock movements',
         ]);
         $roles['manager']->syncPermissions([
             'view manager dashboard', 'view transaction dashboard', 'view bookings', 'update bookings', 'view conference bookings', 'manage conference bookings',
             'view restaurant reservations', 'manage restaurant reservations', 'view restaurant orders', 'manage restaurant orders', 'view restaurant reports',
             'manage restaurant menu', 'view payments', 'view operational reports', 'view activity logs',
             'manage kitchen orders', 'view kitchen dashboard', 'manage kitchen production', 'void kitchen production', 'view kitchen production reports',
-            'view kitchen stock', 'manage kitchen stock', 'view kitchen stock movements', 'manage menu item recipes',
+            'view kitchen stock', 'manage kitchen stock', 'view kitchen stock movements', 'export kitchen stock movements', 'manage menu item recipes',
         ]);
         $roles['receptionist']->syncPermissions([
             'view reception dashboard', 'view bookings', 'create bookings', 'update bookings', 'cancel bookings',
@@ -65,7 +65,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
         $roles['kitchen_manager']->syncPermissions([
             'manage kitchen orders', 'view kitchen dashboard', 'manage kitchen production', 'void kitchen production', 'view kitchen production reports',
-            'view kitchen stock', 'manage kitchen stock', 'view kitchen stock movements', 'manage menu item recipes',
+            'view kitchen stock', 'manage kitchen stock', 'view kitchen stock movements', 'export kitchen stock movements', 'manage menu item recipes',
         ]);
         $roles['kitchen_staff']->syncPermissions([
             'manage kitchen orders', 'view kitchen dashboard', 'manage kitchen production', 'view kitchen production reports',
