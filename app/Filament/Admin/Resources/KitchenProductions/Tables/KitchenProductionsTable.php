@@ -33,6 +33,7 @@ final class KitchenProductionsTable
             ->columns([
                 TextColumn::make('mobile_summary')
                     ->label('Production Batch')
+                    ->extraHeaderAttributes(['hidden' => true])
                     ->state(fn (KitchenProduction $record): string => $record->menuItem?->name ?? 'Menu item unavailable')
                     ->description(fn (KitchenProduction $record): string => sprintf(
                         '%s · %s · %s',
