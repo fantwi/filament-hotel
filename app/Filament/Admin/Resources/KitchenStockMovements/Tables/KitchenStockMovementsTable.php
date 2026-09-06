@@ -240,11 +240,19 @@ class KitchenStockMovementsTable
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when(
                             $data['from'] ?? null,
-                            fn (Builder $query, string $date): Builder => $query->whereDate('occurred_at', '>=', $date),
+                            fn (Builder $query, string $date): Builder => $query->where(
+                                'occurred_at',
+                                '>=',
+                                CarbonImmutable::parse($date)->startOfDay(),
+                            ),
                         )
                         ->when(
                             $data['until'] ?? null,
-                            fn (Builder $query, string $date): Builder => $query->whereDate('occurred_at', '<=', $date),
+                            fn (Builder $query, string $date): Builder => $query->where(
+                                'occurred_at',
+                                '<',
+                                CarbonImmutable::parse($date)->startOfDay()->addDay(),
+                            ),
                         )),
             ])
             ->filtersFormColumns(['default' => 1, 'md' => 2, 'xl' => 3])

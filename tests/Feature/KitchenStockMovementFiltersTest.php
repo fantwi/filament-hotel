@@ -13,6 +13,7 @@ use Filament\Support\Enums\Width;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class KitchenStockMovementFiltersTest extends TestCase
@@ -137,6 +138,60 @@ class KitchenStockMovementFiltersTest extends TestCase
         self::assertSame(Width::FourExtraLarge, $table->getFiltersFormWidth());
         self::assertSame(['default' => 1, 'sm' => 2], $dateRange?->getColumns());
         self::assertSame(['default' => 1, 'md' => 2], $dateRange?->getColumnSpan());
+    }
+
+    public function test_custom_date_range_is_inclusive_without_wrapping_the_indexed_timestamp_column(): void
+    {
+        $restaurant = $this->restaurant('Main Restaurant');
+        $ingredient = $this->ingredient($restaurant, 'Rice');
+        $recorder = $this->staff('Ama', 'Mensah');
+        $fromBoundary = $this->movement($ingredient, $recorder, occurredAt: '2026-09-01 00:00:00');
+        $untilBoundary = $this->movement($ingredient, $recorder, occurredAt: '2026-09-02 23:59:59');
+        $this->movement($ingredient, $recorder, occurredAt: '2026-08-31 23:59:59');
+        $this->movement($ingredient, $recorder, occurredAt: '2026-09-03 00:00:00');
+
+        $query = KitchenStockMovement::query()->orderBy('occurred_at');
+        $this->table()->getFilter('occurred_at')?->apply($query, [
+            'from' => '2026-09-01',
+            'until' => '2026-09-02',
+        ]);
+
+        self::assertSame([$fromBoundary->id, $untilBoundary->id], $query->pluck('id')->all());
+        self::assertNotContains('Date', array_column($query->getQuery()->wheres, 'type'));
+    }
+
+    public function test_stock_movement_timestamp_index_is_installed(): void
+    {
+        $indexes = collect(Schema::getIndexes('kitchen_stock_movements'))->keyBy('name');
+
+        self::assertSame(
+            ['occurred_at'],
+            $indexes->get('kitchen_stock_movements_occurred_at_index')['columns'] ?? null,
+        );
+    }
+
+    public function test_stock_movement_timestamp_index_migration_is_reversible(): void
+    {
+        $path = database_path('migrations/2026_09_06_000000_add_kitchen_stock_movement_occurred_at_index.php');
+
+        self::assertFileExists($path);
+
+        $migration = require $path;
+        $migration->down();
+
+        self::assertNotContains(
+            'kitchen_stock_movements_occurred_at_index',
+            Schema::getIndexListing('kitchen_stock_movements'),
+        );
+
+        $migration->up();
+
+        $indexes = collect(Schema::getIndexes('kitchen_stock_movements'))->keyBy('name');
+
+        self::assertSame(
+            ['occurred_at'],
+            $indexes->get('kitchen_stock_movements_occurred_at_index')['columns'] ?? null,
+        );
     }
 
     private function table(): Table
