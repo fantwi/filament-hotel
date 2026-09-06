@@ -31,7 +31,7 @@ final class KitchenProductionsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['menuItem', 'restaurant']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['menuItem', 'restaurant', 'producer']))
             ->columns([
                 TextColumn::make('mobile_summary')
                     ->label('Production Batch')
@@ -76,6 +76,7 @@ final class KitchenProductionsTable
                     ->wrap(),
                 TextColumn::make('producer.name')
                     ->label('Produced By')
+                    ->placeholder('Not recorded')
                     ->toggleable()
                     ->visibleFrom('lg'),
                 TextColumn::make('inventory_status')

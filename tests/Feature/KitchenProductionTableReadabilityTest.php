@@ -50,9 +50,21 @@ class KitchenProductionTableReadabilityTest extends TestCase
         $query = $this->table()->applyQueryScopes(KitchenProduction::query());
 
         self::assertSame(
-            ['menuItem', 'restaurant'],
+            ['menuItem', 'restaurant', 'producer'],
             array_keys($query->getEagerLoads()),
         );
+    }
+
+    public function test_register_explains_when_the_producer_was_not_recorded(): void
+    {
+        $column = $this->table()->getColumn('producer.name');
+
+        self::assertInstanceOf(TextColumn::class, $column);
+
+        $column->record($this->production())->clearCachedState();
+
+        self::assertNull($column->getState());
+        self::assertSame('Not recorded', $column->getPlaceholder());
     }
 
     public function test_register_keeps_view_visible_and_collapses_secondary_actions_into_a_compact_menu(): void
