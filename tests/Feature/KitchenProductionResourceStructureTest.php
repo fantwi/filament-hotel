@@ -127,19 +127,40 @@ class KitchenProductionResourceStructureTest extends TestCase
         );
         self::assertStringNotContainsString('// Section::make', $source);
         self::assertDoesNotMatchRegularExpression(
-            '/^use (?:'
-                .'App\\\\Models\\\\(?:Ingredient|MenuCategory|MenuItem|Restaurant|User)'
-                .'|App\\\\Services\\\\(?:KitchenProductionRecipeService|KitchenStockService)'
-                .'|Carbon\\\\CarbonImmutable'
-                .'|Closure'
-                .'|Filament\\\\(?:Actions|Forms|Infolists|Notifications)'
-                .'|Filament\\\\Schemas\\\\Components'
-                .'|Filament\\\\Tables\\\\(?:Columns|Enums|Filters)'
-                .'|Illuminate\\\\Database\\\\Eloquent\\\\Builder'
-                .'|Illuminate\\\\Support\\\\Str'
-                .'|Illuminate\\\\Validation\\\\ValidationException'
-                .');/m',
+            self::forbiddenResourceImportPattern(),
             $source,
         );
+    }
+
+    public function test_resource_boundary_guard_rejects_forbidden_filament_descendant_imports(): void
+    {
+        foreach ([
+            'form component' => 'use Filament\\Forms\\Components\\Select;',
+            'table column' => 'use Filament\\Tables\\Columns\\TextColumn;',
+            'schema component' => 'use Filament\\Schemas\\Components\\Grid;',
+            'resource action' => 'use Filament\\Actions\\Action;',
+        ] as $componentType => $forbiddenImport) {
+            self::assertMatchesRegularExpression(
+                self::forbiddenResourceImportPattern(),
+                $forbiddenImport,
+                "Expected the resource boundary guard to reject a {$componentType} import.",
+            );
+        }
+    }
+
+    private static function forbiddenResourceImportPattern(): string
+    {
+        return '/^use (?:'
+            .'App\\\\Models\\\\(?:Ingredient|MenuCategory|MenuItem|Restaurant|User)'
+            .'|App\\\\Services\\\\(?:KitchenProductionRecipeService|KitchenStockService)'
+            .'|Carbon\\\\CarbonImmutable'
+            .'|Closure'
+            .'|Filament\\\\(?:Actions|Forms|Infolists|Notifications)(?:\\\\[^;\\r\\n]+)?'
+            .'|Filament\\\\Schemas\\\\Components(?:\\\\[^;\\r\\n]+)?'
+            .'|Filament\\\\Tables\\\\(?:Columns|Enums|Filters)(?:\\\\[^;\\r\\n]+)?'
+            .'|Illuminate\\\\Database\\\\Eloquent\\\\Builder'
+            .'|Illuminate\\\\Support\\\\Str'
+            .'|Illuminate\\\\Validation\\\\ValidationException'
+            .');/m';
     }
 }
