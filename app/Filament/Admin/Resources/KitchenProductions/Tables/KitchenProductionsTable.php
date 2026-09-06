@@ -17,6 +17,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\Filter;
@@ -183,7 +184,8 @@ final class KitchenProductionsTable
                             ->label('Until')
                             ->minDate(fn (Get $get): mixed => $get('from')),
                     ])
-                    ->columns(2)
+                    ->columns(['default' => 1, 'sm' => 2])
+                    ->columnSpan(['default' => 1, 'md' => 2])
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when(
                             $data['from'] ?? null,
@@ -194,6 +196,8 @@ final class KitchenProductionsTable
                             fn (Builder $query, string $date): Builder => $query->whereDate('production_date', '<=', $date),
                         )),
             ])
+            ->filtersFormColumns(['default' => 1, 'md' => 2, 'xl' => 3])
+            ->filtersFormWidth(Width::FourExtraLarge)
             ->defaultSort(fn (Builder $query): Builder => $query
                 ->orderByDesc('production_date')
                 ->orderByDesc('id'))

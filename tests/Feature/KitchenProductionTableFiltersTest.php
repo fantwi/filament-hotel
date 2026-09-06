@@ -10,6 +10,7 @@ use App\Models\MenuItem;
 use App\Models\Restaurant;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -58,6 +59,17 @@ class KitchenProductionTableFiltersTest extends TestCase
         self::assertArrayNotHasKey($unusedItem->id, $table->getFilter('menu_item')?->getOptions() ?? []);
         self::assertArrayNotHasKey($unusedCategory->id, $table->getFilter('category')?->getOptions() ?? []);
         self::assertArrayNotHasKey($unusedProducer->id, $table->getFilter('produced_by')?->getOptions() ?? []);
+    }
+
+    public function test_filter_panel_uses_a_wide_responsive_grid_without_crowding_mobile_dates(): void
+    {
+        $table = $this->table();
+        $productionDate = $table->getFilter('production_date');
+
+        self::assertSame(['default' => 1, 'md' => 2, 'xl' => 3], $table->getFiltersFormColumns());
+        self::assertSame(Width::FourExtraLarge, $table->getFiltersFormWidth());
+        self::assertSame(['default' => 1, 'sm' => 2], $productionDate?->getColumns());
+        self::assertSame(['default' => 1, 'md' => 2], $productionDate?->getColumnSpan());
     }
 
     public function test_category_producer_and_waste_filters_combine_without_leaking_other_batches(): void
