@@ -68,6 +68,38 @@ class KitchenStockMovementTableReadabilityTest extends TestCase
         );
     }
 
+    public function test_secondary_audit_columns_are_hidden_by_default_on_desktop(): void
+    {
+        $table = $this->table();
+
+        foreach ([
+            'balance_before',
+            'total_cost',
+            'reference_number',
+            'performedBy.name',
+            'notes',
+        ] as $columnName) {
+            $column = $table->getColumn($columnName);
+
+            self::assertTrue($column?->isToggleable(), "[{$columnName}] should remain available in the column manager.");
+            self::assertTrue($column?->isToggledHiddenByDefault(), "[{$columnName}] should not crowd the default desktop table.");
+        }
+
+        foreach ([
+            'occurred_at',
+            'ingredient.name',
+            'type',
+            'direction',
+            'quantity',
+            'balance_after',
+        ] as $columnName) {
+            self::assertFalse(
+                $table->getColumn($columnName)?->isToggledHiddenByDefault(),
+                "[{$columnName}] should remain visible in the default desktop table.",
+            );
+        }
+    }
+
     private function table(): Table
     {
         return KitchenStockMovementResource::table(

@@ -56,12 +56,12 @@ class KitchenStockMovementsTable
                 TextColumn::make('type')->badge()->formatStateUsing(fn (string $state): string => str($state)->replace('_', ' ')->title())->visibleFrom('md'),
                 TextColumn::make('direction')->badge()->color(fn (string $state): string => $state === 'in' ? 'success' : 'danger')->visibleFrom('md'),
                 TextColumn::make('quantity')->numeric(decimalPlaces: 3)->visibleFrom('md'),
-                TextColumn::make('balance_before')->label('Before')->numeric(decimalPlaces: 3)->toggleable()->visibleFrom('md'),
+                TextColumn::make('balance_before')->label('Before')->numeric(decimalPlaces: 3)->toggleable(isToggledHiddenByDefault: true)->visibleFrom('md'),
                 TextColumn::make('balance_after')->label('After')->numeric(decimalPlaces: 3)->visibleFrom('md'),
-                TextColumn::make('total_cost')->money('GHS')->placeholder('—')->toggleable()->visibleFrom('md'),
-                TextColumn::make('reference_number')->label('Reference')->placeholder('—')->searchable()->toggleable()->visibleFrom('md'),
-                TextColumn::make('performedBy.name')->label('Recorded By')->placeholder('System')->toggleable()->visibleFrom('md'),
-                TextColumn::make('notes')->wrap()->limit(60)->toggleable()->visibleFrom('md'),
+                TextColumn::make('total_cost')->money('GHS')->placeholder('—')->toggleable(isToggledHiddenByDefault: true)->visibleFrom('md'),
+                TextColumn::make('reference_number')->label('Reference')->placeholder('—')->searchable()->toggleable(isToggledHiddenByDefault: true)->visibleFrom('md'),
+                TextColumn::make('performedBy.name')->label('Recorded By')->placeholder('System')->toggleable(isToggledHiddenByDefault: true)->visibleFrom('md'),
+                TextColumn::make('notes')->wrap()->limit(60)->toggleable(isToggledHiddenByDefault: true)->visibleFrom('md'),
             ])
             ->filters([
                 SelectFilter::make('ingredient_id')->relationship('ingredient', 'name')->searchable()->preload(),
