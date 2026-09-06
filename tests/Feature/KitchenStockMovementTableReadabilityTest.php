@@ -1,0 +1,77 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Filament\Admin\Resources\KitchenStockMovements\KitchenStockMovementResource;
+use App\Models\Ingredient;
+use App\Models\KitchenStockMovement;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Tests\TestCase;
+
+class KitchenStockMovementTableReadabilityTest extends TestCase
+{
+    public function test_register_uses_a_compact_stacked_mobile_summary(): void
+    {
+        $table = $this->table();
+        $summary = $table->getColumn('mobile_summary');
+
+        self::assertInstanceOf(TextColumn::class, $summary);
+        self::assertSame('md', $summary->getHiddenFrom());
+        self::assertTrue($summary->canWrap());
+        self::assertTrue($table->isStackedOnMobile());
+
+        foreach ([
+            'occurred_at',
+            'ingredient.name',
+            'type',
+            'direction',
+            'quantity',
+            'balance_before',
+            'balance_after',
+            'total_cost',
+            'reference_number',
+            'performedBy.name',
+            'notes',
+        ] as $columnName) {
+            self::assertSame(
+                'md',
+                $table->getColumn($columnName)?->getVisibleFrom(),
+                "[{$columnName}] should collapse into the mobile summary below the medium breakpoint.",
+            );
+        }
+    }
+
+    public function test_mobile_summary_keeps_the_movement_context_readable(): void
+    {
+        $movement = new KitchenStockMovement([
+            'type' => KitchenStockMovement::TYPE_RECEIPT,
+            'direction' => KitchenStockMovement::DIRECTION_IN,
+            'quantity' => 10,
+            'balance_before' => 47.5,
+            'balance_after' => 57.5,
+            'occurred_at' => '2026-08-28 14:25:00',
+        ]);
+        $movement->setRelation('ingredient', new Ingredient(['name' => 'Rice']));
+
+        $column = $this->table()->getColumn('mobile_summary');
+
+        self::assertInstanceOf(TextColumn::class, $column);
+
+        $column->record($movement)->clearCachedState();
+
+        self::assertSame('Rice', $column->getState());
+        self::assertSame(
+            'Aug 28, 2026 2:25 PM · Receipt · 10.000 in · Balance 47.500 → 57.500',
+            $column->getDescriptionBelow(),
+        );
+    }
+
+    private function table(): Table
+    {
+        return KitchenStockMovementResource::table(
+            Table::make($this->createMock(HasTable::class)),
+        );
+    }
+}
