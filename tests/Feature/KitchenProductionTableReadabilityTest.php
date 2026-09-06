@@ -6,6 +6,8 @@ use App\Filament\Admin\Resources\KitchenProductions\KitchenProductionResource;
 use App\Models\KitchenProduction;
 use App\Models\MenuItem;
 use App\Models\Restaurant;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\RecordActionsPosition;
@@ -51,6 +53,18 @@ class KitchenProductionTableReadabilityTest extends TestCase
             ['menuItem', 'restaurant'],
             array_keys($query->getEagerLoads()),
         );
+    }
+
+    public function test_register_keeps_view_visible_and_collapses_secondary_actions_into_a_compact_menu(): void
+    {
+        $actions = array_values($this->table()->getRecordActions());
+
+        self::assertCount(2, $actions);
+        self::assertInstanceOf(ViewAction::class, $actions[0]);
+        self::assertInstanceOf(ActionGroup::class, $actions[1]);
+        self::assertTrue($actions[1]->isIconButton());
+        self::assertSame('More actions', $actions[1]->getLabel());
+        self::assertSame(['edit', 'void'], array_keys($actions[1]->getFlatActions()));
     }
 
     public function test_mobile_summary_keeps_batch_identity_readable_without_repeating_yield_values(): void

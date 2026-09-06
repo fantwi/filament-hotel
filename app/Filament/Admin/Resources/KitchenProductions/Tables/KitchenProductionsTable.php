@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\KitchenStockService;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
@@ -198,38 +199,40 @@ final class KitchenProductionsTable
                 ->orderByDesc('id'))
             ->recordActions([
                 ViewAction::make(),
-                EditAction::make(),
-                Action::make('void')
-                    ->label('Void batch')
-                    ->icon('heroicon-o-arrow-uturn-left')
-                    ->color('danger')
-                    ->visible(
-                        fn (KitchenProduction $record): bool => KitchenProductionResource::canVoid($record),
-                    )
-                    ->authorize(
-                        fn (KitchenProduction $record): bool => KitchenProductionResource::canVoid($record),
-                    )
-                    ->requiresConfirmation()
-                    ->modalHeading(fn (KitchenProduction $record): string => "Void production batch {$record->batch_reference}?")
-                    ->modalDescription('The consumed raw ingredients will be restored to stock. The batch and its ledger history will remain available for audit.')
-                    ->modalSubmitActionLabel('Void batch and restore stock')
-                    ->schema([
-                        Textarea::make('reason')
-                            ->label('Reason for voiding')
-                            ->helperText('Explain why this posted batch must be reversed.')
-                            ->rows(4)
-                            ->maxLength(1000)
-                            ->required(),
-                    ])
-                    ->action(function (KitchenProduction $record, array $data, KitchenStockService $stock): void {
-                        $stock->voidProduction($record, $data['reason'], auth()->user());
+                ActionGroup::make([
+                    EditAction::make(),
+                    Action::make('void')
+                        ->label('Void batch')
+                        ->icon('heroicon-o-arrow-uturn-left')
+                        ->color('danger')
+                        ->visible(
+                            fn (KitchenProduction $record): bool => KitchenProductionResource::canVoid($record),
+                        )
+                        ->authorize(
+                            fn (KitchenProduction $record): bool => KitchenProductionResource::canVoid($record),
+                        )
+                        ->requiresConfirmation()
+                        ->modalHeading(fn (KitchenProduction $record): string => "Void production batch {$record->batch_reference}?")
+                        ->modalDescription('The consumed raw ingredients will be restored to stock. The batch and its ledger history will remain available for audit.')
+                        ->modalSubmitActionLabel('Void batch and restore stock')
+                        ->schema([
+                            Textarea::make('reason')
+                                ->label('Reason for voiding')
+                                ->helperText('Explain why this posted batch must be reversed.')
+                                ->rows(4)
+                                ->maxLength(1000)
+                                ->required(),
+                        ])
+                        ->action(function (KitchenProduction $record, array $data, KitchenStockService $stock): void {
+                            $stock->voidProduction($record, $data['reason'], auth()->user());
 
-                        Notification::make()
-                            ->title('Production batch voided')
-                            ->body('Consumed ingredients were restored to kitchen stock and the audit record was retained.')
-                            ->success()
-                            ->send();
-                    }),
+                            Notification::make()
+                                ->title('Production batch voided')
+                                ->body('Consumed ingredients were restored to kitchen stock and the audit record was retained.')
+                                ->success()
+                                ->send();
+                        }),
+                ])->label('More actions'),
             ], RecordActionsPosition::BeforeColumns)
             ->stackedOnMobile();
     }
