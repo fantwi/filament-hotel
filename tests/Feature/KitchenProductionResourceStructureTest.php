@@ -110,7 +110,7 @@ class KitchenProductionResourceStructureTest extends TestCase
 
         self::assertTrue($resourceTable->isStackedOnMobile());
         self::assertSame(
-            RecordActionsPosition::BeforeColumns,
+            RecordActionsPosition::AfterColumns,
             $resourceTable->getRecordActionsPosition(),
         );
     }

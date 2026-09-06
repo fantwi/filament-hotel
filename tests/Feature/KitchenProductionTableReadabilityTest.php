@@ -30,7 +30,7 @@ class KitchenProductionTableReadabilityTest extends TestCase
         self::assertTrue($yieldSummary->isBadge());
         self::assertTrue($yieldSummary->isListWithLineBreaks());
         self::assertTrue($table->isStackedOnMobile());
-        self::assertSame(RecordActionsPosition::BeforeColumns, $table->getRecordActionsPosition());
+        self::assertSame(RecordActionsPosition::AfterColumns, $table->getRecordActionsPosition());
 
         foreach (['menuItem.name', 'restaurant.name', 'batch_reference', 'production_date'] as $columnName) {
             self::assertSame(

@@ -276,7 +276,7 @@ final class KitchenProductionsTable
                                 ->send();
                         }),
                 ])->label('More actions'),
-            ], RecordActionsPosition::BeforeColumns)
+            ], RecordActionsPosition::AfterColumns)
             ->stackedOnMobile();
     }
 
