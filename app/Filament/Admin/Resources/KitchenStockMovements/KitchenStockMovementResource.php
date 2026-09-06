@@ -3,10 +3,12 @@
 namespace App\Filament\Admin\Resources\KitchenStockMovements;
 
 use App\Filament\Admin\Resources\KitchenStockMovements\Pages\ListKitchenStockMovements;
+use App\Filament\Admin\Resources\KitchenStockMovements\Schemas\KitchenStockMovementInfolist;
 use App\Filament\Admin\Resources\KitchenStockMovements\Tables\KitchenStockMovementsTable;
 use App\Filament\Admin\Resources\SecureResource;
 use App\Models\KitchenStockMovement;
 use BackedEnum;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 
@@ -63,6 +65,14 @@ class KitchenStockMovementResource extends SecureResource
     public static function table(Table $table): Table
     {
         return KitchenStockMovementsTable::configure($table);
+    }
+
+    /**
+     * Configures the complete read-only stock-movement details.
+     */
+    public static function infolist(Schema $schema): Schema
+    {
+        return KitchenStockMovementInfolist::configure($schema);
     }
 
     /**

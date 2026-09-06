@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Filament\Admin\Resources\KitchenStockMovements\KitchenStockMovementResource;
 use App\Models\Ingredient;
 use App\Models\KitchenStockMovement;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
 use Tests\TestCase;
 
@@ -98,6 +100,17 @@ class KitchenStockMovementTableReadabilityTest extends TestCase
                 "[{$columnName}] should remain visible in the default desktop table.",
             );
         }
+    }
+
+    public function test_register_exposes_a_read_only_view_action_after_the_ledger_columns(): void
+    {
+        $table = $this->table();
+        $actions = array_values($table->getRecordActions());
+
+        self::assertCount(1, $actions);
+        self::assertInstanceOf(ViewAction::class, $actions[0]);
+        self::assertSame('view', $actions[0]->getName());
+        self::assertSame(RecordActionsPosition::AfterColumns, $table->getRecordActionsPosition());
     }
 
     private function table(): Table

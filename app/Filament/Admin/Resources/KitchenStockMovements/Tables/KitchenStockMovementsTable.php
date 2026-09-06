@@ -4,8 +4,11 @@ namespace App\Filament\Admin\Resources\KitchenStockMovements\Tables;
 
 use App\Models\KitchenStockMovement;
 use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -69,6 +72,11 @@ class KitchenStockMovementsTable
                 Filter::make('occurred_at')->schema([DatePicker::make('from'), DatePicker::make('until')])->query(fn (Builder $query, array $data): Builder => $query->when($data['from'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('occurred_at', '>=', $date))->when($data['until'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('occurred_at', '<=', $date))),
             ])
             ->defaultSort('occurred_at', 'desc')
+            ->recordActions([
+                ViewAction::make()
+                    ->modalHeading(fn (KitchenStockMovement $record): string => 'Stock movement · '.($record->ingredient?->name ?? '#'.$record->getKey()))
+                    ->modalWidth(Width::FiveExtraLarge),
+            ], RecordActionsPosition::AfterColumns)
             ->stackedOnMobile();
     }
 }
